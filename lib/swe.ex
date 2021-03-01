@@ -144,7 +144,7 @@ def chapter_numbers(binary) do
   Enum.count(chapters) |> IO.inspect(label: "chapter")
 
   Enum.join(chapters, "\n")
-  |> (&(File.write("lib/swe.chapter_numbers", &1))).()
+  |> (&(File.write("lib/swe.chapter_numbers.txt", &1))).()
 end
 
 def article_numbers(binary) do
@@ -163,7 +163,7 @@ def article_numbers(binary) do
   Enum.count(articles) |> IO.inspect(label: "articles")
 
   Enum.join(articles, "\n")
-  |> (&(File.write("lib/swe.article_numbers", &1))).()
+  |> (&(File.write("lib/swe.article_numbers.txt", &1))).()
 end
 
 def article_type(binary) do
@@ -188,7 +188,7 @@ def article_type(binary) do
   Enum.count(types) |> IO.inspect(label: "types")
 
   Enum.join(types, "\n")
-  |> (&(File.write("lib/swe.article_type", &1))).()
+  |> (&(File.write("lib/swe.article_type.txt", &1))).()
 end
 
 def schema(binary) do
@@ -221,12 +221,12 @@ def schema(binary) do
   schemas.types
   |> Enum.reverse()
   |> Enum.join("\n")
-  |> (&(File.write("lib/swe.article_type", &1))).()
+  |> (&(File.write("lib/swe.article_type.txt", &1))).()
 
   schemas.sections
   |> Enum.reverse()
   |> Enum.join("\n")
-  |> (&(File.write("lib/swe.sections", &1))).()
+  |> (&(File.write("lib/swe.section_numbers.txt", &1))).()
 end
 
 end
