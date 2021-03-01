@@ -130,7 +130,7 @@ def chapter_numbers(binary) do
   chapters =
     String.split(binary, "\n", trim: true)
     |> Enum.reduce([], fn str, acc ->
-      case Regex.run(~r/^(\d)\skap\.\s/, str) do
+      case Regex.run(~r/^(\d+)\skap\.\s/, str) do
         [_match, capture] -> [capture | acc]
         nil ->
           case acc do
