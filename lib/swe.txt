@@ -1,129 +1,5194 @@
-SFS-nummer · 2016:749 · Visa register
-Lag (2016:749) om särskilt skydd mot repressalier för arbetstagare som slår larm om allvarliga missförhållanden
-Departement: Arbetsmarknadsdepartementet ARM
-Utfärdad: 2016-06-16
-Ikraft: 2017-01-01
+SFS-nummer · 1994:1776 · Visa register
+Lag (1994:1776) om skatt på energi
+Departement: Finansdepartementet S2
+Utfärdad: 1994-12-20
+Ändring införd: t.o.m. SFS 2020:1176
+Övrigt: Rättelseblad 2004:1038, 2006:1508 och 2010:1824 har iakttagits.
+Ikraft: 1995-01-01 överg.best.
+
+1 kap. Lagens tillämpningsområde m.m.
 
 Lagens tillämpningsområde
 
-1 § Denna lag innehåller bestämmelser som ger ett särskilt 
-skydd mot repressalier för arbetstagare som slår larm om 
-allvarliga missförhållanden i arbetsgivarens verksamhet. 
-Lagen inskränker inte det skydd som kan gälla på annan 
-grund.
+1 § Skatt skall betalas till staten enligt denna lag för bränslen
+och elektrisk kraft.
 
-Med allvarliga missförhållanden avses brott med fängelse i 
-straffskalan eller därmed jämförliga missförhållanden. Det är 
-tillräckligt att arbetstagaren genom larmet framför konkreta 
-misstankar om sådana allvarliga missförhållanden.
+2 § Energiskatt ska betalas för bränslen som anges i 2 kap.
+1, 1 a, 3 och 4 §§. Koldioxidskatt ska betalas för bränslen
+som anges i 2 kap. 1, 3 och 4 §§. Svavelskatt ska betalas på
+svavelinnehållet i bränslen som anges i 3 kap. 1 §.
+Bestämmelser om dessa skatter finns i 2–10 kap.
 
-2 § Med arbetstagare jämställs den som utför arbete som 
-inhyrd, om larmet avser förhållanden i inhyrarens verksamhet. 
-I sådana fall ska med arbetsgivare avses inhyraren.
+Bestämmelser om skatt på elektrisk kraft finns i 11 kap.
+Lag (2009:1494).
 
-Med inhyrd avses arbetstagare som lagen (2012:854) om 
-uthyrning av arbetstagare är tillämplig på. Med inhyrare 
-avses detsamma som med kundföretag enligt den lagen.
+Innebörden av vissa uttryck
 
-Avtals ogiltighet
+2 a § Med KN-nr förstås nummer i Kombinerade 
+nomenklaturen enligt kommissionens förordning (EG) nr 
+2031/2001 av den 6 augusti 2001 om ändring av bilaga I till 
+rådets förordning (EEG) nr 2658/87 om tulltaxe- och 
+statistiknomenklaturen och om gemensamma tulltaxan.
 
-3 § Ett avtal är ogiltigt i den utsträckning som det upphäver 
-eller inskränker arbetstagares skydd enligt denna lag.
+För vissa produkter i denna lag finns uppdateringar av 
+hänvisningarna till KN-nr till följd av ändringar av bilaga I 
+till rådets förordning (EEG) nr 2658/87 i 
 
-Vad lagen skyddar mot
+– kommissionens genomförandebeslut (EU) 2018/552 av den 6 
+april 2018 om uppdatering av hänvisningarna i rådets direktiv 
+2003/96/EG till nummer i Kombinerade nomenklaturen för vissa 
+produkter, eller 
 
-4 § En arbetsgivare får inte utsätta en arbetstagare för 
-repressalier på grund av att arbetstagaren slår larm om 
-allvarliga missförhållanden i arbetsgivarens verksamhet 
-enligt 5–7 §§.
+– sådant senare genomförandebeslut som har fattats med stöd 
+av artikel 2.5 andra stycket i rådets direktiv 2003/96/EG av 
+den 27 oktober 2003 om en omstrukturering av gemenskapsramen 
+för beskattning av energiprodukter och elektricitet.
+Lag (2018:1887).
 
-Den som i arbetsgivarens ställe har rätt att besluta i frågor 
-som rör arbetstagaren ska likställas med arbetsgivaren vid 
-tillämpningen av första stycket.
+3 § Med energiprodukter förstås produkter enligt
 
-Olika sätt att slå larm
+1. KN-nr 1507-1518, när produkterna är avsedda att förbrukas
+som bränsle för uppvärmning eller som motorbränsle,
 
-Interna larm
+2. KN-nr 2701, 2702 samt 2704-2715,
 
-5 § En arbetstagare har skydd enligt 4 § om arbetstagaren 
-slår larm till arbetsgivaren eller en representant för denne, 
-eller genom att använda sig av interna rutiner för 
-rapportering av missförhållanden som gäller hos 
-arbetsgivaren.
+3. KN-nr 2901 och 2902,
 
-Larm till arbetstagarorganisation
+4. KN-nr 2905 11 00, som inte är av syntetiskt ursprung, när
+produkterna är avsedda att förbrukas som bränsle för
+uppvärmning eller som motorbränsle,
 
-6 § En arbetstagare har skydd enligt 4 § om arbetstagaren 
-slår larm genom att vända sig till sin 
-arbetstagarorganisation.
+5. KN-nr 3403,
 
-Externa larm
+6. KN-nr 3811,
 
-7 § En arbetstagare som slår larm genom att offentliggöra 
-uppgifter eller lämna uppgifter för offentliggörande, eller 
-genom att vända sig till en myndighet, har skydd enligt 4 § 
-om
+7. KN-nr 3817,
 
-1. arbetstagaren
+8. KN-nr 3824 90 99, när produkterna är avsedda att förbrukas
+som bränsle för uppvärmning eller som motorbränsle.
+Lag (2006:1508).
 
-a) först slagit larm internt enligt 5 § utan att 
-arbetsgivaren vidtagit skäliga åtgärder med anledning av 
-larmet och i skälig utsträckning informerat arbetstagaren om 
-i vilken omfattning åtgärder vidtagits, eller 
+3 a § I enlighet med vad som särskilt anges i denna lag
+tillämpas vissa förfaranderegler för energiprodukter enligt
+följande KN-nr
 
-b) av något annat skäl hade befogad anledning att slå larm 
-externt, och
+1. KN-nr 1507–1518, när produkterna är avsedda att förbrukas
+som bränsle för uppvärmning eller som motorbränsle,
 
-2. arbetstagaren hade fog för det påstående om allvarliga 
-missförhållanden som larmet avser.
+2. KN-nr 2707 10, 2707 20, 2707 30 och 2707 50,
 
-Undantag från skyddet vid brott
+3. KN-nr 2710 11–2710 19 69,
 
-8 § Den arbetstagare som genom att slå larm gör sig skyldig 
-till brott har inte skydd enligt lagen.
+4. KN-nr 2711, dock inte KN-nr 2711 11, 2711 21 och 2711 29,
 
-Skadestånd
+5. KN-nr 2901 10,
 
-9 § En arbetsgivare som bryter mot 4 § ska betala skadestånd 
-för den förlust som uppkommer och för den kränkning som 
-repressalien innebär.
+6. KN-nr 2902 20, 2902 30, 2902 41, 2902 42, 2902 43 och
+2902 44,
 
-Om talan förs med anledning av uppsägning eller avskedande 
-eller annat förfarande som omfattas av lagen (1982:80) om 
-anställningsskydd får ersättning för förlust som avser tid 
-efter anställningens upphörande under alla förhållanden 
-bestämmas till högst det belopp som anges i 39 § i den 
-lagen.
+7. KN-nr 2905 11 00, som inte är av syntetiskt ursprung, när
+produkterna är avsedda att förbrukas som bränsle för
+uppvärmning eller som motorbränsle,
 
-Om det är skäligt, får skadeståndet sättas ned eller helt 
-falla bort.
+8. KN-nr 3811 11 10, 3811 11 90, 3811 19 00 och 3811 90 00,
+samt
 
-Bevisbörda
+9. KN-nr 3824 90 99, när produkterna är avsedda att förbrukas
+som bränsle för uppvärmning eller som motorbränsle.
 
-10 § Om den som anser sig ha blivit utsatt för repressalier 
-som strider mot denna lag visar omständigheter som ger 
-anledning att anta att så är fallet, är det arbetsgivaren som 
-ska visa att sådana repressalier inte har vidtagits.
+I fråga om produkter enligt KN-nr 2710 11 21, 2710 11 25 och
+2710 19 29 gäller första stycket endast vid yrkesmässiga
+bulktransporter. Lag (2012:836).
 
-Rättegången
+4 § En verksamhet är yrkesmässig, om den
 
-11 § Mål om tillämpningen av denna lag ska handläggas enligt 
-lagen (1974:371) om rättegången i arbetstvister.
+1. utgör näringsverksamhet enligt 13 kap. inkomstskattelagen
+(1999:1229), eller
 
-I sådana mål ska som arbetstagare anses också den som utför 
-arbete som inhyrd. Den hos vilken arbetet utförs ska anses 
-som arbetsgivare. Detta gäller också när reglerna om 
-tvisteförhandling i lagen (1976:580) om medbestämmande i 
-arbetslivet tillämpas.
+2. bedrivs i former som är jämförliga med en till sådan
+näringsverksamhet hänförlig rörelse och ersättningen för
+omsättningen i verksamheten under ett kalenderår överstiger
+30 000 kronor. Lag (1999:1289).
 
-När någon för talan ska följande bestämmelser i lagen 
-(1976:580) om medbestämmande i arbetslivet tillämpas:
+5 § Fordonsbegreppen i denna lag har samma betydelse som i lagen
+(2001:559) om vägtrafikdefinitioner. Lag (2001:569).
 
-– 64 § om tidsfrist för påkallande av förhandling,
+6 § Med skepp avses i denna lag fartyg vars skrov har en 
+största längd av minst tolv meter och en största bredd av 
+minst fyra meter. Med båtar avses andra fartyg.
+Lag (2017:1057).
 
-– 65 § om tidsfrist för väckande av talan,
+7 § Med införsel förstås att en produkt förs in till Sverige
+eller tas emot här i landet.
 
-– 66 § om förlängd tidsfrist för den som inte företräds av en 
-arbetstagarorganisation, och
+Med import avses att en produkt förs in till Sverige från
+tredje land under förutsättning att produkten inte omfattas av
+sådant suspensivt tullförfarande eller suspensivt
+tullarrangemang som avses i artikel 4.6 i rådets direktiv
+2008/118/EG av den 16 december 2008 om allmänna regler för
+punktskatt och om upphävande av direktiv 92/12/EEG. Med import
+avses även att produkten frisläpps från ett sådant förfarande
+eller arrangemang. Med export avses att en produkt förs ut
+till tredje land från Sverige eller via ett annat EU-land.
 
-– 68 § om förlorad talerätt på grund av preskription.
+Med EU eller ett EU-land förstås de områden som tillhör
+Europeiska unionens punktskatteområde. Med tredje land förstås
+länder och områden utanför detta skatteområde. Lag (2011:287).
+
+8 § Har upphävts genom lag (2009:1497).
+
+9 § /Upphör att gälla U:2021-01-01/
+Med biomassa förstås den biologiskt nedbrytbara delen av
+produkter, avfall och restprodukter från jordbruk (inklusive
+material av vegetabiliskt och animaliskt ursprung), skogsbruk
+och därmed förknippad industri, samt den biologiskt
+nedbrytbara delen av industriavfall och kommunalt avfall.
+
+Med biogas förstås ett vätskeformigt eller gasformigt bränsle
+som framställts av biomassa och vars energiinnehåll till
+övervägande del härrör från metan. Lag (2010:1089).
+
+9 § /Träder i kraft I:2021-01-01/
+Med biomassa förstås den biologiskt nedbrytbara delen av 
+produkter, avfall och restprodukter från jordbruk (inklusive 
+material av vegetabiliskt och animaliskt ursprung), skogsbruk 
+och därmed förknippad industri, samt den biologiskt 
+nedbrytbara delen av industriavfall och kommunalt avfall.
+
+Med biogas förstås ett vätskeformigt eller gasformigt bränsle 
+som framställts av biomassa och vars energiinnehåll till 
+övervägande del härrör från metan. 
+
+Med biogasol förstås ett vätskeformigt eller gasformigt 
+bränsle som framställts av biomassa och vars energiinnehåll 
+till övervägande del härrör från propan eller butan.
+Lag (2020:1045).
+
+10 § Med kraftvärmeproduktion förstås samtidig produktion av
+värme och skattepliktig elektrisk kraft i en och samma
+process, om
+
+1. den värme som uppkommer nyttiggörs, och
+
+2. elverkningsgraden uppgår till minst 15 procent.
+Lag (2009:1495).
+
+11 § Med användning av luftfartyg, skepp och båtar för privat
+ändamål avses annan användning än
+
+1. transport av passagerare eller varor mot ersättning eller
+tillhandahållande av andra tjänster mot ersättning,
+
+2. offentliga myndigheters användning eller användning för
+offentliga myndigheters räkning,
+
+3. frivilliga försvarsorganisationers användning,
+
+4. sjöräddning, brandövervakning och liknande verksamhet,
+eller övning och utbildning för sådan verksamhet, som utförs
+av ideella organisationer, eller
+
+5. yrkesmässigt fiske.
+Lag (2015:214).
+
+11 a § /Upphör att gälla U:2021-01-01/
+I fråga om energiskatt och koldioxidskatt på bränslen 
+samt energiskatt på elektrisk kraft förstås med stödordning 
+sådant statligt stöd enligt artikel 107.1 i fördraget om 
+Europeiska unionens funktionssätt som utgörs av 
+skattebefrielse för vart och ett av de ändamål som anges i 
+följande bestämmelser i denna lag:
+
+1. 6 a kap. 1 § 9 a och 17 a,
+
+2. 6 a kap. 1 § 9 b,
+
+3. 6 a kap. 1 § 10,
+
+4. 6 a kap. 1 § 11,
+
+6. 6 a kap. 1 § 17 b,
+
+7. 6 a kap. 2 a § första stycket 1,
+
+8. 6 a kap. 2 a § första stycket 2,
+
+9. 6 a kap. 2 b och 2 c §§,
+
+10. 7 kap. 3 a och 3 b §§,
+
+11. 7 kap. 4 §,
+
+12. 9 kap. 5 och 5 a §§,
+
+13. 11 kap. 9 § första stycket 6 och 14 §,
+
+14. 11 kap. 9 § första stycket 7 och 15 §,
+
+15. 11 kap. 9 § första stycket 8,
+
+16. 11 kap. 10 §,
+
+17. 11 kap. 12 §,
+
+18. 11 kap. 12 a §,
+
+19. 11 kap. 12 b §.
+Lag (2019:491).
+
+11 a § /Träder i kraft I:2021-01-01/
+I fråga om energiskatt och koldioxidskatt på bränslen 
+samt energiskatt på elektrisk kraft förstås med stödordning 
+sådant statligt stöd enligt artikel 107.1 i fördraget om 
+Europeiska unionens funktionssätt som utgörs av 
+skattebefrielse för vart och ett av de ändamål som anges i 
+följande bestämmelser i denna lag:
+
+1. 6 a kap. 1 § 9 a och 17 a,
+
+2. 6 a kap. 1 § 9 b,
+
+3. 6 a kap. 1 § 10,
+
+4. 6 a kap. 1 § 11,
+
+6. 6 a kap. 1 § 17 b,
+
+7. 6 a kap. 2 a § första stycket 1,
+
+8. 6 a kap. 2 a § första stycket 2,
+
+9. 6 a kap. 2 c §,
+
+10. 7 kap. 3 a och 3 b §§,
+
+11. 7 kap. 4 §,
+
+12. 9 kap. 5 och 5 a §§,
+
+13. 11 kap. 9 § första stycket 6 och 14 §,
+
+14. 11 kap. 9 § första stycket 7 och 15 §,
+
+15. 11 kap. 9 § första stycket 8,
+
+16. 11 kap. 10 §,
+
+17. 11 kap. 12 §,
+
+18. 11 kap. 12 a §,
+
+19. 11 kap. 12 b §.
+Lag (2020:1045).
+
+11 b § Stödmottagare för skattebefrielse enligt denna lag är 
+den som 
+
+1. förbrukat bränsle för något av de ändamål som avses i 11 a 
+§ 1–9, 
+
+2. i Sverige producerat motorbränslet eller fört in 
+motorbränslet till Sverige genom införsel från annat EU-land 
+eller import från tredjeland i fall som avses i 11 a § 10 
+eller 11, 
+
+3. förbrukat elektrisk kraft eller bränsle för framställning 
+av värme eller kyla som levererats för något av de ändamål 
+som avses i 11 a § 12, eller
+
+4. förbrukat elektrisk kraft för något av de ändamål som 
+avses i 11 a § 13–19. Lag (2017:1208).
+
+12 § Med företag utan rätt till statligt stöd avses
+
+1. företag i ekonomiska svårigheter enligt artikel 2.18 i 
+Europeiska kommissionens förordning (EU) nr 651/2014 av den 
+17 juni 2014 genom vilken vissa kategorier av stöd förklaras 
+förenliga med den inre marknaden enligt artiklarna 107 och 
+108 i fördraget, och 
+
+2. företag som är föremål för betalningskrav på grundval av 
+ett tidigare kommissionsbeslut som förklarar ett stöd 
+olagligt och oförenligt med den inre marknaden. Lag (2016:505).
+
+13 § Med uppgifter om stödmottagare avses uppgift om
+
+1. vilken typ av företag (små eller medelstora respektive 
+stora) stödmottagaren hör till enligt bilaga I till den 
+förordning som avses i 12 §,
+
+2. den region där stödmottagande företag är beläget på NUTS 
+2-nivå enligt bilaga 1 i Europaparlamentets och rådets 
+förordning (EG) nr 1059/2003 av den 26 maj 2003 om inrättande 
+av en gemensam nomenklatur för statistiska territoriella 
+enheter (NUTS) i lydelsen enligt kommissionens förordning 
+(EU) nr 868/2014 av den 8 augusti 2014 om ändring av 
+bilagorna till Europaparlamentets och rådets förordning (EG) 
+nr 1059/2003 om inrättande av en gemensam nomenklatur för 
+statistiska territoriella enheter (Nuts), och
+
+3. stödmottagande företags verksamhetsområde på 
+Nace-gruppnivå enligt bilaga 1 i Europaparlamentets och 
+rådets förordning (EG) nr 1893/2006 av den 20 december 2006 
+om fastställande av den statistiska näringsgrensindelningen 
+Nace rev. 2 och om ändring av rådets förordning (EEG) nr 
+3037/90, i den ursprungliga lydelsen. Lag (2016:505).
+
+14 § Med datorhall avses en anläggning
+
+1. där en näringsidkare, som huvudsakligen bedriver 
+informationstjänstverksamhet, informationsbehandling eller 
+uthyrning av serverutrymme och tillhörande tjänster, utövar 
+sådan verksamhet, och
+
+2. vars sammanlagda installerade effekt uppgår till minst 0,1 
+megawatt.
+
+Effekten för kyl- och fläktanläggningar får inte räknas med i 
+den installerade effekten enligt första stycket.
+Lag (2017:1208).
+
+15 § Med landström avses elektrisk kraft som förbrukas i 
+skepp som används för sjöfart och som har en bruttodräktighet 
+om minst 400, när skeppet ligger i hamn och spänningen på den 
+elektriska kraft som överförs till skeppet är minst 380 volt. 
+Som landström anses inte elektrisk kraft som förbrukas när 
+skeppet används för privat ändamål eller när skeppet är 
+upplagt eller på ett varaktigt sätt är taget ur trafik.
+Lag (2016:1072).
+
+16 § De belopp i euro som anges i denna lag ska för varje 
+kalenderår omräknas enligt den kurs i svenska kronor för euro 
+som gällde den första vardagen i oktober året innan och som 
+offentliggörs i Europeiska unionens officiella tidning.
+Lag (2016:505).
+
+17 § Med nätinnehavare avses den som överför elektrisk kraft 
+med stöd av en koncession enligt 2 kap. ellagen (1997:857).
+Lag (2016:1073).
+
+17 a § Med koncessionspliktigt nät avses ett ledningsnät 
+som omfattas av en nätkoncession som meddelats med stöd av 
+2 kap. ellagen (1997:857). Lag (2018:1887).
+
+18 § Med elektrisk kraft framställd från förnybara källor 
+avses kraft som framställs från
+
+– sol, vind, vågor, tidvatten eller jordvärme,
+
+– vattenbaserad energi som är alstrad i vattenkraftverk,
+
+– biomassa eller produkter som framställs från biomassa, 
+eller 
+
+– bränsleceller.
+Lag (2017:408).
+
+2 kap. Energiskatt och koldioxidskatt på bränslen
+
+Skattepliktens omfattning och skattebelopp m.m.
+
+1 § /Upphör att gälla U:2021-01-01/
+Energiskatt och koldioxidskatt ska, om inte annat följer 
+av andra stycket eller 1 b §, betalas för följande bränslen 
+med angivna belopp:
+
+KN-nr           Slag av bränsle  Skattebelopp
+                                 Energiskatt    Koldioxidskatt  Summa skatt
+
+1. 2710 11 41, 
+2710 11 45 
+eller 
+2710 11 49	Bensin som
+		uppfyller 
+		krav för			
+
+		a) miljöklass 1
+			
+		– motorbensin	4 kr 10 öre 	2 kr 59 öre 	6 kr 69 öre
+				per liter	per liter	per liter
+					 
+		– alkylatbensin	2 kr 07 öre 	2 kr 59 öre	4 kr 66 öre
+				per liter	per liter	per liter	
+		
+		b) miljöklass 2	4 kr 13 öre 	2 kr 59 öre	7 kr 61 öre 
+				per liter	per liter	per liter
+		 			
+2. 2710	11 31,
+2710 11 51
+eller 
+2710 11 59	Annan bensin 
+		än som avses
+		under 1 eller 7	5 kr 02 öre 	2 kr 59 öre	7 kr 61 öre
+				per liter	per liter	per liter	 
+		 
+3. 2710 19 21, 			
+2710 19 25, 
+2710 19 41–
+2710 19 49 
+eller 
+2710 19 61–
+2710 19 69	Eldningsolja, 
+		dieselbrännolja, 
+		fotogen, m.m. 
+		som			
+
+		a) har försetts 
+		med märk- och 
+		färgämnen eller 
+		ger mindre än 
+		85 volymprocent 
+		destillat vid 
+		350°C,		903 kr 		3 420 kr	4 323 kr
+				per m3	 	per m3		per m3
+				 
+		b) inte har 
+		försetts med 
+		märk- och 
+		färgämnen och 
+		ger minst 85 
+		volymprocent 
+		destillat vid 
+		350°C, 
+		tillhörig			
+
+		miljöklass 1	2 461 kr 	2 246 kr	4 707 kr
+				per m3	 	per m3		per m3
+
+		miljöklass 2	2 777 kr 	2 246 kr	5 023 kr
+				per m3	 	per m3 		per m3
+	
+		miljöklass 3
+		eller inte 
+		tillhör någon 
+		miljöklass	2 941 kr 	2 246 kr	5 187 kr
+				per m3	 	per m3		per m3
+
+4. 2711 12 11–
+2711 19 00	Gasol m.m. 
+		som används 
+		för			
+	
+		a) drift av 
+		motordrivet 
+		fordon, 
+		fartyg eller 
+		luftfartyg	0 kr per 	3 598 kr 	3 598 kr 
+				1 000 kg	per 1 000 kg	per 1 000 kg
+				
+		b) annat ändamål 
+		än som avses 
+		under a		1 160 kr	3 598 kr	4 758 kr
+				per 1 000 kg	per 1 000 kg	per 1 000 kg
+				 				 
+5. 2711 11 00, 
+2711 21 00	Naturgas som 
+		används för
+
+		a) drift av
+		motordrivet
+		fordon, 
+		fartyg eller 
+		luftfartyg	0 kr 		2 561 kr	2 561 kr
+				per 1 000 m3	per 1 000 m3	per 1 000 m3
+				 
+		b) annat 
+		ändamål än 
+		som avses 
+		under a		998 kr 		2 561 kr	3 559 kr
+				per 1 000 m3	per 1 000 m3	per 1 000 m3
+				 
+6. 2701, 2702
+eller 2704	Kol och koks 	687 kr 		2 976 kr	3 663 kr
+				per 1 000 kg	per 1 000 kg	per 1 000 kg
+			 
+7. 2710 11 31	Flygbensin
+		med en 
+		blyhalt om 
+		högst 0,005 
+		gram per 
+		liter		4 kr 13 öre 	2 kr 59 öre	6 kr 72 öre
+				per liter	per liter	per liter
+
+I fall som avses i 4 kap. 1 § 7 och 8 samt 12 § 4 tas skatt ut 
+med ett belopp som motsvarar skillnaden mellan de skattebelopp 
+som gäller för bränslets olika användningssätt. 
+
+I fall som avses i 4 kap. 1 § 10 a och b och 12 § 5 tas skatt 
+ut med ett belopp som motsvarar
+
+1. skatten som gäller för bränsle enligt första stycket 3 b, 
+om bränsle enligt första stycket 3 a har förvärvats utan 
+skatt,
+
+2. skillnaden mellan de skattebelopp som gäller för bränsle 
+enligt första stycket 3 a respektive bränsle enligt första 
+stycket 3 b, om bränsle enligt första stycket 3 a har 
+förvärvats med skatt,
+
+3. skatten som gäller för annat bränsle enligt första stycket, 
+om sådant bränsle i annat fall än som avses i 1 har förvärvats 
+utan skatt,
+
+4. skatten som gäller för det bränsle enligt första stycket 
+som det använda bränslet anses likvärdigt med enligt 3 eller 
+4 §, om bränsle enligt 3 eller 4 § har förvärvats utan skatt, 
+och
+
+5. skillnaden mellan de skattebelopp som gäller för bränsle 
+enligt första stycket 3 a respektive bränsle enligt första 
+stycket 3 b, om bränsle enligt 3 eller 4 § har förvärvats med 
+skatt som motsvarar skatten som gäller för bränsle enligt 
+första stycket 3 a.
+
+I fall som avses i 4 kap. 1 § 10 c tillämpas tredje stycket 
+1-3 avseende flygfotogen (KN-nr 2710 19 21). Lag (2019:1244).
+
+1 § /Träder i kraft I:2021-01-01/
+Energiskatt och koldioxidskatt ska, om inte annat följer 
+av andra stycket eller 1 b §, betalas för följande bränslen 
+med angivna belopp:
+
+KN-nr           Slag av bränsle  Skattebelopp
+                                 Energiskatt    Koldioxidskatt  Summa skatt
+
+1.2710 11 41, 
+2710 11 45 
+eller 
+2710 11 49	Bensin som 
+		uppfyller 
+		krav för	
+
+		a) miljöklass 1			
+
+		– motorbensin	4 kr 13 öre 	2 kr 61 öre 	6 kr 74 öre
+				per liter	per liter	per liter
+					 
+		– alkylatbensin	2 kr 08 öre 	2 kr 61 öre	4 kr 69 öre
+				per liter	per liter	per liter	
+		
+		b) miljöklass 2	4 kr 16 öre 	2 kr 61 öre	7 kr 66 öre 
+				per liter	per liter	per liter
+			
+2. 2710 11 31, 
+2710 11 51 
+eller 
+2710 11 59	Annan bensin 
+		än som avses
+		under 1 eller 7	5 kr 05 öre 	2 kr 61 öre	7 kr 66 öre
+				per liter	per liter	per liter
+
+3. 2710 19 21, 
+2710 19 25, 
+2710 19 41-
+2710 19 49 
+eller 
+2710 19 61-
+2710 19 69	Eldningsolja, 
+		dieselbrännolja, 
+		fotogen, m.m.
+		som			
+
+		a) har försetts 
+		med märk- och 
+		färgämnen eller 
+		ger mindre än 
+		85 volymprocent 
+		destillat vid 
+		350°C,		909 kr 		3 444 kr	4 353 kr
+				per m3	 	per m3		per m3
+				 
+		b) inte har 
+		försetts med 
+		märk- och 
+		färgämnen och 
+		ger minst 85 
+		volymprocent 
+		destillat vid 
+		350°C, 
+		tillhörig			
+
+		miljöklass 1	2 478 kr 	2 262 kr	4 740 kr
+				per m3	 	per m3		per m3
+
+		miljöklass 2	2 797 kr 	2 262 kr	5 059 kr
+				per m3	 	per m3 		per m3
+	
+		miljöklass 3
+		eller inte 
+		tillhör någon 
+		miljöklass	2 962 kr 	2 262 kr	5 224 kr
+				per m3	 	per m3		per m3
+
+4. 2711 12 11-
+2711 19 00	Gasol m.m. 
+		som används 
+		för
+			
+		a) drift av 
+		motordrivet 
+		fordon, 
+		fartyg eller 
+		luftfartyg	0 kr per 	3 624 kr 	3 624 kr 
+				1 000 kg	per 1 000 kg	per 1 000 kg
+				
+		b) annat ändamål 
+		än som avses 
+		under a		1 168 kr	3 624 kr	4 792 kr
+				per 1 000 kg	per 1 000 kg	per 1 000 kg
+
+5. 2711 11 00, 
+2711 21 00	Naturgas som 
+		används för
+
+		a) drift av
+		motordrivet
+		fordon, 
+		fartyg eller 
+		luftfartyg	0 kr 		2 579 kr	2 579 kr
+				per 1 000 m3	per 1 000 m3	per 1 000 m3
+				 
+		b) annat 
+		ändamål än 
+		som avses 
+		under a		1 005 kr 	2 579 kr	3 584 kr
+				per 1 000 m3	per 1 000 m3	per 1 000 m3
+					
+6. 2701, 2702
+eller 2704	Kol och koks 	692 kr 		2 997 kr	3 689 kr
+				per 1 000 kg	per 1 000 kg	per 1 000 kg
+
+7. 2710 11 31	Flygbensin
+		med en 
+		blyhalt om 
+		högst 0,005 
+		gram per 
+		liter		4 kr 16 öre 	2 kr 61 öre	6 kr 77 öre
+				per liter	per liter	per liter
+
+I fall som avses i 4 kap. 1 § 7 och 8 samt 12 § 4 tas skatt ut 
+med ett belopp som motsvarar skillnaden mellan de skattebelopp 
+som gäller för bränslets olika användningssätt. 
+
+I fall som avses i 4 kap. 1 § 10 a och b och 12 § 5 tas skatt 
+ut med ett belopp som motsvarar
+
+1. skatten som gäller för bränsle enligt första stycket 3 b, 
+om bränsle enligt första stycket 3 a har förvärvats utan 
+skatt,
+
+2. skillnaden mellan de skattebelopp som gäller för bränsle 
+enligt första stycket 3 a respektive bränsle enligt första 
+stycket 3 b, om bränsle enligt första stycket 3 a har 
+förvärvats med skatt,
+
+3. skatten som gäller för annat bränsle enligt första stycket, 
+om sådant bränsle i annat fall än som avses i 1 har förvärvats 
+utan skatt,
+
+4. skatten som gäller för det bränsle enligt första stycket 
+som det använda bränslet anses likvärdigt med enligt 3 eller 
+4 §, om bränsle enligt 3 eller 4 § har förvärvats utan skatt, 
+och
+
+5. skillnaden mellan de skattebelopp som gäller för bränsle 
+enligt första stycket 3 a respektive bränsle enligt första 
+stycket 3 b, om bränsle enligt 3 eller 4 § har förvärvats med 
+skatt som motsvarar skatten som gäller för bränsle enligt 
+första stycket 3 a.
+
+I fall som avses i 4 kap. 1 § 10 c tillämpas tredje stycket 
+1-3 avseende flygfotogen (KN-nr 2710 19 21). Lag (2020:1155).
+
+1 a § Energiskatt skall även betalas för råtallolja (KN-nr 3803 00 10)
+med en skattesats som motsvarar den sammanlagda skatt
+som tas ut på bränsle enligt 1 § första stycket 3 a. Lag (1998:1699).
+
+1 b § /Upphör att gälla U:2021-01-01/
+För kalenderåret 2021 och efterföljande kalenderår ska 
+energiskatt och koldioxidskatt betalas med belopp som 
+motsvarar de i 1 § angivna skattebeloppen efter en årlig 
+omräkning enligt andra stycket. Regeringen fastställer före 
+november månads utgång de omräknade skattebelopp som ska tas 
+ut för påföljande kalenderår.
+
+För bränslen som avses i
+
+1. 1 § första stycket 3 a samt 4-6 ska energiskatt och 
+koldioxidskatt betalas med belopp som motsvarar de i 1 § 
+angivna skattebeloppen multiplicerade med jämförelsetalet 
+enligt tredje stycket, 
+
+2. 1 § första stycket 1, 2, 3 b och 7 ska
+
+a) koldioxidskatt betalas med belopp som motsvarar de i 1 § 
+angivna koldioxidskattebeloppen multiplicerade med 
+jämförelsetalet enligt tredje stycket, och
+
+b) energiskatt betalas med belopp som motsvarar summan av de i 
+1 § angivna energiskatte- och koldioxidskattebeloppen 
+multiplicerade med jämförelsetalet enligt tredje stycket med 
+ett årligt tillägg av två procentenheter, med avdrag för det 
+omräknade koldioxidskattebeloppet enligt a.
+
+Med jämförelsetal avses det värde, uttryckt i procent, som 
+anger förhållandet mellan det allmänna prisläget i juni månad 
+året närmast före det år beräkningen avser och prisläget i 
+juni 2019.
+
+Beloppen enligt andra stycket 1, 2 a och 2 b avrundas var för 
+sig till hela kronor och ören. Lag (2019:1244).
+
+1 b § /Träder i kraft I:2021-01-01/
+För kalenderåret 2022 och efterföljande kalenderår ska 
+energiskatt och koldioxidskatt betalas med belopp som 
+motsvarar de i 1 § angivna skattebeloppen efter en årlig 
+omräkning enligt andra stycket. Regeringen fastställer före 
+november månads utgång de omräknade skattebelopp som ska tas 
+ut för påföljande kalenderår.
+
+För bränslen som avses i
+
+1. 1 § första stycket 3 a samt 4-6 ska energiskatt och 
+koldioxidskatt betalas med belopp som motsvarar de i 1 § 
+angivna skattebeloppen multiplicerade med jämförelsetalet 
+enligt tredje stycket, 
+
+2. 1 § första stycket 1, 2, 3 b och 7 ska
+
+a) koldioxidskatt betalas med belopp som motsvarar de i 1 § 
+angivna koldioxidskattebeloppen multiplicerade med 
+jämförelsetalet enligt tredje stycket, och
+
+b) energiskatt betalas med belopp som motsvarar summan av de i 
+1 § angivna energiskatte- och koldioxidskattebeloppen 
+multiplicerade med jämförelsetalet enligt tredje stycket med 
+ett årligt tillägg av två procentenheter, med avdrag för det 
+omräknade koldioxidskattebeloppet enligt a.
+
+Med jämförelsetal avses det värde, uttryckt i procent, som 
+anger förhållandet mellan det allmänna prisläget i juni månad 
+året närmast före det år beräkningen avser och prisläget i 
+juni 2020.
+
+Beloppen enligt andra stycket 1, 2 a och 2 b avrundas var för 
+sig till hela kronor och ören. Lag (2020:1155).
+
+2 § För bränslen som beskattas enligt 1 § första stycket 1-3
+eller enligt 1 a § gäller angivna skattebelopp bränslets volym
+vid en temperatur av 15 C. Om en skattskyldig visar att
+bränslet när skattskyldigheten inträder har en annan temperatur
+får volymen räknas om till 15 C. Om skattskyldighet inträder
+vid leverans till en köpare som inte är registrerad som
+skattskyldig för bränslen, får dock omräkning göras endast om
+detta särskilt avtalats mellan säljaren och köparen.
+
+För bränslen som beskattas enligt 1 § första stycket 5 skall de
+angivna skattebeloppen beräknas på volymen vid en temperatur av
+0°C och ett tryck av 101,325 kilopascal. Lag (2006:1508).
+
+2 a § Om både biogas och andra skattepliktiga gasformiga
+bränslen levereras via rörledning, ska skatt beräknas
+särskilt för vart och ett av bränslena.
+
+Den skattskyldige får utifrån avtal eller vid egenförbrukning
+fördela vart och ett av bränslena mellan olika
+användningsområden.
+
+Bränslen som inte har fördelats enligt andra stycket ska av
+den skattskyldige fördelas mellan olika användningsområden i
+förhållande till den andel av de bränslen som tillförts
+rörledningen av den skattskyldige eller för hans räkning.
+Lag (2010:1089).
+
+3 § Energiskatt och koldioxidskatt ska betalas även för andra
+energiprodukter än sådana som avses i 1 §, om en sådan
+produkt är avsedd att förbrukas, säljs eller förbrukas som
+
+1. bränsle för uppvärmning,
+
+2. motorbränsle,
+
+3. tillsats till motorbränsle, eller
+
+4. medel för att öka motorbränslets volym.
+
+Skatt ska i fall som avses i första stycket betalas med de
+skattebelopp som gäller för likvärdigt bränsle enligt 1 §.
+Lag (2012:836).
+
+4 § Energiskatt och koldioxidskatt skall betalas även för andra
+produkter än som avses i 1, 1 a och 3 §§, om en sådan produkt
+
+1. är avsedd att förbrukas, säljs eller förbrukas som
+motorbränsle eller som tillsats till motorbränsle eller som
+medel för att öka motorbränslets volym, eller
+
+2. innehåller annat kolväte än torv och är avsedd att
+förbrukas, säljs eller förbrukas som bränsle för uppvärmning.
+
+Skatt skall i fall som avses i första stycket betalas med de
+skattebelopp som gäller för likvärdigt bränsle enligt 1 §.
+Skatt enligt första stycket 2 skall dock betalas endast för den
+del av produkten som består av kolväten. Lag (2006:1508).
+
+4 a § Har upphävts genom lag (2009:1494).
+
+Indelning av oljeprodukter i miljöklasser
+
+5 § Kraven för miljöklass 1 och 2 för bränslen som beskattas
+enligt 1 § första stycket 1 anges i 4–6 och 12 §§
+drivmedelslagen (2011:319).
+
+Kraven för miljöklass 1, 2 och 3 för bränslen som beskattas
+enligt 1 § första stycket 3 b anges i 8–10 och 13–15 §§
+drivmedelslagen. Lag (2011:321).
+
+6 § Har upphävts genom lag (1999:1323).
+
+7 § Miljöklass för bränsleblandningar enligt 3 eller 4 § som
+innehåller oljor som erhållits ur petroleum eller ur bituminösa
+mineral och som beskattas enligt 1 § första stycket 1 eller 3 b,
+bestäms med ledning av hela bränsleblandningens egenskaper.
+
+Märk- och färgämnen
+
+8 § Skatt enligt 1 § första stycket 3 b skall inte tas ut om
+oljeprodukten har försetts med märk- och färgämnen som avses i
+1 § första stycket 3 a
+
+1. vid import av den som är skattskyldig enligt 4 kap. 1 b §
+första stycket 1 eller 2 senast när produkten deklareras för
+övergång till fri omsättning, eller
+
+2. i annat fall än som avses under 1 senast när skattskyldighet
+för produkten inträder enligt 5 kap.
+
+Märkning och färgning enligt första stycket får i Sverige göras
+endast på en depå som är godkänd för detta ändamål av
+Tullverket i fall som avses i 1 och på ett skatteupplag som är
+godkänt av beskattningsmyndigheten för märkning och färgning i
+fall som avses i 2. Lag (2007:779).
+
+Förbud mot användning av märkta oljeprodukter m.m.
+
+9 § Bränsletank som förser motor på motordrivet fordon eller
+båt med bränsle får inte innehålla oljeprodukt som är försedd
+med märkämne eller från vilken märkämnet har avlägsnats.
+Detta gäller dock inte båtar för vilka fiskelicens som inte
+är begränsad till fiske enbart i enskilt vatten har meddelats
+enligt fiskelagen (1993:787).
+
+Första stycket gäller inte om oljeprodukten har förts in till
+Sverige i bränsletanken och har fyllts på i ett land där
+bränsletanken får innehålla en sådan produkt.
+
+Beskattningsmyndigheten kan medge att bränsletank på båt som
+disponeras av Försvarsmakten, Försvarets materielverk,
+Kustbevakningen eller annan statlig myndighet får innehålla
+oljeprodukt som är försedd med märkämne. Om det finns
+särskilda skäl kan sådant medgivande också lämnas för annan
+båt, om den används uteslutande för annat än privat
+ändamål.
+
+Beslut om ett medgivande enligt tredje stycket får
+återkallas, om förutsättningarna för det inte längre finns.
+Beslut om återkallelse gäller omedelbart, om inte något annat
+anges i beslutet. Lag (2015:747).
+
+9 a § Regeringen eller den myndighet som regeringen bestämmer
+meddelar föreskrifter om märkämne som avses i 1 § första
+stycket 3 a och 9 § samt färgämne som avses i 1 § första
+stycket 3 a. Lag (2007:779).
+
+10 § Har upphävts genom lag (2009:1492).
+
+Undantag från skatteplikt
+
+11 § Energiskatt och koldioxidskatt ska inte betalas för
+
+1. bränslen enligt KN-nr 4401 och 4402,
+
+2. bränslen enligt KN-nr 2705, som uppkommit vid en process
+som avses i 6 a kap. 1 § 1 eller i 11 kap. 9 § 2, när dessa är
+avsedda att förbrukas, säljs eller förbrukas som bränsle för
+uppvärmning,
+
+3. bränsle som tillhandahålls i en särskild förpackning om
+högst en liter,
+
+4. bränsle enligt 1 kap. 3 a § som under ett
+uppskovsförfarande blivit fullständigt förstört eller
+oåterkalleligen gått förlorat och därigenom blivit oanvändbart
+som punktskattepliktigt bränsle på grund av
+
+a) bränslets beskaffenhet,
+
+b) oförutsedda händelser eller force majeure.
+Den som gör gällande att bränsle fullständigt förstörts eller
+oåterkalleligen gått förlorat, ska på ett tillfredsställande
+sätt visa detta för Skatteverket om förstörelsen eller
+förlusten
+
+1. har skett i Sverige, eller
+
+2. upptäckts här och det inte går att fastställa var den
+skett.
+
+Första stycket 4 och andra stycket gäller även beskattat
+bränsle under flyttning från ett annat EU-land till mottagare
+i Sverige
+
+1. under förutsättning att den som är skattskyldig enligt
+4 kap. 1 § första stycket 5 har fullgjort de skyldigheter som
+föreskrivs i 4 kap. 11 § eller i 26 kap. 37 §
+skatteförfarandelagen (2011:1244) eller
+2. vid distansförsäljning, under förutsättning att säljaren
+har ställt säkerhet för skatten enligt 4 kap. 9 eller 9 b §
+eller mottagare som avses i 4 kap. 10 § fullgjort
+deklarationsskyldigheten enligt 26 kap. 37 §
+skatteförfarandelagen. Lag (2012:678).
+
+12 § har upphävs genom lag (2014:285).
+
+3 kap. Svavelskatt
+
+1 § Svavelskatt skall betalas för svavelinnehållet i
+
+1. torvbränsle ur KN-nr 2703,
+
+2. bränsle som avses i 2 kap. 1, 3 och 4 §§.
+
+2 § För fasta eller gasformiga bränslen tas svavelskatt ut med
+30 kronor per kilogram svavel i bränslet.
+
+För flytande bränslen tas svavelskatt ut med 27 kronor per
+kubikmeter för varje tiondels viktprocent svavel i bränslet.
+Vid bestämning av skatten på grund av svavelinnehållet, mätt
+som viktprocent svavel i bränslet, skall avrundning göras uppåt
+till närmaste tiondels viktprocent. Om svavelinnehållet
+överstiger 0,05 viktprocent men inte 0,2 viktprocent skall dock
+avrundning göras till 0,2 viktprocent.
+
+Svavelskatt tas inte ut för ett flytande eller gasformigt
+bränsle om dess svavelinnehåll är högst 0,05 viktprocent.
+Lag (2006:1508).
+
+3 § För flytande bränslen gäller beloppet enligt 2 § andra stycket
+bränslet vid en temperatur av 15°C. Om en skattskyldig visar att
+bränslet när skattskyldigheten inträder har en annan temperatur,
+får volymen räknas om till 15°C. Om skattskyldighet inträder vid
+leverans till en köpare som inte är registrerad som skattskyldig för
+bränslen, får dock omräkning göras endast om detta särskilt
+avtalats mellan säljaren och köparen.
+
+4 § Svavelskatt skall inte betalas för svavelinnehållet i bränsle som
+avses i t2 kap. 11 §.
+
+3 a kap. Uppskovsförfarandet
+
+1 § I denna lag avses med
+
+uppskovsförfarande: att skattskyldighetens inträde skjuts upp
+vid tillverkning, bearbetning, förvaring eller flyttning inom
+EU av bränsle,
+
+släpps för konsumtion: att bränsle
+
+1. avviker från ett uppskovsförfarande,
+
+2. innehas utanför ramen för ett uppskovsförfarande,
+
+3. tillverkas utanför ramen för ett uppskovsförfarande, eller
+
+4. importeras utan att omedelbart efter importen hänföras till
+ett uppskovsförfarande,
+
+beskattat bränsle: bränsle som släppts för konsumtion i ett
+EU-land och för vilket skattskyldighet för punktskatt
+därigenom inträtt i det landet. Lag (2011:287).
+
+2 § Under uppskovsförfarande får bränsle som avses i 1 kap.
+3 a § flyttas endast
+
+1. från ett skatteupplag till
+
+a) ett annat skatteupplag,
+
+b) en registrerad varumottagare eller tillfälligt registrerad
+varumottagare i ett annat EU-land,
+
+c) en plats där det skattepliktiga bränslet lämnar EU, eller
+
+d) antingen
+
+– en beskickning eller ett konsulat i ett annat EU-land, en
+medlem av den diplomatiska personalen vid en sådan beskickning
+eller ett sådant konsulat, eller
+
+– en internationell organisation med säte i ett annat EU-land,
+en medlemsstats ombud vid en sådan organisation eller en
+person med tjänst hos eller uppdrag av en sådan organisation,
+
+2. från platsen för import till någon av de destinationer som
+avses i 1, om bränslet avsänds av en registrerad avsändare.
+
+Första stycket 1 d gäller endast i den omfattning frihet från
+bränsleskatt gäller i det andra EU-landet.
+
+Bränsle får även flyttas under uppskovsförfarande från ett
+skatteupplag eller platsen för import till en annan plats än
+den plats som avses i första stycket 1 a eller b (direkt
+leveransplats), om denna plats i förväg har anmälts till den
+behöriga myndigheten av den mottagande upplagshavaren eller
+den registrerade varumottagaren. Lag (2011:287).
+
+3 § För flyttning under uppskovsförfarande krävs att det
+bränsle som flyttas omfattas av
+
+1. sådant elektroniskt administrativt dokument som avses i 6
+kap. 4 § eller av sådant ersättningsdokument som avses i 6
+kap. 9 §, och
+
+2. sådan säkerhet för skatten som avses i 4 kap. 4 § första
+och andra styckena eller 4 kap. 8 §.
+
+Kravet i första stycket 1 gäller inte flyttningar som sker
+enbart på svenskt territorium och där bränslets
+slutdestination är belägen på svenskt territorium om bränslet
+avsänds av någon annan än en registrerad avsändare.
+Lag (2013:1075).
+
+4 § En flyttning under uppskovsförfarande avslutas när
+mottagaren tagit emot bränslet på en sådan destination som
+avses i 2 §. Vid export avslutas flyttningen när varorna
+lämnat EU. Lag (2011:287).
+
+5 § Bränsle som flyttas enligt artiklarna 17–28 i rådets
+direktiv 2008/118/EG av den 16 december 2008 om allmänna
+regler för punktskatt och om upphävande av direktiv
+92/12/EEG, och där flyttningen inte har påbörjats i Sverige,
+omfattas av bestämmelserna om flyttning under
+uppskovsförfarande i denna lag när bränslet befinner sig på
+svenskt territorium. Lag (2009:1493).
+
+4 kap. Skattskyldighet m.m.
+
+Bränslen som avses i 1 kap. 3 a §
+
+Vem som är skattskyldig
+
+1 § Skyldig att betala energiskatt, koldioxidskatt och
+svavelskatt (skattskyldig) för bränslen som avses i 1 kap.
+3 a § är den som
+
+1. i egenskap av godkänd upplagshavare enligt 3 § hanterar
+bränsle enligt uppskovsförfarandet,
+
+2. i egenskap av godkänd varumottagare enligt 6 eller 7 § tar
+emot bränsle som flyttats enligt uppskovsförfarandet,
+
+3. säljer bränsle till Sverige genom distansförsäljning
+enligt 9 eller 9 b §,
+
+4. tar emot beskattat bränsle enligt 10 §,
+
+5. för in eller tar emot beskattat bränsle från ett annat
+EU-land till Sverige enligt 11 §,
+
+6. i Sverige yrkesmässigt tillverkar eller bearbetar bränsle
+utanför ett skatteupplag,
+
+7. förvärvat bränsle för vilket ingen skatt eller lägre skatt
+ska betalas när bränslet används för ett visst ändamål men
+som använder bränslet för ett annat ändamål som medför att
+skatt ska betalas med högre belopp,
+
+8. förvärvat bränsle som ger mindre destillat än 85
+volymprocent vid 350ºC och som använder bränslet för drift av
+motordrivna fordon,
+
+9. i annat fall än som avses i 1–8, innehar skattepliktigt
+bränsle utanför ett uppskovsförfarande utan att skatten för
+bränslet har redovisats här,
+
+10. förvärvat bränsle för vilket antingen ingen skatt har
+betalats eller skatt har betalats enligt 2 kap. 1 § första
+stycket 3 a och som använder bränslet
+
+a) i skepp, när skeppet används för privat ändamål,
+
+b) i båt, för vilken medgivande enligt 2 kap. 9 § har lämnats
+eller fiskelicens som inte är begränsad till fiske enbart i
+enskilt vatten har meddelats enligt fiskelagen (1993:787),
+när båten används för privat ändamål, eller
+
+c) i luftfartyg, när luftfartyget används för privat
+ändamål. Lag (2015:747).
+
+1 a § Från skattskyldighet enligt 1 § 5 och 9 undantas
+
+1. bränsle som förs in till Sverige under sådana
+omständigheter att förutsättningar skulle finnas att medge
+återbetalning av skatten enligt 9 kap. 1 §,
+
+2. motorbränsle som förs in till Sverige i normal bränsletank
+på motordrivet fordon eller till fordonet kopplad släpvagn,
+fartyg eller luftfartyg som används yrkesmässigt om bränslet
+är avsett att användas i motor på fordonet, släpvagnen,
+fartyget eller luftfartyget under transporten,
+
+3. bränsle som förs in till Sverige av en enskild person som
+har förvärvat bränslet i ett annat EU-land och som själv
+transporterar bränslet hit, om bränslet är avsett för dennes
+eller dennes familjs personliga bruk.
+
+Första stycket 3 gäller inte
+
+1. motorbränsle som förs in till Sverige på annat sätt än i
+fordonstank, bränsletank på fartyg eller luftfartyg eller i
+reservdunk som rymmer högst 10 liter,
+
+2. flytande bränsle som avses i 2 kap. 1 § första stycket 3,
+och som
+
+a) är avsett att förbrukas för uppvärmning här i landet, och
+
+b) förs in hit på annat sätt än i tankfordon som används vid
+yrkesmässig handel med sådant bränsle. Lag (2012:678).
+
+1 b § Skyldig att betala energiskatt, koldioxidskatt och 
+svavelskatt för import av bränslet som avses i 1 kap. 3 a § 
+är,
+
+1. om en tullskuld uppkommer i Sverige till följd av 
+importen: den som är skyldig att betala tullen,
+
+2. om importen avser en unionsvara eller om bränslet ska 
+deklareras för övergång till fri omsättning i Sverige men 
+inte är belagt med tull: den som skulle ha varit skyldig att 
+betala tullen om bränslet hade varit tullbelagt.
+
+Med tullskuld och unionsvara förstås detsamma som i artikel 5 
+i Europaparlamentets och rådets förordning (EU) nr 952/2013 
+av den 9 oktober 2013 om fastställande av en tullkodex för 
+unionen.
+
+Från skattskyldighet enligt första stycket undantas bränsle 
+som, vid bränslets övergång till fri omsättning enligt 
+artikel 201 i förordning (EU) nr 952/2013, avsänds av en 
+registrerad avsändare och flyttas enligt 3 a kap. 2 och 
+3 §§. Lag (2016:266).
+
+Beskattning vid oegentligheter
+
+2 § Om bränsle, som flyttas under ett uppskovsförfarande,
+inte når angiven destination på grund av en oegentlighet som
+innebär att bränslet släpps för konsumtion, ska bränslet
+beskattas här i landet om oegentligheten har
+
+1. begåtts i Sverige, eller
+
+2. upptäckts här och det inte går att fastställa var
+oegentligheten har begåtts.
+
+Skatt enligt första stycket ska betalas av
+
+1. den eller dem som ställt säkerhet för skatten under
+flyttningen, eller
+
+2. varje annan person som medverkat i den otillåtna
+avvikelsen från uppskovsförfarandet och som varit medveten om
+eller rimligen borde ha varit medveten om att avvikelsen var
+otillåten.
+
+Skatten ska tas ut enligt den skattesats som gällde vid den
+tidpunkt då bränslet släpptes för konsumtion.
+Lag (2009:1493).
+
+2 a § Om bränsle, som flyttas under ett uppskovsförfarande, 
+inte når angiven destination och ingen oegentlighet som 
+innebär att bränslet släpps för konsumtion har konstaterats 
+under flyttningen, ska en oegentlighet anses ha begåtts här i 
+landet och bränslet beskattas här om
+
+1. bränslet avsänts från ett skatteupplag eller en 
+importplats i Sverige, och
+
+2. det inte inom fyra månader från den tidpunkt då 
+flyttningen inleddes enligt 3 a kap. 2 § på ett 
+tillfredsställande sätt visas 
+
+a) att flyttningen har avslutats i enlighet med 3 a kap. 4 § 
+eller motsvarande reglering i mottagarlandets lagstiftning, 
+eller
+
+b) på vilken plats oegentligheten har begåtts. 
+
+Skatt enligt första stycket ska betalas av den som ställt 
+säkerhet för skatten under flyttningen. Skatten ska tas ut 
+enligt den skattesats som gällde vid den tidpunkt då 
+flyttningen inleddes. Lag (2017:1208).
+
+2 b § Om beskattat bränsle som flyttas till eller via Sverige
+inte når angiven mottagare, ska bränslet beskattas här om det
+beror på en oegentlighet som har
+
+1. begåtts i Sverige, eller
+
+2. upptäckts här och det inte går att fastställa var
+oegentligheten har begåtts.
+
+Skatt enligt första stycket ska betalas av den som ställt
+säkerhet för skatten eller av varje annan person som
+medverkat i oegentligheten. Skatten ska tas ut enligt den
+skattesats som gällde vid den tidpunkt då oegentligheten
+begicks respektive upptäcktes. Lag (2017:1208).
+
+Upplagshavare och skatteupplag
+
+3 § Som upplagshavare får godkännas den som i yrkesmässig 
+verksamhet i Sverige avser att 
+
+1. tillverka eller bearbeta bränslen, 
+
+2. på flygplats lagra flygfotogen (KN-nr 2710 19 21), som 
+flyttats under ett uppskovsförfarande, för försäljning till 
+förbrukning i luftfartyg när luftfartyget inte används för 
+privat ändamål, eller 
+
+3. i större omfattning hålla bränslen i lager.
+
+För godkännande enligt första stycket krävs att den som 
+ansöker om att bli upplagshavare 
+
+1. är lämplig som upplagshavare med hänsyn till sina 
+ekonomiska förhållanden och omständigheterna i övrigt, och 
+
+2. disponerar över ett utrymme beläget i Sverige som kan 
+godkännas som skatteupplag.
+
+Upplagshavares hantering av skattepliktigt bränsle ska, för 
+att omfattas av ett uppskovsförfarande, äga rum i godkänt 
+skatteupplag.
+
+Som skatteupplag får inte godkännas ett utrymme som används 
+som eller är avsett att användas som bostad.
+
+Den som godkänns som upplagshavare ska samtidigt godkännas 
+som registrerad avsändare. Lag (2017:1208).
+
+3 a § En upplagshavare skall för varje skatteupplag löpande
+bokföra affärshändelser och varurörelser som rör skattepliktigt
+bränsle samt regelbundet inventera lagret av sådant bränsle.
+Lag (2001:518).
+
+3 b § En upplagshavare som tar emot bränsle som flyttas under
+uppskovsförfarandet ska göra det på det skatteupplag eller
+den direkta leveransplats som angetts i det elektroniska
+administrativa dokumentet eller ersättningsdokumentet.
+Bränsle som flyttas till ett skatteupplag ska vid mottagandet
+tas in i skatteupplaget. Lag (2013:1075).
+
+4 § En upplagshavare som avser att flytta bränsle enligt 
+3 a kap. 2 § ska ställa säkerhet för betalning av den skatt 
+som kan påföras upplagshavaren i Sverige eller ett annat 
+EU-land vid flyttningen av bränslet. 
+
+Säkerheten ska ställas hos Skatteverket innan flyttning 
+påbörjas och uppgå till ett belopp som motsvarar den skatt 
+som i medeltal belöper på de bränslen som upplagshavaren 
+flyttar under ett dygn. Vid beräkningen av medeltalet ska 
+hänsyn endast tas till de dygn under ett år då flyttningar av 
+bränsle enligt 3 a kap. 2 § sker. Ställd säkerhet får tas i 
+anspråk om påförd skatt inte betalas i rätt tid. Har en 
+upplagshavare påförts skatt i ett annat EU-land får 
+säkerheten tas i anspråk om skattefordran är befogad och 
+skatten inte har betalats i rätt tid.
+
+Upplagshavare ska ställa säkerhet för betalning även av den 
+skatt som kan påföras upplagshavaren enligt 5 kap. 1 § 1 
+eller 1 b §. Säkerheten ska lägst uppgå till ett belopp som 
+motsvarar tio procent av skatten på de bränslen som 
+upplagshavaren vid varje tidpunkt förvarar i sina 
+skatteupplag. Säkerheten ska dock inte understiga ett belopp 
+som motsvarar 75 procent av det högsta belopp som en sådan 
+beräkning medfört under de senaste tre kalendermånaderna. Vid 
+beräkningen får bortses från bränslen som beredskapslagras 
+enligt lagen (2012:806) om beredskapslagring av olja. Ställd 
+säkerhet får tas i anspråk om påförd skatt inte betalas i 
+rätt tid.
+
+Säkerheterna ska kunna tas i anspråk under minst sex månader 
+från den dag beslutet om återkallelse blir gällande, om 
+godkännandet som upplagshavare återkallas. Säkerheten enligt 
+första och andra styckena får efter återkallelsen sänkas till 
+ett belopp som motsvarar skatten på de bränslen för vilka 
+flyttningen ännu inte har avslutats enligt 3 a kap. 4 §.
+Lag (2018:1887).
+
+5 § Godkännande av upplagshavare eller av skatteupplag får
+återkallas om
+
+1. förutsättningarna för godkännande inte längre finns,
+
+2. ställd säkerhet inte längre är godtagbar, eller
+
+3. upplagshavaren begär det.
+
+Om ett godkännande av upplagshavare återkallas omfattar
+beslutet även godkännandet av dennes skatteupplag och
+godkännandet som registrerad avsändare.
+
+Beslut om återkallelse gäller omedelbart, om inte något annat
+anges i beslutet. Lag (2009:1493).
+
+5 a § Om en godkänd upplagshavare försätts i konkurs, övergår
+godkännandet till konkursboet. Konkursboet är skattskyldigt
+för bränsle för vilket skattskyldighet enligt 5 kap. 1 § 1
+eller 1 b § inträder efter konkursbeslutet.
+
+Om sådant bränsle som avses i första stycket ägs av någon
+annan än konkursgäldenären och bränslet inte ingår i
+konkursen, är ägaren skattskyldig för bränslet i stället för
+konkursboet. Skattskyldigheten för ägaren inträder vid den
+tidpunkt då skattskyldighet skulle ha inträtt för
+upplagshavaren enligt 5 kap. 1 § 1 eller 1 b §.
+
+Kravet i 4 § tredje stycket gäller inte konkursboet.
+Lag (2013:1075).
+
+Registrerad varumottagare
+
+6 § Den som avser att i Sverige yrkesmässigt ta emot 
+bränslen som flyttas enligt ett uppskovsförfarande från ett 
+annat EU-land, får godkännas som registrerad varumottagare. 
+För godkännande krävs att den som ansöker om att bli godkänd 
+är lämplig att vara registrerad varumottagare med hänsyn till 
+sina ekonomiska förhållanden och omständigheterna i övrigt. 
+
+En registrerad varumottagare ska till Skatteverket ange den 
+adress där varumottagaren kommer att ta emot bränslen som 
+flyttas under uppskovsförfarande (ordinarie 
+mottagningsplats).
+
+En registrerad varumottagare ska hos Skatteverket ställa 
+säkerhet för betalning av skatten på de bränslen som tas 
+emot. Ställd säkerhet får tas i anspråk om skatten inte 
+betalas i rätt tid. Säkerheten ska kunna tas i anspråk av 
+Skatteverket under minst sex månader från den dag beslutet om 
+återkallelse blir gällande, om godkännandet som registrerad 
+varumottagare återkallas.
+
+En registrerad varumottagare som tar emot varor som flyttas 
+under uppskovsförfarandet ska göra det på sin ordinarie 
+mottagningsplats eller den direkta leveransplats som angetts 
+i det elektroniska administrativa dokumentet eller 
+ersättningsdokumentet. 
+
+Bestämmelserna i 5 § första och tredje styckena om 
+återkallelse tillämpas även på registrerad varumottagare.
+Lag (2018:1887).
+
+6 a § Säkerheten enligt 6 § ska lägst uppgå till ett belopp
+som motsvarar den skatt som i medeltal har beslutats för
+
+1. de tolv senaste redovisningsperioder för vilka beslut om
+skatt har fattats, eller
+
+2. det lägre antal redovisningsperioder för vilka beslut om
+skatt har fattats, om det ännu inte har fattats beslut för
+tolv redovisningsperioder.
+
+Vid beräkning av medeltalet ska den sammanlagda skatt som
+beslutats för redovisningsperioderna delas med det antal av
+redovisningsperioderna för vilka skatt har beslutats till mer
+än noll kronor.
+
+Om det belopp som säkerheten lägst ska uppgå till vid en
+sådan beräkning är noll kronor, ska säkerheten i stället
+lägst uppgå till ett belopp som vid varje tidpunkt motsvarar
+skatten på de bränslen som vid denna tidpunkt är under
+flyttning till varumottagaren under uppskovsförfarandet.
+
+Om den registrerade varumottagaren har en redovisningsperiod
+för energi- och koldioxidskatt på bränslen som avses i 1 kap.
+3 a § som är ett beskattningsår, ska säkerheten, i stället
+för vad som gäller enligt första–tredje styckena, lägst uppgå
+till ett belopp som motsvarar det högsta av
+
+1. den skatt som beslutats för den senaste
+redovisningsperioden, och
+
+2. skatten på de bränslen som vid varje tidpunkt är under
+flyttning till varumottagaren under uppskovsförfarandet.
+Lag (2013:1075).
+
+7 § Den som avser att endast vid ett enstaka tillfälle i
+Sverige yrkesmässigt ta emot bränsle som flyttas enligt ett
+uppskovsförfarande från ett annat EU-land ska godkännas som
+tillfälligt registrerad varumottagare. Godkännandet ska i
+dessa fall begränsas till att gälla mottagande av bränsle vid
+denna särskilt angivna flyttning.
+
+En tillfälligt registrerad varumottagare ska till
+Skatteverket ange den adress där varumottagaren kommer att ta
+emot det bränsle som flyttas under uppskovsförfarandet.
+
+Ett godkännande enligt första stycket ska ges när säkerhet
+ställts för skatten på bränslet. Säkerheten ska ställas hos
+Skatteverket innan bränslet flyttas från det andra EU-landet.
+Ställd säkerhet får tas i anspråk om skatten inte betalas i
+rätt tid.
+
+Bestämmelserna i 5 § första och tredje styckena om
+återkallelse tillämpas även på tillfälligt registrerade
+varumottagare. Lag (2013:1074).
+
+7 a § Om en registrerad varumottagare eller tillfälligt
+registrerad varumottagare försätts i konkurs, övergår
+godkännandet till konkursboet. Konkursboet är skattskyldigt
+för bränsle för vilket skattskyldighet enligt 5 kap. 2 § 1
+inträder efter konkursbeslutet.
+
+Om sådant bränsle som avses i första stycket ägs av någon
+annan än konkursgäldenären och bränslet inte ingår i
+konkursen, är ägaren skattskyldig för bränslet i stället för
+konkursboet. Skattskyldigheten för ägaren inträder vid den
+tidpunkt då skattskyldighet skulle ha inträtt för
+varumottagaren enligt 5 kap. 2 § 1. Lag (2013:1075).
+
+Registrerad avsändare
+
+8 § Den som avser att i Sverige yrkesmässigt avsända 
+bränsle under ett uppskovsförfarande, vid bränslets övergång 
+till fri omsättning enligt artikel 201 i förordning (EU) nr 
+952/2013, får godkännas som registrerad avsändare. För 
+godkännande krävs att den som ansöker om att bli godkänd är 
+lämplig att vara registrerad avsändare med hänsyn till sina 
+ekonomiska förhållanden och omständigheterna i övrigt.
+
+Bestämmelserna om säkerhet för skatten i 4 § första, andra 
+och fjärde styckena och om återkallelse i 5 § första och 
+tredje styckena tillämpas även på registrerad avsändare.
+Lag (2018:1887).
+
+Jämkning av säkerhetsbelopp
+
+8 a § Om leverans av bränsle enligt 4 § första stycket eller
+8 § sker med fartyg eller via rörledning får Skatteverket medge
+att upplagshavaren eller den registrerade avsändaren inte
+behöver ställa säkerhet för betalning av skatten. Ett sådant
+medgivande får endast lämnas om det är förenligt med
+överenskommelser mellan Sverige och övriga berörda
+medlemsstater.
+
+I fall som avses i 4 § tredje stycket och 6 § får Skatteverket
+medge att säkerhet inte behöver ställas eller att den får uppgå
+till ett lägre belopp än vad som följer av nämnda bestämmelser,
+om det finns skäl till detta med hänsyn till den skattskyldiges
+ekonomiska förhållanden eller andra särskilda omständigheter.
+Lag (2011:101).
+
+Distansförsäljning
+
+9 § Om någon som inte bedriver självständig ekonomisk
+verksamhet förvärvar beskattat bränsle och bränslet
+transporteras hit från ett annat EU-land av säljaren eller av
+någon annan för säljarens räkning (distansförsäljning), är
+säljaren skattskyldig.
+
+Säljaren ska hos Skatteverket ställa säkerhet för betalning av
+skatten på det bränsle som sänds från det andra EU-landet.
+Säkerheten ska uppgå till ett belopp som motsvarar tio procent
+av den beräknade årliga skatten på bränslet. Ställd säkerhet
+får tas i anspråk om skatten inte betalas i rätt tid.
+
+Bestämmelserna i första och andra styckena samt i 9 b §
+omfattar även sådana överföringar av bränsle som sker utan
+vinstsyfte och som inte utgör gåvoförsändelser.
+Lag (2011:287).
+
+9 a § Vid distansförsäljning enligt 9 § ska säljaren
+företrädas av en representant som är etablerad i Sverige.
+Representanten ska vara godkänd av Skatteverket. Sådant
+godkännande får ges när säljaren ställt säkerhet för skatten.
+Representanten ska enligt fullmakt av säljaren som ombud för
+denne svara för redovisningen av skatt och i övrigt företräda
+säljaren i frågor som gäller skatt enligt denna lag. Underlag
+för kontroll av skatteredovisningen ska finnas tillgängligt
+hos representanten.
+
+Bestämmelserna om återkallelse i 5 § första stycket 1 och 3
+och tredje stycket tillämpas även på representant som avses i
+första stycket. Lag (2009:1493).
+
+9 b § Den som endast vid ett enstaka tillfälle säljer bränsle
+till någon i Sverige genom distansförsäljning ska, i stället
+för vad som anges i 9 och 9 a §§, innan bränslet avsänds från
+det andra EU-landet anmäla sig till Skatteverket och ställa
+säkerhet för skatten på bränslet. Ställd säkerhet får tas i
+anspråk om skatten inte betalas i rätt tid. Lag (2011:287).
+
+10 § Den som tar emot bränsle som avsänts till Sverige enligt
+9 eller 9 b § ska vara skattskyldig i stället för säljaren,
+om säljaren inte ställt säkerhet för skatten i Sverige.
+Lag (2009:1493).
+
+Övriga skattskyldiga
+
+11 § Den som för in eller tar emot beskattat bränsle på annat
+sätt än genom distansförsäljning ska, innan bränslet flyttas
+från det andra EU-landet, anmäla bränslet till Skatteverket
+och ställa säkerhet för betalning av skatten på bränslet.
+Ställd säkerhet får tas i anspråk om skatten inte betalas i
+rätt tid.
+
+Första stycket gäller inte de fall som är undantagna från
+skattskyldighet enligt 1 a §. Lag (2011:287).
+
+Övriga bränslen
+
+12 § Skattskyldig för energiskatt för råtallolja samt för
+energiskatt, koldioxidskatt och svavelskatt för bränslen
+enligt 2 kap. 1 § första stycket 5 och 6, andra bränslen
+enligt 3 § än sådana som avses i 1 kap. 3 a §, bränslen
+enligt 4 § samt vad gäller svavelskatt även bränslen enligt 3
+kap. 1 § 1 är den som
+
+1. godkänts som lagerhållare enligt 15 §,
+
+2. i annat fall än som avses i 1 utvinner, tillverkar eller
+bearbetar bränsle,
+
+3. i annat fall än som avses i 1 och 2 för in bränsle till
+Sverige från ett annat EU-land eller tar emot en sådan
+leverans,
+
+4. förvärvat bränsle för vilket ingen skatt eller lägre skatt
+ska betalas när bränslet används för visst ändamål men som
+använder bränslet för ett ändamål som medför att skatt ska
+betalas med högre belopp, och
+
+5. förvärvat bränsle för vilket antingen ingen skatt har
+betalats eller skatt har betalats enligt 2 kap. 1 § första
+stycket 3 a och som använder bränslet
+
+a) i skepp, när skeppet används för privat ändamål, eller
+
+b) i båt, för vilken medgivande enligt 2 kap. 9 § har lämnats
+eller fiskelicens som inte är begränsad till fiske enbart i
+enskilt vatten har meddelats enligt fiskelagen (1993:787),
+när båten används för privat ändamål. Lag (2015:747).
+
+12 a § Ny beteckning 4 kap. 13 § genom lag (2006:592).
+
+12 b § Ny beteckning 4 kap. 15 § genom lag (2006:592).
+
+13 § Skattskyldig
+
+1. för energiskatt för import av råtallolja,
+
+2. för energiskatt, koldioxidskatt och svavelskatt för import 
+av bränslen enligt 2 kap. 1 § första stycket 5 och 6, andra 
+bränslen enligt 3 § än sådana som avses i 1 kap. 3 a § samt 
+av bränslen enligt 4 §, och
+
+3. för svavelskatt för import av bränslen som avses i 3 kap. 
+1 § 1 är,
+
+a) om en tullskuld uppkommer i Sverige till följd av 
+importen: den som är skyldig att betala tullen,
+
+b) om importen avser en unionsvara eller om bränslet ska 
+deklareras för övergång till fri omsättning i Sverige men 
+inte är belagt med tull: den som skulle ha varit skyldig att 
+betala tullen om bränslet hade varit tullbelagt.
+
+Med tullskuld och unionsvara förstås detsamma som i artikel 5 
+i Europaparlamentets och rådets förordning (EU) nr 952/2013 
+av den 9 oktober 2013 om fastställande av en tullkodex för 
+unionen.
+
+Från skattskyldighet enligt första stycket undantas bränsle 
+som, vid varornas övergång till fri omsättning enligt artikel 
+201 i förordning (EU) nr 952/2013, ägs av en godkänd 
+lagerhållare enligt 15 §. Lag (2016:266).
+
+14 § Har upphävts genom lag (2009:1494).
+
+15 § Som lagerhållare får godkännas den som avser att
+
+1. utvinna, tillverka eller bearbeta bränsle, eller
+
+2. i större omfattning
+
+a) hålla bränsle i lager, eller
+
+b) återförsälja eller förbruka gasformiga kolväten,
+
+om han med hänsyn till sina ekonomiska förhållanden och
+omständigheterna i övrigt är lämplig som lagerhållare.
+
+Godkännande av lagerhållare skall återkallas om
+förutsättningarna för godkännande inte längre finns eller om
+lagerhållaren begär det. Ett beslut om återkallelse gäller
+omedelbart, om inte något annat anges i beslutet.
+Lag (2006:1508).
+
+16 § Om en godkänd lagerhållare försätts i konkurs, övergår
+godkännandet till konkursboet. Konkursboet är skattskyldigt
+för bränsle för vilket skattskyldighet enligt 5 kap. 3 § 3
+inträder efter konkursbeslutet. Lag (2013:1075).
+
+5 kap. Skattskyldighetens inträde
+
+1 § Skattskyldigheten inträder för
+
+1. upplagshavare som är skattskyldig enligt 4 kap. 1 § 1 när
+
+a) bränsle tas ut från ett skatteupplag utan att flyttas
+enligt 3 a kap. 2 och 3 §§,
+
+b) bränsle tas emot på en direkt leveransplats,
+
+c) bränsle tas i anspråk i skatteupplaget eller lagerbrister
+uppkommer, eller
+
+d) godkännandet av skatteupplaget återkallas, och
+
+2. den som är skattskyldig enligt 4 kap. 1 § 9, när bränslet
+kom att innehas utanför ett uppskovsförfarande.
+Lag (2012:678).
+
+1 a § Skattskyldighet enligt 1 § 1 b inträder inte för
+bränsle som mottagaren för in i skatteupplag i Sverige.
+Lag (2009:1493).
+
+1 b § Skattskyldighet inträder för upplagshavare som är
+skattskyldig enligt 4 kap. 1 § 1 när bränsle som flyttats
+under uppskovsförfarande tas emot av upplagshavaren, om
+
+1. bränslet tas emot på en plats i direkt anslutning till det
+skatteupplag som anges i det elektroniska administrativa
+dokumentet eller ersättningsdokumentet, och
+
+2. mottagande av bränslet accepteras genom mottagningsrapport
+enligt 6 kap. 8 § eller genom pappersdokument enligt 6 kap.
+10 §, men
+
+3. bränslet inte tas in i skatteupplaget.
+Lag (2013:1075).
+
+2 § Skattskyldigheten inträder
+
+1. för varumottagare som är skattskyldig enligt 4 kap. 1 § 2, 
+vid mottagandet av bränslet,
+
+2. för den som är skattskyldig enligt 4 kap. 1 § 5 eller 12 § 
+3, när bränslet förs in till Sverige, och
+
+3. för den som är skattskyldig enligt 4 kap. 1 b § eller 
+13 §, vid den tidpunkt då skyldighet att betala tull enligt 
+tullagstiftningen inträder eller skulle ha inträtt om det 
+funnits skyldighet att betala tull. Lag (2016:266).
+
+3 § Skattskyldigheten inträder
+
+1. för säljare eller mottagare vid distansförsäljning som är
+skattskyldig enligt 4 kap. 1 § 3 respektive 4, när bränslet
+förs in till Sverige,
+
+2. för den som är skattskyldig enligt 4 kap. 1 § 7, 8 eller
+10 eller enligt 4 kap. 12 § 4 eller 5, när bränslet används
+för ett ändamål som medför att skatt ska betalas med högre
+belopp, och
+
+3. för den som är skattskyldig enligt 4 kap. 12 § 1 när
+
+a) bränsle av honom levereras till en köpare som inte är
+godkänd lagerhållare eller till eget försäljningsställe för
+detaljförsäljning som inte utgörs av depå eller tas i anspråk
+för annat ändamål än försäljning, eller
+
+b) han upphör att vara godkänd som lagerhållare, varvid han
+är skyldig att betala skatt för det bränsle som då ingår i
+hans lager. Lag (2015:747).
+
+4 § Skattskyldigheten inträder för den som är skattskyldig
+enligt 4 kap. 1 § 6 eller 12 § 2, när bränslet utvinns,
+tillverkas eller bearbetas. Lag (2012:678).
+
+4 a § Skattskyldigheten för den som är skattskyldig enligt 4
+kap. inträder inte när
+
+1. biogas i gasform övergår i vätskeform, om biogasen
+då befinner sig i ett skatteupplag,
+
+2. biogas i vätskeform övergår i gasform, om biogasen då
+hanteras av en lagerhållare, eller
+
+3. biogas i gasform övergår i vätskeform eller biogas i
+vätskeform övergår i gasform, om skattskyldighet för bränslet
+tidigare har inträtt. Lag (2010:1820).
+
+5 § Tullverket beslutar om skatt för den som enligt 4 kap. 1 b
+och 13 §§ är skattskyldig vid import. Skatten ska betalas till
+Tullverket. Lag (2012:678).
+
+6 kap. Förfarandet vid beskattningen och dokumenthantering
+vid bränsleflyttningar enligt uppskovsförfarandet
+
+1 § I fråga om förfarandet vid beskattningen gäller, utom i 
+fall som avses i andra stycket och 1 a §, bestämmelserna i 
+skatteförfarandelagen (2011:1244).
+
+För skatt som ska betalas till Tullverket gäller tullagen 
+(2016:253). Lag (2016:266).
+
+1 a § Skatteverket beslutar om skatt som avses i 4 kap. 2–2 b 
+§§. Skatten ska betalas inom den tid som Skatteverket 
+bestämmer.
+
+Bestämmelserna i 37 kap. 9 och 10 §§ och 41 kap. 
+skatteförfarandelagen (2011:1244) ska gälla i tillämpliga 
+delar vid inhämtande av uppgifter som är av betydelse för 
+beslut om skatt enligt 4 kap. 2, 2 a eller 2 b § av någon 
+annan än den som föreläggs eller revideras.
+
+I övrigt ska bestämmelserna i 3 kap. 4 §, 43 kap., 45–47 
+kap., 57 kap. 1 §, 59 kap. 11 §, 13–21 §§, 26 och 27 §§, 60 
+kap., 62 kap. 2 §, 63 kap. 2 §, 
+
+4–6 §§, 8–10 §§ samt 15, 16, 22 och 23 §§, 65 kap. 2–4 §§, 7, 
+8 och 
+
+13–15 §§ och 66–71 kap. skatteförfarandelagen gälla i 
+tillämpliga delar.
+
+Om den som är skattskyldig enligt 4 kap. 2, 2 a eller 2 b § 
+har betalat in skatt och den inbetalda skatten överstiger vad 
+som enligt beslut av Skatteverket eller domstol ska betalas, 
+ska det överskjutande beloppet återbetalas till den 
+skattskyldige.
+
+Före utbetalning av ett överskjutande belopp enligt fjärde 
+stycket ska sådan skatt enligt denna lag för vilken den 
+skattskyldige står i skuld räknas av. Skattebelopp som den 
+skattskyldige har fått anstånd med att betala ska dock inte 
+räknas av. Lag (2017:1208).
+
+Det datoriserade systemet
+
+2 § I det datoriserade system som avses i artikel 1 i
+Europaparlamentets och rådets beslut nr 1152/2003/EG av den
+16 juni 2003 om datorisering av uppgifter om förflyttningar
+och kontroller av punktskattepliktiga varor (det datoriserade
+systemet), ska följande dokument och uppgifter hanteras:
+
+1. elektroniska administrativa dokument enligt 4 § första
+stycket,
+
+2. administrativa referenskoder enligt 4 § andra stycket,
+
+3. uppgifter om ändrad destination enligt 6 §,
+
+4. mottagningsrapporter enligt 8 § första stycket, och
+
+5. exportrapporter enligt 8 § andra stycket.
+
+Bestämmelser om behandlingen av uppgifter i det datoriserade
+systemet finns i lagen (2001:181) om behandling av uppgifter
+i Skatteverkets beskattningsverksamhet.
+
+När det datoriserade systemet inte är tillgängligt gäller
+bestämmelserna i 9 och 10 §§.
+
+Bestämmelserna i 4–7 och 9 §§ om avsändande av bränsle gäller
+upplagshavare och registrerade avsändare.
+
+När en flyttning under uppskovsförfarande sker enbart på
+svenskt territorium och bränslets slutdestination är belägen
+på svenskt territorium gäller inte bestämmelserna i 4–11 §§
+om bränslet avsänds av någon annan än en registrerad
+avsändare. Lag (2013:1075).
+
+3 § Den som upprättar elektroniskt administrativt dokument,
+mottagningsrapport eller exportrapport via det datoriserade
+systemet, ska kunna verifieras genom ett tekniskt förfarande.
+
+Uppgifter som lämnats för en juridisk person i det
+datoriserade systemet ska anses ha lämnats av denne, om det
+inte är uppenbart att uppgiftslämnaren saknat behörighet att
+företräda den juridiska personen. Lag (2009:1493).
+
+4 § Innan en sådan flyttning av bränsle som avses i 3 a kap.
+2 § påbörjas, ska avsändaren via det datoriserade systemet
+lämna ett elektroniskt administrativt dokument till
+Skatteverket. Avsändaren får återkalla dokumentet innan
+flyttningen av bränslet påbörjas.
+Skatteverket ska göra en elektronisk kontroll av det
+elektroniska administrativa dokumentet. Är uppgifterna i
+dokumentet giltiga, ska Skatteverket tilldela det en
+administrativ referenskod och meddela koden till avsändaren.
+Är uppgifterna i dokumentet inte giltiga, ska Skatteverket
+utan dröjsmål underrätta avsändaren om det. Lag (2009:1493).
+
+5 § Avsändaren ska lämna den person som medför bränslet ett
+dokument som innehåller den administrativa referenskod som
+avses i 4 § andra stycket. Koden ska på begäran kunna
+uppvisas för behörig myndighet under hela bränsleflyttningen.
+Lag (2009:1493).
+
+6 § Den som avsänt bränsle under ett uppskovsförfarande får
+via det datoriserade systemet ändra flyttningens destination.
+Den nya destinationen måste vara en sådan destination som
+avses i 3 a kap. 2 § första stycket 1 a, b eller c, eller en
+direkt leveransplats. Lag (2009:1493).
+
+7 § Vid flyttning av bränsle till mottagare som avses i 3 a
+kap. 2 § första stycket 1 d, ska bränslet åtföljas av ett
+intyg om att skattefrihet gäller för bränslet i det andra EU-
+landet. Lag (2011:287).
+
+8 § Den som på en sådan destination som avses i 3 a kap. 2 §
+tar emot bränsle som flyttats under ett uppskovsförfarande,
+ska utan dröjsmål och senast inom fem dagar efter mottagandet,
+via det datoriserade systemet lämna en rapport till
+Skatteverket om att bränslet tagits emot (mottagningsrapport).
+
+Vid flyttning enligt 3 a kap. 2 § första stycket 1 c ska
+Skatteverket, efter det att ett intyg har erhållits från
+Tullverket om att bränslet lämnat EU, via det datoriserade
+systemet lämna en rapport om att bränslet har exporterats
+(exportrapport). Lag (2011:287).
+
+8 a § Mottagningsrapport och exportrapport utgör bevis på att
+flyttningen avslutats på en sådan destination som avses i 3 a
+kap. 2 §.
+
+Om det av andra skäl än de som anges i 10 § inte är möjligt
+för den som tar emot bränsle att lämna en mottagningsrapport
+via det datoriserade systemet, får det på annat sätt visas för
+Skatteverket att bränslet nått den angivna destinationen
+(alternativt bevis).
+
+När Skatteverket erhållit ett tillfredsställande alternativt
+bevis, ska verket intyga att flyttningen avslutats.
+Skatteverket ska informera den behöriga myndigheten i
+avsändarmedlemsstaten om det alternativa beviset och om att
+flyttningen avslutats.
+
+Andra och tredje styckena gäller i tillämpliga delar när en
+exportrapport inte kan utfärdas via det datoriserade systemet.
+I sådant fall ska Tullverket till Skatteverket lämna ett intyg
+enligt 8 § andra stycket.
+
+När Skatteverket från en behörig myndighet i ett annat EU-land
+tagit emot ett alternativt bevis som intygats på sådant sätt
+som avses i tredje stycket, ska Skatteverket avsluta
+flyttningen i det datoriserade systemet. Lag (2011:287).
+
+Reservsystemet
+
+9 § När det datoriserade systemet inte är tillgängligt, får
+en bränsleflyttning under uppskovsförfarande påbörjas om
+
+1. bränslet åtföljs av ett pappersdokument som innehåller
+samma uppgifter som det elektroniska administrativa
+dokumentet skulle ha innehållit om det kunnat upprättas
+(ersättningsdokument), och
+
+2. avsändaren genom att lämna in en kopia av
+ersättningsdokumentet informerar Skatteverket om flyttningen
+innan den påbörjas.
+
+Om avsändaren är förhindrad att fullgöra
+informationsskyldigheten på det sätt som föreskrivs i första
+stycket 2, får Skatteverket informeras på annat sätt innan
+flyttningen påbörjas. En kopia av ersättningsdokumentet ska
+därefter lämnas in till Skatteverket snarast möjligt efter
+det att flyttningen påbörjats.
+
+När det datoriserade systemet inte är tillgängligt, får
+avsändaren på annat sätt informera Skatteverket om en sådan
+ändring av destinationen som avses i 6 §. Informationen ska
+lämnas till Skatteverket innan destinationen ändras.
+Lag (2009:1493).
+
+10 § Om mottagningsrapport inte kan lämnas inom den tidsfrist
+som anges i 8 § för att det datoriserade systemet inte är
+tillgängligt, ska mottagaren i stället rapportera att bränslet
+tagits emot genom att lämna in ett pappersdokument till
+Skatteverket. Dokumentet ska innehålla samma uppgifter som
+mottagningsrapporten skulle ha innehållit om den kunnat
+upprättas och ett intygande om att flyttningen avslutats.
+
+Första stycket gäller även när den som tar emot bränslet, på
+grund av att det datoriserade systemet tidigare inte varit
+tillgängligt, inte fått ett elektroniskt administrativt
+dokument avseende den aktuella bränsleflyttningen.
+
+Första och andra styckena gäller i tillämpliga delar när
+exportrapport inte kan lämnas. I sådant fall ska Skatteverket,
+efter det att ett intyg enligt 8 § andra stycket har erhållits
+från Tullverket, upprätta rapporten. Lag (2011:101).
+
+11 § När det datoriserade systemet åter är tillgängligt ska
+följande dokument och uppgifter snarast lämnas i systemet:
+
+1. Den som avsänt bränsle enligt 3 a kap. 2 § ska lämna ett
+elektroniskt administrativt dokument.
+
+2. Den som ändrat flyttningens destination enligt 6 § ska lämna
+uppgifter om denna åtgärd.
+
+3. Den som tagit emot bränsle som flyttats enligt 3 a kap. 2 §
+ska lämna en mottagningsrapport.
+
+4. Skatteverket ska lämna en exportrapport.
+
+Mottagnings- eller exportrapport ska dock inte lämnas via det
+datoriserade systemet förrän det elektroniska administrativa
+dokumentet för den aktuella bränsleflyttningen tagits emot via
+systemet.
+
+Till dess det elektroniska administrativa dokumentet
+kontrollerats och tilldelats en administrativ referenskod
+enligt 4 § andra stycket anses flyttningen äga rum under ett
+uppskovsförfarande med stöd av ersättningsdokumentet.
+Lag (2011:101).
+
+Flyttning av beskattat bränsle
+
+12 § Den som ansvarar för en flyttning av beskattat bränsle
+som avses i 1 kap. 3 a § ska upprätta ett förenklat
+ledsagardokument när bränslet flyttas till
+
+1. ett annat EU-land under sådana förhållanden att
+skattskyldighet inträder i det andra landet, eller
+
+2. en svensk ort via ett annat EU-land.
+
+Förenklat ledsagardokument som avses i första stycket ska
+åtfölja bränslet under flyttningen i enlighet med vad
+regeringen föreskriver. Sådant ledsagardokument krävs dock
+inte vid distansförsäljning av beskattat bränsle som sänds
+från Sverige. Lag (2011:287).
+
+13 § Har upphävts genom lag (2009:1505).
+
+14 § Har upphävts genom lag (2009:1505).
+
+15 § Har upphävts genom lag (2012:678).
+
+6 a kap. Skattebefriade användningsområden m.m.
+
+1 § /Upphör att gälla U:2021-01-01/
+Bränsle som används för nedan angivna ändamål, i
+förekommande fall med undantag för vissa bränsleslag, ska
+helt eller delvis befrias från skatt enligt följande, om inte
+annat anges.
+
+Ändamål         Bränsle som     Befrielse 	Befrielse  	Befri-
+                inte ger        från energi-	från kol-	else 
+                befrielse	skatt     	dioxidskatt	från 
+								svavel-
+								skatt
+
+1. Förbrukning							
+
+a) för annat                    100 		100 		100 
+ändamål än som			procent     	procent     	procent
+motorbränsle
+eller som
+bränsle för
+uppvärmning
+
+b) i                            100 		100 		100 
+metallurgiska			procent		procent		procent
+processer
+under
+förutsättning
+att det
+ingående
+materialet
+genom
+uppvärmning
+i ugnar
+förändras
+kemiskt eller
+dess inre
+fysikaliska
+struktur
+förändras
+eller
+bibehålls
+i skänkar
+eller
+liknande kärl
+
+c) i annat                      100 		100 		100 
+fall än som			procent     	procent     	procent
+avses i a
+eller b, då
+bränslet i
+en
+och samma
+process
+används både
+som bränsle
+för
+uppvärmning
+och för
+annat
+ändamål än
+som
+motorbränsle
+eller
+bränsle för
+uppvärmning
+
+2. Förbrukning  Bensin,         100 		100 		100 
+i tåg eller     bränsle som	procent     	procent     	procent
+annat           avses i 2 kap.
+spårbundet      1 § första
+färdmedel       stycket 3 b
+
+3. Förbrukning  Bensin,         100 		100 		100
+i skepp, när    bränsle som	procent     	procent     	procent
+skeppet inte    avses i 2 kap.
+används för     1 § första
+privat          stycket 3 b
+ändamål
+
+4. Förbrukning 
+i båt för 
+vilken 
+medgivande 
+lämnats enligt 
+2 kap. 9 § 
+eller för 
+vilken 
+fiskelicens 
+som inte är 
+begränsad till 
+fiske enbart i 
+enskilt vatten 
+meddelats 
+enligt 
+fiskelagen 
+(1993:787), 
+när båten inte 
+används för 
+privat ändamål	Bensin, 	100		100		100 
+		bränsle som 	procent		procent		procent
+		avses i 2 kap. 
+		1 § första 
+		stycket 3 b					
+
+5. Förbrukning
+i
+
+a) luftfartyg,  Andra           100 		100 		100
+när             bränslen än	procent     	procent     	procent
+luftfartyget    flygfotogen
+inte används    (KN-nr
+för privat      2710 19 21)
+ändamål
+
+b) luftfartygs- Andra           100 		100 		100
+motorer i       bränslen än	procent		procent     	procent
+provbädd eller  flygbensin
+i liknande      (KN-nr
+anordning       2710 11 31)
+                och
+                flygfotogen
+
+6. Förbrukning                  100 		100 		100 
+vid				procent		procent		procent
+framställning
+av
+energiprodukter
+eller
+andra produkter
+för vilka
+skatteplikt har
+inträtt för
+tillverkaren
+
+7. Förbrukning  Bränsle         100 		100 		-
+för             som avses i	procent  	procent        
+framställning   2 kap. 1 §
+av              första
+skattepliktig   stycket 3 b
+elektrisk kraft
+
+8. -
+
+9. Om skatte-
+befrielse inte
+följer av
+tidigare
+punkter,
+förbrukning
+för annat
+ändamål än
+drift av
+motordrivna
+fordon vid
+tillverknings-
+processen i
+industriell
+verksamhet      Bensin,
+                råtallolja,
+                bränsle som
+                avses i 2
+                kap. 1 §
+                första
+                stycket 3 b
+
+a) i en				70		100		-
+anläggning			procent		procent      	
+för vilken
+utsläppsrätter
+ska överlämnas
+enligt 6 kap.
+1 § lagen
+(2004:1199)
+om handel med
+utsläppsrätter   
+               
+b) i andra			70		 –               –
+fall än som			procent      
+avses under a                   
+
+10. Om skatte-
+befrielse inte 
+följer av 
+tidigare 
+punkter, 
+förbrukning 
+för annat 
+ändamål än 
+drift av 
+motordrivna 
+fordon i 
+yrkesmässig 
+vattenbruks-
+verksamhet, 
+dock inte 
+förbrukning 
+i skepp eller 
+båt		Bensin, 	70 		–		–
+		råtallolja, 	procent
+		bränsle som 
+		avses i 2 kap. 
+		1 § första 
+		stycket 3 b	
+
+11. Om skatte-
+befrielse inte 
+följer av 
+tidigare 
+punkter, 
+förbrukning 
+för annat 
+ändamål än 
+drift av 
+motordrivna 
+fordon i 
+yrkesmässig 
+jordbruks- 
+eller 
+skogsbruks-
+verksamhet, 
+dock inte 
+förbrukning 
+i skepp eller 
+båt		Bensin, 	70		-		-
+		råtallolja,	procent 
+		bränsle som 
+		avses i 2 kap. 
+		1 § första 
+		stycket 3 b	
+
+12. Om skatte-			-		-		100
+befrielse inte							procent
+följer av
+tidigare
+punkter,
+förbrukning i
+sodapannor
+eller i
+lutpannor                       
+
+13. -
+
+14. -
+
+15. -
+
+16. Förbrukning                 100 		100 		100 
+i processer för			procent      	procent      	procent
+framställning
+av andra
+mineraliska
+ämnen än
+metaller under
+förutsättning
+att det
+ingående
+materialet
+genom
+uppvärmning
+i ugnar
+förändras
+kemiskt eller
+dess inre
+fysikaliska
+struktur
+förändras
+
+17. Om skatte-  Råtallolja
+befrielse inte  och bränsle
+följer av       som avses i
+tidigare        2 kap. 1 §
+punkter,        första
+förbrukning     stycket 3 b
+för
+framställning
+av värme i en
+anläggning
+för vilken
+utsläppsrätter
+ska överlämnas
+enligt 6 kap.
+1 § lagen om
+handel med
+utsläppsrätter
+
+a) i kraftvärme-                -		9 		-
+produktion					procent      
+
+b) i annan			-		9		-
+värmeproduktion                 		procent
+Lag (2019:491).
+
+1 § /Träder i kraft I:2021-01-01/
+Bränsle som används för nedan angivna ändamål, i 
+förekommande fall med undantag för vissa bränsleslag, ska helt 
+eller delvis befrias från skatt enligt följande, om inte annat 
+anges.
+
+Ändamål         Bränsle som     Befrielse 	Befrielse  	Befri-
+                inte ger        från energi-	från kol-	else 
+                befrielse	skatt     	dioxidskatt	från 
+								svavel-
+								skatt
+				
+1. Förbrukning							
+
+a) för annat                    100 		100 		100 
+ändamål än som			procent     	procent     	procent
+motorbränsle
+eller som
+bränsle för
+uppvärmning
+
+b) i                            100 		100 		100 
+metallurgiska			procent		procent		procent
+processer
+under
+förutsättning
+att det
+ingående
+materialet
+genom
+uppvärmning
+i ugnar
+förändras
+kemiskt eller
+dess inre
+fysikaliska
+struktur
+förändras
+eller
+bibehålls
+i skänkar
+eller
+liknande kärl
+
+c) i annat                      100 		100 		100 
+fall än som			procent     	procent     	procent
+avses i a
+eller b, då
+bränslet i
+en
+och samma
+process
+används både
+som bränsle
+för
+uppvärmning
+och för
+annat
+ändamål än
+som
+motorbränsle
+eller
+bränsle för
+uppvärmning
+
+2. Förbrukning  Bensin,         100 		100 		100 
+i tåg eller     bränsle som	procent     	procent     	procent
+annat           avses i 2 kap.
+spårbundet      1 § första
+färdmedel       stycket 3 b
+
+3. Förbrukning  Bensin,         100 		100 		100
+i skepp, när    bränsle som	procent     	procent     	procent
+skeppet inte    avses i 2 kap.
+används för     1 § första
+privat          stycket 3 b
+ändamål
+
+4. Förbrukning 	Bensin, 	100		100		100
+i båt för 	bränsle som 	procent		procent		procent
+vilken 		avses i 2 kap.
+medgivande 	1 § första
+lämnats enligt 	stycket 3 b
+2 kap. 9 § 
+eller för 
+vilken 
+fiskelicens 
+som inte är 
+begränsad till 
+fiske enbart i 
+enskilt vatten 
+meddelats 
+enligt 
+fiskelagen 
+(1993:787), 
+när båten inte 
+används för 
+privat ändamål	
+	
+5. Förbrukning
+i
+
+a) luftfartyg,  Andra           100 		100 		100
+när             bränslen än	procent     	procent     	procent
+luftfartyget    flygfotogen
+inte används    (KN-nr
+för privat      2710 19 21)
+ändamål
+
+b) luftfartygs- Andra           100 		100 		100
+motorer i       bränslen än	procent		procent     	procent
+provbädd eller  flygbensin
+i liknande      (KN-nr
+anordning       2710 11 31)
+                och
+                flygfotogen
+
+6. Förbrukning                  100 		100 		100 
+vid				procent		procent		procent
+framställning
+av
+energiprodukter
+eller
+andra produkter
+för vilka
+skatteplikt har
+inträtt för
+tillverkaren
+
+7. Förbrukning  Bränsle         100 		100 		-
+för             som avses i	procent  	procent        
+framställning   2 kap. 1 §
+av              första
+skattepliktig   stycket 3 b
+elektrisk kraft
+
+8. -
+
+9. Om skatte-	Bensin,
+befrielse inte	råtallolja,
+följer av	bränsle som
+tidigare	avses i 2
+punkter,	kap. 1 §
+förbrukning	första
+för annat	stycket 3 b
+ändamål än
+drift av
+motordrivna
+fordon vid
+tillverknings-
+processen i
+industriell
+verksamhet                    
+
+a) i en 			70		100		-
+anläggning 			procent		procent
+för vilken 
+utsläppsrätter 
+ska överlämnas 
+enligt 16 § 
+lagen 
+(2020:1173) om 
+vissa utsläpp 
+av växthusgaser
+
+b) i andra			70		 –               –
+fall än som			procent      
+avses under a                   
+
+10. Om skatte-	Bensin, 	70 		–		–
+befrielse inte 	råtallolja, 	procent
+följer av 	bränsle som
+tidigare 	avses i 2 kap.
+punkter, 	1 § första
+förbrukning 	stycket 3 b
+för annat 
+ändamål än 
+drift av 
+motordrivna 
+fordon i 
+yrkesmässig 
+vattenbruks-
+verksamhet, 
+dock inte 
+förbrukning 
+i skepp eller 
+båt		
+
+11. Om skatte-	Bensin, 	70		-		-
+befrielse inte 	råtallolja,	procent
+följer av 	bränsle som
+tidigare	avses i 2 kap. 
+punkter,	1 § första  
+förbrukning 	stycket 3 b
+för annat 
+ändamål än 
+drift av 
+motordrivna 
+fordon i 
+yrkesmässig 
+jordbruks- 
+eller 
+skogsbruks-
+verksamhet, 
+dock inte 
+förbrukning 
+i skepp eller 
+båt		
+
+12. Om skatte-			-		-		100
+befrielse inte							procent
+följer av
+tidigare
+punkter,
+förbrukning i
+sodapannor
+eller i
+lutpannor                       
+
+13. -
+
+14. -
+
+15. -
+
+16. Förbrukning                 100 		100 		100 
+i processer för			procent      	procent      	procent
+framställning
+av andra
+mineraliska
+ämnen än
+metaller under
+förutsättning
+att det
+ingående
+materialet
+genom
+uppvärmning
+i ugnar
+förändras
+kemiskt eller
+dess inre
+fysikaliska
+struktur
+förändras
+
+17. Om skatte-	Råtallolja
+befrielse inte	och bränsle 
+följer av 	som avses i
+tidigare 	2 kap. 1 §
+punkter, 	första 
+förbrukning 	stycket 3 b
+för 
+framställning 
+av värme i en 
+anläggning 
+för 
+vilken 
+utsläppsrätter 
+ska överlämnas 
+enligt 16 § 
+lagen om vissa 
+utsläpp av 
+växthusgaser	    		
+
+a) i kraftvärme-                -		9 		-
+produktion					procent      
+
+b) i annan			-		9		-
+värmeproduktion                 		procent
+Lag (2020:1176).
+
+2 § Om råtallolja förbrukas för ändamål som anges i 1 §
+9 b–11 medges befrielse från energiskatten med ett belopp som 
+motsvarar 70 procent av den energiskatt som tas ut på bränsle 
+enligt 2 kap. 1 § första stycket 3 a.
+
+Om råtallolja förbrukas för ändamål som anges i 1 § 9 a 
+medges befrielse från energiskatten med ett belopp som 
+motsvarar 70 procent av den energiskatt och 100 procent av 
+den koldioxidskatt som tas ut på bränsle enligt 2 kap. 1 § 
+första stycket 3 a.
+
+Om råtallolja förbrukas för ändamål som anges i 1 § 17 a 
+medges befrielse från energiskatten med ett belopp som 
+motsvarar 70 procent av den energiskatt och 89 procent av den 
+koldioxidskatt som tas ut på bränsle enligt 2 kap. 1 § första 
+stycket 3 a.
+
+Om råtallolja förbrukas för ändamål som anges i 1 § 17 b, 
+medges befrielse från energiskatten med ett belopp som 
+motsvarar 9 procent av den koldioxidskatt som tas ut på 
+bränsle enligt 2 kap. 1 § första stycket 3 a.
+Lag (2017:1220).
+
+2 a § För drift av skepp och båtar utan medgivande enligt 
+2 kap. 9 § samt andra motordrivna fordon än personbilar, 
+lastbilar och bussar medges befrielse från koldioxidskatt med 
+1 930 kronor per kubikmeter bränsle som avses i 2 kap. 1 § 
+första stycket 3 b, om det förbrukas i yrkesmässig 
+
+1. jordbruks- eller skogsbruksverksamhet, eller 
+
+2. vattenbruksverksamhet.
+
+När det gäller skepp och båtar för vilka fiskelicens som inte 
+är begränsad till fiske enbart i enskilt vatten meddelats 
+enligt fiskelagen (1993:787) medges skattebefrielse enligt 
+första stycket också för bränsle som avses i 2 kap. 1 § första 
+stycket 3 a. Lag (2019:447).
+
+2 b § /Upphör att gälla U:2021-01-01 genom lag (2020:1045)./
+För vissa bränslen som förbrukas för uppvärmning medges 
+befrielse från energiskatt med 100 procent och från 
+koldioxidskatt med 100 procent. Detta gäller bränsle som 
+utgör en energiprodukt enligt
+
+1. KN-nr 1507–1518,
+
+2. KN-nr 2905 11 00, som inte är av syntetiskt ursprung, 
+eller
+
+3. KN-nr 3824 90 99.
+
+Första stycket gäller också om produkterna ingår som en 
+beståndsdel i ett annat bränsle.
+
+För en produkt enligt KN-nr 3824 90 99 gäller första och 
+andra styckena endast för skatt på den del av bränslet som 
+framställts av biomassa.
+
+Första–tredje styckena gäller endast om bränslet omfattas av 
+ett hållbarhetsbesked enligt 3 kap. 1 b § lagen (2010:598) om 
+hållbarhetskriterier för biodrivmedel och flytande 
+biobränslen. Lag (2016:505).
+
+2 c § /Upphör att gälla U:2021-01-01/
+För biogas som förbrukas som bränsle för uppvärmning 
+medges befrielse från energiskatt med 100 procent och från 
+koldioxidskatt med 100 procent. Lag (2016:505).
+
+2 c § /Träder i kraft I:2021-01-01/
+För biogas eller biogasol som förbrukas som bränsle för 
+uppvärmning medges befrielse från energiskatt med 100 procent 
+och från koldioxidskatt med 100 procent.
+
+Första stycket gäller endast om bränslet vid 
+skattskyldighetens inträde omfattas av ett anläggningsbesked 
+enligt 3 a kap. lagen (2010:598) om hållbarhetskriterier för 
+biodrivmedel och flytande biobränslen. Lag (2020:1045).
+
+3 § Vid samtidig produktion av värme och skattepliktig
+elektrisk kraft i en och samma process, när den värme som
+uppkommer nyttiggörs, ska fördelning av bränslet som förbrukas
+för framställning av värme, skattepliktig elektrisk kraft
+respektive sådan elektrisk kraft som inte är skattepliktig ske
+genom proportionering i förhållande till respektive
+energiproduktion. Om olika bränslen förbrukas, ska
+proportioneringen avse varje bränsle för sig.
+
+Om det förutom sådan elproduktion som nämns i första stycket
+också sker samtidig kondenskraftproduktion från samma bränsle,
+ska bränslet fördelas också på kondenskraftproduktionen.
+Lag (2019:491).
+
+3 a § För bränslen som förbrukas för framställning av ånga 
+eller hetvatten som tappas av från ång- eller 
+hetvattensystemet före ångturbinen eller annan utrustning för 
+utvinning av mekanisk energi ur ånga eller hetvatten vid 
+kraftvärmeproduktion medges inte någon skattebefrielse enligt 
+1 § 17 a. Lag (2019:491).
+
+3 b § Har betecknats 6 a kap. 3 § genom lag (2019:491).
+
+3 c § Har betecknats 6 a kap. 3 a § genom lag (2019:491).
+
+4 § Skattebefrielse enligt 1 § 7 gäller också för bränsle som
+avses i 2 kap. 1 § första stycket 3 b vid framställning av
+skattepliktig elektrisk kraft i en gasturbinanläggning som har
+en sammanlagd installerad generatoreffekt av minst fem
+megawatt, under förutsättning att värme inte samtidigt
+nyttiggörs. Lag (2008:561).
+
+5 § De begränsningar av skattebefrielsen i 1 § som gäller 
+bensin och bränsle som avses i 2 kap. 1 § första stycket 3 b 
+ska även gälla för bränsle som avses i 2 kap. 3 och 4 §§ och 
+som beskattas på samma sätt. Lag (2019:491).
+
+7 kap. Avdrag
+
+1 § /Upphör att gälla U:2021-01-01/
+Den som är skattskyldig får göra avdrag för skatt på 
+bränsle 
+
+1. som av den skattskyldige exporterats till tredjeland eller 
+förts till en frizon för annat ändamål än att förbrukas där, 
+
+2. som av den skattskyldige förbrukats på ett sätt som ger 
+rätt till skattebefrielse enligt 6 a kap., 
+
+3. som har tagits emot av en skattebefriad förbrukare i 
+enlighet med vad som framgår av dennes godkännande, 
+
+4. som har tagits emot för förbrukning i skepp eller 
+luftfartyg med de undantag i fråga om vissa bränslen som anges 
+i 6 a kap. 1 § 3 och 5, 
+
+5. som har tagits emot för förbrukning i båtar som avses i 
+6 a kap. 1 § 4 med de undantag i fråga om vissa bränslen som 
+anges i denna punkt.
+
+Avdrag för skatt på bränsle som den skattskyldige förbrukat på 
+ett sätt som ger rätt till skattebefrielse med stöd av 
+6 a kap. 1 § 9, 10, 11 eller 17 eller med stöd av 6 a kap. 
+2 a, 2 b eller 2 c § får dock göras endast om den 
+skattskyldige inte är ett företag utan rätt till statligt 
+stöd. Lag (2019:491).
+
+1 § /Träder i kraft I:2021-01-01/
+Den som är skattskyldig får göra avdrag för skatt på 
+bränsle 
+
+1. som av den skattskyldige exporterats till tredjeland eller 
+förts till en frizon för annat ändamål än att förbrukas där, 
+
+2. som av den skattskyldige förbrukats på ett sätt som ger 
+rätt till skattebefrielse enligt 6 a kap., 
+
+3. som har tagits emot av en skattebefriad förbrukare i 
+enlighet med vad som framgår av dennes godkännande, 
+
+4. som har tagits emot för förbrukning i skepp eller 
+luftfartyg med de undantag i fråga om vissa bränslen som anges 
+i 6 a kap. 1 § 3 och 5, 
+
+5. som har tagits emot för förbrukning i båtar som avses i 
+6 a kap. 1 § 4 med de undantag i fråga om vissa bränslen som 
+anges i denna punkt.
+
+Avdrag för skatt på bränsle som den skattskyldige förbrukat på 
+ett sätt som ger rätt till skattebefrielse med stöd av 
+6 a kap. 1 § 9, 10, 11 eller 17 eller med stöd av 6 a kap. 2 a 
+eller 2 c § får dock göras endast om den skattskyldige inte är 
+ett företag utan rätt till statligt stöd. Lag (2020:1045).
+
+1 a § En upplagshavare får göra avdrag för skatt på bränsle
+för vilket skattskyldighet enligt denna lag tidigare har
+inträtt och som förts in i upplagshavarens skatteupplag.
+
+Den som godkänts som lagerhållare får göra avdrag för skatt
+på bränsle för vilket skattskyldighet enligt denna lag
+tidigare har inträtt och som
+
+1. innehas av lagerhållaren vid tidpunkten för godkännandet,
+eller
+
+2. har förvärvats från någon som inte är godkänd
+lagerhållare. Lag (2012:836).
+
+2 § En skattskyldig får göra avdrag för skatt på bränsle som 
+avses i 1 kap. 3 a § och som levererats till en sådan köpare 
+som avses i 3 kap. 30 c § första stycket mervärdesskattelagen 
+(1994:200), i den omfattning som frihet från bränsleskatt 
+föreligger i det EU-landet. Lag (2015:890).
+
+2 a § Bestämmelserna i 1 § första stycket 1 och 2 § gäller
+inte skatt på bränsle som flyttats enligt uppskovsförfarande
+till sådan destination som avses i 3 a kap. 2 § 1 c och d.
+Lag (2012:836).
+
+3 § /Upphör att gälla U:2021-01-01/
+Den som är skattskyldig får göra avdrag för energiskatt 
+med 100 procent och för koldioxidskatt med 100 procent på 
+biogas eller bränsle som avses i 6 a kap. 2 b § och som sålts 
+som bränsle för uppvärmning till någon som inte är en 
+stödmottagare. Lag (2016:505).
+
+3 § /Träder i kraft I:2021-01-01/
+Den som är skattskyldig får göra avdrag för energiskatt 
+med 100 procent och för koldioxidskatt med 100 procent på 
+bränsle som avses i 6 a kap. 2 c § och som sålts som bränsle 
+för uppvärmning till någon som inte är en stödmottagare.
+Lag (2020:1045).
+
+3 a § För bränslen som anges i 2 kap. 1 § första stycket 1, 2 
+eller 3 och som till mer än 98 volymprocent framställts av 
+biomassa och som en skattskyldig har förbrukat eller sålt som 
+motorbränsle får den skattskyldige, på den andel av 
+motorbränslet som utgörs av en eller flera beståndsdelar som 
+framställts av biomassa, göra avdrag för energiskatt med 100 
+procent och koldioxidskatt med 100 procent. Lag (2017:1231).
+
+3 b § /Upphör att gälla U:2021-01-01/
+För andra bränslen än biogas eller de som anges i 2 
+kap. 1 § första stycket 1, 2 eller 3 får en skattskyldig som 
+har förbrukat eller sålt bränslet som motorbränsle göra 
+avdrag för
+
+1. energiskatt med 100 procent och koldioxidskatt med 100 
+procent på den andel av motorbränslet som framställts av 
+biomassa och som utgör fettsyrametylester (Fame) enligt KN-nr 
+3824 90 99,
+
+2. energiskatt med 100 procent och koldioxidskatt med 100 
+procent på den andel av ett motorbränsle för gnisttända 
+motorer enligt KN-nr 3824 90 99 som framställts av biomassa 
+och som utgör etanol, och
+
+3. energiskatt med 100 procent och koldioxidskatt med 100 
+procent på den andel av motorbränslet som utgörs av någon 
+annan beståndsdel än som anges i 1 eller 2 och som 
+framställts av biomassa. Lag (2017:1231).
+
+3 b § /Träder i kraft I:2021-01-01/
+För andra bränslen än biogas, biogasol eller de som 
+anges i 2 kap. 1 § första stycket 1, 2 eller 3 får en 
+skattskyldig som har förbrukat eller sålt bränslet som 
+motorbränsle göra avdrag för
+
+1. energiskatt med 100 procent och koldioxidskatt med 
+100 procent på den andel av motorbränslet som framställts av 
+biomassa och som utgör fettsyrametylester (Fame) enligt KN-nr 
+3824 90 99,
+
+2. energiskatt med 100 procent och koldioxidskatt med 
+100 procent på den andel av ett motorbränsle för gnisttända 
+motorer enligt KN-nr 3824 90 99 som framställts av biomassa 
+och som utgör etanol, och
+
+3. energiskatt med 100 procent och koldioxidskatt med 
+100 procent på den andel av motorbränslet som utgörs av någon 
+annan beståndsdel än som anges i 1 eller 2 och som framställts 
+av biomassa. Lag (2020:1045).
+
+3 c § Avdrag enligt 3 a och 3 b §§ medges endast om
+
+1. motorbränslet eller beståndsdelen omfattas av ett 
+hållbarhetsbesked enligt 3 kap. lagen (2010:598) om 
+hållbarhetskriterier för biodrivmedel och flytande 
+biobränslen och av ett anläggningsbesked enligt 3 a kap. 
+samma lag,
+
+2. stödmottagaren inte är ett företag utan rätt till statligt 
+stöd, och
+
+3. uppgift lämnas om avdragets fördelning på stödmottagare.
+Lag (2017:1231).
+
+3 d § Har upphävts genom lag (2017:1231).
+
+4 § /Upphör att gälla U:2021-01-01/
+En skattskyldig får göra avdrag för energiskatt med 100 
+procent och för koldioxidskatt med 100 procent på biogas som 
+den skattskyldige har förbrukat eller sålt som 
+motorbränsle.
+Första stycket gäller endast om
+
+1. stödmottagaren inte är ett företag utan rätt till statligt 
+stöd, och
+
+2. uppgift lämnas om avdragets fördelning på stödmottagare.
+
+Om biogas förbrukats eller sålts som motorbränsle för 
+transportändamål, gäller skattebefrielse enligt denna 
+paragraf endast om biogasen omfattas av ett hållbarhetsbesked 
+enligt 3 kap. lagen (2010:598) om hållbarhetskriterier för 
+biodrivmedel och flytande biobränslen och av ett 
+anläggningsbesked enligt 3 a kap. samma lag. Lag (2016:505).
+
+4 § /Träder i kraft I:2021-01-01/
+En skattskyldig får göra avdrag för energiskatt med 
+100 procent och för koldioxidskatt med 100 procent på biogas 
+och biogasol som den skattskyldige har förbrukat eller sålt 
+som motorbränsle.
+
+Första stycket gäller endast om
+
+1. stödmottagaren inte är ett företag utan rätt till statligt 
+stöd,
+
+2. uppgift lämnas om avdragets fördelning på stödmottagare, 
+och
+
+3. biogasen eller biogasolen omfattas av ett anläggningsbesked 
+enligt 3 a kap. lagen (2010:598) om hållbarhetskriterier för 
+biodrivmedel och flytande biobränslen.
+
+Om biogasen eller biogasolen förbrukats eller sålts som 
+motorbränsle för transportändamål, gäller skattebefrielse 
+enligt denna paragraf endast om biogasen eller biogasolen 
+dessutom omfattas av ett hållbarhetsbesked enligt 3 kap. lagen 
+om hållbarhetskriterier för biodrivmedel och flytande 
+biobränslen. Lag (2020:1045).
+
+4 a § /Upphör att gälla U:2021-01-01/
+En skattskyldig som gör avdrag för skatt på bränsle
+enligt 3–4 §§ är skyldig att till regeringen eller den
+myndighet som regeringen bestämmer på begäran lämna de
+uppgifter som regeringen behöver för sin rapportering till
+Europeiska kommissionen när det gäller frågan om huruvida det
+statliga stöd som genom avdraget ges för bränslet medför
+överkompensation i strid med reglerna om statligt stöd i
+fördraget om Europeiska unionens funktionssätt.
+
+Regeringen eller den myndighet som regeringen bestämmer
+meddelar närmare föreskrifter om vilka uppgifter som ska
+lämnas. Lag (2014:1496).
+
+4 a § /Träder i kraft I:2021-01-01/
+En skattskyldig som gör avdrag för skatt på bränsle 
+enligt 3 a, 3 b eller 4 § är skyldig att till regeringen eller 
+den myndighet som regeringen bestämmer på begäran lämna de 
+uppgifter som regeringen behöver för sin rapportering till 
+Europeiska kommissionen när det gäller frågan om huruvida det 
+statliga stöd som genom skattebefrielsen ges för bränslet 
+medför överkompensation i strid med reglerna om statligt stöd 
+i fördraget om Europeiska unionens funktionssätt.
+
+Första stycket gäller även den som medges skattebefrielse med 
+stöd av 6 a kap. 2 c §.
+
+Regeringen eller den myndighet som regeringen bestämmer 
+meddelar närmare föreskrifter om vilka uppgifter som ska 
+lämnas. Lag (2020:1045).
+
+5 § Om en skattskyldig har begränsat utsläppet av svavel
+genom reningsåtgärd eller genom bindning i någon produkt eller
+i aska i samband med förbrukning av det skattepliktiga
+bränslet, får avdrag göras med 30 kronor per kilogram svavel
+som utsläppet har minskat. Lag (2001:518).
+
+5 a § har upphävs genom lag (2014:285).
+
+5 b § En skattskyldig som fört ut annat bränsle än som avses i
+1 kap. 3 a § från Sverige till ett annat EU-land får göra
+avdrag för skatten på bränslet. Lag (2011:287).
+
+6 § En upplagshavare får göra avdrag för skatt på bränsle som
+har beskattats i ett annat EU-land i sådana fall som avses i 4
+kap. 2 § under förutsättning att det andra EU-landets
+skatteanspråk är befogat. Lag (2011:287).
+
+7 § Har upphävts genom lag (2001:518).
+
+8 kap. Skattebefriad förbrukare
+
+1 § Som skattebefriad förbrukare får godkännas den som 
+förbrukar bränsle för ändamål som anges i 6 a kap. 1 § 1–5, 
+12 eller 16 om förbrukaren med hänsyn till sina ekonomiska 
+förhållanden och omständigheterna i övrigt är lämplig.
+
+Ett godkännande enligt första stycket får meddelas för viss 
+tid eller tills vidare. Godkännande tills vidare får meddelas 
+den som tidigare hanterat obeskattat bränsle utan anmärkning. 
+Ett godkännande får förenas med villkor.
+
+Den som godkänts som skattebefriad förbrukare får från en 
+skattskyldig ta emot bränsle utan skatt, eller med nedsatt 
+skatt, i den omfattning bränslet enligt 6 a kap. är befriat 
+från skatt. Lag (2016:505).
+
+2 § En skattebefriad förbrukare skall löpande bokföra inköp och
+förbrukning av bränsle helt eller delvis befriat från skatt och
+på lämpligt sätt se till att det finns underlag för kontroll av
+att bränsle som köpts in helt eller delvis befriat från skatt
+använts för det ändamål som var förutsättning för
+skattebefrielsen. Lag (2001:518).
+
+3 § Godkännande av skattebefriad förbrukare får återkallas om
+
+1. förutsättningarna för godkännande inte längre finns,
+
+2. bränslet används för annat ändamål än som anges i
+godkännandet,
+
+3. förbrukaren inte fullgör sina skyldigheter enligt 2 §,
+
+4. förbrukaren inte medverkar vid revision enligt
+skatteförfarandelagen (2011:1244), eller
+
+5. förbrukaren begär det.
+
+Beslut om återkallelse gäller omedelbart, om inte något annat
+anges i beslutet. Lag (2011:1370).
+
+3 a § Har upphävts genom lag (2001:518).
+
+4 § Har upphävts genom lag (2001:518).
+
+4 a § Har upphävts genom lag (2001:518).
+
+5 § Har upphävts genom lag (2001:518).
+
+9 kap. Återbetalning av skatt m.m.
+
+1 § Beskattningsmyndigheten medger efter ansökan återbetalning av
+energiskatt och koldioxidskatt på bränsle som har förvärvats av
+
+1. utländsk beskickning, karriärkonsulat i Sverige eller sådan
+internationell organisation, som avses i lagen (1976:661) om
+immunitet och privilegier i vissa fall,
+
+2. medlem av den diplomatiska personalen vid utländska beskickningar
+i Sverige och karriärkonsul vid utländskt konsulat i Sverige, under
+förutsättning att denne inte är svensk medborgare eller stadigvarande
+bosatt i Sverige.
+
+Medlemsstaters ombud vid en internationell organisation med säte i
+Sverige och personal hos en sådan organisation har på ansökan rätt
+till återbetalning enligt första stycket, om Sverige har träffat
+överenskommelse med en annan stat eller med en mellanfolklig
+organisation om detta. Lag (1996:1324).
+
+2 § /Upphör att gälla U:2021-01-01/
+Om någon som inte är skattskyldig eller skattebefriad 
+förbrukare har förbrukat bränsle på ett sådant sätt som ger 
+rätt till skattebefrielse enligt 6 a kap., medger 
+beskattningsmyndigheten efter ansökan från förbrukaren 
+återbetalning av skatten på bränslet.
+
+Återbetalning med stöd av 6 a kap. 1 § 9, 10, 11 eller 17 
+eller med stöd av 6 a kap. 2 a, 2 b eller 2 c § medges endast 
+om sökanden inte är ett företag utan rätt till statligt stöd. 
+I dessa fall krävs även att sökanden lämnar uppgifter om 
+stödmottagare för sin verksamhet, om återbetalning söks med 
+belopp som medför att sökandens sammanlagda återbetalning inom 
+stödordningen per kalenderår uppgår till minst
+
+1. 15 000 euro i fall som avses i 6 a kap. 1 § 10 eller 2 a § 
+första stycket 2, eller
+
+2. 200 000 euro i övriga fall.
+
+Återbetalning med stöd av 6 a kap. 2 b eller 2 c § medges 
+endast i den utsträckning avdragsrätt inte följer av 7 kap. 
+3 §. Lag (2019:491).
+
+2 § /Träder i kraft I:2021-01-01/
+Om någon som inte är skattskyldig eller skattebefriad 
+förbrukare har förbrukat bränsle på ett sådant sätt som ger 
+rätt till skattebefrielse enligt 6 a kap., medger 
+beskattningsmyndigheten efter ansökan från förbrukaren 
+återbetalning av skatten på bränslet.
+
+Återbetalning med stöd av 6 a kap. 1 § 9, 10, 11 eller 17 
+eller med stöd av 6 a kap. 2 a eller 2 c § medges endast om 
+sökanden inte är ett företag utan rätt till statligt stöd. I 
+dessa fall krävs även att sökanden lämnar uppgifter om 
+stödmottagare för sin verksamhet, om återbetalning söks med 
+belopp som medför att sökandens sammanlagda återbetalning inom 
+stödordningen per kalenderår uppgår till minst
+
+1. 15 000 euro i fall som avses i 6 a kap. 1 § 10 eller 2 a § 
+första stycket 2, eller
+
+2. 200 000 euro i övriga fall.
+
+Återbetalning med stöd av 6 a kap. 2 c § medges endast i den 
+utsträckning avdragsrätt inte följer av 7 kap. 3 §.
+Lag (2020:1045).
+
+3 § Beskattningsmyndigheten medger efter ansökan
+återbetalning av skatten på bränsle om någon har
+
+1. förbrukat bensin i skepp, när skeppet inte använts för
+privat ändamål,
+
+2. förbrukat bensin i båt för vilken fiskelicens, som inte är
+begränsad till fiske enbart i enskilt vatten, meddelats
+enligt fiskelagen (1993:787), när båten inte använts för
+privat ändamål,
+
+3. förbrukat annat bränsle än sådant som avses i 2 kap. 1 §
+första stycket 3 a i båt utan fiskelicens, som inte är
+begränsad till fiske enbart i enskilt vatten, när båten inte
+använts för privat ändamål,
+
+4. förbrukat annat bränsle än flygfotogen (KN-nr 2710 19 21),
+dock inte annan bensin än flygbensin (KN-nr 2710 11 31), i
+luftfartyg, när luftfartyget inte använts för privat
+ändamål. Lag (2014:1023).
+
+4 § Har upphävts genom förordning (2015:747).
+
+5 § /Upphör att gälla U:2021-01-01/
+Beskattningsmyndigheten medger, i den omfattning som anges 
+i andra-fjärde styckena, efter ansökan från förbrukaren 
+återbetalning av skatt på elektrisk kraft och bränsle som 
+denne förbrukat för framställning av värme eller kyla som 
+levererats för ändamål som ger skattebefrielse enligt 6 a kap. 
+1 § 1, 6, 9, 10, 11 eller 16 eller enligt 11 kap. 9 § första 
+stycket 2, 3 eller 5. Med förbrukning för framställning av 
+värme eller kyla avses i fråga om återbetalning av skatt på 
+elektrisk kraft även sådan förbrukning som skett i samband med 
+framställningen för drift av pumpar, fläktar och andra 
+hjälpanordningar som är nödvändiga för driften av 
+anläggningen.
+
+Återbetalning medges vid leverans för
+
+1. tillverkningsprocessen i industriell verksamhet eller för 
+yrkesmässig jordbruks-, skogsbruks- eller 
+vattenbruksverksamhet, för
+
+a) elektrisk kraft med den del av energiskatten som överstiger 
+0,5 öre per kilowattimme,
+
+b) råtallolja med ett energiskattebelopp som motsvarar 
+70 procent av den energiskatt som tas ut på bränsle som avses 
+i 2 kap. 1 § första stycket 3 a,
+
+c) andra bränslen än råtallolja med 70 procent av 
+energiskatten,
+
+2. annat ändamål än som avses under 1, med hela energiskatten 
+på elektrisk kraft och med hela energiskatten, 
+koldioxidskatten och svavelskatten på bränsle.
+
+Om leverans skett för tillverkningsprocessen i sådan 
+industriell verksamhet som tillhör en verksamhetskategori som 
+anges i bilaga I till Europaparlamentets och rådets direktiv 
+2003/87/EG av den 13 oktober 2003 om ett system för handel med 
+utsläppsrätter för växthusgaser inom gemenskapen och om 
+ändring av rådets direktiv 96/61/EG, senast ändrat genom 
+Europaparlamentets och rådets direktiv 2009/29/EG, medges dock 
+återbetalning enligt
+
+1. andra stycket 1 b med ett energiskattebelopp som motsvarar 
+70 procent av den energiskatt och 100 procent av den 
+koldioxidskatt som tas ut på bränsle som avses i 2 kap. 1 § 
+första stycket 3 a, och
+
+2. andra stycket 1 c med 70 procent av energiskatten och 
+100 procent av koldioxidskatten.
+
+För bensin och bränsle som avses i 2 kap. 1 § första stycket 
+3 b medges inte någon återbetalning av skatt enligt denna 
+paragraf. Lag (2019:491).
+
+5 § /Träder i kraft I:2021-01-01/
+Beskattningsmyndigheten medger, i den omfattning som anges 
+i andra-fjärde styckena, efter ansökan från förbrukaren 
+återbetalning av skatt på elektrisk kraft och bränsle som 
+denne förbrukat för framställning av värme eller kyla som 
+levererats för ändamål som ger skattebefrielse enligt 6 a kap. 
+1 § 1, 6, 9, 10, 11 eller 16 eller enligt 11 kap. 9 § första 
+stycket 2, 3 eller 5. Med förbrukning för framställning av 
+värme eller kyla avses i fråga om återbetalning av skatt på 
+elektrisk kraft även sådan förbrukning som skett i samband med 
+framställningen för drift av pumpar, fläktar och andra 
+hjälpanordningar som är nödvändiga för driften av 
+anläggningen.
+
+Återbetalning medges vid leverans för
+
+1. tillverkningsprocessen i industriell verksamhet eller för 
+yrkesmässig jordbruks-, skogsbruks- eller 
+vattenbruksverksamhet, för
+
+a) elektrisk kraft med den del av energiskatten som överstiger 
+0,6 öre per kilowattimme,
+
+b) råtallolja med ett energiskattebelopp som motsvarar 
+70 procent av den energiskatt som tas ut på bränsle som avses 
+i 2 kap. 1 § första stycket 3 a,
+
+c) andra bränslen än råtallolja med 70 procent av 
+energiskatten,
+
+2. annat ändamål än som avses under 1, med hela energiskatten 
+på elektrisk kraft och med hela energiskatten, 
+koldioxidskatten och svavelskatten på bränsle.
+
+Om leverans skett för tillverkningsprocessen i sådan 
+industriell verksamhet som tillhör en verksamhetskategori som 
+anges i bilaga I till Europaparlamentets och rådets direktiv 
+2003/87/EG av den 13 oktober 2003 om ett system för handel med 
+utsläppsrätter för växthusgaser inom gemenskapen och om 
+ändring av rådets direktiv 96/61/EG, senast ändrat genom 
+Europaparlamentets och rådets direktiv 2009/29/EG, medges dock 
+återbetalning enligt
+
+1. andra stycket 1 b med ett energiskattebelopp som motsvarar 
+70 procent av den energiskatt och 100 procent av den 
+koldioxidskatt som tas ut på bränsle som avses i 2 kap. 1 § 
+första stycket 3 a, och
+
+2. andra stycket 1 c med 70 procent av energiskatten och 100 
+procent av koldioxidskatten.
+
+För bensin och bränsle som avses i 2 kap. 1 § första stycket 
+3 b medges inte någon återbetalning av skatt enligt denna 
+paragraf. Lag (2020:1045).
+
+5 a § /Upphör att gälla U:2021-01-01/
+Beskattningsmyndigheten medger efter ansökan från 
+förbrukaren återbetalning av skatt på elektrisk kraft som 
+denne förbrukat för framställning av värme eller kyla som 
+levererats för förbrukning i datorhall. Med förbrukning för 
+framställning av värme eller kyla avses även sådan 
+förbrukning som skett i samband med framställningen för drift 
+av pumpar, fläktar och andra hjälpanordningar som är 
+nödvändiga för driften av anläggningen.
+
+Återbetalning medges med den del av energiskatten som 
+överstiger 0,5 öre per kilowattimme. Lag (2017:1208).
+
+5 a § /Träder i kraft I:2021-01-01/
+Beskattningsmyndigheten medger efter ansökan från 
+förbrukaren återbetalning av skatt på elektrisk kraft som 
+denne förbrukat för framställning av värme eller kyla som 
+levererats för förbrukning i datorhall. Med förbrukning för 
+framställning av värme eller kyla avses även sådan förbrukning 
+som skett i samband med framställningen för drift av pumpar, 
+fläktar och andra hjälpanordningar som är nödvändiga för 
+driften av anläggningen.
+
+Återbetalning medges med den del av energiskatten som 
+överstiger 0,6 öre per kilowattimme. Lag (2020:1045).
+
+5 b § Om elektrisk kraft och ett eller flera bränslen 
+förbrukats samtidigt för framställning av värme eller kyla 
+enligt 5 eller 5 a §, ska energislagen vid beräkning av 
+återbetalningen fördelas genom proportionering i förhållande 
+till respektive energislag. Fördelningen mellan respektive 
+bränsle får dock väljas fritt. Motsvarande gäller elektrisk 
+kraft om den elektriska kraft som förbrukats vid 
+framställningen av värmen eller kylan till någon del utgörs 
+av elektrisk kraft som inte är skattepliktig eller elektrisk 
+kraft för vilken en lägre skattenivå än den som anges i 11 
+kap. 3 § kan uppnås enligt bestämmelser i denna lag.
+Lag (2017:1208).
+
+6 § Om svavelskatt har tagits ut och någon som inte är
+skattskyldig har begränsat utsläppet av svavel enligt 7 kap.
+5 §, medger beskattningsmyndigheten efter ansökan kompensation
+för den svavelskatt som belastat bränslet med 30 kronor per
+kilogram som utsläppet har minskat. Lag (2001:518).
+
+7 § Ansökan om återbetalning eller kompensation enligt 2–6 §§ 
+ska omfatta en period om ett kalenderkvartal och ska lämnas 
+elektroniskt. I fråga om återbetalning enligt 2 § som görs 
+med stöd av 6 a kap. 1 § 10, 11 eller 2 a § ska dock 
+återbetalningen omfatta en period om ett kalenderår. Om 
+sökanden beräknas förbruka bränsle i större omfattning, får 
+dock beskattningsmyndigheten medge att ansökan görs per 
+kalenderkvartal. Ett sådant beslut får återkallas om sökanden 
+begär det eller förutsättningar för medgivande inte finns.
+
+Ansökan om återbetalning eller kompensation ska lämnas in 
+till beskattningsmyndigheten inom tre år efter utgången av 
+kalenderåret respektive kalenderkvartalet. Lag (2017:1208).
+
+8 § Rätt till återbetalning eller kompensation enligt 2, 3 
+och 6 §§ föreligger endast när ersättningen för ett 
+kalenderkvartal uppgår till
+
+1. minst 1 000 kronor i fall som avses i 2 eller 6 §, och
+
+2. minst 500 kronor i fall som avses i 3 §.
+
+Sådan återbetalning enligt 2 § som görs med stöd av 6 a kap. 
+1 § 10, 11 eller 2 a § får dock göras när den sammanlagda 
+ersättningen uppgår till minst 500 kronor per kalenderår.
+
+Rätt till återbetalning enligt 5 och 5 a §§ föreligger endast 
+för den del av den sammanlagda ersättningen som överstiger 
+2 000 kronor per kalenderkvartal och endast om 
+
+1. stödmottagaren inte är ett företag utan rätt till statligt 
+stöd, och 
+
+2. sökanden lämnar uppgifter om stödmottagare.
+
+Kraven i tredje stycket 2 gäller endast uppgifter om 
+stödmottagare vars sammanlagda nedsättning inom stödordningen 
+genom återbetalningen överstiger 50 000 euro under 
+kalenderåret. Lag (2017:1208).
+
+8 a § Om en oljeprodukt har försetts med märkämne som avses i 2
+kap. 9 a § innan den har förts in till Sverige och
+oljeprodukten därefter har beskattats i Sverige enligt 2 kap.
+1 § första stycket 3 b, medger beskattningsmyndigheten efter
+ansökan återbetalning av ett belopp som motsvarar skillnaden
+mellan det skattebelopp som betalats för oljeprodukten enligt 2
+kap. 1 § första stycket 3 b och det skattebelopp som gäller
+enligt 2 kap. 1 § första stycket 3 a, om oljeprodukten har
+förbrukats i Sverige för uppvärmning eller för drift av
+stationära motorer.
+
+Ansökan om återbetalning enligt första stycket skall omfatta
+ett kalenderkvartal och skall lämnas in till
+beskattningsmyndigheten inom tre år efter kvartalets utgång.
+Lag (2007:779).
+
+9 § Har upphävts genom lag (2009:1497).
+
+9 a § Har upphävts genom lag (2009:1497).
+
+9 b § Har upphävts genom lag (2009:1497).
+
+10 § Om skatt har betalats i Sverige för bränsle och bränslet
+därefter har flyttats till ett annat EU-land under sådana
+förhållanden att skatt ska betalas där eller flyttningen sker
+för förbrukning för ett i det andra EU-landet skattebefriat
+ändamål, medger Skatteverket efter ansökan återbetalning av
+skatten. Lag (2011:287).
+
+10 a § Rätt till återbetalning enligt 10 § vid
+distansförsäljning föreligger endast om sökanden visar att den
+skatt som ansökan avser är betald samt att bränslet har
+beskattats i mottagarlandet eller är avsett att användas där
+för ett skattebefriat ändamål.
+
+Ansökan om återbetalning enligt första stycket skall omfatta en
+period om ett kalenderkvartal och skall lämnas in till
+beskattningsmyndigheten inom tre år efter kvartalets utgång.
+Lag (2006:1508).
+
+10 b § Ansökan om återbetalning enligt 10 § i andra fall än
+som avses i 10 a § ska lämnas till Skatteverket. Den som
+begär återbetalning ska visa att den skatt som ansökan avser
+har betalats i Sverige.
+
+Skatteverket återbetalar skattebeloppet sedan sökanden visat
+att
+
+1. skatt betalats i mottagarlandet, eller
+
+2. bränslet är avsett att användas i mottagarlandet för ett
+där skattebefriat ändamål. Lag (2009:1493).
+
+11 § Har bränsle beskattats enligt 4 kap. 2, 2 a eller 2 b §, 
+och visar den skattskyldige inom tre år efter det att 
+flyttningen påbörjades att bränslet beskattats i ett annat 
+EU-land, ska den skatt som betalats i Sverige återbetalas, om 
+det andra EU-landets skatteanspråk är befogat. 
+Lag (2017:1208).
+
+12 § En ansökan om återbetalning eller kompensation enligt 
+2–6 §§, 8 a § eller 10–11 §§ ska vara undertecknad av 
+sökanden eller av den som är ombud eller annan behörig 
+företrädare för sökanden.
+
+En ansökan som lämnats för en sökande som är en juridisk 
+person anses ha lämnats av sökanden, om det inte är uppenbart 
+att den som lämnade begäran saknade behörighet att företräda 
+sökanden. Lag (2017:1208).
+
+13 § Har upphävts genom lag (2002:422).
+
+14 § Har upphävts genom lag (2002:422).
+
+15 § Har upphävts genom lag (2002:422).
+
+10 kap. Sanktioner vid otillåten användning av märkta
+oljeprodukter, m.m.
+
+Straffbestämmelser m.m.
+
+1 § Den som från oljeprodukter avlägsnar märkämne som avses i 2
+kap. 9 a § eller på annat sätt tar befattning med oljeprodukter
+för vilka energiskatt enligt 2 kap. 1 § första stycket 3 b inte
+betalats, i syfte att dessa produkter skall användas i strid
+mot 2 kap. 9 §, döms till böter eller fängelse i högst sex
+månader.
+
+Om brottet har rört betydande värden eller det i annat fall är
+att anse som grovt skall, om förfarandet inte utgör led i
+gärning som är belagd med strängare straff enligt
+skattebrottslagen (1971:69), dömas till fängelse i högst två
+år. Lag (2007:779).
+
+2 § För försök eller förberedelse till brott enligt 1 § andra
+stycket skall dömas till ansvar enligt 23 kap. brottsbalken.
+Lag (2007:779).
+
+3 § Egendom som har använts som hjälpmedel vid brott enligt
+denna lag får förklaras förverkad, om det behövs för att
+förebygga brott eller om det annars finns särskilda skäl.
+Detsamma gäller egendom som varit avsedd att användas som
+hjälpmedel vid brott enligt denna lag, om brottet har
+fullbordats eller om förfarandet har utgjort ett straffbart
+försök eller en straffbar förberedelse. I stället för egendomen
+får dess värde förklaras förverkat.
+
+Angående beslag av egendom som kan antas bli förverkad gäller
+bestämmelserna om beslag i rättegångsbalken. Lag (2005:308).
+
+4 § Om oljeprodukter där märkämne som avses i 2 kap. 9 a § har
+avlägsnats och för vilka skatt enligt 2 kap. 1 § första stycket
+3 b inte betalats, anträffas i annat utrymme än bränsletank som
+förser motor på motordrivet fordon eller båt med bränsle och
+det är uppenbart att oljeprodukterna avsetts för tillförsel
+till sådan bränsletank i strid mot 2 kap. 9 §, påför
+beskattningsmyndigheten den som ansvarat för att de nämnda
+ämnena avlägsnats, skatt med belopp som motsvarar den skatt som
+skulle ha tagits ut för oljeprodukterna enligt 2 kap. 1 §
+första stycket 3 b. Lag (2007:779).
+
+5 § En särskild avgift skall betalas för motordrivet fordon och
+båt, vars bränsletank innehåller oljeprodukter i strid mot 2
+kap. 9 §.
+
+Avgiften uppgår för personbil, lätt lastbil och lätt buss samt
+båt till 10 000 kronor. Avgiften beräknas för tunga lastbilar,
+tunga bussar, traktorer och tunga terrängvagnar som är
+registrerade i vägtrafikregistret på följande sätt.
+
+Skattevikt, kilogram            Avgift, kronor
+
+0- 3 500                        10 000
+
+3 501-10 000                    20 000
+
+10 001-15 000                   30 000
+
+15 001-20 000                   40 000
+
+20 001-                         50 000
+
+Med skattevikt avses den vikt efter vilken fordonsskatt
+beräknas enligt vägtrafikskattelagen (2006:227). Avgiften för
+annat motordrivet fordon än som avses i andra stycket uppgår
+till 10 000 kronor. Avgiften tas ut för varje tillfälle som
+bränsletank påträffas med oljeprodukter i strid mot 2 kap. 9 §.
+
+Har avgift påförts någon och skall sådan avgift påföras honom
+för ytterligare tillfälle inom ett år från det tidigare
+tillfället, tas avgiften ut med en och en halv gånger det
+belopp som följer av andra eller tredje stycket.
+Lag (2007:779).
+
+6 § Avgift enligt 5 § påförs ägaren till fordonet eller båten.
+
+Brukar någon annans fordon eller båt utan lov, påförs brukaren
+avgiften.
+
+7 § I fråga om ett fordon eller en båt som har köpts på kredit med
+förbehåll om återtaganderätt anses vid tillämpningen av detta kapitel
+köparen som ägare. Som ägare anses också den som innehar ett fordon
+eller en båt med nyttjanderätt för bestämd tid om minst ett år.
+Innehas fordonet eller båten i annat fall med nyttjanderätt, anses
+nyttjanderättshavaren som ägare, om han har befogenhet att bestämma
+om förare eller anlitar annan förare än ägaren har utsett.
+Lag (1995:912).
+
+8 § Avgift enligt 5 § påförs genom beslut av
+beskattningsmyndigheten.
+
+Om det finns särskilda skäl, kan beskattningsmyndigheten medge
+nedsättning av eller befrielse från avgiften.
+
+Tillsyn och kontroll
+
+9 § Tillsynen över att bestämmelserna i detta kapitel följs
+ska utövas av Polismyndigheten när det gäller motordrivna
+fordon och av Tullverket när det gäller gränskontroll.
+
+Kustbevakningen ska utöva tillsynen av båtar.
+Polismyndigheten ska dock utöva sådan tillsyn inom områden
+som inte övervakas av Kustbevakningen. Lag (2014:668).
+
+10 § För att kontrollera att bestämmelserna i detta kapitel
+följs har Polismyndigheten och andra tillsynsmyndigheter rätt
+att få tillträde till låsta utrymmen i fordon och båtar.
+Myndigheterna har rätt att få de upplysningar, handlingar och
+prov som behövs för tillsynen. För uttagna prov betalas inte
+ersättning. Lag (2014:668).
+
+Regler om förfarandet
+
+11 § Bestämmelserna i 68 kap. 1 § och 70 kap. 1–3 §§
+skatteförfarandelagen (2011:1244) ska tillämpas på avgift
+enligt detta kapitel. Lag (2011:1370).
+
+12 § Har upphävts genom lag (2002:422).
+
+13 § Har ett fordon eller en båt flera ägare, är de solidariskt
+ansvariga för den avgift som skall betalas enligt detta kapitel.
+
+11 kap. Energiskatt på elektrisk kraft
+
+Skattepliktig elektrisk kraft
+
+1 § Elektrisk kraft som förbrukas i Sverige är skattepliktig, om inte
+annat följer av 2 §.
+
+2 § Elektrisk kraft är inte skattepliktig om den 
+
+1. framställts 
+
+a) i en anläggning med en sammanlagd installerad 
+generatoreffekt av mindre än 50 kilowatt, 
+
+b) av någon som förfogar över en sammanlagd installerad 
+generatoreffekt av mindre än 50 kilowatt, och
+
+c) den elektriska kraften inte har överförts till ett 
+koncessionspliktigt nät,
+
+2. till lägre effekt än 50 kilowatt utan ersättning överförts 
+av en producent eller en nätinnehavare till en förbrukare som 
+inte står i intressegemenskap med producenten eller 
+nätinnehavaren,
+
+3. framställts och förbrukats på fartyg eller annat 
+transportmedel,
+
+4. förbrukats för framställning av elektrisk kraft,
+
+5. framställts i ett reservkraftsaggregat och inte har 
+överförts till ett koncessionspliktigt nät, eller
+
+6. framställts
+
+a) i en anläggning med en sammanlagd installerad 
+generatoreffekt av mindre än 100 kilowatt,
+
+b) från bränsle som avses i 2 kap. 1 § första stycket 1–6,
+
+c) av någon som förfogar över en sammanlagd installerad 
+generatoreffekt av mindre än 100 kilowatt, och
+
+d) den elektriska kraften inte har överförts till ett 
+koncessionspliktigt nät.
+
+Vad som anges i första stycket 1 a respektive b om den 
+installerade generatoreffekten ska för elektrisk kraft som 
+framställs från
+
+1. vind eller vågor, i stället motsvaras av 125 kilowatt 
+installerad generatoreffekt,
+
+2. sol, i stället motsvaras av 255 kilowatt installerad 
+toppeffekt, och
+
+3. annan energikälla utan generator, i stället motsvaras av 
+50 kilowatt installerad effekt.
+
+När elektrisk kraft framställs från olika energikällor ska, 
+vid bedömningen av förutsättningarna i första stycket 1 a, b 
+respektive 6 c, de installerade effekterna läggas samman. Vid 
+sammanläggningen ska de effekter som anges i andra stycket 
+först räknas om till motsvarande 50 kilowatt installerad 
+generatoreffekt vid bedömningen av förutsättningarna i första 
+stycket 1 a respektive b. Vid bedömningen av 
+förutsättningarna i 6 c ska omräkning först ske till 
+motsvarande 100 kilowatt installerad generatoreffekt.
+Lag (2018:1887).
+
+Skattebelopp
+
+3 § Energiskatt ska betalas med 34,7 öre per förbrukad 
+kilowattimme elektrisk kraft.
+
+För kalenderåret 2020 och efterföljande kalenderår ska 
+energiskatt betalas med ett belopp som efter en årlig 
+omräkning motsvarar det i första stycket angivna 
+skattebeloppet multiplicerat med det jämförelsetal, uttryckt 
+i procent, som anger förhållandet mellan det allmänna 
+prisläget i juni månad året närmast före det år beräkningen 
+avser och prisläget i juni 2018. Beloppet avrundas till hela 
+tiondels ören.
+
+Regeringen fastställer före november månads utgång det 
+omräknade skattebelopp som enligt denna paragraf ska tas ut 
+för påföljande kalenderår. Lag (2017:400).
+
+Förteckning över vissa kommuner
+
+4 § Förteckning över kommuner som avses i 9 § första stycket 
+8.
+
+Norrbottens län 
+Samtliga kommuner		Västerbottens län 
+				Samtliga kommuner
+
+Jämtlands län 
+Samtliga kommuner 		Västernorrlands län 
+				Sollefteå
+				Ånge
+				Örnsköldsvik
+
+Gävleborgs län 
+Ljusdal				Dalarnas län
+				Malung-Sälen
+				Mora
+				Orsa
+				Älvdalen
+
+Värmlands län
+Torsby	
+Lag (2017:409).
+
+Vem som är skattskyldig
+
+5 § /Upphör att gälla U:2021-01-01/
+Skyldig att betala energiskatt (skattskyldig) är den 
+som i Sverige
+
+1. framställer skattepliktig elektrisk kraft (producent),
+
+2. är nätinnehavare,
+
+3. godkänts som frivilligt skattskyldig enligt 6 §, eller
+
+4. innehar ett elnät för vilket koncession inte meddelats och 
+som via detta elnät för in elektrisk kraft till Sverige.
+
+Skattskyldig enligt första stycket 1 är inte den som 
+framställer elektrisk kraft enbart i enlighet med 2 § första 
+stycket 1 a och b. Skattskyldig enligt första stycket 2 är 
+inte den myndighet som är systemansvarig enligt 8 kap. 1 § 
+ellagen (1997:857). Lag (2017:1223).
+
+5 § /Träder i kraft I:2021-01-01/
+Skyldig att betala energiskatt (skattskyldig) är den som i 
+Sverige 
+
+1. framställer skattepliktig elektrisk kraft (producent), 
+
+2. är nätinnehavare, 
+
+3. godkänts som frivilligt skattskyldig enligt 6 §, eller 
+
+4. innehar ett elnät för vilket koncession inte meddelats och 
+som via detta elnät för in elektrisk kraft till Sverige.
+
+Skattskyldig enligt första stycket 1 är inte den som 
+framställer elektrisk kraft enbart i enlighet med 2 § första 
+stycket 1 a och b. Skattskyldig enligt första stycket 2 är 
+inte den myndighet som är systemansvarig enligt 8 kap. 1 § 
+ellagen (1997:857). Införsel av elektrisk kraft till Sverige 
+via ett elnät på Öresundsbron medför inte att den som för in 
+den elektriska kraften blir skattskyldig för införseln enligt 
+första stycket 4. Lag (2020:1045).
+
+6 § Som frivilligt skattskyldig får godkännas den som 
+beräknas förbruka mer än 10 gigawattimmar elektrisk kraft per 
+kalenderår
+
+1. i tåg eller annat spårbundet transportmedel eller för 
+motordrift eller uppvärmning i omedelbart samband med sådan 
+förbrukning,
+
+2. i huvudsak för kemisk reduktion eller i huvudsak för 
+elektrolytiska processer,
+
+3. vid sådan framställning av produkter som avses i 6 a kap. 
+1 § 6, 
+
+4. i metallurgiska processer eller vid tillverkning av 
+mineraliska produkter under förutsättning att det ingående 
+materialet genom uppvärmning i ugnar har förändrats kemiskt 
+eller dess inre fysikaliska struktur har förändrats, i den 
+utsträckning förbrukningen inte omfattas av föregående 
+punkter, 
+
+5. i tillverkningsprocessen i industriell verksamhet, i den 
+utsträckning förbrukningen inte omfattas av föregående 
+punkter, eller
+
+6. i en datorhall.
+
+För ett sådant godkännande krävs att den sökande är lämplig 
+som frivilligt skattskyldig med hänsyn till sina ekonomiska 
+förhållanden och omständigheterna i övrigt.
+
+Godkännande som frivilligt skattskyldig ska återkallas om 
+förutsättningarna för godkännande inte längre finns eller om 
+den frivilligt skattskyldige begär det. Ett beslut om 
+återkallelse gäller omedelbart, om inte något annat anges i 
+beslutet. Lag (2017:1208).
+
+Skattskyldighetens inträde m.m.
+
+7 § /Upphör att gälla U:2021-01-01/
+Skyldigheten att betala energiskatt inträder 
+
+1. för den som är skattskyldig enligt 5 § första stycket 1, 2 
+eller 3, när skattepliktig elektrisk kraft 
+
+a) överförs till någon som inte är skattskyldig enligt 5 § 
+första stycket 1, 2 eller 3, eller 
+
+b) förbrukas av den skattskyldige, och 
+
+2. för den som är skattskyldig enligt 5 § första stycket 4, 
+när elektrisk kraft förs in till Sverige.
+
+Skattskyldighet enligt första stycket 1 a inträder inte vid 
+överföring av elektrisk kraft till det elnät som ägs av den 
+myndighet som är systemansvarig enligt 8 kap. 1 § ellagen 
+(1997:857).
+
+Skattskyldighet enligt första stycket 1 inträder inte om 
+skattskyldighet för den elektriska kraften redan har inträtt, 
+utom i fråga om elektrisk kraft som omfattas av rätt till 
+återbetalning enligt 13 §. Lag (2018:1887).
+
+7 § /Träder i kraft I:2021-01-01/
+Skyldigheten att betala energiskatt inträder 
+
+1. för den som är skattskyldig enligt 5 § första stycket 1, 2 
+eller 3, när skattepliktig elektrisk kraft 
+
+a) överförs till någon som inte är skattskyldig enligt 5 § 
+första stycket 1, 2 eller 3, eller 
+
+b) förbrukas av den skattskyldige, och 
+
+2. för den som är skattskyldig enligt 5 § första stycket 4, 
+när elektrisk kraft förs in till Sverige. 
+
+Skattskyldighet enligt första stycket 1 a inträder inte vid 
+överföring av elektrisk kraft till det elnät som ägs av den 
+myndighet som är systemansvarig enligt 8 kap. 1 § ellagen 
+(1997:857).
+
+Skattskyldighet enligt första stycket 1 a inträder inte vid 
+överföring av elektrisk kraft till ett järnvägsfordon om den 
+elektriska kraften omfattas av 18 § första stycket 1.
+
+Skattskyldighet enligt första stycket 1 inträder inte om 
+skattskyldighet för den elektriska kraften redan har inträtt, 
+utom i fråga om elektrisk kraft som omfattas av rätt till 
+återbetalning enligt 13 §. Lag (2020:1045).
+
+7 a § Har upphävts genom lag (2016:1073).
+
+7 b § Har upphävts genom lag (2016:1073).
+
+Mätning av elektrisk kraft
+
+8 § Energiskatt som ska betalas av den som är skattskyldig 
+enligt 5 § ska bestämmas utifrån mätning av den elektriska 
+kraftens energiinnehåll.
+
+När det finns särskilda skäl får beskattningsmyndigheten i 
+visst fall medge att energiskatten får bestämmas på annan 
+grund än mätning av den elektriska kraften.
+
+Om den elektriska kraften inte kan bestämmas på en grund som 
+anges i första eller andra stycket ska den i stället beräknas 
+efter vad som är skäligt. Lag (2016:1072).
+
+Avdrag
+
+9 § /Upphör att gälla U:2021-01-01/
+Den som är skattskyldig för energiskatt på elektrisk 
+kraft får göra avdrag för skatt på elektrisk kraft som
+
+1. förbrukats hos den skattskyldige i tåg eller annat 
+spårbundet transportmedel eller för motordrift eller 
+uppvärmning i omedelbart samband med sådan förbrukning,
+
+2. i huvudsak förbrukats hos den skattskyldige för kemisk 
+reduktion eller i elektrolytiska processer,
+
+3. förbrukats hos den skattskyldige vid sådan framställning 
+av produkter som avses i 6 a kap. 1 § 6,
+
+4. förbrukats hos den skattskyldige vid sådan överföring av 
+elektrisk kraft på det elektriska nätet som utförs av den som 
+ansvarar för förvaltningen av nätet i syfte att upprätthålla 
+nätets funktion,
+
+5. förbrukats hos den skattskyldige i metallurgiska processer 
+eller vid tillverkning av mineraliska produkter under 
+förutsättning att det ingående materialet genom uppvärmning i 
+ugnar har förändrats kemiskt eller dess inre fysikaliska 
+struktur har förändrats, i den utsträckning avdragsrätt inte 
+följer av 2,
+
+6. förbrukats i tillverkningsprocessen i industriell 
+verksamhet hos den skattskyldige, i den utsträckning 
+avdragsrätt inte följer av föregående punkter,
+
+7. förbrukats i en datorhall hos den skattskyldige,
+
+8. förbrukats i kommuner som avses i 4 § för annat ändamål 
+än
+
+a) i industriell verksamhet,
+
+b) i en datorhall,
+
+c) i yrkesmässig jordbruks- eller skogsbruksverksamhet,
+
+d) i yrkesmässig vattenbruksverksamhet, 
+
+e) som landström, eller
+
+f) i tåg eller annat spårbundet transportmedel eller för 
+motordrift eller uppvärmning i omedelbart samband med sådan 
+förbrukning.
+
+Avdrag enligt första stycket 6 och 7 medges med skillnaden 
+mellan den skattesats som gällde vid skattskyldighetens 
+inträde och 0,5 öre per förbrukad kilowattimme elektrisk 
+kraft. Avdrag enligt första stycket 8 medges med 9,6 öre per 
+förbrukad kilowattimme elektrisk kraft. Avdrag enligt första 
+stycket 8 får endast medges i den utsträckning avdragsrätt 
+inte följer av föregående punkter. Lag (2017:1223).
+
+9 § /Träder i kraft I:2021-01-01/
+Den som är skattskyldig för energiskatt på elektrisk kraft 
+får göra avdrag för skatt på elektrisk kraft som 
+
+1. förbrukats hos den skattskyldige i tåg eller annat 
+spårbundet transportmedel eller för motordrift eller 
+uppvärmning i omedelbart samband med sådan förbrukning, 
+
+2. i huvudsak förbrukats hos den skattskyldige för kemisk 
+reduktion eller i elektrolytiska processer, 
+
+3. förbrukats hos den skattskyldige vid sådan framställning av 
+produkter som avses i 6 a kap. 1 § 6,
+
+4. förbrukats hos den skattskyldige vid sådan överföring av 
+elektrisk kraft på det elektriska nätet som utförs av den som 
+ansvarar för förvaltningen av nätet i syfte att upprätthålla 
+nätets funktion,
+
+5. förbrukats hos den skattskyldige i metallurgiska processer 
+eller vid tillverkning av mineraliska produkter under 
+förutsättning att det ingående materialet genom uppvärmning i 
+ugnar har förändrats kemiskt eller dess inre fysikaliska 
+struktur har förändrats, i den utsträckning avdragsrätt inte 
+följer av 2,
+
+6. förbrukats i tillverkningsprocessen i industriell 
+verksamhet hos den skattskyldige, i den utsträckning 
+avdragsrätt inte följer av föregående punkter,
+
+7. förbrukats i en datorhall hos den skattskyldige,
+
+8. förbrukats i kommuner som avses i 4 § för annat ändamål än 
+
+a) i industriell verksamhet,
+
+b) i en datorhall,
+
+c) i yrkesmässig jordbruks- eller skogsbruksverksamhet,
+
+d) i yrkesmässig vattenbruksverksamhet, 
+
+e) som landström, eller
+
+f) i tåg eller annat spårbundet transportmedel eller för 
+motordrift eller uppvärmning i omedelbart samband med sådan 
+förbrukning.
+
+Avdrag enligt första stycket 6 och 7 medges med skillnaden 
+mellan den skattesats som gällde vid skattskyldighetens 
+inträde och 0,6 öre per förbrukad kilowattimme elektrisk 
+kraft. Avdrag enligt första stycket 8 medges med 9,6 öre per 
+förbrukad kilowattimme elektrisk kraft. Avdrag enligt första 
+stycket 8 får endast medges i den utsträckning avdragsrätt 
+inte följer av föregående punkter. Lag (2020:1045).
+
+10 § /Upphör att gälla U:2021-01-01/
+Den som är skattskyldig för energiskatt på elektrisk 
+kraft får göra avdrag för skatt på elektrisk kraft, om 
+
+1. denne framställt den elektriska kraften från förnybara 
+källor i en anläggning med en sammanlagd installerad 
+generatoreffekt av mindre än 50 kilowatt, och
+
+2. den elektriska kraften inte har överförts till ett 
+koncessionspliktigt nät.
+
+Den installerade generatoreffekten ska för elektrisk kraft 
+som framställs från
+
+1. vind eller vågor, i stället motsvaras av 125 kilowatt 
+installerad generatoreffekt,
+
+2. sol, i stället motsvaras av 255 kilowatt installerad 
+toppeffekt, och
+
+3. annan energikälla utan generator, i stället motsvaras av 
+50 kilowatt installerad effekt.
+
+När elektrisk kraft framställs från olika energikällor ska, 
+vid bedömningen av förutsättningarna i första stycket 1, de 
+installerade effekterna läggas samman. Vid sammanläggningen 
+ska de effekter som anges i andra stycket först räknas om 
+till motsvarande 50 kilowatt installerad generatoreffekt vid 
+bedömningen av förutsättningarna i första stycket 1.
+
+Avdrag enligt första stycket medges med skillnaden mellan den 
+skattesats som gällde vid skattskyldighetens inträde och 0,5 
+öre per förbrukad kilowattimme elektrisk kraft. Avdrag enligt 
+första stycket får endast medges i den utsträckning 
+avdragsrätt inte följer av föregående bestämmelser.
+Lag (2018:1887).
+
+10 § /Träder i kraft I:2021-01-01/
+Den som är skattskyldig för energiskatt på elektrisk 
+kraft får göra avdrag för skatt på elektrisk kraft, om 
+
+1. denne framställt den elektriska kraften från förnybara 
+källor i en anläggning med en sammanlagd installerad 
+generatoreffekt av mindre än 50 kilowatt, och
+
+2. den elektriska kraften inte har överförts till ett 
+koncessionspliktigt nät.
+
+Den installerade generatoreffekten ska för elektrisk kraft som 
+framställs från
+
+1. vind eller vågor, i stället motsvaras av 125 kilowatt 
+installerad generatoreffekt,
+
+2. sol, i stället motsvaras av 255 kilowatt installerad 
+toppeffekt, och
+
+3. annan energikälla utan generator, i stället motsvaras av 
+50 kilowatt installerad effekt.
+
+När elektrisk kraft framställs från olika energikällor ska, 
+vid bedömningen av förutsättningarna i första stycket 1, de 
+installerade effekterna läggas samman. Vid sammanläggningen 
+ska de effekter som anges i andra stycket först räknas om till 
+motsvarande 50 kilowatt installerad generatoreffekt vid 
+bedömningen av förutsättningarna i första stycket 1.
+
+Avdrag enligt första stycket medges med skillnaden mellan den 
+skattesats som gällde vid skattskyldighetens inträde och 
+0,6 öre per förbrukad kilowattimme elektrisk kraft. Avdrag 
+enligt första stycket får endast medges i den utsträckning 
+avdragsrätt inte följer av föregående bestämmelser.
+Lag (2020:1045).
+
+11 § Har upphävts genom lag (2017:1208).
+
+Skattebefriad förbrukare
+
+11 a § Har upphävts genom lag (2016:1073).
+
+11 b § Har upphävts genom lag (2016:1073).
+
+11 c § Har upphävts genom lag (2016:1073).
+
+Återbetalning av energiskatt
+
+12 § /Upphör att gälla U:2021-01-01/
+Efter ansökan från förbrukaren beslutar 
+beskattningsmyndigheten om återbetalning av energiskatten på 
+den elektriska kraft som denne förbrukat i yrkesmässig 
+jordbruks- eller skogsbruksverksamhet.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,5 öre per 
+kilowattimme. Återbetalning får dock endast göras när 
+skillnaden uppgår till minst 500 kronor per kalenderår.
+Lag (2017:1208).
+
+12 § /Träder i kraft I:2021-01-01/
+Efter ansökan från förbrukaren beslutar 
+beskattningsmyndigheten om återbetalning av energiskatten på 
+den elektriska kraft som denne förbrukat i yrkesmässig 
+jordbruks- eller skogsbruksverksamhet.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,6 öre per 
+kilowattimme. Återbetalning får dock endast göras när 
+skillnaden uppgår till minst 500 kronor per kalenderår.
+Lag (2020:1045).
+
+12 a § /Upphör att gälla U:2021-01-01/
+Efter ansökan från förbrukaren beslutar 
+beskattningsmyndigheten om återbetalning av energiskatten på 
+den elektriska kraft som denne förbrukat i yrkesmässig 
+vattenbruksverksamhet.
+
+Återbetalning får endast göras om sökanden omfattas av 
+kategorin små och medelstora företag enligt bilaga 1 i 
+kommissionens förordning (EU) nr
+
+1388/2014 av den 16 december 2014 genom vilken vissa 
+kategorier av stöd till företag som är verksamma inom 
+produktion, beredning och saluföring av fiskeri- och 
+vattenbruksprodukter förklaras förenliga med den inre 
+marknaden enligt artiklarna 107 och 108 i fördraget.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,5 öre per 
+kilowattimme. Återbetalning får dock endast göras när 
+skillnaden uppgår till minst 500 kronor per kalenderår.
+Lag (2017:1208).
+
+12 a § /Träder i kraft I:2021-01-01/
+Efter ansökan från förbrukaren beslutar 
+beskattningsmyndigheten om återbetalning av energiskatten på 
+den elektriska kraft som denne förbrukat i yrkesmässig 
+vattenbruksverksamhet.
+
+Återbetalning får endast göras om sökanden omfattas av 
+kategorin små och medelstora företag enligt bilaga 1 i 
+kommissionens förordning (EU) nr 1388/2014 av den 
+16 december 2014 genom vilken vissa kategorier av stöd till 
+företag som är verksamma inom produktion, beredning och 
+saluföring av fiskeri- och vattenbruksprodukter förklaras 
+förenliga med den inre marknaden enligt artiklarna 107 och 108 
+i fördraget.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,6 öre per 
+kilowattimme. Återbetalning får dock endast göras när 
+skillnaden uppgår till minst 500 kronor per kalenderår.
+Lag (2020:1045).
+
+12 b § /Upphör att gälla U:2021-01-01/
+Efter ansökan från förbrukaren beslutar 
+beskattningsmyndigheten om återbetalning av energiskatten på 
+den elektriska kraft som denne förbrukat som landström.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,5 öre per 
+kilowattimme. Lag (2017:1208).
+
+12 b § /Träder i kraft I:2021-01-01/
+Efter ansökan från förbrukaren beslutar 
+beskattningsmyndigheten om återbetalning av energiskatten på 
+den elektriska kraft som denne förbrukat som landström.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,6 öre per 
+kilowattimme. Lag (2020:1045).
+
+13 § Efter ansökan från någon som inte är skattskyldig 
+enligt 5 § första stycket 1, 2 eller 3 beslutar 
+beskattningsmyndigheten om återbetalning av energiskatten på 
+den elektriska kraft som sökanden efter batterilagring matat 
+in på det koncessionspliktiga nät från vilket den elektriska 
+kraften dessförinnan matats ut. Lag (2018:1887).
+
+13 a § Efter ansökan från en förbrukare som inte är 
+skattskyldig beslutar beskattningsmyndigheten om 
+återbetalning av energiskatten på den elektriska kraft som 
+denne förbrukat 
+
+1. i tåg eller annat spårbundet transportmedel eller för 
+motordrift eller uppvärmning i omedelbart samband med sådan 
+förbrukning,
+
+2. i huvudsak för kemisk reduktion eller i huvudsak för 
+elektrolytiska processer,
+
+3. vid sådan framställning av produkter som avses i 6 a kap. 
+1 § 6,
+
+4. i metallurgiska processer eller vid tillverkning av 
+mineraliska produkter under förutsättning att det ingående 
+materialet genom uppvärmning i ugnar har förändrats kemiskt 
+eller dess inre fysikaliska struktur har förändrats, i den 
+utsträckning rätt till återbetalning inte följer av 2.
+
+Återbetalning får dock endast göras för den del som 
+överstiger 2 000 kronor per kalenderår. Lag (2017:1208).
+
+14 § /Upphör att gälla U:2021-01-01/
+Efter ansökan från en förbrukare som inte är 
+skattskyldig beslutar beskattningsmyndigheten om 
+återbetalning av energiskatten på den elektriska kraft som 
+denne förbrukat i tillverkningsprocessen i industriell 
+verksamhet. 
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,5 öre per 
+kilowattimme och endast i den utsträckning rätt till 
+återbetalning inte följer av föregående bestämmelser. 
+Återbetalning får dock endast göras för den del som 
+överstiger 8 000 kronor per kalenderår. Lag (2017:1208).
+
+14 § /Träder i kraft I:2021-01-01/
+Efter ansökan från en förbrukare som inte är skattskyldig 
+beslutar beskattningsmyndigheten om återbetalning av 
+energiskatten på den elektriska kraft som denne förbrukat i 
+tillverkningsprocessen i industriell verksamhet.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,6 öre per kilowattimme 
+och endast i den utsträckning rätt till återbetalning inte 
+följer av föregående bestämmelser. Återbetalning får dock 
+endast göras för den del som överstiger 8 000 kronor per 
+kalenderår. Lag (2020:1045).
+
+15 § /Upphör att gälla U:2021-01-01/
+Efter ansökan från en förbrukare som inte är 
+skattskyldig beslutar beskattningsmyndigheten om 
+återbetalning av energiskatten på den elektriska kraft som 
+denne förbrukat i en datorhall.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,5 öre per 
+kilowattimme. Återbetalning får dock endast göras för den del 
+som överstiger 8 000 kronor per kalenderår. Lag (2017:1208).
+
+15 § /Träder i kraft I:2021-01-01/
+Efter ansökan från en förbrukare som inte är skattskyldig 
+beslutar beskattningsmyndigheten om återbetalning av 
+energiskatten på den elektriska kraft som denne förbrukat i en 
+datorhall.
+
+Rätt till återbetalning föreligger endast för skillnaden 
+mellan det betalda skattebeloppet och 0,6 öre per 
+kilowattimme. Återbetalning får dock endast göras för den del 
+som överstiger 8 000 kronor per kalenderår. Lag (2020:1045).
+
+Vissa villkor för avdrag och återbetalning av skatt
+
+16 § Ansökan om återbetalning av energiskatt på elektrisk 
+kraft enligt 12–15 §§ ska omfatta ett kalenderår. Om sökanden 
+beräknas förbruka minst 150 000 kilowattimmar per kalenderår 
+för dessa nedsättningsberättigande ändamål, får dock 
+beskattningsmyndigheten medge att ansökan görs per 
+kalendermånad. Ett sådant beslut får återkallas om sökanden 
+begär det eller förutsättningar för medgivande inte längre 
+finns.
+
+Ansökan om återbetalning ska lämnas elektroniskt. Det gäller 
+dock inte för återbetalning enligt 12 b §.
+
+Ansökan om återbetalning ska lämnas in till 
+beskattningsmyndigheten inom tre år efter utgången av 
+kalenderåret respektive kalendermånaden och vara undertecknad 
+av sökanden eller av den som är ombud eller annan behörig 
+företrädare för sökanden.
+
+En ansökan som lämnats för en sökande som är juridisk person 
+anses ha lämnats av sökanden, om det inte är uppenbart att 
+den som lämnade ansökan saknade behörighet att företräda 
+sökanden. Lag (2017:1208).
+
+17 § Avdrag eller återbetalning enligt 9 § första stycket 6, 
+7 eller 8 eller enligt 10, 12, 12 a, 12 b, 14 eller 15 § 
+medges endast om 
+
+1. stödmottagaren inte är ett företag utan rätt till statligt 
+stöd, och
+
+2. den skattskyldige respektive sökanden lämnar uppgifter om 
+stödmottagare och stödets fördelning mellan stödmottagare.
+
+Kraven i första stycket 2 gäller endast uppgifter om 
+stödmottagare vars sammanlagda nedsättning inom stödordningen 
+genom avdraget eller återbetalningen överstiger 50 000 euro 
+under kalenderåret. För avdrag enligt 10 § och återbetalning 
+enligt 12 a § gäller kraven i första stycket 2 för uppgifter 
+om stödmottagare vars sammanlagda nedsättning inom 
+stödordningen genom avdraget eller återbetalningen överstiger 
+15 000 euro under kalenderåret. Lag (2017:1208).
+
+/Rubriken träder i kraft I:2021-01-01/
+Förbrukare vid spårbunden trafik
+
+18 § /Träder i kraft I:2021-01-01/
+Vid tillämpningen av 6 § första stycket 1, 7 §, 9 § 
+första stycket 1, 13 a § första stycket 1 och 16 § ska 
+elektrisk kraft som förbrukats 
+
+1. i järnvägsfordon i ett järnvägsnät inom ramen för sådana 
+tjänster som avses i 6 kap. 23 eller 23 c § järnvägslagen 
+(2004:519) anses förbrukad av den tjänsteleverantör som 
+tillhandahållit den elektriska kraften,
+
+2. i ett järnvägsnät, för annat ändamål än som avses i 1, 
+anses förbrukad av den infrastrukturförvaltare som med 
+säkerhetstillstånd enligt järnvägslagen förvaltade 
+järnvägsnätet vid förbrukningstillfället,
+
+3. i en spåranläggning eller ett spårfordon inom 
+spåranläggningen anses förbrukad av den spårinnehavare som med 
+tillstånd enligt lagen (1990:1157) om säkerhet vid tunnelbana 
+och spårväg drev spåranläggningen vid förbrukningstillfället. 
+
+Järnvägsnät, infrastrukturförvaltare och tjänsteleverantör har 
+i första stycket samma betydelse som i järnvägslagen. 
+Spåranläggning och spårinnehavare har i första stycket samma 
+betydelse som i lagen om säkerhet vid tunnelbana och spårväg.
+
+Första stycket gäller endast om den som anses vara förbrukare 
+är skattskyldig enligt 5 § första stycket 1, 2 eller 3.
+Lag (2020:1045).
+
+12 kap. Överklagande
+
+1 § Beslut enligt denna lag får överklagas till allmän
+förvaltningsdomstol av den skattskyldige och sökanden.
+Lag (2015:747).
+
+2 § Har upphävts genom lag (1996:1408).
+
+Övergångsbestämmelser
+
+1994:1776
+
+1. Denna lag träder i kraft samtidigt med lagen (1994:1500) med
+anledning av Sveriges anslutning till Europeiska unionen. Genom
+lagen upphävs
+
+a) lagen (1957:262) om allmän energiskatt,
+
+b) lagen (1961:372) om bensinskatt,
+
+c) lagen (1990:582) om koldioxidskatt,
+
+d) lagen (1990:587) om svavelskatt,
+
+e) lagen (1992:1438) om dieseloljeskatt och användning av vissa
+oljeprodukter.
+
+2. De upphävda lagarna gäller fortfarande i fråga om förhållanden
+som hänför sig till tiden före ikraftträdandet av den nya lagen.
+
+3. Med skatt enligt den nya lagen likställs i tillämpliga delar skatt
+enligt lagen (1957:262) om allmän energiskatt, lagen (1961:372) om
+bensinskatt, lagen (1990:582) om koldioxidskatt, lagen (1990:587)
+om svavelskatt och lagen (1992:1438) om dieseloljeskatt och
+användning av vissa oljeprodukter.
+
+4. Med oljeprodukt i 2 kap. 9 § den nya lagen likställs oljeprodukt
+som har försetts med märkämnen enligt bestämmelserna i lagen
+(1992:1438) om dieseloljeskatt och användning av vissa
+oljeprodukter.
+
+5. Har upphävts genom lag (1997:1130).
+
+6. Har upphävts genom lag (1997:1130).
+
+7. Den som är registrerad som skattskyldig för skatt på bränslen
+enligt de äldre bestämmelserna skall avregistreras vid
+ikraftträdandet. Om denne registreras som upplagshavare eller som
+skattskyldig enligt 4 kap. 12 § första stycket 1 eller 2 den nya lagen
+vid ikraftträdandet, inträder dock inte skattskyldighet för lagret vid
+avregistreringen till den del det består av sådana bränsleslag som
+omfattas av den nya registreringen och under förutsättning att dessa
+bränslen befinner sig i ett godkänt skatteupplag eller i lagret hos
+den som registrerats enligt 4 kap. 12 § första stycket 1 eller 2.
+
+8. Den som är registrerad som skattskyldig för skatt på elektrisk
+kraft enligt de äldre bestämmelserna skall utan särskild ansökan
+registreras som skattskyldig enligt den nya lagen vid
+ikraftträdandet.
+
+9. Om den nya lagen inte har trätt i kraft den 1 januari 1995 skall
+följande gälla fram till den nya lagens ikraftträdande
+
+a) Bestämmelserna i 2 § lagen (1974:992) om nedsättning av allmän
+energiskatt och koldioxidskatt skall äga fortsatt tillämpning i fråga
+om förhållanden som hänför sig till tiden fram till den nya lagens
+ikraftträdande
+
+b) Bestämmelserna i punkt 3 av övergångsbestämmelserna till lagen
+(1992:880) om ändring i lagen (1990:582) om koldioxidskatt skall
+äga fortsatt tillämpning på kolbränslen som förbrukats eller försålts
+för förbrukning fram till den nya lagens ikraftträdande.
+
+10. Bestämmelserna i 2 kap. 9 § tillämpas dock i fråga om båtar
+först för tid från och med den 1 september 1995. Lag (1995:611).
+
+1995:611
+
+Denna lag träder i kraft den 1 juli 1995. Den nya punkten 10 i
+övergångsbestämmelserna tillämpas dock för tid från och med den 1
+januari 1995. Äldre föreskrifter gäller fortfarande i fråga om övriga
+förhållanden som hänför sig till tiden före ikraftträdandet.
+
+1995:912
+
+1. Denna lag träder i kraft såvitt avser 2 kap. 10 § och 11 kap. 3 §
+den 1 januari 1996 och i övrigt den 1 juli 1995. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2. De gamla skattebeloppen i 2 kap. 1 § första stycket skall dock
+tillämpas till utgången av år 1995.
+
+3. har upphävts genom lag (1995:1526).
+
+4. Bestämmelserna i 2 kap. 9 § tillämpas i fråga om andra motordrivna
+fordon än personbilar, lastbilar, bussar och trafiktraktorer, utom
+beträffande fordon som används vid tillverkningsprocessen i industriell
+verksamhet, först från och med den 1 oktober 1996 om lagerskatt enligt
+lagen (1995:1132) om lagerskatt på dieselolja för förbrukning i vissa
+motordrivna fordon har betalats för oljan senast den 31 januari 1996
+och den 1 februari 1996 i övriga fall. Lag (1995:1133).
+
+5. Bestämmelserna i 11 kap. 9 § i dess nya lydelse tillämpas dock för
+tid från och med den 1 januari 1995.
+
+1995:1133
+
+Denna lag träder i kraft den dag då lagen enligt uppgift på den
+utkom från trycket i Svensk författningssamling och tillämpas för
+tid från och med den 1 oktober 1995.
+
+
+1995:1525
+
+Denna lag träder i kraft den 1 januari 1996. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+1995:1533
+
+Denna lag träder i kraft den 1 januari 1996. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+1996:687
+
+1. Denna lag träder i kraft såvitt avser punkterna 5 och 6 av
+övergångsbestämmelserna den 1 juli 1996 och i övrigt den 1 september
+1996. Äldre föreskrifter gäller fortfarande i fråga om förhållanden
+som hänför sig till tiden före ikraftträdandet.
+
+2. Till utgången av juni månad år 1997 skall dock följande
+energiskattebelopp tillämpas på bränsle som avses i
+
+a) 2 kap. 1 § första stycket 1 a: 3 kr 41 öre,
+
+b) 2 kap. 1 § första stycket 1 b: 3 kr 47 öre,
+
+c) 2 kap. 1 § första stycket 2: 4 kr 03 öre,
+
+d) 2 kap. 1 § första stycket 3 a: 654 kr per m3
+
+e) 2 kap. 1 § första stycket 3 b:
+
+miljöklass 1 1 524 kr per m3
+
+miljöklass 2 1 736 kr per m3
+
+miljöklass 3 2 018 kr per m3
+
+f) 2 kap. 1 § första stycket 4 a: 95 öre per liter,
+
+g) 2 kap. 1 § första stycket 4 b: 127 kr per 1 000 kg,
+
+h) 2 kap. 1 § första stycket 5 a och 6 a: 1 584 kr per 1 000 m3
+
+i) 2 kap. 1 § första stycket 5 b och 6 b: 212 kr per 1 000 m3
+
+j) 2 kap. 1 § första stycket 7 och 8: 278 kr per 1 000 kg.
+
+3. Till utgången av juni månad 1997 skall dock energiskatten på
+elektrisk kraft utgöra
+
+a) 0 öre per kilowattimme för elektrisk kraft som förbrukas i
+industriell verksamhet i tillverkningsprocessen eller vid yrkesmässig
+växthusodling,
+
+b) 5,8 öre per kilowattimme för annan elektrisk kraft än som avses
+under a och som förbrukas i kommuner som anges i 11 kap. 4 §,
+
+c) 9,1 öre per kilowattimme för elektrisk kraft som förbrukas för
+el-, gas-, värme- eller vattenförsörjning i andra kommuner än de som
+anges i 11 kap. 4 §, och
+
+d) 11,3 öre per kilowattimme för elektrisk kraft som förbrukas i
+övriga fall.
+
+4. Vare sig de nya energiskattebeloppen i 2 kap. 1 § första stycket
+eller de energiskattebelopp som tillämpas enligt punkten 2 av
+övergångsbestämmelserna skall för åren 1997 och 1998 räknas om enligt
+2 kap. 1 § tredje stycket och 10 §.
+
+5. Såvitt avser växthusuppvärmning vid yrkesmässig växthusodling
+tillämpas bestämmelserna i 7 kap. 4 § den nya lagen först från och
+med den 1 januari 1996 och 9 kap. 5, 7 och 8 §§ den nya lagen först
+från och med den 1 januari 1997. Bestämmelserna i 9 kap. 2 § den nya
+lagen tillämpas inte i fråga om växthusuppvärmning vid yrkesmässig
+växthusodling. Lag (1996:1220).
+
+6. För bränsle, som förbrukas för växthusuppvärmning vid yrkesmässig
+växthusodling av någon som inte är skattskyldig, skall ingen
+energiskatt tas ut och koldioxidskatt tas ut efter en skattesats som
+svarar mot en fjärdedel av den skattesats som enligt den nya lagen
+gäller för ifrågavarande bränsle. I fråga om gasol för drift av
+stationära motorer skall dock koldioxidskatt tas ut med 350 kronor
+per 1 000 kilogram. Lag (1996:1220).
+
+1996:1220
+
+1. Denna lag träder i kraft såvitt avser punkterna 5 och 6 av
+övergångsbestämmelserna den 1 januari 1997 och i övrigt den 1 juli
+1997. Äldre föreskrifter gäller fortfarande i fråga om förhållanden
+som hänför sig till tiden före ikraftträdandet.
+
+2. De nya energiskattebeloppen i 2 kap. 1 § första stycket skall för
+åren 1997 och 1998 inte räknas om enligt 2 kap. 1 § tredje stycket
+och 10 §.
+
+3. Till utgången av år 1997 skall dock energiskatten på
+elektrisk kraft utgöra
+
+a) 0 öre per kilowattimme för elektrisk kraft som förbrukas i
+industriell verksamhet i tillverkningsprocessen eller vid
+yrkesmässig växthusodling,
+
+b) 8,2 öre per kilowattimme för annan elektrisk kraft än som
+avses under a och som förbrukas i kommuner som anges i 11 kap.
+4 §,
+
+c) 11,5 öre per kilowattimme för elektrisk kraft som förbrukas
+för el-, gas-, värme- eller vattenförsörjning i andra kommuner
+än de som anges i 11 kap. 4 §, och
+
+d) 13,8 öre per kilowattimme för elektrisk kraft som förbrukas
+i övriga fall. Lag (1997:450).
+
+1996:1408
+
+Denna lag träder i kraft den 1 januari 1997. Den nya lydelsen av 9
+kap. 5 §, såvitt avser återbetalning av energiskatten på elektrisk
+kraft som förbrukats vid framställning av värme som har levererats
+för tillverkningsprocessen i industriell verksamhet, tillämpas dock
+för tid från och med den  1 september 1996. Äldre föreskrifter gäller
+fortfarande i fråga om övriga förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+1997:359
+
+Denna lag träder i kraft den 1 juli 1997. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+1997:449
+
+Denna lag träder i kraft den 1 juli 1997. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+1997:479
+
+1. Denna lag träder i kraft den 1 juli 1997. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2. För tid fram till den 1 januari 2007 medger
+beskattningsmyndigheten efter ansökan, utöver vad som framgår
+av den nya lydelsen av 9 kap. 9 §, att vid industriell
+framställning av produkter av andra mineraliska ämnen än
+metaller koldioxidskatten på annat bränsle än sådant som
+beskattas som mineraloljeprodukt och som förbrukats för annat
+ändamål än drift av motordrivna fordon tas ut med sådant belopp
+att skatten för den som bedriver framställningen inte
+överstiger 1,2 procent av de framställda produkternas
+försäljningsvärde.
+
+Vid beräkning av nedsättningen enligt första stycket får
+koldioxidskatten dock inte sättas ned mer än att den motsvarar
+minst
+
+a) 50 kronor per 1 000 kubikmeter naturgas (KN-nr 2711 11 00
+eller 2711 21 00) och
+
+b) 40 kronor per 1 000 kilogram kolbränslen (KN-nr 2701, 2702
+eller 2704) och petroleumkoks (KN-nr 2713 11 00-2713 12 00).
+
+Ansökan om nedsättning enligt första stycket skall omfatta en
+period om ett kalenderår och skall lämnas in till
+beskattningsmyndigheten senast inom ett år efter kalenderårets
+utgång.
+
+Bestämmelserna i 9 kap. 9 a och 9 b §§ tillämpas även på sådan
+nedsättning som avses i första stycket. Lag (2006:1508).
+
+1997:592
+
+Denna lag träder i kraft den 1 juli 1997. Den nya lydelsen
+tillämpas dock för tid från och med den 1 januari 1996.
+
+1997:1130
+
+1. Denna lag träder i kraft den 1 januari 1998. Äldre
+föreskrifter gäller fortfarande i fråga om förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+
+2. I fråga om bränsle som förvärvats före den 1 januari 1998
+och efter denna tidpunkt förbrukats i båt med fartygstillstånd
+enligt fiskelagen (1993:787), gäller 9 kap. 3 § i sin äldre
+lydelse.
+
+1997:1131
+
+Denna lag träder i kraft den 1 januari 1998. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+1998:289
+
+1. Denna lag träder i kraft den 1 juli 1998. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2. Den nya lydelsen av 2 kap. 9 a § tillämpas dock för tid från
+och med den 1 januari 1996.
+
+1998:1699
+
+Denna lag träder i kraft den 1 januari 1999. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+1999:1063
+
+Denna lag träder i kraft den 1 januari 2000. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+1999:1109
+
+Denna lag träder i kraft den 1 januari 2000 och tillämpas
+första gången för det räkenskapsår som inleds närmast efter den
+31 december 1999. I fråga om den som är skyldig att föra
+räkenskaper enligt jordbruksbokföringslagen (1979:141) skall 9
+kap. 13 § även därefter tillämpas i sin äldre lydelse.
+
+1999:1323
+
+Denna lag träder i kraft den 1 januari 2000. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2000:484
+
+1. Denna lag träder i kraft den 1 juli 2000.
+
+2. Om Skattemyndigheten i Gävle har meddelat ett beslut före
+ikraftträdandet och beslutet har överklagats, skall
+Riksskatteverket föra det allmännas talan i allmän
+förvaltningsdomstol.
+
+3. De äldre lydelserna av 7 kap. 4 §, 9 kap. 2, 5 och 9 §§
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2000:1155
+
+Denna lag träder i kraft den 1 januari 2001. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2000:1426
+
+Denna lag träder i kraft den 1 januari 2001. Äldre föreskrifter
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdande.
+
+2001:518
+
+Denna lag träder i kraft den 1 oktober 2001. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2001:523
+
+Denna lag träder i kraft den 1 oktober 2001. Äldre föreskrifter
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2001:962
+
+1. Denna lag träder i kraft den 1 januari 2002.
+
+2. De nya bestämmelserna i 6 a kap. 1 och 5 §§ skall tillämpas
+för tid från och med den 1 oktober 2001. Dock skall de nya
+procentsatserna i 6 a kap. 1 § tillämpas först från och med den
+1 januari 2002.
+
+3. Äldre föreskrifter gäller fortfarande i fråga om
+förhållanden som hänför sig till tiden före den tidpunkt då de
+nya bestämmelserna skall börja tillämpas.
+
+2001:1081
+
+Denna lag träder i kraft den 1 januari 2002. Äldre föreskrifter
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2002:422
+
+1. Denna lag träder i kraft den 1 januari 2003.
+
+2. Äldre föreskrifter gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+3. Den som vid lagens ikraftträdande har registrerats enligt 6
+kap. 10 § första stycket som skattskyldig enligt 4 kap. 12 §
+första stycket 1, i dess äldre lydelse, eller enligt 6 kap.
+10 § andra stycket skall anses godkänd som lagerhållare enligt
+4 kap. 12 b §.
+
+2002:1142
+
+Denna lag träder i kraft den 1 januari 2003. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2003:810
+
+1. Denna lag träder i kraft den 1 juli 2004 i fråga om de
+ändrade bestämmelserna om återbetalning av energiskatt på
+elektrisk kraft i 9 kap. 5 § första stycket och i fråga om 11
+kap. 3 § första stycket 1 och 12 § och i övrigt den 1 januari
+2004.
+
+2. Äldre bestämmelser gäller fortfarande i fråga om
+förhållanden som hänför sig till tiden före ikraftträdandet.
+
+2004:223
+
+1. Denna lag träder i kraft den 1 maj 2004.
+
+2. Den nya procentsatsen för nedsättning av koldioxidskatt och
+av den del av energiskatten på råtallolja som motsvarar
+koldioxidskatten skall tillämpas från och med den 1 januari
+2004.
+
+3. Bestämmelsen om återbetalning av energiskatt på elektrisk
+kraft i 9 kap. 5 § första stycket träder i kraft den 1 juli
+2004.
+
+2004:628
+
+Denna lag träder i kraft den 1 juli 2004. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2004:1038
+
+1. Denna lag träder i kraft den 1 januari 2005. Äldre
+bestämmelser gäller fortfarande i fråga om förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2. Den nya lydelsen av 11 kap. 12 § tillämpas dock för tid från
+och med den 1 januari 2006 varvid årsperioden den 1 juli 2005-
+den 30 juni 2006 avkortas till perioden den 1 juli-den 31
+december 2005. För den avkortade perioden skall
+skillnadsbeloppet 1 000 kronor enligt 11 kap. 12 § andra
+stycket i stället utgöra 500 kronor. Ansökan om återbetalning
+av energiskatt skall lämnas in till beskattningsmyndigheten
+inom ett år efter utgången av perioden.
+
+2004:1197
+
+1. Denna lag träder i kraft den 1 januari 2005. Äldre
+föreskrifter gäller fortfarande för förhållanden som hänför sig
+till tiden före ikraftträdandet.
+
+2. Den som omfattas av punkten 2 i övergångsbestämmelsen till
+lagen (2004:1196) om program för energieffektivisering har,
+efter ansökan, rätt till återbetalning av påförd energiskatt på
+elektrisk kraft som förbrukats i annan industriell
+tillverkningsprocess än sådan som avses i 11 kap. 9 § 2, 3
+eller 5 lagen om skatt på energi, för tiden den 1 juli - den 31
+december 2004. Ansökan om återbetalning av skatt skall ha
+kommit in till beskattningsmyndigheten senast den 31 december
+2005.
+2005:960
+
+Denna lag träder i kraft den 1 januari 2006. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2005:1189
+
+Denna lag träder i kraft den 1 januari 2006. De nya
+bestämmelserna i 6 a kap. 1 § 15 skall dock tillämpas för tid
+från och med den 8 januari 2005.
+
+2006:234
+
+Denna lag träder i kraft den 1 maj 2006. Äldre föreskrifter
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2006:592
+
+1. Denna lag träder i kraft den 1 juli 2006.
+
+2. Äldre föreskrifter gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2006:1394
+
+Denna lag träder i kraft den 1 januari 2007. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2006:1508
+
+1. Denna lag träder i kraft den dag regeringen bestämmer i
+fråga om 1 kap. 8 § och 9 kap. 9 och 9 b §§ och i övrigt den 1
+januari 2007.
+
+2. Bestämmelserna i 6 a kap. 1 § 1 och 8 tillämpas dock i äldre
+lydelse till och med utgången av år 2007. Detsamma gäller
+bestämmelserna i 6 a kap. 1 § 12, såvitt avser förbrukning i
+metallurgiska processer. För dessa ändamål tillämpas under år
+2007 bestämmelserna om skattebefriad förbrukare i 8 kap. 1 §
+och om återbetalning av skatt enligt 9 kap. 5 §.
+
+3. Vid tillämpningen av 2 kap. 11 § första stycket 3 skall
+hänvisningen till 6 a kap. 1 § 1 till och med utgången av år
+2007 avse 6 a kap. 1 § 1 och 8 i äldre lydelse.
+
+4. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2007:778
+
+Denna lag träder i kraft den 1 december 2007 och tillämpas för
+förhållande som hänför sig till tiden från och med den 1
+januari 2007. Äldre bestämmelser gäller fortfarande för
+förhållanden som hänför sig till tiden före den 1 januari 2007.
+
+2007:779
+
+Denna lag träder i kraft den 1 januari 2008. Äldre bestämmelser
+gäller fortfarande i fråga om förhållanden som hänför sig till
+tiden före ikraftträdandet.
+
+2007:1168
+
+Denna lag träder i kraft den 1 januari 2008. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2007:1387
+
+Denna lag träder i kraft den 1 januari 2008. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2008:204
+
+Denna lag träder i kraft den 1 juli 2008. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+
+2008:561
+
+Denna lag träder i kraft den 1 juli 2008. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2008:1219
+
+Denna lag träder i kraft den 1 januari 2009. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2008:1319
+
+Denna lag träder i kraft den 1 januari 2009. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2009:1492
+
+1. Denna lag träder i kraft den 1 januari 2010. Äldre
+bestämmelser gäller fortfarande för förhållanden som hänför
+sig till tiden före ikraftträdandet.
+
+2. Bestämmelsen i 2 kap. 1 § andra stycket tillämpas för tid
+från och med den 1 april 2010. Äldre bestämmelser gäller
+fortfarande för förhållanden som hänför sig till tiden före
+den 1 april 2010.
+
+2009:1493
+
+1. Denna lag träder i kraft den 1 januari 2010 och tillämpas
+för tid från och med den 1 april 2010.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före den 1 april 2010.
+
+3. Den som är godkänd som upplagshavare den 1 april 2010 ska
+godkännas som registrerad avsändare.
+
+4. En registrering som varumottagare enligt 4 kap. 6 § i sin
+äldre lydelse ska från och med den 1 april 2010 anses vara
+ett godkännande som registrerad varumottagare enligt den nya
+lydelsen av paragrafen.
+
+5. Bestämmelserna i 4 kap. 8 § tillämpas från och med
+ikraftträdandet.
+
+2009:1494
+
+Denna lag träder i kraft den 1 oktober 2010. Äldre
+bestämmelser gäller fortfarande för förhållanden som hänför
+sig till tiden före ikraftträdandet.
+
+2009:1495
+
+1. Denna lag träder i kraft den 1 januari 2011.
+Lag (2010:600).
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet. Lag (2010:600).
+
+3. Bestämmelserna i 7 kap. 3 § fjärde stycket och 7 kap. 4 §
+andra stycket tillämpas dock från och med den 1 januari 2012.
+Lag (2010:600).
+
+2009:1496
+
+Denna lag träder i kraft den 1 januari 2013. Äldre
+bestämmelser gäller fortfarande för förhållanden som hänför
+sig till tiden före ikraftträdandet.
+
+2009:1497
+
+Denna lag träder i kraft den 1 januari 2015. Äldre
+bestämmelser gäller fortfarande för förhållanden som hänför
+sig till tiden före ikraftträdandet.
+
+2009:1505
+
+1. Denna lag träder i kraft den 1 januari 2011.
+
+2. De upphävda paragraferna gäller dock fortfarande för
+varuflyttningar som har påbörjats före den 1 januari 2011.
+
+2010:1088
+
+1. Denna lag träder i kraft den dag regeringen bestämmer.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2010:1089
+
+1. Denna lag träder i kraft den 1 januari 2011.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2010:1820
+
+1. Denna lag träder i kraft den 1 januari 2011.
+
+2. Äldre bestämmelser i 4 kap. 3 § gäller fortfarande för
+förhållanden som hänför sig till tiden före ikraftträdandet.
+
+2010:1824
+
+Denna lag träder i kraft den 1 januari 2011. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2011:101
+
+Denna lag träder i kraft den 1 mars 2011. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2011:321
+
+1. Denna lag träder i kraft den 1 maj 2011.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2011:1197
+
+1. Denna lag träder i kraft den 1 januari 2012. Villkoren
+i 7 kap. 3 § fjärde stycket och 7 kap. 4 § andra stycket
+tillämpas inte när skattskyldigheten inträder före den 1
+februari 2012.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden
+som hänför sig till tiden före ikraftträdandet.
+2011:1370
+
+1. Denna lag träder i kraft den 1 januari 2012.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+3. Bestämmelserna om ränta i 6 kap. 1 § andra stycket
+tillämpas på ränta som hänför sig till tid från och med den 1
+januari 2013. För ränta som hänför sig till tid dessförinnan
+gäller i stället bestämmelserna om ränta i 19 kap.
+skattebetalningslagen (1997:483).
+
+2012:678
+
+Denna lag träder i kraft den 1 januari 2013. Äldre
+bestämmelser gäller fortfarande för förhållanden som hänför
+sig till tiden före ikraftträdandet.
+
+2012:798
+
+1. Denna lag träder i kraft den dag regeringen bestämmer i
+fråga om 2 kap. 12 §, 7 kap. 3 a–3 d §§ och 4 a § samt i
+övrigt den 1 januari 2013.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+3. För avdrag för energi- och koldioxidskatt enligt 7 kap.
+3 c § på bränsle motsvarande beståndsdel framställd av
+biomassa medges befrielsen upp till fem volymprocent per
+redovisningsperiod beräknad utifrån beståndsdelar i bränsle
+för vilka skattskyldighet och redovisningsskyldighet inträtt
+efter den dag då 7 kap. 3 c § har trätt i kraft.
+
+2012:836
+
+Denna lag träder i kraft den 1 juli 2013 vad gäller 5 kap. 3 §
+och i övrigt den 1 januari 2013. Äldre bestämmelser gäller
+fortfarande för förhållanden som hänför sig till tiden före
+ikraftträdandet. Lag (2013:371).
+
+2013:1004
+
+1. Denna lag träder i kraft den 1 januari 2014.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2013:1075
+
+Denna lag träder i kraft den 1 april 2014. Äldre bestämmelser
+gäller fortfarande för förhållanden som hänför sig till tiden
+före ikraftträdandet.
+
+2014:285
+
+1. Denna lag träder i kraft den 1 juli 2014.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2014:1023
+
+1. Denna lag träder i kraft den 1 oktober 2014.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+3. Ett fartygstillstånd som har meddelats med stöd av 21 §
+fiskelagen (1993:787) i dess lydelse före den 1 oktober 2014
+gäller som en fiskelicens med de begränsningar till en viss
+giltighetstid, ett visst fiske eller andra villkor som följer
+av fartygstillståndet.
+
+2014:1496
+
+1. Denna lag träder i kraft den 1 januari 2015.
+
+2. Bestämmelserna i 7 kap. 3 d § tredje stycket i den nya
+lydelsen tillämpas dock för tid från och med den 1 maj
+2014.
+
+3. Äldre bestämmelser gäller fortfarande för
+förhållanden som hänför sig till tiden före ikraftträdandet.
+Den upphävda paragrafen gäller dock inte för förhållanden som
+avses i 7 kap. 3 d § tredje stycket och som hänför sig till
+tiden från och med den 1 maj 2014.
+
+2015:214
+
+1. Denna lag träder i kraft den 1 juli 2015.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2015:640
+
+1. Denna lag träder i kraft den 1 december 2015.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2015:747
+
+1. Denna lag träder i kraft den 1 januari 2016.
+
+2. Beloppet som anges i 6 a kap. 2 a § ska dock vara 1 700
+kronor per kubikmeter för sådan förbrukning som sker från och
+med den 1 januari 2016 till och med den 31 december 2018.
+
+3. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2015:749
+
+1. Denna lag träder i kraft den 1 juli 2016.
+
+2. Äldre bestämmelser gäller fortfarande för elektrisk kraft
+som har framställts före ikraftträdandet.
+
+2015:750
+
+1. Denna lag träder i kraft den 1 januari 2018.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2015:846
+
+1. Denna lag träder i kraft den 1 januari 2016.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som
+hänför sig till tiden före ikraftträdandet.
+
+2016:266
+
+1. Denna lag träder i kraft den 1 maj 2016.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2016:505
+
+1. Denna lag träder i kraft den 1 juli 2016.
+
+2. Beloppet som anges i 6 a kap. 2 a § ska vara 1 700 kronor 
+per kubikmeter för sådan förbrukning som sker från och med 
+den 1 juli 2016 till och med den 31 december 2018.
+
+3. Bestämmelserna om avdragets fördelning på stödmottagare i 
+7 kap. 3 a § tredje stycket 3, 3 c § tredje stycket 3, 3 d § 
+tredje stycket 3 och 4 § andra stycket 2 tillämpas först när 
+skattskyldigheten för bränslet inträder efter utgången av 
+2016.
+
+4. Bestämmelserna i 9 kap. 2 § om sökandens skyldighet att 
+lämna uppgifter om stödmottagare för sin verksamhet tillämpas 
+först då återbetalning söks för en period som omfattar tid 
+efter utgången av 2016. 
+
+5. Bestämmelserna i 9 kap. 7 § första stycket om att en 
+ansökan ska lämnas elektroniskt tillämpas först då 
+återbetalning eller kompensation söks för en period som 
+omfattar tid efter utgången av 2016. 
+
+6. Den som gör avdrag för skatt på motorbränsle enligt 7 kap. 
+3 a–4 §§ under redovisningsperioder från och med den 1 juli 
+2016 till och med den 31 december 2016 är skyldig att senast 
+den 1 juli 2017 lämna uppgift till Skatteverket om de 
+sammanlagda avdragens fördelning på respektive stödmottagare 
+under de redovisningsperioder då avdrag gjorts. Med 
+redovisningsperiod förstås här en period enligt 26 kap. 10 § 
+skatteförfarandelagen (2011:1244).
+
+7. Den som söker återbetalning av skatt på bränsle enligt 9 
+kap. 2 § med stöd av 6 a kap. 1 § 9–11, 13 eller 17 eller 2 a, 
+2 b, 2 c eller 3 § för en period som omfattar hela eller 
+delar av tiden från och med den 1 juli 2016 till och med den 
+31 december 2016, är skyldig att senast den 1 juli 2017 lämna 
+uppgifter om stödmottagare till Skatteverket för sin 
+verksamhet, om det sammanlagda belopp som återbetalning för 
+respektive stödordning söks med för tiden från och med den 1 
+juli 2016 till och med den 31 december 2016 uppgår till minst 
+
+a) 7 500 euro i fall där återbetalning söks med stöd av 6 a 
+kap. 1 § 10 eller 2 a § 2, eller
+
+b) 100 000 euro i övriga fall.
+
+8. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2016:791
+
+1. Denna lag träder i kraft den 1 augusti 2016.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2016:1072
+
+1. Denna lag träder i kraft den 15  december 2016 i fråga om 
+11 kap. 6 § och i övrigt den 1 januari 2017.
+
+2. Beloppet som anges i 6 a kap. 2 a § ska vara 1 700 kronor 
+per kubikmeter för sådan förbrukning som sker från och med 
+den 1 januari 2017 till och med den 31 december 2018.
+
+3. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+4. Bestämmelserna i 6 kap. 1 a § i den nya lydelsen tillämpas 
+första gången på beslut om beskattning vid oegentlighet som 
+har meddelats efter lagens ikraftträdande.
+
+2016:1073
+
+1. Denna lag träder i kraft den 1 januari 2018.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2017:399
+
+1. Denna lag träder i kraft den 1 juli 2017. 
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2017:400
+
+1. Denna lag träder i kraft den 1 januari 2019.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2017:408
+
+1. Denna lag träder i kraft den 1 juli 2017.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2017:409
+
+1. Denna lag träder i kraft den 1 januari 2018.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2017:1208
+
+1. Denna lag träder i kraft den 15 december 2017 i fråga om 
+11 kap. 6 § och i övrigt den 1 januari 2018.
+
+2. Bestämmelserna i den nya 4 kap. 2 a § tillämpas första 
+gången på flyttningar som påbörjas efter ikraftträdandet.
+
+3. För skatteupplag som har godkänts före ikraftträdandet 
+gäller 4 kap. 3 § i den äldre lydelsen.
+
+4. För ansökningar om återbetalningar eller kompensation före 
+ikraftträdandet gäller 9 kap. 7 § i den äldre lydelsen. 
+
+5. Bestämmelserna i den nya 9 kap. 12 § tillämpas första 
+gången på ansökningar om återbetalning eller kompensation 
+efter ikraftträdandet. 
+
+6. Ett godkännande som frivilligt skattskyldig för ändamål i 
+11 kap. 6 § första stycket 1–4 gäller tidigast från och med 
+den 1 januari 2018.
+
+7. Ett medgivande från Skatteverket om kvartalsvis 
+återbetalning enligt 11 kap. 12 a, 12 b och 14 §§ i den äldre 
+lydelsen ska från och med den 1 januari 2018 anses vara ett 
+medgivande om månatlig återbetalning enligt 11 kap. 16 §.
+
+8. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2017:1231
+
+1. Denna lag träder i kraft den 1 juli 2018.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2018:1887
+
+1. Denna lag träder i kraft den 1 januari 2019.
+
+2. Bestämmelsen i 11 kap. 7 § i den nya lydelsen och de nya 
+bestämmelserna i 1 kap. 17 a § och 11 kap. 13 § tillämpas 
+dock för tid från och med den 1 januari 2018.
+
+2019:447
+
+1. Denna lag träder i kraft den 1 juli 2019.
+
+2. Beloppet som anges i 6 a kap. 2 a § i den nya lydelsen ska 
+vara 2 236 kronor per kubikmeter för sådan förbrukning som 
+sker från och med den 1 juli 2019 till och med den 
+31 december 2019. För denna förbrukning ska även befrielse 
+från energiskatt medges med 194 kronor per kubikmeter.
+
+3. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2019:491
+
+1. Denna lag träder i kraft den 1 augusti 2019.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2019:1244
+
+1. Denna lag träder i kraft den 1 januari 2020.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2020:1045
+
+1. Denna lag träder i kraft den 1 januari 2021.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.
+
+2020:1155
+
+1. Denna lag träder i kraft den 1 januari 2021.
+
+2. Äldre bestämmelser gäller fortfarande för förhållanden som 
+hänför sig till tiden före ikraftträdandet.

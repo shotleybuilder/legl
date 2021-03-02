@@ -5,35 +5,59 @@ defmodule Sweden do
   # swe.txt file is used to store the content copied from http://rkrattsbaser.gov.se/
   # swe_new.txt is for pasting into Airtable
 
-def swe do
-  txt = ~s{Förordningen är meddelad med stöd av
+def swe_snippet do
+txt = ~s{5 § En särskild avgift skall betalas för motordrivet fordon och
+båt, vars bränsletank innehåller oljeprodukter i strid mot 2
+kap. 9 §.
 
-– 9 kap. 6 § miljöbalken i fråga om 1 kap. 3, 4, 10 och 11 §§
-och 2–32 kap.,
+Avgiften uppgår för personbil, lätt lastbil och lätt buss samt
+båt till 10 000 kronor. Avgiften beräknas för tunga lastbilar,
+tunga bussar, traktorer och tunga terrängvagnar som är
+registrerade i vägtrafikregistret på följande sätt.
 
-– 9 kap. 8 § miljöbalken i fråga om 1 kap. 6 §, och
+Skattevikt, kilogram            Avgift, kronor
 
-– 8 kap. 7 § regeringsformen i fråga om övriga bestämmelser.
-Förordning (2016:1188).}
+0- 3 500                        10 000
+
+3 501-10 000                    20 000
+
+10 001-15 000                   30 000
+
+15 001-20 000                   40 000
+
+20 001-                         50 000
+
+Med skattevikt avses den vikt efter vilken fordonsskatt
+beräknas enligt vägtrafikskattelagen (2006:227). Avgiften för
+annat motordrivet fordon än som avses i andra stycket uppgår
+till 10 000 kronor. Avgiften tas ut för varje tillfälle som
+bränsletank påträffas med oljeprodukter i strid mot 2 kap. 9 §.
+
+Har avgift påförts någon och skall sådan avgift påföras honom
+för ytterligare tillfälle inom ett år från det tidigare
+tillfället, tas avgiften ut med en och en halv gånger det
+belopp som följer av andra eller tredje stycket.
+Lag (2007:779).}
 
   txt
-  #|> _m_m()
+  |> _m_m()
   |> rm_new_line()
-  #|> numbered()
-  #|> lettered()
+  |> numbered()
+  |> lettered()
   |> dashed_bulleted()
-  #|> coloned()
-  #|> backslashed()
-  #|> paras()
-  #|> para_numbered()
-  #|> rm_new_line()
-  #|> green_heart()
-  #|> rm_empty_lines()
+  |> coloned()
+  |> backslashed()
+  |> paras()
+  |> para_numbered()
+  |> tabulated()
+  |> rm_new_line()
+  |> green_heart()
+  |> rm_empty_lines()
   |> (&(File.write("lib/swe_snippet.txt", &1))).()
 
 end
 
-def swe_show do
+def swe_test do
   {:ok, binary} = File.read(Path.absname("lib/swe.txt"))
   binary
   |> _m_m()
@@ -45,6 +69,7 @@ def swe_show do
   |> backslashed()
   |> paras()
   |> para_numbered()
+  |> tabulated()
   |> rm_new_line()
   |> green_heart()
   |> rm_empty_lines()
@@ -53,7 +78,7 @@ end
 
 def swe_real do
 
-  swe_show()
+  swe_test()
 
   {:ok, binary} = File.read(Path.absname("lib/swe_test.txt"))
 
@@ -66,6 +91,7 @@ def swe_real do
   |> String.replace("⚡", "📌")
   |> String.replace("🔴", "📌")
   |> String.replace("💦", "📌")
+  |> String.replace("🐽️", "📌")
   |> (&(File.write("lib/swe_new.txt", &1))).()
 
   chapter_numbers(binary)
@@ -86,11 +112,11 @@ def _m_m(binary), do:
 
 def rm_new_line(binary), do:
   # remove \n in the middle of sentences
-  Regex.replace(~r/([\da-zA-Zäöå§”\.\)\/\-\–,³])[ \t]*(?:\r\n|\n)[ \t]*(?:\d §§ )?([a-zA-Zäöå”§\(\-])/, binary, "\\g{1}💚\\g{2}")
+  Regex.replace(~r/([\da-zA-Zäöå§”\.\)\/\-\–,³])[ \t]*(?:\r\n|\n)[ \t]*(?:\d §§ )?([\da-zA-Zäöå”§\(\-])/, binary, "\\g{1}💚\\g{2}")
 
 def numbered(binary), do:
   # join numbered sub-paragraphs -> 1. 2. 3. etc.
-  Regex.replace(~r/([\da-zäöå§\.\),),:])[ \t]*(?:\r\n|\n)[ \t]*(?:\r\n|\n)(\d*\.)/, binary, "\\g{1}📌\\g{2}")
+  Regex.replace(~r/([\da-zäöå§\.\),),:📌\-])[ \t]*(?:\r\n|\n)[ \t]*(?:\r\n|\n)(\d*\.)/, binary, "\\g{1}📌\\g{2}")
 
 def lettered(binary), do:
   # join lettered sub-paragraphs - a) b) x) etc.
@@ -110,11 +136,15 @@ def backslashed(binary), do:
 
 def paras(binary), do:
   # join paras
-  Regex.replace(~r/[ \t]*(?:\r\n|\n)[ \t]*(?:\r\n|\n)([^\dA-Z])/, binary, "⛔\\g{1}")
+  Regex.replace(~r/[ \t]*(?:\r\n|\n)[ \t]*(?:\r\n|\n)([^\dA-ZÅÄÖ])/, binary, "⛔\\g{1}")
 
 def para_numbered(binary), do:
    # join paras that begin with a number
   Regex.replace(~r/([\da-zäöå§\.\)-:,])[ \t]*(?:\r\n|\n)[ \t]*(\d)/, binary, "\\g{1}🧡\\g{2}")
+
+def tabulated(binary), do:
+  # join paras with gap of 5 or more spaces
+  Regex.replace(~r/[ \t]*(?:\r\n|\n)[ \t]*(?:\r\n|\n)(.*\s{5,})/, binary, "🐽️\\g{1}")
 
 def green_heart(binary), do:
    # join paras containing a 💚
