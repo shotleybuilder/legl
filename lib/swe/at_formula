@@ -1,0 +1,124 @@
+IF(
+    OR({Strategy ✔}="Proactive/Internal Procedure",{Strategy ✔}="Proactive/Legal"), "Proactive", 
+    IF(
+        OR({Strategy ✔}="Reactive/Legal", {Strategy ✔}="Reactive/Internal Procedure"), "Reactive",
+        IF(
+            {Strategy ✔}="More Info Needed", "More Info Needed",
+            IF(
+                {Strategy ✔}="No application to SGRE", "No application to SGRE"
+            )
+        )
+    )
+)
+
+IF(
+    Name,
+    IF(
+        REGEX_MATCH(Name,"\d{4}"),
+        REGEX_EXTRACT(Name,"SWE_\\d{4}_\\d+_[A-Z\\-]+"),
+        REGEX_EXTRACT(Name,"SWE__\\d+_[A-Z\\-]+")
+    )
+)
+
+REGEX_REPLACE(
+    ""& 
+    IF(REGEX_MATCH(text_EN, "[Ii]nvestor" ), "Investor, ")& 
+    IF(REGEX_MATCH(text_EN, "[Oo]wner" ), "Owner, ")& 
+    IF(REGEX_MATCH(text_EN, "[Ee]mployer" ), "Employer, ")& 
+    IF(REGEX_MATCH(text_EN, "[Cc]ompany|[Bb]usiness|[Oo]rganisation|[Ee]nterprise" ), "Company, ")& 
+    IF(REGEX_MATCH(text_EN, "[Ee]mployee" ), "Employee, ")& 
+    IF(REGEX_MATCH(text_EN, "[Ww]orker" ), "Worker, ")& 
+    IF(REGEX_MATCH(text_EN, "[Pp]erson|[Ee]veryone|[Cc]itizen"), "Person, ")& 
+    IF(REGEX_MATCH(text_EN, "[Aa]dvis[oe]r" ), "Advisor, ")& 
+    IF(REGEX_MATCH(text_EN, "[Nn]urse|[Pp]hysician|[Dd]octor" ), "Advisor, ")& 
+    IF(REGEX_MATCH(text_EN, "[Rr]epresentative"), "Rep, ")& 
+    IF(REGEX_MATCH(text_EN, "[Tt]rade[ ][Uu]nion"), "TU, ")& 
+    IF(REGEX_MATCH(text_EN, "[Aa]gent[\\s|\\.]"), "Agent, ")& 
+    IF(REGEX_MATCH(text_EN, "[Mm]iniste?ry?|[Rr]egulator\\s?" ), "Ministry / Regulator, ")& 
+    IF(REGEX_MATCH( text_EN, "[Dd]esigner" ), "Designer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Cc]onstructor" ), "Constructor, ")& 
+    IF(REGEX_MATCH(text_EN, "[Mm]anufacturer"), "Manufacturer, ")& 
+    IF(REGEX_MATCH(text_EN, "[Pp]roducer"), "Producer, ")& 
+    IF(REGEX_MATCH(text_EN, "[Aa]dvertiser|[Mm]arketer"), "Marketer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Ss]upplier" ), "Supplier, ")& 
+    IF(REGEX_MATCH( text_EN, "[Dd]istributor" ), "Distributor, ")& 
+    IF(REGEX_MATCH( text_EN, "[Ss]eller" ), "Seller, ")& 
+    IF(REGEX_MATCH( text_EN, "[Rr]etailer" ), "Retailer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Ss]torer" ), "Storer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Cc]onsignor" ), "Consignor, ")& 
+    IF(REGEX_MATCH( text_EN, "[Hh]andler" ), "Handler, ")& 
+    IF(REGEX_MATCH( text_EN, "[Cc]onsignee" ), "Consignee, ")& 
+    IF(REGEX_MATCH( text_EN, "[Tt]ransporter" ), "Transporter, ")& 
+    IF(REGEX_MATCH( text_EN, "[Dd]river" ), "Driver, ")& 
+    IF(REGEX_MATCH( text_EN, "[Ii]mporter" ), "Importer, ")& 
+    IF(REGEX_MATCH(text_EN, "[Ee]xporter"), "Exporter, ")& 
+    IF(REGEX_MATCH( text_EN, "[Ii]nstaller" ), "Installer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Mm]aintainer" ), "Maintainer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Rr]epairer" ), "Repairer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Cc]ontractor" ), "Contractor, ")& 
+    IF(REGEX_MATCH( text_EN, "[Uu]ser" ), "User, ")& 
+    IF(REGEX_MATCH( text_EN, "[Oo]perator" ), "Operator, ")& 
+    IF(REGEX_MATCH( text_EN, "[Rr]user" ), "Reuser, ")& 
+    IF(REGEX_MATCH( text_EN, "[Rr]ecycler" ), "Recycler, ")& 
+    IF(REGEX_MATCH( text_EN, "[Dd]isposer" ), "Disposer, ")& 
+    IF(REGEX_MATCH( text_EN, "[Pp]olluter" ), "Polluter, ")& 
+    IF(REGEX_MATCH( text_EN, "[Aa]uthorised [Pp]erson|[Aa]uthorised [Bb]ody" ), "Authorised Person, ")& 
+    IF(REGEX_MATCH( text_EN, "[Aa]ssessor[\\s|\\.]" ), "Assessor\\s+, ")& 
+    IF(REGEX_MATCH( text_EN, "[Ii]nspector" ), "Inspector, "), 
+    ",[ ]$", ""
+)
+
+IF(
+    AND(Year>=2018,AND(Type!="",Type!="regulation")),
+    "https://svenskforfattningssamling.se/doc/"&Year&Number&".html",
+    IF(
+        OR(Type="act",Type="ordinance",Type="law"),
+        "http://rkrattsbaser.gov.se/sfsr?bet="&Year&":"&Number, 
+        IF(
+            Regs="MSBFS", 
+            "https://www.msb.se/sv/regler/gallande-regler/"&SUBSTITUTE(title_url," ","-")&"/"&Regs&"-"&Year&Number, 
+            IF(
+                Regs="AFS",
+                "https://www.av.se/arbetsmiljoarbete-och-inspektioner/publikationer/foreskrifter/"&
+                IF(REGEX_MATCH(title_url, "foreskrifter"),title_url, ENCODE_URL_COMPONENT(SUBSTITUTE(title_url," ","-"))&"-afs-"&Year&Number&"-foreskrifter"),
+                IF(
+                    Regs="BFS",
+                    "https://www.boverket.se/sv/lag--ratt/forfattningssamling/?query="&Number&"&cpublished="&Year,
+                    IF(
+                        Regs="KIFS",
+                        "https://www.kemi.se/lagar-och-regler/kemikalieinspektionens-foreskrifter-kifs/kifs-"&Year&Number,
+                        IF(
+                            Regs="ELSÄK",
+                            "https://www.elsakerhetsverket.se/om-oss/lag-och-ratt/foreskrifter/elsak-fs-"&Year&Number, 
+                            IF(
+                                Regs="STEMFS", 
+                                "https://www.energimyndigheten.se/om-oss/foreskrifter/",
+                                IF(
+                                    Regs="TSFS", 
+                                    "https://www.transportstyrelsen.se/sv/Regler/sok-ts-foreskrifter/details?RuleNumber="&Year&":"&Number&"&ruleprefix="&Regs,
+                                    IF(
+                                        Regs="NFS",
+                                        "https://www.naturvardsverket.se/Stod-i-miljoarbetet/Rattsinformation/Foreskrifter-allmanna-rad/NFS/"&Year,
+                                        IF(
+                                            Regs="SÄIFS",
+                                            "https://www.msb.se/sv/regler/gallande-regler/brandfarliga-och-explosiva-varor/saifs-"&Year&Number&"/",
+                                            IF(
+                                                Regs="SRVFS",
+                                                "https://www.msb.se/sv/regler/gallande-regler/"&title_url
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+)
+
+IF(
+    OR(Type="act",Type="ordinance",Type="law"),
+    "http://rkrattsbaser.gov.se/sfst?bet="&Year&":"&Number
+)
