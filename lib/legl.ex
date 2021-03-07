@@ -23,4 +23,17 @@ defmodule Legl do
   def type, do: "lib/type.txt"
   def txts, do: "lib/txts.txt"
 
+  @doc """
+  Emojis
+  to get the byte iex> i << 0x1F1F4 :: utf8 >>
+  """
+
+  def green_heart, do: <<225, 189, 137, 57>>
+  def purple_heart, do: <<240, 159, 146, 156>>
+  def blue_heart, do: <<240, 159, 146, 153>>
+  def collision, do: <<240, 159, 146, 165>>
+  def pushpin, do: <<240, 159, 147, 140>>
+  def no_entry, do: <<226, 155, 148>>
+
+  def flag_norway, do: <<240, 159, 135, 179>> <> <<240, 159, 135, 180>>
 end
