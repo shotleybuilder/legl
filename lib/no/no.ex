@@ -30,6 +30,7 @@ defmodule Norway do
         |> get_sub_article()
         |> get_amendment()
         |> get_annex()
+        |> get_numbered_paragraph()
         |> rm_empty()
         |> join_special()
         |> join()
@@ -60,24 +61,34 @@ defmodule Norway do
         "\.\n\n#{sub_chapter_emoji()}\\g{1}\n\n"
     )
     @doc """
-    Match Article -> § 1a-1.Name
+    Match Article
+    Articles have these formats
+    § 1. Name
+    § 1a-1.Name
+    § 2-1. Name
+    § 2 A-1. Name
     """
     def get_article(binary), do: Regex.replace(
-        ~r/(?:\r\n|\n)(^§[ ]+\d+[a-z]?\-?\d*\.)[ ]*([\(A-ZÅØ].*)/m,
+        ~r/^(§[ ]+\d+[a-z]?\-?[ ]?[A-Z]?\-?\d*\.)[ ]*([\(A-ZÅØ].*)/m,
         binary,
-        "\n\n💙\\g{1} \\g{2}\n\n"
+        "#{article_emoji()}\\g{1} \\g{2}\n\n"
     )
     @doc """
     Match Sub-Article -> § 1-1a.Name
     """
     def get_sub_article(binary), do: Regex.replace(
-        ~r/(?:\r\n|\n)(^§[ ]+\d+[a-z]?\-\d+[a-z]\.)[ ]*([A-ZÅØ].*)/m,
+        ~r/^(§[ ]+\d+[a-z]?\-\d+[a-z]\.)[ ]*([A-ZÅØ].*)/m,
         binary,
-        "\n\n💜️\\g{1} \\g{2}\n\n"
+        "#{sub_article_emoji()}\\g{1} \\g{2}"
     )
     @doc """
     Numbered paragraph
     """
+    def get_numbered_paragraph(binary), do: Regex.replace(
+      ~r/^(\(\d+\))/m,
+      binary,
+      "#{numbered_para_emoji()}\\g{1}"
+    )
     @doc """
     Match an Amendment
     """
@@ -109,7 +120,7 @@ defmodule Norway do
 
     def join(binary) do
       Regex.replace(
-        ~r/(^[^#{@no_join}].*)[ \t]*(?:\r\n|\n)(?=[^#{@no_join}#{annex_emoji()}])/mu,
+        ~r/(^[^#{@no_join}]\t*.*)[ \t]*(?:\r\n|\n)(?=[^#{@no_join}#{annex_emoji()}#{numbered_para_emoji()}])/m,
         binary,
         "\\g{1}#{pushpin_emoji()}"
       )
@@ -142,11 +153,10 @@ defmodule Norway do
         "     "
     )
 
-
     @chapter ~r/^#{chapter_emoji()}Kapi?t?t?e?l?\.?[ ]*(\d+[A-Z]?)\.[ ]/
     @subchapter ~r/^#{sub_chapter_emoji()}(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\.[ ]/
     @article ~r/^#{article_emoji()}§[ ]+(\d+)\./
-    @article2 ~r/^{article_emoji()}§[ ]+\d+[a-z]?\-(\d+)\./
+    @article2 ~r/^#{article_emoji()}§[ ]+\d+[a-z]?[ ]?[A_Z]?\-(\d+)\./
     @subarticle ~r/^#{sub_article_emoji()}§[ ]+(\d+[a-z]?)\-?(\d*[a-z]*)\./
     @annex ~r/^#{annex_emoji()}Vedlegg[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3}|\d+)\./
 
@@ -238,7 +248,8 @@ defmodule Norway do
     end
 
     defp para(str, record) do
-        %{record | type: "article", para: record.para + 1, str: str}
+      str = String.replace(str, numbered_para_emoji(), "")
+      %{record | type: "article", para: record.para + 1, str: str}
     end
 
     defp annex(str, record) do

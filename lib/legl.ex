@@ -28,14 +28,13 @@ defmodule Legl do
   to get the byte iex> i << 0x1F1F4 :: utf8 >>
   """
 
-  def green_heart, do: <<225, 189, 137, 57>>
   def chapter_emoji, do: <<240, 159, 135, 179>> <> <<240, 159, 135, 180>>
   def sub_chapter_emoji, do: <<226, 155, 148>>
-  def article_emoji, do: <<240, 159, 146, 156>>
-  def sub_article_emoji, do: <<240, 159, 146, 153>>
-  def numbered_para_emoji, do: <<226, 153, 137>>
-  def amendment_emoji, do: <<240, 159, 146, 165>>
-  def annex_emoji, do: <<225, 189, 131, 68>>
+  def article_emoji, do: <<240, 159, 146, 156>> # ok
+  def sub_article_emoji, do: <<240, 159, 146, 153>> # ok
+  def numbered_para_emoji, do: <<117, 50, 55, 54, 52>> # red heart
+  def amendment_emoji, do: <<240, 159, 146, 165>> # ok
+  def annex_emoji, do: <<117, 50, 55, 48, 65>> # clenched fist
 
   def pushpin_emoji, do: <<240, 159, 147, 140>>
 
