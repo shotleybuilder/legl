@@ -29,11 +29,15 @@ defmodule Legl do
   """
 
   def green_heart, do: <<225, 189, 137, 57>>
-  def purple_heart, do: <<240, 159, 146, 156>>
-  def blue_heart, do: <<240, 159, 146, 153>>
-  def collision, do: <<240, 159, 146, 165>>
-  def pushpin, do: <<240, 159, 147, 140>>
-  def no_entry, do: <<226, 155, 148>>
+  def chapter_emoji, do: <<240, 159, 135, 179>> <> <<240, 159, 135, 180>>
+  def sub_chapter_emoji, do: <<226, 155, 148>>
+  def article_emoji, do: <<240, 159, 146, 156>>
+  def sub_article_emoji, do: <<240, 159, 146, 153>>
+  def numbered_para_emoji, do: <<226, 153, 137>>
+  def amendment_emoji, do: <<240, 159, 146, 165>>
+  def annex_emoji, do: <<225, 189, 131, 68>>
 
-  def flag_norway, do: <<240, 159, 135, 179>> <> <<240, 159, 135, 180>>
+  def pushpin_emoji, do: <<240, 159, 147, 140>>
+
+  def zero_length_string, do: <<226, 128, 139>>
 end

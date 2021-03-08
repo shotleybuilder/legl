@@ -6,7 +6,17 @@ defmodule Norway do
     Ø 	ø
     Å 	å
     """
-
+    import Legl, only:
+      [
+        chapter_emoji: 0,
+        sub_chapter_emoji: 0,
+        article_emoji: 0,
+        sub_article_emoji: 0,
+        numbered_para_emoji: 0,
+        amendment_emoji: 0,
+        annex_emoji: 0,
+        pushpin_emoji: 0
+      ]
 
     @doc """
     The parser which creates the annotated txt file
@@ -30,13 +40,16 @@ defmodule Norway do
     end
 
     @doc """
-    Match a chapter heading -> Kapittel 1A.
-    Flag with blue heart and separate as new line
+    Match a chapter heading
+    Chapters have these formats:
+    Kapittel 1.
+    Kapittel 1A.
+    Kap. 1.
     """
     def get_chapter(binary), do: Regex.replace(
-        ~r/\.(?:\r\n|\n)(^Kapi?t?t?e?l?\.?[ ]*\d+[A-Z]?\.)(​\d?)([ ]*.*)(?:\r\n|\n)/m,
+        ~r/(^Kapi?t?t?e?l?\.?[ ]*\d+[A-Z]?\.)([ ]*.*)(?:\r\n|\n)/m,
         binary,
-        "\.\n\n🇳🇴\\g{1} \\g{3}\n\n"
+        "#{chapter_emoji()}\\g{1} \\g{2}\n\n"
     )
     @doc """
     Match a sub-chapter with Roman numbering -> I Name
@@ -44,7 +57,7 @@ defmodule Norway do
     def get_sub_chapter(binary), do: Regex.replace(
         ~r/\.(?:\r\n|\n)(^(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\.[ ]+[A-ZÅØ].*)/m,
         binary,
-        "\.\n\n⛔️\\g{1}\n\n"
+        "\.\n\n#{sub_chapter_emoji()}\\g{1}\n\n"
     )
     @doc """
     Match Article -> § 1a-1.Name
@@ -62,6 +75,9 @@ defmodule Norway do
         binary,
         "\n\n💜️\\g{1} \\g{2}\n\n"
     )
+    @doc """
+    Numbered paragraph
+    """
     @doc """
     Match an Amendment
     """
@@ -89,20 +105,24 @@ defmodule Norway do
     @doc """
     Join lines
     """
-    def join(binary), do: Regex.replace(
-        ~r/(^[^⛔️💙💜️🇳🇴️].*)[ \t]*(?:\r\n|\n)(?=[^🐽️⛔️💙💜️🇳🇴️])/mu,
+    @no_join ~s/#{chapter_emoji()}#{sub_chapter_emoji()}#{article_emoji()}#{sub_article_emoji()}/
+
+    def join(binary) do
+      Regex.replace(
+        ~r/(^[^#{@no_join}].*)[ \t]*(?:\r\n|\n)(?=[^#{@no_join}#{annex_emoji()}])/mu,
         binary,
-        "\\g{1}📌"
-    )
+        "\\g{1}#{pushpin_emoji()}"
+      )
+    end
     def join_amends(binary), do: Regex.replace(
-        ~r/.(?:\r\n|\n)(?=💥️)/m,
+        ~r/.(?:\r\n|\n)(?=#{amendment_emoji()})/m,
         binary,
-        "\\g{1}📌"
+        "\\g{1}#{pushpin_emoji()}"
     )
     def join_special(binary), do: Regex.replace(
-        ~r/(^[^💥️⛔️💙💜️🇳🇴️].*)[ \t]*(?:\r\n|\n)(?=[∑])/mu,
+        ~r/(^[^#{@no_join}#{amendment_emoji()}].*)[ \t]*(?:\r\n|\n)(?=[∑])/mu,
         binary,
-        "\\g{1}📌"
+        "\\g{1}"
     )
     @doc """
     Removes the footer
@@ -122,86 +142,13 @@ defmodule Norway do
         "     "
     )
 
-    def chapter_numbers() do
-        {:ok, binary} = File.read(Path.absname(Legl.annotated))
-        chapter_numbers(binary)
-    end
-    def chapter_numbers(binary) do
-        regex = ~r/^🇳🇴Kapittel[ ]*(\d+[A-Z]?)\.[ ]/
-        chapters =
-            String.split(binary, "\n", trim: true)
-            |> Enum.reduce([], fn str, acc ->
-            case Regex.run(regex, str) do
-                [_match, capture] -> [capture | acc]
-                nil ->
-                case acc do
-                    [] -> ["" | acc]
-                    _ -> [hd(acc) | acc]
-                end
-            end
-            end)
-            |> Enum.reverse()
 
-        Enum.count(chapters) |> IO.inspect(label: "chapter")
-
-        Enum.join(chapters, "\n")
-        |> (&(File.write(Legl.chapter, &1))).()
-    end
-
-    def article_numbers() do
-        {:ok, binary} = File.read(Path.absname(Legl.annotated))
-        article_numbers(binary)
-    end
-
-    def article_numbers(binary) do
-        regex = ~r/^💙§[ ]+\d+[a-z]?\-(\d+)\./
-        articles =
-            String.split(binary, "\n", trim: true)
-            |> Enum.reduce([], fn str, acc ->
-                case Regex.run(regex, str) do
-                    [_match, capture] ->
-                        [String.replace(capture, " ", "") | acc]
-                    nil -> ["" | acc]
-                end
-            end)
-            |> Enum.reverse()
-
-        Enum.count(articles) |> IO.inspect(label: "articles")
-
-        Enum.join(articles, "\n")
-        |> (&(File.write(Legl.article, &1))).()
-    end
-
-    def sub_article_numbers() do
-        {:ok, binary} = File.read(Path.absname(Legl.annotated))
-        sub_article_numbers(binary)
-    end
-    def sub_article_numbers(binary) do
-        regex = ~r/^💜️§[ ]+\d+[a-z]?\-(\d+[a-z])\./
-        sub_articles =
-            String.split(binary, "\n", trim: true)
-            |> Enum.reduce([], fn str, acc ->
-                case Regex.run(regex, str) do
-                    [_match, capture] ->
-                        [String.replace(capture, " ", "") | acc]
-                    nil -> ["" | acc]
-                end
-            end)
-            |> Enum.reverse()
-
-        Enum.count(sub_articles) |> IO.inspect(label: "sub articles")
-
-        Enum.join(sub_articles, "\n")
-        |> (&(File.write(Legl.sub_article, &1))).()
-    end
-
-    @chapter ~r/^🇳🇴Kapi?t?t?e?l?\.?[ ]*(\d+[A-Z]?)\.[ ]/
-    @subchapter ~r/^⛔️(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\.[ ]/
-    @article ~r/^💙§[ ]+(\d+)\./
-    @article2 ~r/^💙§[ ]+\d+[a-z]?\-(\d+)\./
-    @subarticle ~r/^#{Legl.blue_heart()}§[ ]+(\d+[a-z]?)\-?(\d*[a-z]*)\./
-    #@amendment ~r/^💥️/
-    @annex ~r/^🐽️Vedlegg[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3}|\d+)\./
+    @chapter ~r/^#{chapter_emoji()}Kapi?t?t?e?l?\.?[ ]*(\d+[A-Z]?)\.[ ]/
+    @subchapter ~r/^#{sub_chapter_emoji()}(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\.[ ]/
+    @article ~r/^#{article_emoji()}§[ ]+(\d+)\./
+    @article2 ~r/^{article_emoji()}§[ ]+\d+[a-z]?\-(\d+)\./
+    @subarticle ~r/^#{sub_article_emoji()}§[ ]+(\d+[a-z]?)\-?(\d*[a-z]*)\./
+    @annex ~r/^#{annex_emoji()}Vedlegg[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3}|\d+)\./
 
     @doc """
     Numbering
@@ -227,7 +174,6 @@ defmodule Norway do
                         Regex.match?(@article, str) -> article(str, acc.record, "singly")
                         Regex.match?(@article2, str) -> article(str, acc.record, "combi")
                         Regex.match?(@subarticle, str) -> subarticle(str, acc.record)
-                        #Regex.match?(@amendment, str) -> amendment(str, acc.record)
                         Regex.match?(@annex, str) -> annex(str, acc.record)
                         true -> para(str, acc.record)
                     end
@@ -259,25 +205,25 @@ defmodule Norway do
 
     defp chapter(str, record) do
         [_, capture] = Regex.run(@chapter, str)
-        str = String.replace(str, "🇳🇴", "")
+        str = String.replace(str, chapter_emoji(), "")
         %{record | type: "chapter", chapter: capture, subchapter: "", article: "", para: 0, str: str}
     end
 
     defp subchapter(str, record) do
         [_, _, capture] = Regex.run(@subchapter, str)
-        str = String.replace(str, "⛔", "")
+        str = String.replace(str, sub_chapter_emoji(), "")
         %{record | type: "sub-chapter", subchapter: conv_roman_numeral(capture), article: "", para: 0, str: str}
     end
 
     defp article(str, record, "singly") do
         [_, capture] = Regex.run(@article, str)
-        str = String.replace(str, "💙", "")
+        str = String.replace(str, article_emoji(), "")
         %{record | type: "heading", article: capture, para: 0, str: str}
     end
 
     defp article(str, record, "combi") do
         [_, capture] = Regex.run(@article2, str)
-        str = String.replace(str, "💙", "")
+        str = String.replace(str, article_emoji(), "")
         %{record | type: "heading", article: capture, para: 0, str: str}
     end
 
@@ -287,7 +233,7 @@ defmodule Norway do
             [_, capture, _] -> capture
             [_, capture] -> capture
           end
-        str = String.replace(str, Legl.blue_heart(), "")
+        str = String.replace(str, sub_article_emoji(), "")
         %{record | type: "sub-article", article: capture, para: 0, str: str}
     end
 
@@ -297,7 +243,7 @@ defmodule Norway do
 
     defp annex(str, record) do
         [_, _, capture] = Regex.run(@annex, str)
-        str = String.replace(str, "🐽️", "")
+        str = String.replace(str, annex_emoji(), "")
         %{record | type: "annex", para: conv_roman_numeral(capture), str: str}
     end
 
