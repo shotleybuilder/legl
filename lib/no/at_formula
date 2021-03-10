@@ -1,12 +1,22 @@
 NO&
   IF(
     OR(flow="",flow="main"),
+    IF(part, "_"&part)&
     IF(chapter,"_"&chapter)&
     IF(sub_chapter,"_"&sub_chapter)&
     IF(section,"_"&section)&
     IF(article,"_"&article)&
     IF(sub,"_"&sub)&
     IF({____X_},"_"&{____X_})
+  )&
+  IF({flow}="post_chapter",
+    "_"&
+    IF(chapter,chapter&"-")&
+    IF(sub_chapter,sub_chapter&"_")&
+    IF(section,section&"_")&
+    IF(article,article&"_")&
+    IF(sub,sub&"_")&
+    IF({____X_},{____X_}&"_")
   )&
   IF({flow}="post",
     "-"&
