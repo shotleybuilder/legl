@@ -12,6 +12,7 @@ defmodule UK do
       sub_article_emoji: 0,
       numbered_para_emoji: 0,
       annex_emoji: 0,
+      signed_emoji: 0,
       pushpin_emoji: 0
     ]
 
@@ -31,7 +32,9 @@ defmodule UK do
     |> get_heading()
     |> get_sub_article()
     |> get_schedule()
+    |> get_schedule_heading()
     |> get_part()
+    |> get_signed_section()
     |> join()
     |> rm_tabs()
     |> (&File.write(Legl.annotated(), &1)).()
@@ -91,7 +94,7 @@ defmodule UK do
   def get_heading(binary),
     do:
       Regex.replace(
-        ~r/^([A-Z][^\.]+)(?:\r\n|\n)#{article_emoji()}(\d+)/m,
+        ~r/([^#{part_emoji}\n\.]+)\n#{article_emoji()}(\d+)/m,
         binary,
         "#{heading_emoji()}\\g{2} \\g{1}\n#{article_emoji()}\\g{2}"
       )
@@ -110,6 +113,14 @@ defmodule UK do
         "#{annex_emoji()}\\g{1} "
       )
 
+  def get_schedule_heading(binary),
+    do:
+      Regex.replace(
+        ~r/^([A-Z][^\n\.]+)\n(?=#{annex_emoji()})/m,
+        binary,
+        "#{heading_emoji()}\\g{1}\n"
+      )
+
   @doc """
 
   """
@@ -119,6 +130,17 @@ defmodule UK do
         ~r/^(PART[ ]\d+)[ ]?/m,
         binary,
         "#{part_emoji()}\\g{1} "
+      )
+
+  @doc """
+
+  """
+  def get_signed_section(binary),
+    do:
+      Regex.replace(
+        ~r/^Signed by/,
+        binary,
+        "#{signed_emoji()}\\0"
       )
 
   @doc """
