@@ -170,62 +170,48 @@ defmodule UK do
 
   @doc """
   PART and Roman Part Number concatenate when copied e.g. PART IINFORMATION
-  Call this function before calling get_part/1
+
   """
   @spec get_part(String.t()) :: String.t()
   def get_part(binary) do
     case Regex.replace(
-           ~r/^PART[ ](\d+)[ ]?([ A-Z]+)/,
+           ~r/^PART[ ](\d+)[ ]?([ A-Z]+)/m,
            binary,
            "#{part_emoji()}\\g{1} PART \\g{1} \\g{2}"
          ) do
       b when b != binary ->
         b
 
-      _ ->
-        [_, tens, units, text] =
-          Regex.run(~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/, binary)
+      b ->
+        case Regex.run(~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/m, b) do
+          [_, tens, units, text] ->
+            numeral = tens <> units
 
-        numeral = tens <> units
-        numeral_length = String.length(numeral)
+            last_numeral = String.last(numeral)
+            remaining_numeral = String.slice(numeral, 0..(String.length(numeral) - 2))
 
-        case numeral_length do
-          # I, V, X
-          1 ->
-            ~s/#{part_emoji()}PART #{numeral} #{text}/
+            case Dictionary.match?("#{last_numeral}#{text}") do
+              true ->
+                roman_part_replace(remaining_numeral, binary)
+
+              false ->
+                roman_part_replace(numeral, binary)
+            end
 
           _ ->
-            case String.last(numeral) do
-              # IIX, IX
-              "X" ->
-                Regex.replace(~r/^PART[ ]#{numeral}/, binary, "#{part_emoji()}PART #{numeral} ")
-
-              # IV, XIV, XV
-              "V" ->
-                case Dictionary.match?("V#{text}") do
-                  true ->
-                    ~s/#{part_emoji()}PART #{String.slice(numeral, 0..(numeral_length - 2))} V#{
-                      text
-                    }/
-
-                  false ->
-                    ~s/#{part_emoji()}PART #{numeral} #{text}/
-                end
-
-              # II, III, VI, VII, XI, XII, XIII
-              "I" ->
-                case Dictionary.match?("I#{text}") do
-                  true ->
-                    ~s/#{part_emoji()}PART #{String.slice(numeral, 0..(numeral_length - 2))} I#{
-                      text
-                    }/
-
-                  false ->
-                    ~s/#{part_emoji()}PART #{numeral} #{text}/
-                end
-            end
+            b
         end
     end
+  end
+
+  defp roman_part_replace(numeral, binary) do
+    value = Legl.conv_roman_numeral(numeral)
+
+    Regex.replace(
+      ~r/^PART[ ]#{numeral}/m,
+      binary,
+      "#{part_emoji()}#{value} PART #{numeral} "
+    )
   end
 
   @doc """

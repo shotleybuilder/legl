@@ -137,31 +137,31 @@ defmodule UKTest do
     test "PART IINFORMATION" do
       binary = ~s/PART IINFORMATION/
       s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}PART I INFORMATION/
+      assert s == ~s/#{Legl.part_emoji()}1 PART I INFORMATION/
     end
 
     test "PART IIINFORMATION" do
       binary = ~s/PART IIINFORMATION/
       s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}PART II INFORMATION/
+      assert s == ~s/#{Legl.part_emoji()}2 PART II INFORMATION/
     end
 
     test "PART IITEST" do
       binary = ~s/PART IITEST/
       s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}PART II TEST/
+      assert s == ~s/#{Legl.part_emoji()}2 PART II TEST/
     end
 
     test "PART IVTEST" do
       binary = ~s/PART IVTEST/
       s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}PART IV TEST/
+      assert s == ~s/#{Legl.part_emoji()}4 PART IV TEST/
     end
 
     test "PART IVISION" do
       binary = ~s/PART IVISION/
       s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}PART I VISION/
+      assert s == ~s/#{Legl.part_emoji()}1 PART I VISION/
     end
   end
 
