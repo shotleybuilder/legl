@@ -23,9 +23,21 @@ defmodule UKTest do
       assert s == "Statutory Instruments\n"
     end
 
-    test "rm_explanatory_note/1" do
+    test "uc rm_explanatory_note/1" do
       binary = ~s"""
       EXPLANATORY NOTE
+      ()
+      1. Foo
+      2. Bar
+      """
+
+      s = UK.rm_explanatory_note(binary)
+      assert s == ""
+    end
+
+    test "lc rm_explanatory_note/1" do
+      binary = ~s"""
+      Explanatory Note
       ()
       1. Foo
       2. Bar
@@ -93,11 +105,63 @@ defmodule UKTest do
     end
   end
 
-  describe "get_schedule/1" do
+  describe "get_annex/1" do
     test "SCHEDULE 1" do
       binary = ~s/\nSCHEDULE 1Name\n/
-      s = UK.get_schedule(binary)
+      s = UK.get_annex(binary)
       assert s == ~s/\n#{Legl.annex_emoji()}SCHEDULE 1 Name\n/
+    end
+  end
+
+  describe "get_signed_section/1" do
+    test "Signed section" do
+      binary = ~s/Signed by authority\nMike Penning\nMinister/
+      s = UK.get_signed_section(binary)
+      assert s == ~s/#{Legl.signed_emoji()}Signed by authority\nMike Penning\nMinister/
+    end
+  end
+
+  describe "get_part/1" do
+    test "PART 1TOPIC" do
+      binary = ~s/PART 1FIRST TOPIC/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}1 PART 1 FIRST TOPIC/
+    end
+
+    test "PART 2 INFORMATION" do
+      binary = ~s/PART 2 INFORMATION/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}2 PART 2 INFORMATION/
+    end
+
+    test "PART IINFORMATION" do
+      binary = ~s/PART IINFORMATION/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}PART I INFORMATION/
+    end
+
+    test "PART IIINFORMATION" do
+      binary = ~s/PART IIINFORMATION/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}PART II INFORMATION/
+    end
+
+    test "PART IITEST" do
+      binary = ~s/PART IITEST/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}PART II TEST/
+    end
+
+    test "PART IVTEST" do
+      binary = ~s/PART IVTEST/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}PART IV TEST/
+    end
+
+    test "PART IVISION" do
+      binary = ~s/PART IVISION/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}PART I VISION/
     end
   end
 
@@ -109,7 +173,7 @@ defmodule UKTest do
 
       assert s ==
                %{
-                 article: "",
+                 article: "1",
                  chapter: "",
                  para: "1",
                  str: "1.—(1) FooBar",
@@ -120,13 +184,14 @@ defmodule UKTest do
 
     test "💚1." do
       binary = "💚1. FooBar"
-      record = %{type: "", chapter: "", subchapter: "", article: "", para: 0, str: ""}
+      record = %{type: "", chapter: "", flow: "", subchapter: "", article: "", para: 0, str: ""}
       s = UK.article(binary, record)
 
       assert s ==
                %{
                  article: "",
                  chapter: "",
+                 flow: "",
                  para: " ",
                  str: "1. FooBar",
                  subchapter: "",
@@ -156,17 +221,30 @@ defmodule UKTest do
   describe "heading/2" do
     test "⭐1 Foobar" do
       binary = ~s/#{Legl.heading_emoji()}1 Foobar/
-      record = %{type: "", chapter: "", subchapter: "", article: "", sub: 0, str: ""}
+
+      record = %{
+        flow: "",
+        type: "",
+        chapter: "",
+        subchapter: "",
+        article: "",
+        para: "",
+        sub: 0,
+        str: ""
+      }
+
       s = UK.heading(binary, record)
 
       assert s ==
                %{
                  article: "1",
                  chapter: "",
+                 flow: "",
+                 para: "",
                  sub: 0,
                  str: "Foobar",
                  subchapter: "",
-                 type: "article, article-heading"
+                 type: "article, heading"
                }
     end
   end

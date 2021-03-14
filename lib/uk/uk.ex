@@ -8,6 +8,7 @@ defmodule UK do
       chapter_emoji: 0,
       sub_chapter_emoji: 0,
       heading_emoji: 0,
+      annex_heading_emoji: 0,
       article_emoji: 0,
       sub_article_emoji: 0,
       numbered_para_emoji: 0,
@@ -19,6 +20,31 @@ defmodule UK do
   @doc """
   Parser creates an annotated text file that can be quality checked by a human
   """
+
+  def parse_timer() do
+    {:ok, binary} = File.read(Path.absname(Legl.original()))
+    {t, binary} = :timer.tc(UK, :rm_header, [binary])
+    display_time("rm_header", t)
+    {t, _binary} = :timer.tc(UK, :rm_explanatory_note, [binary])
+    display_time("rm_explanatory_note", t)
+  end
+
+  def display_time(f, t) do
+    IO.puts("#{f} takes #{t} microseconds or #{t / 1_000_000} seconds")
+  end
+
+  def parse(part: :both) do
+    File.write(Legl.annotated(), "#{parse()}\n#{parse_annex()}")
+  end
+
+  def parse(part: :law) do
+    File.write(Legl.annotated(), "#{parse()}")
+  end
+
+  def parse(part: :annex) do
+    File.write(Legl.annotated_annex(), "#{parse_annex()}")
+  end
+
   def parse() do
     {:ok, binary} = File.read(Path.absname(Legl.original()))
 
@@ -28,25 +54,46 @@ defmodule UK do
     |> rm_empties()
     |> join_empty_numbered()
     |> get_article()
-    # has to come after get_article
-    |> get_heading()
     |> get_sub_article()
-    |> get_schedule()
-    |> get_schedule_heading()
     |> get_part()
     |> get_signed_section()
+    # get_heading() has to come after get_article
+    |> get_heading()
     |> join()
     |> rm_tabs()
-    |> (&File.write(Legl.annotated(), &1)).()
+  end
+
+  @doc """
+  Separate parser for Schedules
+  There is no easy way to differentiate schedule articles from the main law
+  """
+  def parse_annex() do
+    {:ok, binary} = File.read(Path.absname(Legl.original_annex()))
+
+    binary
+    |> rm_header_annex()
+    |> rm_empties()
+    |> get_annex()
+    |> get_annex_heading()
+    |> join()
+    |> rm_tabs()
   end
 
   @doc """
   Remove https://legislation.gov.uk header content
   """
-  def rm_header(binary),
+  def rm_header(binary) do
+    binary
+    |> (&Regex.replace(~r/^[[:space:][:print:]]+PreviousNext\n+/, &1, "")).()
+    # just the law w/o the schedules view
+    |> (&Regex.replace(~r/^Previous: IntroductionNext: Schedule/m, &1, "")).()
+    |> (&Regex.replace(~r/^[[:space:][:print:]]+Back to full view\n+/, &1, "")).()
+  end
+
+  def rm_header_annex(binary),
     do:
       Regex.replace(
-        ~r/[\s\S]+PreviousNext(?:\r\n|\n)*/m,
+        ~r/^[[:space:][:print:]]+Previous\: SignatureNext\: Explanatory Note\n+/,
         binary,
         ""
       )
@@ -54,7 +101,7 @@ defmodule UK do
   def rm_explanatory_note(binary),
     do:
       Regex.replace(
-        ~r/^EXPLANATORY NOTE[\s\S]+/m,
+        ~r/^Explanatory Note[\s\S]+|EXPLANATORY NOTE[\s\S]+/m,
         binary,
         ""
       )
@@ -94,9 +141,9 @@ defmodule UK do
   def get_heading(binary),
     do:
       Regex.replace(
-        ~r/([^#{part_emoji}\n\.]+)\n#{article_emoji()}(\d+)/m,
+        ~r/^[^#{part_emoji()}|#{annex_emoji()}]([^\n]+)[^\.](etc\.)?\n#{article_emoji()}(\d+)/m,
         binary,
-        "#{heading_emoji()}\\g{2} \\g{1}\n#{article_emoji()}\\g{2}"
+        "#{heading_emoji()}\\g{3} \\0"
       )
 
   @doc """
@@ -105,43 +152,94 @@ defmodule UK do
   SCHEDULE 1.Name
 
   """
-  def get_schedule(binary),
+  def get_annex(binary),
     do:
       Regex.replace(
-        ~r/^(SCHEDULE[ ]\d+)[ ]?/m,
+        ~r/^SCHEDULE[ ]\d+[ ]?|^THE SCHEDULE|^SCHEDULE/m,
         binary,
-        "#{annex_emoji()}\\g{1} "
+        "#{annex_emoji()}\\0 "
       )
 
-  def get_schedule_heading(binary),
+  def get_annex_heading(binary),
     do:
       Regex.replace(
-        ~r/^([A-Z][^\n\.]+)\n(?=#{annex_emoji()})/m,
+        ~r/^([A-Z][^\n\.]+)\n(#{annex_emoji()}.*)/m,
         binary,
-        "#{heading_emoji()}\\g{1}\n"
+        "\\g{2}#{pushpin_emoji()}\\g{1}"
       )
+
+  @doc """
+  PART and Roman Part Number concatenate when copied e.g. PART IINFORMATION
+  Call this function before calling get_part/1
+  """
+  @spec get_part(String.t()) :: String.t()
+  def get_part(binary) do
+    case Regex.replace(
+           ~r/^PART[ ](\d+)[ ]?([ A-Z]+)/,
+           binary,
+           "#{part_emoji()}\\g{1} PART \\g{1} \\g{2}"
+         ) do
+      b when b != binary ->
+        b
+
+      _ ->
+        [_, tens, units, text] =
+          Regex.run(~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/, binary)
+
+        numeral = tens <> units
+        numeral_length = String.length(numeral)
+
+        case numeral_length do
+          # I, V, X
+          1 ->
+            ~s/#{part_emoji()}PART #{numeral} #{text}/
+
+          _ ->
+            case String.last(numeral) do
+              # IIX, IX
+              "X" ->
+                Regex.replace(~r/^PART[ ]#{numeral}/, binary, "#{part_emoji()}PART #{numeral} ")
+
+              # IV, XIV, XV
+              "V" ->
+                case Dictionary.match?("V#{text}") do
+                  true ->
+                    ~s/#{part_emoji()}PART #{String.slice(numeral, 0..(numeral_length - 2))} V#{
+                      text
+                    }/
+
+                  false ->
+                    ~s/#{part_emoji()}PART #{numeral} #{text}/
+                end
+
+              # II, III, VI, VII, XI, XII, XIII
+              "I" ->
+                case Dictionary.match?("I#{text}") do
+                  true ->
+                    ~s/#{part_emoji()}PART #{String.slice(numeral, 0..(numeral_length - 2))} I#{
+                      text
+                    }/
+
+                  false ->
+                    ~s/#{part_emoji()}PART #{numeral} #{text}/
+                end
+            end
+        end
+    end
+  end
 
   @doc """
 
   """
-  def get_part(binary),
-    do:
-      Regex.replace(
-        ~r/^(PART[ ]\d+)[ ]?/m,
-        binary,
-        "#{part_emoji()}\\g{1} "
-      )
-
-  @doc """
-
-  """
-  def get_signed_section(binary),
-    do:
-      Regex.replace(
-        ~r/^Signed by/,
-        binary,
-        "#{signed_emoji()}\\0"
-      )
+  def get_signed_section(binary) do
+    binary
+    |> (&Regex.replace(~r/^Signed by/m, &1, "#{signed_emoji()}\\0")).()
+    |> (&Regex.replace(
+          ~r/^Sealed with the Official Seal/m,
+          &1,
+          "#{signed_emoji()}\\0"
+        )).()
+  end
 
   @doc """
   Join lines unless they are 'marked-up'
@@ -150,7 +248,9 @@ defmodule UK do
     Regex.replace(
       ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
         sub_chapter_emoji()
-      }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()})/mu,
+      }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()}|#{
+        annex_heading_emoji()
+      }|#{signed_emoji()})/mu,
       binary,
       "#{pushpin_emoji()}"
     )
@@ -200,7 +300,8 @@ defmodule UK do
             Regex.match?(~r/^#{article_emoji()}/, str) -> article(str, acc.record)
             Regex.match?(~r/^#{sub_article_emoji()}/, str) -> sub_article(str, acc.record)
             Regex.match?(~r/^#{heading_emoji()}/, str) -> heading(str, acc.record)
-            Regex.match?(~r/^#{annex_emoji()}/, str) -> schedule(str, acc.record)
+            Regex.match?(~r/^#{annex_emoji()}/, str) -> annex(str, acc.record)
+            # Regex.match?(~r/^#{annex_heading_emoji()}/, str) -> annex_heading(str, acc.record)
             Regex.match?(~r/^#{part_emoji()}/, str) -> part(str, acc.record)
             true -> sub(str, acc.record)
           end
@@ -253,23 +354,20 @@ defmodule UK do
   def article(str, record) do
     str = String.replace(str, article_emoji(), "")
 
-    {value, type} =
-      case Regex.run(~r/^\d+\.(#{<<226, 128, 148>>}|\-)\((\d+)\)/, str) do
-        nil ->
-          case record.flow do
-            "post" ->
-              [_, value] = Regex.run(~r/^(\d+)\./, str)
-              {value, "schedule, article"}
+    case Regex.run(~r/^(\d+)\.(#{<<226, 128, 148>>}|\-)\((\d+)\)/, str) do
+      nil ->
+        case record.flow do
+          "post" ->
+            [_, value] = Regex.run(~r/^(\d+)\./, str)
+            %{record | type: "schedule, article", para: value, str: str}
 
-            _ ->
-              {" ", "article"}
-          end
+          _ ->
+            %{record | type: "article", para: " ", str: str}
+        end
 
-        [_, _, capture] ->
-          {capture, "article, sub-article"}
-      end
-
-    %{record | type: type, para: value, str: str}
+      [_, article, _, para] ->
+        %{record | type: "article, sub-article", article: article, para: para, str: str}
+    end
   end
 
   def sub_article(str, record) do
@@ -280,7 +378,16 @@ defmodule UK do
 
   def heading(str, record) do
     str = String.replace(str, heading_emoji(), "")
-    [_, value, str] = Regex.run(~r/^(\d+)[ ](.*)/, str)
+
+    {value, str} =
+      case Regex.run(~r/^(\d+)[ ](.*)/, str) do
+        [_, value, str] ->
+          {value, str}
+
+        nil ->
+          IO.inspect(str)
+          {"NaN", str}
+      end
 
     type =
       case record.flow do
@@ -291,9 +398,14 @@ defmodule UK do
     %{record | type: type, article: value, para: "", sub: 0, str: str}
   end
 
-  def schedule(str, record) do
+  def annex(str, record) do
     str = String.replace(str, annex_emoji(), "")
-    [_, value] = Regex.run(~r/^SCHEDULE[ ](\d+)/, str)
+
+    value =
+      case Regex.run(~r/^SCHEDULE[ ](\d+)/, str) do
+        [_, value] -> value
+        nil -> ""
+      end
 
     %{
       record

@@ -12,14 +12,43 @@ defmodule Legl do
   article_type "lib/type.txt" # article type tags
   """
 
+  @roman_numerals %{
+    "I" => 1,
+    "II" => 2,
+    "III" => 3,
+    "IV" => 4,
+    "V" => 5,
+    "VI" => 6,
+    "VII" => 7,
+    "VIII" => 8,
+    "IX" => 9,
+    "X" => 10
+  }
+
+  @spec conv_roman_numeral(String.t()) :: Integer
+  def conv_roman_numeral(numeral) when is_integer(numeral), do: numeral
+
+  def conv_roman_numeral(numeral) do
+    case Map.get(@roman_numerals, numeral) do
+      nil -> numeral
+      x -> x
+    end
+  end
+
   def snippet, do: "lib/snippet.txt"
+
   def original, do: "lib/original.txt"
+  def original_annex, do: "lib/original-annex.txt"
+
   def annotated, do: "lib/annotated.txt"
+  def annotated_annex, do: "lib/annotated-annex.txt"
+
   def airtable, do: "lib/airtable.txt"
   def chapter, do: "lib/chapter.txt"
   def section, do: "lib/section.txt"
   def article, do: "lib/article.txt"
   def sub_article, do: "lib/sub_article.txt"
+
   def type, do: "lib/type.txt"
   def txts, do: "lib/txts.txt"
 
@@ -47,6 +76,8 @@ defmodule Legl do
   def annex_emoji, do: <<0x270A::utf8>>
   # star
   def heading_emoji, do: <<0x2B50::utf8>>
+  # no entry
+  def annex_heading_emoji, do: <<0x26D4::utf8>>
   # traffic light
   def signed_emoji, do: <<0x1F6A5::utf8>>
 
