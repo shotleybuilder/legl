@@ -174,44 +174,38 @@ defmodule UK do
   """
   @spec get_part(String.t()) :: String.t()
   def get_part(binary) do
-    case Regex.replace(
-           ~r/^PART[ ](\d+)[ ]?([ A-Z]+)/m,
-           binary,
-           "#{part_emoji()}\\g{1} PART \\g{1} \\g{2}"
-         ) do
-      b when b != binary ->
-        b
+    case Regex.match?(~r/^PART[ ](\d+)[ ]?([ A-Z]+)/m, binary) do
+      true ->
+        Regex.replace(
+          ~r/^PART[ ](\d+)[ ]?([ A-Z]+)/m,
+          binary,
+          "#{part_emoji()}\\g{1} PART \\g{1} \\g{2}"
+        )
 
-      b ->
-        case Regex.run(~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/m, b) do
-          [_, tens, units, text] ->
+      _ ->
+        Regex.replace(
+          ~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/m,
+          binary,
+          fn _, tens, units, text ->
             numeral = tens <> units
 
-            last_numeral = String.last(numeral)
-            remaining_numeral = String.slice(numeral, 0..(String.length(numeral) - 2))
+            {remaining_numeral, last_numeral} = String.split_at(numeral, -1)
+
+            # last_numeral = String.last(numeral)
+            # remaining_numeral = String.slice(numeral, 0..(String.length(numeral) - 2))
 
             case Dictionary.match?("#{last_numeral}#{text}") do
               true ->
-                roman_part_replace(remaining_numeral, binary)
+                value = Legl.conv_roman_numeral(remaining_numeral)
+                "#{part_emoji()}#{value} PART #{remaining_numeral} #{last_numeral}#{text}"
 
               false ->
-                roman_part_replace(numeral, binary)
+                value = Legl.conv_roman_numeral(numeral)
+                "#{part_emoji()}#{value} PART #{numeral} #{text}"
             end
-
-          _ ->
-            b
-        end
+          end
+        )
     end
-  end
-
-  defp roman_part_replace(numeral, binary) do
-    value = Legl.conv_roman_numeral(numeral)
-
-    Regex.replace(
-      ~r/^PART[ ]#{numeral}/m,
-      binary,
-      "#{part_emoji()}#{value} PART #{numeral} "
-    )
   end
 
   @doc """

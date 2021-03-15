@@ -26,8 +26,11 @@ defmodule Dictionary do
       |> (&MapSet.put(@empty_set, &1)).()
 
     cond do
-      MapSet.intersection(ms, @words) != @empty_set -> true
-      true -> false
+      MapSet.intersection(ms, @words) != @empty_set ->
+        true
+
+      true ->
+        false
     end
   end
 

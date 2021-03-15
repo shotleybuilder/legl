@@ -146,6 +146,12 @@ defmodule UKTest do
       assert s == ~s/#{Legl.part_emoji()}2 PART II INFORMATION/
     end
 
+    test "PART IIGENERAL" do
+      binary = ~s/PART IIGENERAL/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}2 PART II GENERAL/
+    end
+
     test "PART IITEST" do
       binary = ~s/PART IITEST/
       s = UK.get_part(binary)
