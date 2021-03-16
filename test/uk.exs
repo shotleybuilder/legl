@@ -169,6 +169,12 @@ defmodule UKTest do
       s = UK.get_part(binary)
       assert s == ~s/#{Legl.part_emoji()}1 PART I VISION/
     end
+
+    test "PART AGENERAL" do
+      binary = ~s/PART AGENERAL/
+      s = UK.get_part(binary)
+      assert s == ~s/#{Legl.part_emoji()}1 PART A GENERAL/
+    end
   end
 
   describe "article/2" do
@@ -252,6 +258,18 @@ defmodule UKTest do
                  subchapter: "",
                  type: "article, heading"
                }
+    end
+  end
+
+  describe "incremenet_string/1" do
+    test "empty string" do
+      s = UK.increment_string("")
+      assert s == "1"
+    end
+
+    test "1" do
+      s = UK.increment_string("1")
+      assert s == "2"
     end
   end
 end

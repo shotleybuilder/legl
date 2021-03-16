@@ -19,11 +19,12 @@ UK&
   )&
   IF({flow}="post",
     "-"&
+    IF(part, part&"_")&
     IF(chapter,chapter&"_")&
     IF(sub_chapter,sub_chapter&"_")&
     IF(section,section&"_")&
     IF(article,article&"_")&
-    IF(para, "_"&para)&
+    IF(para, para&"_")&
     IF(sub,sub&"_")
   )&
   IF({flow}="pre",

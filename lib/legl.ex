@@ -25,6 +25,8 @@ defmodule Legl do
     "X" => 10
   }
 
+  @alphabet "abcdefghijklmnopqrstuvwyyz" |> String.split("", trim: true)
+
   @spec conv_roman_numeral(String.t()) :: Integer
   def conv_roman_numeral(numeral) when is_integer(numeral), do: numeral
 
@@ -33,6 +35,13 @@ defmodule Legl do
       nil -> numeral
       x -> x
     end
+  end
+
+  def conv_alphabetic_classes(letter) do
+    letter = String.downcase(letter)
+
+    Enum.find_index(@alphabet, fn x -> x == letter end)
+    |> (&(&1 + 1)).()
   end
 
   def snippet, do: "lib/snippet.txt"
