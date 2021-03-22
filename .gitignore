@@ -24,5 +24,8 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 legl-*.tar
 
+# Ignore files storing Airtable formula
+lib/*/at_formula/
+
 *.txt
 *.beam
