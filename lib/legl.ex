@@ -1,16 +1,5 @@
 defmodule Legl do
-  @moduledoc """
-  Filenames
-
-  snippet "lib/snippet.txt"
-  original "lib/original.txt" # .html copied from the web
-  annotated "lib/annotated.txt" # annotated parsed content for error checking
-  airtable "lib/airtable.txt" # parsed content for pasting into Airtable
-  chapter "lib/chapter.txt" # chapter heading numbers
-  section "lib/section.txt" # section heading numbers
-  article "lib/article.txt" # article heading numbers
-  article_type "lib/type.txt" # article type tags
-  """
+  @moduledoc false
 
   @roman_numerals %{
     "I" => 1,

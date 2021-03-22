@@ -1,0 +1,19 @@
+defmodule Legl.Utility do
+  @moduledoc false
+
+  @doc """
+  Utility function to time the parser.
+  Arose when rm_header was taking 5 seconds!  Faster now :)
+  """
+  def parse_timer() do
+    {:ok, binary} = File.read(Path.absname(Legl.original()))
+    {t, binary} = :timer.tc(UK, :rm_header, [binary])
+    display_time("rm_header", t)
+    {t, _binary} = :timer.tc(UK, :rm_explanatory_note, [binary])
+    display_time("rm_explanatory_note", t)
+  end
+
+  defp display_time(f, t) do
+    IO.puts("#{f} takes #{t} microseconds or #{t / 1_000_000} seconds")
+  end
+end
