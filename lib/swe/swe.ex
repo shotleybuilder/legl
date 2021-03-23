@@ -12,7 +12,9 @@ defmodule SWE do
 
   Navigate into the project folder then boot interactive elixir:
 
-  > iex -S mix
+  ```
+  iex -S mix
+  ```
 
   ## Note on PDFs
 

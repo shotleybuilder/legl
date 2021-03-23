@@ -24,7 +24,7 @@ defmodule UK do
   @type uk_law_type :: atom
 
   @doc """
-  Parse `parse/1` creates an annotated text file that can be quality checked by a human.
+  Creates an annotated text file that can be quality checked by a human.
 
   Emojis are used as markers of different paragraph types.
   These enable the visual check and are also used by the parser.
