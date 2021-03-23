@@ -24,7 +24,7 @@ defmodule UK.Parser do
     binary
     |> rm_header()
     |> rm_explanatory_note
-    |> rm_empties()
+    |> Legl.Parser.rm_empty_lines()
     |> join_empty_numbered()
     |> get_article()
     |> get_sub_article()
@@ -32,8 +32,8 @@ defmodule UK.Parser do
     |> get_signed_section()
     # get_heading() has to come after get_article
     |> get_heading(:regulation)
-    |> join()
-    |> rm_tabs()
+    |> Legl.Parser.join()
+    |> Legl.Parser.rm_tabs()
   end
 
   def parser(:act = type) when is_atom(type) do
@@ -42,7 +42,7 @@ defmodule UK.Parser do
     binary
     |> rm_header()
     |> rm_explanatory_note
-    |> rm_empties()
+    |> Legl.Parser.rm_empty_lines()
     |> join_empty_numbered()
     |> get_chapter()
     |> get_amendments(:act)
@@ -55,8 +55,8 @@ defmodule UK.Parser do
     |> get_heading(:act)
     |> get_part()
     |> get_signed_section()
-    |> join()
-    |> rm_tabs()
+    |> Legl.Parser.join()
+    |> Legl.Parser.rm_tabs()
     |> rm_amendment(:act)
   end
 
@@ -69,11 +69,11 @@ defmodule UK.Parser do
     binary
     |> rm_leading_tabs_spaces()
     |> rm_header_annex()
-    |> rm_empties()
+    |> Legl.Parser.rm_empty_lines()
     |> get_annex()
     |> get_annex_heading()
-    |> join()
-    |> rm_tabs()
+    |> Legl.Parser.join()
+    |> Legl.Parser.rm_tabs()
   end
 
   def rm_leading_tabs_spaces(binary), do: Regex.replace(~r/^[\s\t]+/m, binary, "")
@@ -103,14 +103,6 @@ defmodule UK.Parser do
         ~r/^Explanatory Note[\s\S]+|EXPLANATORY NOTE[\s\S]+/m,
         binary,
         ""
-      )
-
-  def rm_empties(binary),
-    do:
-      Regex.replace(
-        ~r/(?:\r\n|\n)+[ \t]*(?:\r\n|\n)+/m,
-        binary,
-        "\n"
       )
 
   def join_empty_numbered(binary),
@@ -305,32 +297,6 @@ defmodule UK.Parser do
           "#{signed_emoji()}\\0"
         )).()
   end
-
-  @doc """
-  Join lines unless they are 'marked-up'
-  """
-  def join(binary) do
-    Regex.replace(
-      ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
-        sub_chapter_emoji()
-      }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()}|#{
-        annex_heading_emoji()
-      }|#{signed_emoji()}|#{amendment_emoji()})/mu,
-      binary,
-      "#{pushpin_emoji()}"
-    )
-  end
-
-  @doc """
-  Remove tabs because this conflicts with Airtables use of tabs to separate into fields
-  """
-  def rm_tabs(binary),
-    do:
-      Regex.replace(
-        ~r/\t/m,
-        binary,
-        "     "
-      )
 
   def rm_amendment(binary, :act),
     do: Regex.replace(~r/^#{amendment_emoji()}.*(?:\r\n|\n)?/m, binary, "")
