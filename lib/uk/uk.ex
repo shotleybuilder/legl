@@ -21,7 +21,7 @@ defmodule UK do
 
   `:act`, `:regulation`
   """
-  @type type :: atom
+  @type uk_law_type :: atom
 
   @doc """
   Parse `parse/1` creates an annotated text file that can be quality checked by a human.
@@ -57,7 +57,7 @@ defmodule UK do
 
   `iex(4)>UK.parse(:annex)`
   """
-  @spec parse(part: part, type: type) :: :ok | {:error, :file.posix()}
+  @spec parse(part: part, type: uk_law_type) :: :ok | {:error, :file.posix()}
   def parse(options \\ []) when is_list(options) do
     %{type: type, part: part} = Enum.into(options, @parse_options)
     parse(part, type)
@@ -117,14 +117,14 @@ defmodule UK do
   `iex(4)>UK.schema(:law, :act, [:article, :text])`
 
   """
-  @spec schema(part: part, type: type) :: :ok | {:error, :file.posix()}
+  @spec schema(part: part, type: uk_law_type) :: :ok | {:error, :file.posix()}
   def schema(options \\ []) when is_list(options) do
     %{type: type, part: part, fields: fields} = Enum.into(options, @schema_options)
     Schema.schemas(part, type, fields)
   end
 
   @doc false
-  @spec schema(part, type, []) :: :ok | {:error, :file.posix()}
+  @spec schema(part, uk_law_type, []) :: :ok | {:error, :file.posix()}
   def schema(part, type, fields \\ []) when is_atom(part) and is_atom(type) do
     {:ok, binary} =
       case part do
