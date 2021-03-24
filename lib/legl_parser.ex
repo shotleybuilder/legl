@@ -49,4 +49,10 @@ defmodule Legl.Parser do
         binary,
         "     "
       )
+
+  @doc """
+  Removes everything after and including the `term` that appears at the beginning of a line
+  """
+  def rm_footer(binary, term),
+    do: Regex.replace(~r/^#{term}[\s\S]+/m, binary, "")
 end

@@ -19,9 +19,9 @@ defmodule FIN.Parser do
   @spec parser(String.t()) :: String.t()
   def parser(binary) do
     binary
-    |> rm_header()
-    |> rm_footer()
     |> Legl.Parser.rm_empty_lines()
+    |> rm_header()
+    |> Legl.Parser.rm_footer("Sisällysluettelo")
     |> get_chapter()
     |> get_article()
     |> Legl.Parser.join()

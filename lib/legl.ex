@@ -1,6 +1,14 @@
 defmodule Legl do
   @moduledoc false
 
+  alias Legl.Regex
+
+  @regex %{
+    :fin => %Regex{chapter: ~s/^(\\d+)/, article: ~s/^(\\d+)/}
+  }
+
+  def regex, do: @regex
+
   @roman_numerals %{
     "I" => 1,
     "II" => 2,
