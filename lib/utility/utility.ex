@@ -13,6 +13,12 @@ defmodule Legl.Utility do
     display_time("rm_explanatory_note", t)
   end
 
+  def parser_timer(arg, func, name) do
+    {t, binary} = :timer.tc(func, [arg])
+    display_time(name, t)
+    binary
+  end
+
   defp display_time(f, t) do
     IO.puts("#{f} takes #{t} microseconds or #{t / 1_000_000} seconds")
   end

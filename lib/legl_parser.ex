@@ -26,17 +26,34 @@ defmodule Legl.Parser do
 
   @doc """
   Join lines unless they are 'marked-up'
+
+  Google translate for Finnish misses some pushpin_emoji.  Therefore,
+  these are seperated with spaces
   """
-  def join(binary) do
-    Regex.replace(
-      ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
-        sub_chapter_emoji()
-      }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()}|#{
-        annex_heading_emoji()
-      }|#{signed_emoji()}|#{amendment_emoji()})/mu,
-      binary,
-      "#{pushpin_emoji()}"
-    )
+  def join(binary, country \\ nil) do
+    case country do
+      nil ->
+        Regex.replace(
+          ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
+            sub_chapter_emoji()
+          }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()}|#{
+            annex_heading_emoji()
+          }|#{signed_emoji()}|#{amendment_emoji()})/mu,
+          binary,
+          "#{pushpin_emoji()}"
+        )
+
+      "FIN" ->
+        Regex.replace(
+          ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
+            sub_chapter_emoji()
+          }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()}|#{
+            annex_heading_emoji()
+          }|#{signed_emoji()}|#{amendment_emoji()})/mu,
+          binary,
+          " #{pushpin_emoji()} "
+        )
+    end
   end
 
   @doc """

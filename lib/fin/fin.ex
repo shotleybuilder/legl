@@ -7,9 +7,16 @@ defmodule FIN do
   @doc """
 
   """
-  def parse() do
+  def parse(timed? \\ false) do
     {:ok, binary} = File.read(Path.absname(Legl.original()))
-    File.write(Legl.annotated(), "#{FIN.Parser.parser(binary)}")
+
+    case timed? do
+      true ->
+        File.write(Legl.annotated(), "#{FIN.Parser.timed_parser(binary)}")
+
+      false ->
+        File.write(Legl.annotated(), "#{FIN.Parser.parser(binary)}")
+    end
   end
 
   @doc """
