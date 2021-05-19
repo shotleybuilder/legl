@@ -5,6 +5,7 @@ defmodule Legl.Parser do
       part_emoji: 0,
       chapter_emoji: 0,
       sub_chapter_emoji: 0,
+      section_emoji: 0,
       heading_emoji: 0,
       annex_heading_emoji: 0,
       article_emoji: 0,
@@ -15,6 +16,9 @@ defmodule Legl.Parser do
       pushpin_emoji: 0,
       amendment_emoji: 0
     ]
+
+  def rm_top_line(binary),
+    do: Regex.replace(~r/^[ \t]*(?:\r\n|\n)+/, binary, "")
 
   def rm_empty_lines(binary),
     do:
@@ -32,7 +36,7 @@ defmodule Legl.Parser do
   """
   def join(binary, country \\ nil) do
     case country do
-      nil ->
+      "UK" ->
         Regex.replace(
           ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
             sub_chapter_emoji()
@@ -43,18 +47,26 @@ defmodule Legl.Parser do
           "#{pushpin_emoji()}"
         )
 
-      "FIN" ->
+      _ ->
         Regex.replace(
           ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
             sub_chapter_emoji()
-          }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()}|#{
-            annex_heading_emoji()
-          }|#{signed_emoji()}|#{amendment_emoji()})/mu,
+          }|#{section_emoji()}|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{
+            annex_emoji()
+          }|#{annex_heading_emoji()}|#{signed_emoji()}|#{amendment_emoji()})/mu,
           binary,
           " #{pushpin_emoji()} "
         )
     end
   end
+
+  def rm_leading_tabs(binary),
+    do:
+      Regex.replace(
+        ~r/^[[:blank:]]+/m,
+        binary,
+        ""
+      )
 
   @doc """
   Remove tabs because this conflicts with Airtables use of tabs to separate into fields

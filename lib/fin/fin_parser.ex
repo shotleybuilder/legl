@@ -16,6 +16,7 @@ defmodule FIN.Parser do
 
   # Finnish alphabet: Å, å, Ä, ä, Ä, ä
 
+  @spec timed_parser(String.t()) :: String.t()
   def timed_parser(binary) do
     binary
     |> Legl.Utility.parser_timer(&Legl.Parser.rm_empty_lines/1, "rm_empty_lines")
@@ -32,6 +33,7 @@ defmodule FIN.Parser do
   def parser(binary) do
     binary
     |> Legl.Parser.rm_empty_lines()
+    |> rm_thin_space
     |> rm_header()
     |> rm_footer()
     |> get_chapter()
@@ -55,8 +57,17 @@ defmodule FIN.Parser do
         )).()
   end
 
+  @doc """
+  Replace thin spaces with normal spaces
+
+  Thin space sometimes appears in article numbers e.g 1 §
+  <<0x2009::utf8>>
+  """
+  def rm_thin_space(binary), do: String.replace(binary, <<0x2009::utf8>>, " ")
+
   def rm_footer(binary) do
     binary
+    |> (&Regex.replace(~r/Muutossäädösten[ ]voimaantulo[ ]ja[ ]soveltaminen:[\s\S]+/, &1, "")).()
     |> (&Regex.replace(~r/Säädökset[ ]alkuperäisinä[\s\S]+/, &1, "")).()
     |> (&Regex.replace(~r/Sisällysluettelo[\s\S]+/, &1, "")).()
   end
@@ -70,7 +81,7 @@ defmodule FIN.Parser do
   def get_chapter(binary),
     do:
       Regex.replace(
-        ~r/^(\d+[ ]luku.*)\n(.*)/m,
+        ~r/^(\d+[ ][[:alpha:]]?[ ]?luku.*)\n(.*)/m,
         binary,
         "#{chapter_emoji()}\\g{1} \\g{2}"
       )
@@ -84,7 +95,7 @@ defmodule FIN.Parser do
   def get_article(binary),
     do:
       Regex.replace(
-        ~r/^(\d+[ ]§.*)\n(.*)/m,
+        ~r/^(\d+[ ][[:alpha:]]?[ ]?§.*)\n(.*)/m,
         binary,
         "#{article_emoji()}\\g{1} \\g{2}"
       )
@@ -99,17 +110,32 @@ defmodule FIN.Parser do
   def get_annex(binary) do
     binary
     |> (&Regex.replace(
-          ~r/^(Liite[ ][[:alpha:]]+)\n(.*)\n/m,
+          ~r/^(Liite)\n(.*)\n/m,
           &1,
           "#{annex_emoji()}\\g{1} \\g{2}\n"
         )).()
     |> (&Regex.replace(
-          ~r/^(Liite[ ][[:alpha:]]+:[ ])(.*)\n/m,
+          ~r/^(Liite[ ][[:digit:]]+[[:print:]]*)\n(.*)\n/m,
           &1,
           "#{annex_emoji()}\\g{1} \\g{2}\n"
         )).()
     |> (&Regex.replace(
-          ~r/^(Liitteet[ ])([[:alnum:]]+-?[[:alnum:]]?:[ ])(.*)\n/m,
+          ~r/^(Liite[ ][[:alpha:]]+[[:print:]]*)\n(.*)\n/m,
+          &1,
+          "#{annex_emoji()}\\g{1} \\g{2}\n"
+        )).()
+    |> (&Regex.replace(
+          ~r/^(Liite[ ]?[[:alpha:]]?:[ ])(.*)\n/m,
+          &1,
+          "#{annex_emoji()}\\g{1} \\g{2}\n"
+        )).()
+    |> (&Regex.replace(
+          ~r/^(Liitteet[ ])([[:alnum:]]+-?[[:alnum:]]*:[ ])(.*)\n/m,
+          &1,
+          "#{annex_emoji()}\\g{1}\\g{2} \\g{3}\n"
+        )).()
+    |> (&Regex.replace(
+          ~r/^(Liitteet[ ])([[:alnum:]]+j?a?[ ]?[[:alnum:]]*:?[ ])(.*)\n/m,
           &1,
           "#{annex_emoji()}\\g{1}\\g{2} \\g{3}\n"
         )).()

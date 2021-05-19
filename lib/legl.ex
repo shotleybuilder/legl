@@ -4,7 +4,26 @@ defmodule Legl do
   alias Legl.Regex
 
   @regex %{
-    :fin => %Regex{chapter: ~s/^(\\d+)/, article: ~s/^(\\d+)/}
+    :fin => %Regex{
+      chapter: ~s/^(\\d+)/,
+      article: ~s/^(\\d+)/
+    },
+    :aut => %Regex{
+      chapter: ~s/^Artikel[ ](\\d+)/,
+      chapter_name: "artikel",
+      section: ~s/^(\\d+)/,
+      # abschnitt == sektion == section
+      section_name: "sektion",
+      article: ~s/^§[ ](\\d+)/,
+      article_name: "§",
+      sub_article_name: "unter §",
+      annex: ~s/^(?:Anlage[ ]([\\d|A-Z]+)|Anhang[ ](\\d+))/,
+      annex_name: "anhang"
+    },
+    :uk => %Regex{
+      annex: ~s/^SCHEDULE[ ](\\d+)/,
+      annex_name: "schedule"
+    }
   }
 
   def regex, do: @regex
@@ -62,6 +81,10 @@ defmodule Legl do
   Emojis
   to get the byte iex> i << 0x1F1F4 :: utf8 >>
   """
+
+  # bomb 💣
+  def content_emoji, do: <<0x1F4A3::utf8>>
+
   def uk_flag_emoji, do: <<0x1F1EC::utf8>> <> <<0x1F1E7::utf8>>
 
   # balloon
@@ -70,6 +93,10 @@ defmodule Legl do
   def chapter_emoji, do: <<0x1F1F3::utf8>> <> <<0x1F1F1::utf8>>
   # <<226, 156, 141>> # writing hand
   def sub_chapter_emoji, do: <<0x270D::utf8>>
+
+  # collision
+  def section_emoji, do: <<0x1F4A5::utf8>>
+
   # <<240, 159, 146, 156>> # green heart
   def article_emoji, do: <<0x1F49A::utf8>>
   # #<<240, 159, 146, 153>> # red heart

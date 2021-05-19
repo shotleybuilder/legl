@@ -8,6 +8,7 @@ defmodule Legl.Airtable.Schema do
       part_emoji: 0,
       chapter_emoji: 0,
       # sub_chapter_emoji: 0,
+      section_emoji: 0,
       heading_emoji: 0,
       # annex_heading_emoji: 0,
       article_emoji: 0,
@@ -25,7 +26,7 @@ defmodule Legl.Airtable.Schema do
             type: "",
             part: "",
             chapter: "",
-            subchapter: "",
+            section: "",
             article: "",
             para: "",
             sub: 0,
@@ -63,13 +64,13 @@ defmodule Legl.Airtable.Schema do
 
         this_record =
           cond do
-            Regex.match?(~r/^#{article_emoji()}/, str) -> article(regex.article, str, last_record)
-            Regex.match?(~r/^#{sub_article_emoji()}/, str) -> sub_article(str, last_record)
+            Regex.match?(~r/^#{article_emoji()}/, str) -> article(regex, str, last_record)
+            Regex.match?(~r/^#{sub_article_emoji()}/, str) -> sub_article(regex, str, last_record)
             Regex.match?(~r/^#{heading_emoji()}/, str) -> heading(str, last_record)
-            Regex.match?(~r/^#{annex_emoji()}/, str) -> annex(str, last_record)
-            # Regex.match?(~r/^#{annex_heading_emoji()}/, str) -> annex_heading(str, acc.record)
+            Regex.match?(~r/^#{annex_emoji()}/, str) -> annex(str, last_record, regex)
+            Regex.match?(~r/^#{section_emoji()}/, str) -> section(regex, str, last_record)
             Regex.match?(~r/^#{part_emoji()}/, str) -> part(str, last_record)
-            Regex.match?(~r/^#{chapter_emoji()}/, str) -> chapter(regex.chapter, str, last_record)
+            Regex.match?(~r/^#{chapter_emoji()}/, str) -> chapter(regex, str, last_record)
             true -> sub(str, last_record)
           end
 
@@ -89,14 +90,14 @@ defmodule Legl.Airtable.Schema do
         type: type,
         part: part,
         chapter: chapter,
-        subchapter: subchapter,
+        section: section,
         article: article,
         para: para,
         sub: sub,
         text: text
       }) do
     sub = if sub == 0, do: "", else: sub
-    ~s(#{flow}\t#{type}\t#{part}\t#{chapter}\t#{subchapter}\t#{article}\t#{para}\t#{sub}\t#{text})
+    ~s(#{flow}\t#{type}\t#{part}\t#{chapter}\t#{section}\t#{article}\t#{para}\t#{sub}\t#{text})
   end
 
   def part(str, last_record, type \\ :regulation) do
@@ -116,7 +117,7 @@ defmodule Legl.Airtable.Schema do
           | type: article_type,
             part: value,
             chapter: "",
-            subchapter: "",
+            section: "",
             article: "",
             para: "",
             text: ~s/#{part} #{i} #{str}/
@@ -126,7 +127,7 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type: article_type,
-            subchapter: value,
+            section: value,
             article: "",
             para: "",
             text: part <> str
@@ -149,16 +150,35 @@ defmodule Legl.Airtable.Schema do
     str = String.replace(str, chapter_emoji(), "")
 
     value =
-      case Regex.run(~r/#{regex}/m, str) do
+      case Regex.run(~r/#{regex.chapter}/m, str) do
         [_, value] -> value
         value -> value
       end
 
     %{
       last_record
-      | type: "chapter",
+      | type: regex.chapter_name,
         chapter: value,
-        subchapter: "",
+        section: "",
+        article: "",
+        para: "",
+        text: str
+    }
+  end
+
+  def section(regex, str, last_record) do
+    str = String.replace(str, section_emoji(), "")
+
+    value =
+      case Regex.run(~r/#{regex.section}/m, str) do
+        [_, value] -> value
+        value -> value
+      end
+
+    %{
+      last_record
+      | type: regex.section_name,
+        section: value,
         article: "",
         para: "",
         text: str
@@ -195,36 +215,43 @@ defmodule Legl.Airtable.Schema do
 
   * FIN `^(\d+)`
   * UK `^(\d+)\.(#{<<226, 128, 148>>}|\-)\((\d+)\)`
+  * AUT `^§[ ](\d+)`
   """
   def article(regex, str, last_record) do
     str = String.replace(str, article_emoji(), "")
 
-    case Regex.run(~r/#{regex}/, str) do
+    case Regex.run(~r/#{regex.article}/, str) do
       nil ->
         case last_record.flow do
           "post" ->
             [_, value] = Regex.run(~r/^(\d+)\./, str)
-            %{last_record | type: "annex, article", para: value, text: str}
+            %{last_record | type: "annex, #{regex.article_name}", para: value, text: str}
 
           _ ->
-            %{last_record | type: "article", para: " ", text: str}
+            %{last_record | type: regex.article_name, para: " ", text: str}
         end
 
       [_, value] ->
-        %{last_record | type: "article", article: value, para: "", text: str}
+        %{last_record | type: regex.article_name, article: value, para: "", text: str}
 
       [_, article, _, para] ->
-        %{last_record | type: "article, sub-article", article: article, para: para, text: str}
+        %{
+          last_record
+          | type: "#{regex.article_name}, sub-article",
+            article: article,
+            para: para,
+            text: str
+        }
     end
   end
 
   @doc """
 
   """
-  def sub_article(str, last_record) do
+  def sub_article(regex, str, last_record) do
     str = String.replace(str, sub_article_emoji(), "")
     [_, value] = Regex.run(~r/^\((\d+)\)/, str)
-    %{last_record | type: "sub-article", para: value, text: str}
+    %{last_record | type: regex.sub_article_name, para: value, text: str}
   end
 
   def sub(str, last_record) do
@@ -243,21 +270,28 @@ defmodule Legl.Airtable.Schema do
   end
 
   @doc """
+  Creates an annex record
+
+  Regex:
+  * UK `^SCHEDULE[ ](\d+)`
+  * AUT `^Anlage[ ](\d+)`
 
   """
-  def annex(str, last_record) do
+  def annex(str, last_record, regex) do
     str = String.replace(str, annex_emoji(), "")
 
     value =
-      case Regex.run(~r/^SCHEDULE[ ](\d+)/, str) do
+      case Regex.run(~r/#{regex.annex}/, str) do
+        [_, _, value] -> value
         [_, value] -> value
         nil -> ""
       end
 
     %{
       last_record
-      | type: "schedule",
-        chapter: "s" <> value,
+      | type: regex.annex_name,
+        chapter: String.downcase(regex.annex_name) |> String.first() |> Kernel.<>(value),
+        section: "",
         article: "",
         para: "",
         sub: 0,
