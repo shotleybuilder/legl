@@ -17,65 +17,108 @@ defmodule AUT.Parser do
 
   # Austrian alphabet: Ä, ä, Ö, ö, Ü, ü, ẞ, ß
 
+  @doc """
+  Parses text copied from ris.bka.gv.at/GeltendeFassung.wxe
+
+  """
+  @spec parser_latest(String.t()) :: String.t()
+  def parser_latest(binary) do
+    binary
+    |> clean_original()
+    |> get_anhang()
+    |> rm_anhang_content()
+    |> get_haupstuck()
+    |> get_abschnitt()
+    |> get_article()
+    |> get_sub_article()
+    |> join_numbered()
+    |> join_parenthesised()
+    |> Legl.Parser.join()
+    |> Legl.Parser.rm_tabs()
+  end
+
+  @doc false
+  @spec clean_original(String.t()) :: String.t()
+  def clean_original(binary) do
+    binary
+    |> Legl.Parser.rm_top_line()
+    |> Legl.Parser.rm_empty_lines()
+    |> Legl.Parser.rm_leading_tabs()
+    |> Legl.Parser.rm_underline_characters()
+    |> rm_header()
+    |> rm_footer()
+    |> AUT.TOC.rm_toc()
+    |> rm()
+    |> (fn x ->
+          File.write(Legl.original(), x)
+          x
+        end).()
+  end
+
+  def rm_header(binary), do: Regex.replace(~r/.*(Langtitel)$/ms, binary, "\\g{1}")
+
+  def rm_footer(binary), do: Regex.replace(~r/^Zum[ ]Seitenanfang[\s\S]+/m, binary, "")
+
+  def rm(binary) do
+    binary
+    |> (&Regex.replace(~r/^verordnet:$\n/m, &1, "")).()
+    |> (&Regex.replace(~r/^§[ ]\d+[a-z]?$\n/m, &1, "")).()
+    |> (&Regex.replace(~r/^Text$\n/m, &1, "")).()
+    |> (&Regex.replace(~r/^Anl\.[ ]\d+$\n/m, &1, "")).()
+  end
+
+  @doc """
+  Parses text copied from https://www.ris.bka.gv.at/Dokumente/BgblAuth/
+
+  deprecated: "Use AUT.Parser.parser_latest/1 instead"
+  """
+  @deprecated "Use AUT.Parser.parser_latest/1 instead"
   @spec parser(String.t()) :: String.t()
   def parser(binary) do
     binary
     |> Legl.Parser.rm_top_line()
     |> Legl.Parser.rm_empty_lines()
     |> Legl.Parser.rm_leading_tabs()
-    |> mark_up_contents_heading()
-    |> mark_up_contents()
+    |> Legl.Parser.rm_underline_characters()
+    |> AUT.TOC.mark_up_contentz()
     |> get_artikel()
     |> get_abschnitt()
     |> get_article()
     |> get_sub_article()
     |> join_numbered()
-    |> join_parenthasised()
+    |> join_parenthesised()
     |> append_annex()
     |> String.replace("#{content_emoji()}", "")
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
   end
 
-  def mark_up_contents_heading(binary) do
+  @doc """
+  Haupstück means main piece in English
+
+    From this:
+    I. HAUPTSTÜCK
+    Heading
+
+    To this:
+    🧱I. HAUPTSTÜCK Heading
+
+    OR
+
+    From this:
+    I. HAUPTSTÜCK: Heading
+
+    To this:
+    🧱I. HAUPTSTÜCK: Heading
+  """
+  @spec get_haupstuck(String.t()) :: String.t()
+  def get_haupstuck(binary) do
     binary
     |> (&Regex.replace(
-          ~r/^(Inhaltsverzeichnis.*)/m,
+          ~r/^(\d*[A-Z]*\.[ ]+(?:Haupstück|HAUPTSTÜCK))\n(.*)|^(\d*[A-Z]*\.[ ]+(?:Haupstück|HAUPTSTÜCK):?[ ])(.*)/m,
           &1,
-          "#{content_emoji()}\\g{1}"
+          "#{chapter_emoji()}\\g{1}\\g{3} \\g{2}\\g{4}"
         )).()
-  end
-
-  def mark_up_contents(binary) do
-    case Regex.match?(
-           ~r/^(#{content_emoji()}[§|\d|Inhaltsverzeichnis].*)\n(§[ ]\d+\.?|Anhang[ ]\d+|\d+\.[ ]Abschnitt|Anlage[ ][A-Z]+)\n(.*)/m,
-           binary
-         ) do
-      true ->
-        Regex.replace(
-          ~r/^(#{content_emoji()}[§|\d|Inhaltsverzeichnis].*)\n(§[ ]\d+\.?|Anhang[ ]\d+|\d+\.[ ]Abschnitt|Anlage[ ][A-Z]+)\n(.*)/m,
-          binary,
-          "\\g{1}\n#{content_emoji()}\\g{2} \\g{3}"
-        )
-        |> mark_up_contents()
-
-      false ->
-        case Regex.match?(
-               ~r/^(#{content_emoji()}[Anlage|Teil].*)\n(?:(Anlage[ ][A-Z]+)\n(.*)|(Teil[ ]\d+:)(.*))/m,
-               binary
-             ) do
-          true ->
-            Regex.replace(
-              ~r/^(#{content_emoji()}[Anlage|Teil].*)\n(?:(Anlage[ ][A-Z]+)\n(.*)|(Teil[ ]\d+:)(.*))/m,
-              binary,
-              "\\g{1}\n#{content_emoji()}\\g{2}\\g{4} \\g{3}\\g{5}"
-            )
-            |> mark_up_contents()
-
-          false ->
-            binary
-        end
-    end
   end
 
   def get_artikel(binary) do
@@ -95,15 +138,23 @@ defmodule AUT.Parser do
     Heading
 
     To this:
-    1. Abschnitt Heading
+    💥1. Abschnitt Heading
+
+    OR
+
+    From this:
+    1. Abschnitt: Heading
+
+    To this:
+    💥1. Abschnitt: Heading
   """
   @spec get_abschnitt(String.t()) :: String.t()
   def get_abschnitt(binary) do
     binary
     |> (&Regex.replace(
-          ~r/^(\d+\.[ ]Abschnitt)\n(.*)\n/m,
+          ~r/^(\d+\.[ ](?:Abschnitt|ABSCHNITT))\n(.*)|^(\d+\.[ ](?:Abschnitt|ABSCHNITT):[ ])(.*)|^((?:Abschnitt|ABSCHNITT|Unterabschnitt)[ ]\d+[a-z]*:)(.*)|^((?:Abschnitt|ABSCHNITT|Unterabschnitt)[ ]\d+[a-z]*)\n(.*)/m,
           &1,
-          "#{section_emoji()}\\g{1} \\g{2}\n"
+          "#{section_emoji()}\\g{1}\\g{3}\\g{5}\\g{7} \\g{2}\\g{4}\\g{6}\\g{8}"
         )).()
   end
 
@@ -121,7 +172,7 @@ defmodule AUT.Parser do
   def get_article(binary) do
     binary
     |> (&Regex.replace(
-          ~r/^(.*)\n(§[ ]\d+\.)\n/m,
+          ~r/^(.*)\n(§[ ]\d+[a-z]?\.)\n/m,
           &1,
           "#{article_emoji()}\\g{2} \\g{1}\n"
         )).()
@@ -141,10 +192,71 @@ defmodule AUT.Parser do
   def get_sub_article(binary) do
     binary
     |> (&Regex.replace(
-          ~r/^(\(\d+\)[ ].*)\n/m,
+          ~r/^(\(\d+[a-z]?\)[ ].*)/m,
           &1,
-          "#{sub_article_emoji()}\\g{1}\n"
+          "#{sub_article_emoji()}\\g{1}"
         )).()
+  end
+
+  @doc """
+  Parses the annex headings
+
+  Form this:
+  Anhang I
+  Heading
+
+  To this:
+  Anhang I Heading
+  """
+  @spec get_anhang(String.t()) :: String.t()
+  def get_anhang(binary) do
+    binary
+    |> (&Regex.replace(
+          ~r/^(ANHANG|Anhang|Anlage)([ ][A-Z]*\d*\/?\d*)\n(.*)|^(ANHANG|Anhang|Anlage)([ ][A-Z]*\d*\/?\d*)(.*)/m,
+          &1,
+          "#{annex_emoji()}\\g{1}\\g{2} \\g{3} \\g{4}\\g{5} \\g{6}"
+        )).()
+  end
+
+  @doc """
+  Parses the content between the Anhang headings
+  Form this:
+  ✊Anhang I Heading
+  Content
+  ✊Anhang II Heading
+  Content
+
+  To this:
+  ✊Anhang I Heading
+  ✊Anhang II Heading
+  """
+  @spec rm_anhang_content(String.t()) :: String.t()
+  def rm_anhang_content(binary) do
+    cond do
+      Regex.match?(
+        ~r/(#{annex_emoji()}.*\n)[^#{annex_emoji()}][\s\S]+(#{annex_emoji()}.*\n)/U,
+        binary
+      ) ->
+        Regex.replace(
+          ~r/(#{annex_emoji()}.*\n)[^#{annex_emoji()}][\s\S]+(#{annex_emoji()}.*\n)/U,
+          binary,
+          "\\g{1}\\g{2}"
+        )
+        |> rm_anhang_content()
+
+      Regex.match?(
+        ~r/(#{annex_emoji()}.*)\n[^#{annex_emoji()}][\s\S]+$/,
+        binary
+      ) ->
+        Regex.replace(
+          ~r/(#{annex_emoji()}.*)\n[^#{annex_emoji()}][\s\S]+$/,
+          binary,
+          "\\g{1}"
+        )
+
+      true ->
+        binary
+    end
   end
 
   @doc """
@@ -178,7 +290,7 @@ defmodule AUT.Parser do
   a) Subject
   """
   @spec join_numbered(String.t()) :: String.t()
-  def join_parenthasised(binary) do
+  def join_parenthesised(binary) do
     binary
     |> (&Regex.replace(
           ~r/^([a-z]\))\n(.*)\n/m,
@@ -190,15 +302,15 @@ defmodule AUT.Parser do
   @doc """
   Gets the Annex / Appendix from the Contents and appends
 
-
+  Anhang or Anlage
   """
   def append_annex(binary) do
     binary
     |> (&Regex.scan(
-          ~r/^#{content_emoji()}Anlage[ ][\d|A-Z]+[ ].*|#{content_emoji()}Anhang[ ]\d+.*/m,
+          ~r/^#{content_emoji()}An[hl]a[an][eg]:?[ ][\d|A-Z]+.*/m,
           &1
         )).()
-    # |> IO.inspect()
+    |> IO.inspect()
     |> Enum.reduce(binary, fn [str], acc -> acc <> "\n#{annex_emoji()}" <> str end)
 
     # |> (&Regex.replace(

@@ -4,15 +4,18 @@ defmodule AUT do
   """
   alias Legl.Airtable.Schema
 
+  def clean(),
+    do: AUT.Parser.clean_original(File.read!(Path.absname(Legl.original())))
+
   @doc """
 
   """
-  def parse(timed? \\ false) do
+  def parse(latest? \\ true) do
     {:ok, binary} = File.read(Path.absname(Legl.original()))
 
-    case timed? do
+    case latest? do
       true ->
-        File.write(Legl.annotated(), "#{AUT.Parser.timed_parser(binary)}")
+        File.write(Legl.annotated(), "#{AUT.Parser.parser_latest(binary)}")
 
       false ->
         File.write(Legl.annotated(), "#{AUT.Parser.parser(binary)}")
@@ -24,8 +27,13 @@ defmodule AUT do
 
 
   """
-  def airtable() do
+  def airtable(fields \\ :all) do
     {:ok, binary} = File.read(Path.absname(Legl.annotated()))
-    File.write(Legl.airtable(), "#{Schema.schema(:aut, binary)}")
+
+    Schema.schema(:aut, binary, fields)
+    # |> IO.inspect()
+    |> (&File.write(Legl.airtable(), &1)).()
+
+    # File.write(Legl.airtable(), "#{Schema.schema(:aut, binary)}")
   end
 end

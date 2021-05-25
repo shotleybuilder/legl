@@ -80,6 +80,15 @@ defmodule Legl.Parser do
       )
 
   @doc """
+  Removes two or more underline characters
+
+  Underline is used to make underlines in text docs
+  """
+  def rm_underline_characters(binary) do
+    Regex.replace(~r/_{3,}/m, binary, "__")
+  end
+
+  @doc """
   Removes everything after and including the `term` that appears at the beginning of a line
   """
   def rm_footer(binary, term),

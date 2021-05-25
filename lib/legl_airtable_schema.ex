@@ -44,44 +44,51 @@ defmodule Legl.Airtable.Schema do
   Creates a tab-delimited binary suitable for copying into Airtable.
   """
   @spec schema(country_code, String.t()) :: String.t()
-  def schema(country_code, binary) do
+  def schema(country_code, binary, fields \\ :all) do
     regex = Map.get(Legl.regex(), country_code)
 
+    records = records(binary, regex)
+
+    Enum.count(records) |> IO.inspect(label: "records")
+
+    case fields do
+      :all ->
+        Enum.map(records, &conv_map_to_record_string/1)
+        |> Enum.reverse()
+        |> Enum.join("\n")
+
+      :text ->
+        Enum.map(records, &conv_text_to_record_string/1)
+        |> Enum.reverse()
+        |> Enum.join("\n")
+    end
+  end
+
+  def records(binary, regex) do
     # First line is always the title
     [head | tail] = String.split(binary, "\n", trim: true)
-
-    records = [
-      %{%Schema{} | type: "title", text: head}
-    ]
 
     # a _record_ represents a single line/row entry in Airtable
     # and is the rolling history of what's been
     # _records_ is a `t:list/0` of the set of records
-    records =
-      tail
-      |> Enum.reduce(records, fn str, acc ->
-        last_record = hd(acc)
+    tail
+    |> Enum.reduce([%{%Schema{} | type: "title", text: head}], fn str, acc ->
+      last_record = hd(acc)
 
-        this_record =
-          cond do
-            Regex.match?(~r/^#{article_emoji()}/, str) -> article(regex, str, last_record)
-            Regex.match?(~r/^#{sub_article_emoji()}/, str) -> sub_article(regex, str, last_record)
-            Regex.match?(~r/^#{heading_emoji()}/, str) -> heading(str, last_record)
-            Regex.match?(~r/^#{annex_emoji()}/, str) -> annex(str, last_record, regex)
-            Regex.match?(~r/^#{section_emoji()}/, str) -> section(regex, str, last_record)
-            Regex.match?(~r/^#{part_emoji()}/, str) -> part(str, last_record)
-            Regex.match?(~r/^#{chapter_emoji()}/, str) -> chapter(regex, str, last_record)
-            true -> sub(str, last_record)
-          end
+      this_record =
+        cond do
+          Regex.match?(~r/^#{article_emoji()}/, str) -> article(regex, str, last_record)
+          Regex.match?(~r/^#{sub_article_emoji()}/, str) -> sub_article(regex, str, last_record)
+          Regex.match?(~r/^#{heading_emoji()}/, str) -> heading(str, last_record)
+          Regex.match?(~r/^#{annex_emoji()}/, str) -> annex(str, last_record, regex)
+          Regex.match?(~r/^#{section_emoji()}/, str) -> section(regex, str, last_record)
+          Regex.match?(~r/^#{part_emoji()}/, str) -> part(str, last_record)
+          Regex.match?(~r/^#{chapter_emoji()}/, str) -> chapter(regex, str, last_record)
+          true -> sub(str, last_record)
+        end
 
-        [this_record | acc]
-      end)
-
-    Enum.count(records) |> IO.inspect(label: "records")
-
-    Enum.map(records, &conv_map_to_record_string/1)
-    |> Enum.reverse()
-    |> Enum.join("\n")
+      [this_record | acc]
+    end)
   end
 
   @doc false
@@ -98,6 +105,13 @@ defmodule Legl.Airtable.Schema do
       }) do
     sub = if sub == 0, do: "", else: sub
     ~s(#{flow}\t#{type}\t#{part}\t#{chapter}\t#{section}\t#{article}\t#{para}\t#{sub}\t#{text})
+  end
+
+  @doc false
+  def conv_text_to_record_string(%Schema{
+        text: text
+      }) do
+    ~s(#{text})
   end
 
   def part(str, last_record, type \\ :regulation) do
@@ -151,6 +165,7 @@ defmodule Legl.Airtable.Schema do
 
     value =
       case Regex.run(~r/#{regex.chapter}/m, str) do
+        [_, _, value] -> value
         [_, value] -> value
         value -> value
       end
@@ -250,7 +265,7 @@ defmodule Legl.Airtable.Schema do
   """
   def sub_article(regex, str, last_record) do
     str = String.replace(str, sub_article_emoji(), "")
-    [_, value] = Regex.run(~r/^\((\d+)\)/, str)
+    [_, value] = Regex.run(~r/^\((\d+[a-z]?)\)/, str)
     %{last_record | type: regex.sub_article_name, para: value, text: str}
   end
 

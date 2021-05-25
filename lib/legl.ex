@@ -9,15 +9,15 @@ defmodule Legl do
       article: ~s/^(\\d+)/
     },
     :aut => %Regex{
-      chapter: ~s/^Artikel[ ](\\d+)/,
+      chapter: ~s/^Artikel[ ](\\d+)|^([A-Z]+)\.?[ ]+HAUPTSTÜCK/,
       chapter_name: "artikel",
-      section: ~s/^(\\d+)/,
+      section: ~s/(\\d+[a-z]?)/,
       # abschnitt == sektion == section
       section_name: "sektion",
-      article: ~s/^§[ ](\\d+)/,
+      article: ~s/^§[ ](\\d+[a-z]?)/,
       article_name: "§",
       sub_article_name: "unter §",
-      annex: ~s/^(?:Anlage[ ]([\\d|A-Z]+)|Anhang[ ](\\d+))/,
+      annex: ~s/(?:^Anlage[ ]([\d|A-Z]+)|^(?:Anhang|ANHANG)[ ]+(\d*[A-Z]*))/,
       annex_name: "anhang"
     },
     :uk => %Regex{
@@ -85,12 +85,17 @@ defmodule Legl do
   # bomb 💣
   def content_emoji, do: <<0x1F4A3::utf8>>
 
+  # <<240, 159, 135, 179>> <> <<240, 159, 135, 180>> #norwegian flag
+  def nor_flag_emoji, do: <<0x1F1F3::utf8>> <> <<0x1F1F1::utf8>>
+
   def uk_flag_emoji, do: <<0x1F1EC::utf8>> <> <<0x1F1E7::utf8>>
 
   # balloon
   def part_emoji, do: <<0x1F388::utf8>>
-  # <<240, 159, 135, 179>> <> <<240, 159, 135, 180>> #norwegian flag
-  def chapter_emoji, do: <<0x1F1F3::utf8>> <> <<0x1F1F1::utf8>>
+
+  # brick 🧱 <<240, 159, 167, 177>>
+  def chapter_emoji, do: <<0x1F9F1::utf8>>
+
   # <<226, 156, 141>> # writing hand
   def sub_chapter_emoji, do: <<0x270D::utf8>>
 
