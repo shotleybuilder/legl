@@ -17,7 +17,7 @@ defmodule Legl do
       article: ~s/^§[ ](\\d+[a-z]?)/,
       article_name: "§",
       sub_article_name: "unter §",
-      annex: ~s/(?:^Anlage[ ]([\d|A-Z]+)|^(?:Anhang|ANHANG)[ ]+(\d*[A-Z]*))/,
+      annex: ~s/(?:^Anlage[ ]([\\d|A-Z]+)|^(?:Anhang|ANHANG)[ ]+(\\d*[A-Z]*))/,
       annex_name: "anhang"
     },
     :uk => %Regex{
