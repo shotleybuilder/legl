@@ -13,16 +13,41 @@ defmodule TUR.Parser do
       # numbered_para_emoji: 0,
       amendment_emoji: 0,
       annex_emoji: 0,
-      pushpin_emoji: 0
+      pushpin_emoji: 0,
+      footnote_emoji: 0
       # no_join_emoji: 0
     ]
 
-  # Turkish alphabet: Ç, ç, Ş, ş, Ü, ü
+  # Turkish alphabet: Ç, ç, Ş, ş, Ö, ö, Ü, ü
   # Ç - <<195, 135>>
   # ç - <<195, 167>>
   # Ş, ş, Ü, ü
 
   @part_names ~s(BİRİNCİ İKİNCİ ÜÇÜNCÜ DÖRDÜNCÜ BEŞİNCİ ALTINCI YEDİNCİ SEKİZİNCİ DOKUZUNCU)
+
+  @doc """
+  Builds a map of the Turkish name => numerical value
+
+  %{
+   "ALTINCI" => 6,
+   "BEŞİNCİ" => 5,
+   "BİRİNCİ" => 1,
+   "DOKUZUNCU" => 9,
+   "DÖRDÜNCÜ" => 4,
+   "SEKİZİNCİ" => 8,
+   "YEDİNCİ" => 7,
+   "ÜÇÜNCÜ" => 3,
+   "İKİNCİ" => 2
+  }
+
+  """
+  def part_numbers() do
+    String.split(@part_names)
+    |> Enum.reduce({%{}, 1}, fn x, {map, inc} ->
+      {Map.put(map, x, inc), inc + 1}
+    end)
+    |> Kernel.elem(0)
+  end
 
   @doc """
   Parses .pdf text copied from https://www.mevzuat.gov.tr/MevzuatMetin
@@ -38,9 +63,9 @@ defmodule TUR.Parser do
     |> get_ek_fikra()
     |> get_degisik()
     |> get_mulga()
-    |> get_revision()
-    |> numeraled()
-    |> lettered()
+    |> get_footnote()
+    # |> numeraled()
+    # |> lettered()
     |> join_sentences()
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
@@ -116,11 +141,11 @@ defmodule TUR.Parser do
     )
   end
 
-  def get_revision(binary) do
+  def get_footnote(binary) do
     Regex.replace(
       ~r/^\(\d+\)[ ]\d{1,2}\/\d{1,2}\/\d{4}[ ]/m,
       binary,
-      "#{amendment_emoji()}\\0"
+      "#{footnote_emoji()}\\0"
     )
   end
 

@@ -14,8 +14,17 @@ defmodule Legl.Parser do
       annex_emoji: 0,
       signed_emoji: 0,
       pushpin_emoji: 0,
-      amendment_emoji: 0
+      amendment_emoji: 0,
+      footnote_emoji: 0
     ]
+
+  @emojis ~s/#{part_emoji()} #{chapter_emoji()} #{sub_chapter_emoji()} #{section_emoji()} #{
+            heading_emoji()
+          } #{annex_heading_emoji()} #{article_emoji()} #{sub_article_emoji()} #{
+            numbered_para_emoji()
+          } #{annex_emoji()} #{signed_emoji()} #{pushpin_emoji()} #{amendment_emoji()} #{
+            footnote_emoji()
+          }/
 
   def rm_top_line(binary),
     do: Regex.replace(~r/^[ \t]*(?:\r\n|\n)+/, binary, "")
@@ -34,30 +43,26 @@ defmodule Legl.Parser do
   Google translate for Finnish misses some pushpin_emoji.  Therefore,
   these are seperated with spaces
   """
-  def join(binary, country \\ nil) do
-    case country do
-      "UK" ->
-        Regex.replace(
-          ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
-            sub_chapter_emoji()
-          }|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{annex_emoji()}|#{
-            annex_heading_emoji()
-          }|#{signed_emoji()}|#{amendment_emoji()})/mu,
-          binary,
-          "#{pushpin_emoji()}"
-        )
+  def join(binary, country \\ nil)
 
-      _ ->
-        Regex.replace(
-          ~r/(?:\r\n|\n)(?!#{part_emoji()}|#{heading_emoji()}|#{chapter_emoji()}|#{
-            sub_chapter_emoji()
-          }|#{section_emoji()}|#{article_emoji()}|#{sub_article_emoji()}|#{numbered_para_emoji()}|#{
-            annex_emoji()
-          }|#{annex_heading_emoji()}|#{signed_emoji()}|#{amendment_emoji()})/mu,
-          binary,
-          " #{pushpin_emoji()} "
-        )
-    end
+  def join(binary, "UK") do
+    emojis = Regex.replace(~r/[ ]/, @emojis, "|")
+
+    Regex.replace(
+      ~r/(?:\r\n|\n)(?!#{emojis})/mu,
+      binary,
+      "#{pushpin_emoji()}"
+    )
+  end
+
+  def join(binary, _country) do
+    emojis = Regex.replace(~r/[ ]/, @emojis, "|")
+
+    Regex.replace(
+      ~r/(?:\r\n|\n)(?!#{emojis})/mu,
+      binary,
+      " #{pushpin_emoji()} "
+    )
   end
 
   def rm_leading_tabs(binary),

@@ -1,6 +1,7 @@
 defmodule Legl.Regex do
   @moduledoc false
   defstruct part: "",
+            part_name: "part",
             chapter: "",
             chapter_name: "chapter",
             section: "",
@@ -13,5 +14,6 @@ defmodule Legl.Regex do
             para: "",
             sub: "",
             annex: "",
-            annex_name: ""
+            annex_name: "",
+            amendment: ""
 end

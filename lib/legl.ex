@@ -4,10 +4,6 @@ defmodule Legl do
   alias Legl.Regex
 
   @regex %{
-    :fin => %Regex{
-      chapter: ~s/^(\\d+)/,
-      article: ~s/^(\\d+)/
-    },
     :aut => %Regex{
       chapter: ~s/^Artikel[ ](\\d+)|^([A-Z]+)\.?[ ]+HAUPTSTÜCK/,
       chapter_name: "artikel",
@@ -19,6 +15,17 @@ defmodule Legl do
       sub_article_name: "unter §",
       annex: ~s/(?:^Anlage[ ]([\\d|A-Z]+)|^(?:Anhang|ANHANG)[ ]+(\\d*[A-Z]*))/,
       annex_name: "anhang"
+    },
+    :fin => %Regex{
+      chapter: ~s/^(\\d+)/,
+      article: ~s/^(\\d+)/
+    },
+    :tur => %Regex{
+      part: ~s/^[A-Z]+/,
+      part_name: "bölüm",
+      article: ~s/^Madde[ ](\\d+)/,
+      article_name: "madde",
+      amendment: ~s//
     },
     :uk => %Regex{
       annex: ~s/^SCHEDULE[ ](\\d+)/,
@@ -90,37 +97,47 @@ defmodule Legl do
 
   def uk_flag_emoji, do: <<0x1F1EC::utf8>> <> <<0x1F1E7::utf8>>
 
-  # balloon
+  # 🎈 balloon
   def part_emoji, do: <<0x1F388::utf8>>
 
-  # brick 🧱 <<240, 159, 167, 177>>
+  # 🧱 brick <<240, 159, 167, 177>>
   def chapter_emoji, do: <<0x1F9F1::utf8>>
 
   # <<226, 156, 141>> # writing hand
   def sub_chapter_emoji, do: <<0x270D::utf8>>
 
-  # collision
+  # 💥 collision
   def section_emoji, do: <<0x1F4A5::utf8>>
 
-  # <<240, 159, 146, 156>> # green heart
+  # 💚 <<240, 159, 146, 156>> # green heart
   def article_emoji, do: <<0x1F49A::utf8>>
-  # #<<240, 159, 146, 153>> # red heart
+
+  # ❤ <<240, 159, 146, 153>> # red heart
   def sub_article_emoji, do: <<0x2764::utf8>>
+
   # <<240, 159, 146, 156>> # spade
   def numbered_para_emoji, do: <<0x2660::utf8>>
+
   # <<240, 159, 146, 165>> # club
   def amendment_emoji, do: <<0x2663::utf8>>
-  # clenched fist
+
+  # ✊ clenched fist
   def annex_emoji, do: <<0x270A::utf8>>
+
   # star
   def heading_emoji, do: <<0x2B50::utf8>>
+
   # no entry
   def annex_heading_emoji, do: <<0x26D4::utf8>>
+
   # traffic light
   def signed_emoji, do: <<0x1F6A5::utf8>>
 
   # <<240, 159, 147, 140>>
   def pushpin_emoji, do: <<0x1F4CC::utf8>>
+
+  # 👣 footprint <<240, 159, 145, 163>>
+  def footnote_emoji, do: <<0x1F463::utf8>>
 
   def zero_length_string, do: <<226, 128, 139>>
 
