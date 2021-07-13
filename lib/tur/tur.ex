@@ -1,8 +1,35 @@
 defmodule TUR do
   @moduledoc """
-  Parsing text copied from [finlex](https://www.finlex.fi)
+  Parsing text copied from [mevzuat](https://www.mevzuat.gov.tr)
   """
+  @behaviour Country
   alias Legl.Airtable.Schema
+  alias Types.AirtableSchema
+
+  defstruct flow: "",
+            type: "",
+            part: "",
+            article: "",
+            para: "",
+            sub: 0,
+            text: ""
+
+  @impl true
+  def schema do
+    %AirtableSchema{
+      part: ~s/^(\\d+)[ ](.*)/,
+      part_name: "bölüm",
+      heading: ~s/^(\\d+)[ ](.*)/,
+      heading_name: "madde,  başlık",
+      article: ~s/^(\\d+)_?(\\d?)[ ](.*)/,
+      article_name: "madde, alt-makale",
+      sub_article: ~s/^(\\d+)[ ](.*)/,
+      sub_article_name: "alt-makale",
+      amendment: ~s/^(\\d+)_?(\\d?)[ ](.*)/,
+      amendment_name: "geçici-madde",
+      amending_sub_article_name: "geçici-madde, alt-makele"
+    }
+  end
 
   @doc false
   def clean(),
@@ -15,14 +42,27 @@ defmodule TUR do
   end
 
   @doc """
-  Creates an `airtable.txt` file suitable for pasting into Airtable.
+  Create Airtable data using all fields
 
-  Option fields - :text, :all - defaults to :all
+  Run as:
+  iex>TUR.airtable()
+
+  Options as list.  See %TUR{}
   """
-  def airtable(fields \\ :all) do
+  @impl true
+  @spec airtable([]) :: :atom
+  def airtable(fields \\ []) when is_list(fields) do
     {:ok, binary} = File.read(Path.absname(Legl.annotated()))
 
-    Schema.schema(:tur, binary, fields)
+    cond do
+      fields == [] ->
+        Schema.schema(%TUR{}, binary, schema())
+
+      true ->
+        Schema.schema(%TUR{}, binary, schema(), fields)
+    end
     |> (&File.write(Legl.airtable(), &1)).()
+
+    :ok
   end
 end

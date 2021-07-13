@@ -18,13 +18,18 @@ defmodule TUR.Parser do
       # no_join_emoji: 0
     ]
 
-  # Turkish alphabet: Ç, ç, Ş, ş, Ö, ö, Ü, ü
+  # Turkish alphabet: Ç, ç, İ, Ş, ş, Ö, ö, Ü, ü
+  # Ç, İ, Ş, Ö, Ü
   # Ç - <<195, 135>>
   # ç - <<195, 167>>
   # Ş, ş, Ü, ü
 
   @part_names ~s(BİRİNCİ İKİNCİ ÜÇÜNCÜ DÖRDÜNCÜ BEŞİNCİ ALTINCI YEDİNCİ SEKİZİNCİ DOKUZUNCU)
-
+  @part_numbers String.split(@part_names)
+                |> Enum.reduce({%{}, 1}, fn x, {map, inc} ->
+                  {Map.put(map, x, inc), inc + 1}
+                end)
+                |> Kernel.elem(0)
   @doc """
   Builds a map of the Turkish name => numerical value
 
@@ -49,6 +54,13 @@ defmodule TUR.Parser do
     |> Kernel.elem(0)
   end
 
+  def part_number(text) do
+    case Map.get(@part_numbers, text) do
+      nil -> ""
+      x -> Integer.to_string(x)
+    end
+  end
+
   @doc """
   Parses .pdf text copied from https://www.mevzuat.gov.tr/MevzuatMetin
 
@@ -60,18 +72,24 @@ defmodule TUR.Parser do
     |> get_part()
     |> get_heading()
     |> get_article()
+    |> get_sub_article()
     |> get_ek_fikra()
     |> get_degisik()
     |> get_mulga()
+    |> get_gecici_madde()
     |> get_footnote()
     # |> numeraled()
     # |> lettered()
-    |> join_sentences()
+    # |> join_sentences()
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
   end
 
   @doc false
+  def clean_original("CLEANED\n" <> binary) do
+    binary
+  end
+
   @spec clean_original(String.t()) :: String.t()
   def clean_original(binary) do
     binary
@@ -79,6 +97,7 @@ defmodule TUR.Parser do
     |> Legl.Parser.rm_leading_tabs()
     |> Legl.Parser.rm_underline_characters()
     |> rm_page_numbers()
+    |> (&Kernel.<>("CLEANED", &1)).()
     # |> rm_footer()
     |> (fn x ->
           File.write(Legl.original(), x)
@@ -95,25 +114,48 @@ defmodule TUR.Parser do
 
     binary
     |> (&Regex.replace(
-          ~r/^((?:#{part_names})[ ]BÖLÜM)\n(.*)/m,
+          ~r/^((#{part_names})[ ]BÖLÜM)\n(.*)/m,
           &1,
-          "#{part_emoji()}\\g{1} \\g{2}"
+          fn _, title, part, rem -> part_emoji() <> part_number(part) <> " #{title} #{rem}" end
         )).()
   end
 
   def get_heading(binary) do
     Regex.replace(
-      ~r/^(.*)\n(Madde[ ]\d+)/m,
+      ~r/^(.*)\n((?:Madde|MADDE)[ ](\d+))/m,
       binary,
-      "#{heading_emoji()}\\g{1}\n\\g{2}"
+      fn _, heading, article, article_number ->
+        "#{heading_emoji()}#{article_number} #{heading}\n#{article}"
+      end
+      # "#{heading_emoji()}\\g{1}\n\\g{2}"
     )
   end
 
   def get_article(binary) do
     Regex.replace(
-      ~r/^Madde[ ]\d+/m,
+      ~r/^(?:Madde|MADDE)[ ](\d+)\/?([A-Z]?)[ ]#{<<226, 128, 147>>}[ ]\((\d*)/m,
       binary,
-      "#{article_emoji()}\\0"
+      fn
+        m, art_num, "", "" ->
+          article_emoji() <> "#{art_num} " <> m
+
+        m, art_num, "", para_num ->
+          article_emoji() <> "#{art_num}_#{para_num} " <> m
+
+        m, art_num, amd_num, "" ->
+          article_emoji() <> "#{art_num}#{String.downcase(amd_num)} " <> m
+
+        m, art_num, amd_num, para_num ->
+          article_emoji() <> "#{art_num}#{String.downcase(amd_num)}_#{para_num} " <> m
+      end
+    )
+  end
+
+  def get_sub_article(binary) do
+    Regex.replace(
+      ~r/^\((\d+)\)[ ]/m,
+      binary,
+      "#{sub_article_emoji}\\g{1} \\0"
     )
   end
 
@@ -139,6 +181,27 @@ defmodule TUR.Parser do
       binary,
       " #{pushpin_emoji()} \\0"
     )
+  end
+
+  def get_gecici_madde(binary) do
+    Regex.replace(
+      ~r/^GEÇİCİ[ ]MADDE[ ](\d+)[ ]#{<<226, 128, 147>>}[ ]\((\d+|Ek.+)/m,
+      binary,
+      fn
+        m, art_num, para_num ->
+          case is_para_num(para_num) do
+            "" -> "#{amendment_emoji}#{art_num} #{m}"
+            _ -> "#{amendment_emoji}#{art_num}_#{para_num} #{m}"
+          end
+      end
+    )
+  end
+
+  defp is_para_num(str) do
+    case Integer.parse(str) do
+      :error -> ""
+      _ -> str
+    end
   end
 
   def get_footnote(binary) do

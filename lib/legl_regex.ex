@@ -7,6 +7,7 @@ defmodule Legl.Regex do
             section: "",
             section_name: "section",
             heading: "",
+            heading_name: "heading",
             article: "",
             article_name: "article",
             sub_article: "",

@@ -12,6 +12,7 @@ defmodule Legl do
       section_name: "sektion",
       article: ~s/^§[ ](\\d+[a-z]?)/,
       article_name: "§",
+      sub_article: ~s/^\\((\\d+[a-z]?)\\)/,
       sub_article_name: "unter §",
       annex: ~s/(?:^Anlage[ ]([\\d|A-Z]+)|^(?:Anhang|ANHANG)[ ]+(\\d*[A-Z]*))/,
       annex_name: "anhang"
@@ -21,13 +22,20 @@ defmodule Legl do
       article: ~s/^(\\d+)/
     },
     :tur => %Regex{
-      part: ~s/^[A-Z]+/,
-      part_name: "bölüm",
-      article: ~s/^Madde[ ](\\d+)/,
-      article_name: "madde",
+      part: ~s/^(\\d+)[ ](.*)/,
+      part_name: "bölüm_part",
+      heading: ~s/^(\\d+)[ ](.*)/,
+      heading_name: "başlık_heading",
+      article: ~s/^(?:Madde|MADDE)[ ](\\d+)[ ]#{<<226, 128, 147>>}[ ]\\((\\d+)\\)/,
+      article_name: "madde_article",
+      sub_article: ~s/^\\((\\d+)\\)[ ]/,
+      sub_article_name: "madde-paragraf",
       amendment: ~s//
     },
     :uk => %Regex{
+      part: ~s/^(\\d+[ ])(PART|Part)[ ](\\d|[A-Z])+[ ](.*)/,
+      part_name: "part",
+      heading: ~s/^(\\d+)[ ](.*)/,
       annex: ~s/^SCHEDULE[ ](\\d+)/,
       annex_name: "schedule"
     }
@@ -124,7 +132,7 @@ defmodule Legl do
   # ✊ clenched fist
   def annex_emoji, do: <<0x270A::utf8>>
 
-  # star
+  # ⭐ <<226, 173, 144>> star
   def heading_emoji, do: <<0x2B50::utf8>>
 
   # no entry
@@ -143,7 +151,5 @@ defmodule Legl do
 
   def no_join_emoji,
     do:
-      ~s/#{chapter_emoji()}#{sub_chapter_emoji()}#{article_emoji()}#{sub_article_emoji()}#{
-        numbered_para_emoji()
-      }#{annex_emoji()}/
+      ~s/#{chapter_emoji()}#{sub_chapter_emoji()}#{article_emoji()}#{sub_article_emoji()}#{numbered_para_emoji()}#{annex_emoji()}/
 end
