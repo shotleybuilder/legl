@@ -30,6 +30,7 @@ defmodule TUR.Parser do
                   {Map.put(map, x, inc), inc + 1}
                 end)
                 |> Kernel.elem(0)
+  @big_hyphen <<226, 128, 147>>
   @doc """
   Builds a map of the Turkish name => numerical value
 
@@ -68,8 +69,8 @@ defmodule TUR.Parser do
   @spec parser(String.t()) :: String.t()
   def parser(binary) do
     binary
-    |> clean_original()
     |> get_part()
+    |> get_chapter()
     |> get_heading()
     |> get_article()
     |> get_sub_article()
@@ -87,22 +88,25 @@ defmodule TUR.Parser do
 
   @doc false
   def clean_original("CLEANED\n" <> binary) do
+    IO.write("Clean\n")
     binary
   end
 
   @spec clean_original(String.t()) :: String.t()
   def clean_original(binary) do
-    binary
-    |> Legl.Parser.rm_empty_lines()
-    |> Legl.Parser.rm_leading_tabs()
-    |> Legl.Parser.rm_underline_characters()
-    |> rm_page_numbers()
-    |> (&Kernel.<>("CLEANED", &1)).()
+    binary =
+      binary
+      |> (&Kernel.<>("CLEANED\n", &1)).()
+      |> Legl.Parser.rm_empty_lines()
+      |> Legl.Parser.rm_leading_tabs()
+      |> Legl.Parser.rm_underline_characters()
+      |> rm_page_numbers()
+
     # |> rm_footer()
-    |> (fn x ->
-          File.write(Legl.original(), x)
-          x
-        end).()
+
+    File.write(Legl.original(), binary)
+
+    clean_original(binary)
   end
 
   def rm_page_numbers(binary) do
@@ -114,9 +118,20 @@ defmodule TUR.Parser do
 
     binary
     |> (&Regex.replace(
-          ~r/^((#{part_names})[ ]BÖLÜM)\n(.*)/m,
+          ~r/^((#{part_names})[ ]KISIM)\n(.*)/m,
           &1,
           fn _, title, part, rem -> part_emoji() <> part_number(part) <> " #{title} #{rem}" end
+        )).()
+  end
+
+  def get_chapter(binary) do
+    part_names = Regex.replace(~r/[ ]/, @part_names, "|")
+
+    binary
+    |> (&Regex.replace(
+          ~r/^((#{part_names})[ ]BÖLÜM)\n(.*)/m,
+          &1,
+          fn _, title, part, rem -> chapter_emoji() <> part_number(part) <> " #{title} #{rem}" end
         )).()
   end
 
@@ -133,7 +148,7 @@ defmodule TUR.Parser do
 
   def get_article(binary) do
     Regex.replace(
-      ~r/^(?:Madde|MADDE)[ ](\d+)\/?([A-Z]?)[ ]#{<<226, 128, 147>>}[ ]\((\d*)/m,
+      ~r/^(?:Madde|MADDE)[ ](\d+)\/?([A-Z]?)[ ]?[#{@big_hyphen}|-]?[ ]*\(?(\d*)/m,
       binary,
       fn
         m, art_num, "", "" ->
@@ -185,7 +200,7 @@ defmodule TUR.Parser do
 
   def get_gecici_madde(binary) do
     Regex.replace(
-      ~r/^GEÇİCİ[ ]MADDE[ ](\d+)[ ]#{<<226, 128, 147>>}[ ]\((\d+|Ek.+)/m,
+      ~r/^(?:GEÇİCİ MADDE|Geçici Madde)[ ](\d+)[ ]*?(?:#{@big_hyphen}|-)[ ]+\(?(\d*).*/m,
       binary,
       fn
         m, art_num, para_num ->

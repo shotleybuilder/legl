@@ -144,23 +144,35 @@ defmodule Legl.Airtable.Schema do
   * FIN `^(\\d+)`
   * UK `^Chapter[ ](\\d+)`
   """
-  def chapter(regex, str, last_record) do
-    str = String.replace(str, chapter_emoji(), "")
-
-    value =
+  def chapter(regex, <<0x1F9F1::utf8>> <> str, last_record) do
+    record =
       case Regex.run(~r/#{regex.chapter}/m, str) do
-        [_, _, value] -> value
-        [_, value] -> value
-        value -> value
+        [_, chap_num, txt] ->
+          %{
+            last_record
+            | type: regex.chapter_name,
+              chapter: chap_num,
+              text: txt
+          }
+
+        [_, chap_num] ->
+          %{
+            last_record
+            | type: regex.chapter_name,
+              chapter: chap_num,
+              text: str
+          }
+
+        chap_num ->
+          %{
+            last_record
+            | type: regex.chapter_name,
+              chapter: chap_num,
+              text: str
+          }
       end
 
-    %{
-      last_record
-      | type: regex.chapter_name,
-        chapter: value,
-        text: str
-    }
-    |> fields_reset(:chapter)
+    fields_reset(record, :chapter)
   end
 
   def section(regex, str, last_record) do
@@ -256,16 +268,18 @@ defmodule Legl.Airtable.Schema do
     # str = String.replace(str, sub_article_emoji(), "")
     [_, value, str] = Regex.run(~r/#{regex.sub_article}/, str)
 
-    record =
-      case last_record.flow do
-        "post" ->
-          %{last_record | type: regex.amending_sub_article_name, para: value, text: str}
+    cond do
+      last_record.flow == "prov" ->
+        %{last_record | type: regex.amending_sub_article_name, sub: value, text: str}
 
-        _ ->
-          %{last_record | type: regex.sub_article_name, para: value, text: str}
-      end
+      last_record.flow == "post" ->
+        %{last_record | type: regex.amending_sub_article_name, para: value, text: str}
+        |> fields_reset(:para)
 
-    fields_reset(record, :para)
+      true ->
+        %{last_record | type: regex.sub_article_name, para: value, text: str}
+        |> fields_reset(:para)
+    end
   end
 
   def sub(str, last_record) do
@@ -315,8 +329,20 @@ defmodule Legl.Airtable.Schema do
   end
 
   def amendment(regex, <<0x2663::utf8>> <> str, last_record) do
-    case Regex.run(~r/#{regex.amendment}/, str) do
-      [_, art_num, para_num, str] ->
+    [_, art_num, para_num, str] = Regex.run(~r/#{regex.amendment}/, str)
+
+    cond do
+      regex.country == :tur ->
+        %{
+          last_record
+          | type: "#{regex.amendment_name}",
+            para: art_num,
+            sub: is_para_num(para_num),
+            text: str,
+            flow: "prov"
+        }
+
+      true ->
         %{
           last_record
           | type: "#{regex.amendment_name}",

@@ -1,6 +1,7 @@
 defmodule Types.AirtableSchema do
   @moduledoc false
   @type t :: %__MODULE__{
+          country: :atom,
           part: String.t(),
           part_name: String.t(),
           chapter: String.t(),
@@ -22,7 +23,8 @@ defmodule Types.AirtableSchema do
           amending_sub_article_name: String.t()
         }
   @enforce_keys [:article, :article_name]
-  defstruct part: "",
+  defstruct country: nil,
+            part: "",
             part_name: "part",
             chapter: "",
             chapter_name: "chapter",
