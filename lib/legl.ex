@@ -41,22 +41,90 @@ defmodule Legl do
     }
   }
 
+  @components ~s(
+    content
+    part
+    chapter
+    section
+    heading
+    article
+    sub_article
+    numbered_para
+    amendment
+    annex
+    signed
+    footnote
+    approval
+    forms
+    form
+    table
+  )
+  @doc """
+  A map of components as atoms
+
+  [:content, :part, :chapter, :section, :heading, :article, :sub_article,
+  :numbered_para, :amendment, :annex, :signed, :footnote, :approval, :forms,
+  :form]
+  """
+  def component_keys do
+    Enum.map(String.split(@components), fn x -> String.to_atom(x) end)
+  end
+
+  @doc """
+  A map of components with annotations
+
+  ["[::content::]", "[::part::]", "[::chapter::]", "[::section::]",
+   "[::heading::]", "[::article::]", "[::sub_article::]", "[::numbered_para::]",
+   "[::amendment::]", "[::annex::]", "[::signed::]", "[::footnote::]",
+   "[::approval::]", "[::forms::]", "[::form::]"]
+
+  """
+  def components do
+    Enum.map(String.split(@components), fn x -> "[::" <> x <> "::]" end)
+  end
+
+  def components(:regex) do
+    Enum.map(String.split(@components), fn x -> x end)
+  end
+
+  @doc """
+  Escaped for inclusion in regexes
+
+  ["\\[::content::\\]", "\\[::part::\\]", "\\[::chapter::\\]",
+   "\\[::section::\\]", "\\[::heading::\\]", "\\[::article::\\]",
+   "\\[::sub_article::\\]", "\\[::numbered_para::\\]", "\\[::amendment::\\]",
+   "\\[::annex::\\]", "\\[::signed::\\]", "\\[::footnote::\\]",
+   "\\[::approval::\\]", "\\[::forms::\\]", "\\[::form::\\]"]
+
+  """
+  def components_for_regex() do
+    components()
+    |> Enum.map(&Elixir.Regex.escape(&1))
+  end
+
+  def mapped_components do
+    Enum.zip(component_keys(), components())
+    |> Enum.reduce(%{}, fn {x, y}, acc -> Map.put(acc, x, y) end)
+  end
+
+  def mapped_components_for_regex() do
+    Enum.zip(component_keys(), components_for_regex())
+    |> Enum.reduce(%{}, fn {x, y}, acc -> Map.put(acc, x, y) end)
+  end
+
   def regex, do: @regex
 
-  @roman_numerals %{
-    "I" => 1,
-    "II" => 2,
-    "III" => 3,
-    "IV" => 4,
-    "V" => 5,
-    "VI" => 6,
-    "VII" => 7,
-    "VIII" => 8,
-    "IX" => 9,
-    "X" => 10
-  }
+  @roman ~s(I II III IV V VI VII VIII IX X XI XII XIII XIV XV)
 
-  @alphabet "abcdefghijklmnopqrstuvwyyz" |> String.split("", trim: true)
+  def roman, do: String.split(@roman) |> Enum.reverse() |> Enum.join(" ")
+
+  @roman_numerals String.split(@roman)
+                  |> Enum.reduce({%{}, 1}, fn x, {map, inc} ->
+                    {Map.put(map, x, inc), inc + 1}
+                  end)
+                  |> Kernel.elem(0)
+
+  def roman_numerals(), do: @roman_numerals
 
   @spec conv_roman_numeral(String.t()) :: Integer
   def conv_roman_numeral(numeral) when is_integer(numeral), do: numeral
@@ -68,11 +136,17 @@ defmodule Legl do
     end
   end
 
+  @alphabet "abcdefghijklmnopqrstuvwyyz" |> String.split("", trim: true)
+
   def conv_alphabetic_classes(letter) do
     letter = String.downcase(letter)
 
     Enum.find_index(@alphabet, fn x -> x == letter end)
     |> (&(&1 + 1)).()
+  end
+
+  def txt(name) do
+    "lib/#{name}.txt"
   end
 
   def snippet, do: "lib/snippet.txt"
@@ -96,6 +170,29 @@ defmodule Legl do
   Emojis
   to get the byte iex> i << 0x1F1F4 :: utf8 >>
   """
+
+  def emojis do
+    # https://en.wikipedia.org/wiki/Dingbat
+
+    codes = Enum.map(1..9, &Integer.to_string(&1)) ++ String.split(~s(A B C D E F))
+
+    for n <- ["272", "273"] do
+      Enum.map(codes, fn x ->
+        {codepoint, _} = Integer.parse(n <> x, 16)
+        # <<codepoint::utf8>>
+        IO.chardata_to_string([codepoint])
+      end)
+    end
+    |> List.flatten()
+  end
+
+  def named_emojis do
+    components =
+      Enum.map(String.split(@components), fn x -> (x <> "_emoji") |> String.to_atom() end)
+
+    Enum.zip(emojis(), components)
+    |> Enum.reduce(%{}, fn {x, y}, acc -> Map.put(acc, y, x) end)
+  end
 
   # bomb 💣
   def content_emoji, do: <<0x1F4A3::utf8>>
@@ -146,6 +243,9 @@ defmodule Legl do
 
   # 👣 footprint <<240, 159, 145, 163>>
   def footnote_emoji, do: <<0x1F463::utf8>>
+
+  # ✅ WHITE HEAVY CHECK MARK <<226, 156, 133>>
+  def approval_emoji, do: <<0x2705::utf8>>
 
   def zero_length_string, do: <<226, 128, 139>>
 

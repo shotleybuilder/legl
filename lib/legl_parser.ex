@@ -1,30 +1,14 @@
 defmodule Legl.Parser do
   @moduledoc false
-  import Legl,
-    only: [
-      part_emoji: 0,
-      chapter_emoji: 0,
-      sub_chapter_emoji: 0,
-      section_emoji: 0,
-      heading_emoji: 0,
-      annex_heading_emoji: 0,
-      article_emoji: 0,
-      sub_article_emoji: 0,
-      numbered_para_emoji: 0,
-      annex_emoji: 0,
-      signed_emoji: 0,
-      pushpin_emoji: 0,
-      amendment_emoji: 0,
-      footnote_emoji: 0
-    ]
 
-  @emojis ~s/#{part_emoji()} #{chapter_emoji()} #{sub_chapter_emoji()} #{section_emoji()} #{
-            heading_emoji()
-          } #{annex_heading_emoji()} #{article_emoji()} #{sub_article_emoji()} #{
-            numbered_para_emoji()
-          } #{annex_emoji()} #{signed_emoji()} #{pushpin_emoji()} #{amendment_emoji()} #{
-            footnote_emoji()
-          }/
+  @emojis Legl.named_emojis()
+  @x_join_emojis Legl.emojis()
+
+  @components Legl.components()
+
+  def components_for_regex() do
+    Legl.components_for_regex()
+  end
 
   def rm_top_line(binary),
     do: Regex.replace(~r/^[ \t]*(?:\r\n|\n)+/, binary, "")
@@ -46,22 +30,22 @@ defmodule Legl.Parser do
   def join(binary, country \\ nil)
 
   def join(binary, "UK") do
-    emojis = Regex.replace(~r/[ ]/, @emojis, "|")
+    components = Enum.join(components_for_regex(), "|")
 
     Regex.replace(
-      ~r/(?:\r\n|\n)(?!#{emojis})/mu,
+      ~r/(?:\r\n|\n)(?!#{components})/mu,
       binary,
-      "#{pushpin_emoji()}"
+      "#{Legl.pushpin_emoji()}"
     )
   end
 
   def join(binary, _country) do
-    emojis = Regex.replace(~r/[ ]/, @emojis, "|")
+    components = Enum.join(components_for_regex(), "|")
 
     Regex.replace(
-      ~r/(?:\r\n|\n)(?!#{emojis})/mu,
+      ~r/(?:\r\n|\n)(?!#{components})/mu,
       binary,
-      " #{pushpin_emoji()} "
+      " #{Legl.pushpin_emoji()} "
     )
   end
 

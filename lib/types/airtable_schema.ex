@@ -20,7 +20,10 @@ defmodule Types.AirtableSchema do
           annex_name: String.t(),
           amendment: String.t(),
           amendment_name: String.t(),
-          amending_sub_article_name: String.t()
+          amending_sub_article_name: String.t(),
+          form: String.t(),
+          form_name: String.t(),
+          approval_name: Strig.t()
         }
   @enforce_keys [:article, :article_name]
   defstruct country: nil,
@@ -42,5 +45,10 @@ defmodule Types.AirtableSchema do
             annex_name: "",
             amendment: "",
             amendment_name: "",
-            amending_sub_article_name: ""
+            amending_sub_article_name: "",
+            form: "",
+            form_name: "form",
+            approval_name: "approval",
+            table: ~s/^(\\d+)[ ](.*)/,
+            table_name: "table"
 end

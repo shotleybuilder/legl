@@ -74,6 +74,8 @@ defmodule TUR.Parser do
     |> get_heading()
     |> get_article()
     |> get_sub_article()
+    |> get_annex()
+    |> rm_annex_content()
     |> get_ek_fikra()
     |> get_degisik()
     |> get_mulga()
@@ -148,7 +150,7 @@ defmodule TUR.Parser do
 
   def get_article(binary) do
     Regex.replace(
-      ~r/^(?:Madde|MADDE)[ ](\d+)\/?([A-Z]?)[ ]?[#{@big_hyphen}|-]?[ ]*\(?(\d*)/m,
+      ~r/^(?:Madde|MADDE)[ ](\d+)\/?([A-Z]?)[ ]?(?:#{@big_hyphen}|-)?[ ]*\(?(\d*)/m,
       binary,
       fn
         m, art_num, "", "" ->
@@ -171,6 +173,25 @@ defmodule TUR.Parser do
       ~r/^\((\d+)\)[ ]/m,
       binary,
       "#{sub_article_emoji}\\g{1} \\0"
+    )
+  end
+
+  def get_annex(binary) do
+    Regex.replace(
+      ~r/^(Ek[ ])([A-Z]{1,3})\n(.*)/m,
+      binary,
+      fn
+        m, annex, annex_num, title ->
+          "#{annex_emoji()}#{Legl.conv_roman_numeral(annex_num)} #{annex}#{annex_num} #{title}"
+      end
+    )
+  end
+
+  def rm_annex_content(binary) do
+    Regex.replace(
+      ~r/^(#{annex_emoji}.*)(?:.|\n)*?\n(?=#{annex_emoji})/m,
+      binary,
+      "\\g{1}\n\\g{2}"
     )
   end
 
