@@ -43,30 +43,38 @@ defmodule RUS.Parser do
   end
 
   @doc false
-  def clean_original("CLEANED\n" <> binary) do
-    IO.write("Clean\n")
+  @spec clean_original(String.t(), String.t()) :: String.t()
+  def clean_original("CLEANED\n" <> binary, _) do
+    binary
+    |> (&IO.puts("cleaned: #{String.slice(&1, 0, 10)}...")).()
+
     binary
   end
 
-  @spec clean_original(String.t()) :: String.t()
-  def clean_original(binary) do
+  def clean_original(binary, source) do
     binary =
-      binary
-      |> Legl.Parser.rm_empty_lines()
-      # |> rm_header()
-      # |> rm_footer()
-      # |> rm_makers_clause()
-      |> (&Kernel.<>("CLEANED\n", &1)).()
-      |> Legl.Parser.rm_leading_tabs()
+      case source do
+        "cntd" ->
+          binary
+          |> Legl.Parser.rm_empty_lines()
+          |> rm_header()
+          |> rm_footer()
+          |> rm_makers_clause()
+          |> (&Kernel.<>("CLEANED\n", &1)).()
+          |> Legl.Parser.rm_leading_tabs()
 
-    # |> Legl.Parser.rm_underline_characters()
-    # |> rm_page_numbers()
+        _ ->
+          binary
+          |> Legl.Parser.rm_empty_lines()
+          |> (&Kernel.<>("CLEANED\n", &1)).()
+          |> Legl.Parser.rm_leading_tabs()
+      end
 
-    # |> rm_footer()
+    Legl.txt("clean")
+    |> Path.absname()
+    |> File.write(binary)
 
-    File.write(Legl.original(), binary)
-
-    clean_original(binary)
+    clean_original(binary, nil)
   end
 
   def rm_header(binary) do
@@ -75,6 +83,11 @@ defmodule RUS.Parser do
       binary,
       ""
     )
+    |> (&Regex.replace(
+          ~r/.*?Попробовать бесплатно/s,
+          &1,
+          ""
+        )).()
   end
 
   def rm_makers_clause(binary) do
@@ -108,6 +121,7 @@ defmodule RUS.Parser do
   def parser(binary) do
     binary
     |> get_amendments()
+    |> get_title()
     |> get_part()
     |> get_chapter()
     |> get_section()
@@ -115,28 +129,82 @@ defmodule RUS.Parser do
     |> get_form()
     |> get_form_para()
     |> get_article()
+    |> get_para()
+    |> get_sub()
     |> get_table()
     |> get_approval()
+    |> join_title()
+    |> join_amendments()
     |> Legl.Parser.join()
+    |> Legl.Parser.rm_tabs()
   end
 
   def get_amendments(binary) do
     case Regex.run(
-           ~r/Информация об изменяющих документах\n_*\n[\s\S]*?_+/,
+           ~r/Информация об изменяющих документах\n_*\n([\s\S]*?)_+/,
+           binary
+         ) do
+      [_, group] ->
+        Legl.txt("amendments")
+        |> Path.absname()
+        |> File.write(group)
+
+        Regex.replace(
+          ~r/Информация об изменяющих документах\n_*\n[\s\S]*?_+/,
+          binary,
+          ""
+        )
+
+      _ ->
+        binary
+    end
+  end
+
+  def join_amendments(binary) do
+    str =
+      Legl.txt("amendments")
+      |> Path.absname()
+      |> File.read!()
+
+    case String.length(str) do
+      0 ->
+        binary
+
+      _ ->
+        String.replace_suffix(binary, "", "\n" <> @components[:amendment] <> " " <> str)
+    end
+  end
+
+  def get_title(binary) do
+    case Regex.run(
+           ~r/.*?(?=^I\.[ ])/ms,
            binary
          ) do
       [match] ->
-        File.write(Legl.snippet(), match)
+        Legl.txt("title")
+        |> Path.absname()
+        |> File.write(match)
+
+        Regex.replace(
+          ~r/.*?(?=^I\.[ ])/ms,
+          binary,
+          ""
+        )
 
       _ ->
-        nil
-    end
+        Legl.txt("title")
+        |> Path.absname()
+        |> File.write("")
 
-    Regex.replace(
-      ~r/Информация об изменяющих документах.*(?=Государственной Думой)/s,
-      binary,
-      ""
-    )
+        binary
+    end
+  end
+
+  def join_title(binary) do
+    Legl.txt("title")
+    |> Path.absname()
+    |> File.read!()
+    |> (&String.replace_prefix(binary, "", &1)).()
   end
 
   def get_part(binary) do
@@ -157,22 +225,31 @@ defmodule RUS.Parser do
         )).()
   end
 
+  @doc """
+  Chapter Parser
+
+  Раздел (razdel) is chapter in the cyrillic alphabet
+  """
   def get_chapter(binary) do
-    roman_numerals = Regex.replace(~r/[ ]/, Legl.roman(), "|") |> IO.inspect()
+    roman_numerals = Regex.replace(~r/[ ]/, Legl.roman(), "|")
 
     Regex.replace(
-      ~r/^(?:РАЗДЕЛ|ГЛАВА)[ ](#{roman_numerals})\.?[ ]?.*/m,
+      ~r/^(?:РАЗДЕЛ|Раздел|ГЛАВА)[ ](#{roman_numerals})\.?[ ]?.*/m,
       binary,
       fn match, chapter ->
-        IO.puts(chapter)
         "#{@components[:chapter]}#{Legl.conv_roman_numeral(chapter)} #{match}"
       end
     )
   end
 
+  @doc """
+  Section parser
+
+  Глава (glava) is seciton in the cyrillic alphabet
+  """
   def get_section(binary) do
     Regex.replace(
-      ~r/^ГЛАВА[ ](\d+).*/m,
+      ~r/^(?:ГЛАВА|Глава)[ ](\d+).*/m,
       binary,
       fn match, section -> "#{@components[:section]}#{section} #{match}" end
     )
@@ -189,6 +266,14 @@ defmodule RUS.Parser do
               "#{@components[:article]}#{art_num} #{m}"
           end
         )
+        |> (&Regex.replace(
+              ~r/^\d+\.(\d+)\.[ ].*/m,
+              &1,
+              fn
+                m, art_num ->
+                  "#{@components[:article]}#{art_num} #{m}"
+              end
+            )).()
 
       _ ->
         amended_binary = amended_article(binary)
@@ -205,6 +290,22 @@ defmodule RUS.Parser do
           end
         )
     end
+  end
+
+  def get_para(binary) do
+    Regex.replace(
+      ~r/^\d+\.\d+\.(\d+)\.[ ].*/m,
+      binary,
+      "#{@components[:para]}\\g{1} \\0"
+    )
+  end
+
+  def get_sub(binary) do
+    Regex.replace(
+      ~r/^(\d+)\.(\d+)\.(\d+)\.[ ].*/m,
+      binary,
+      "#{@components[:sub]}\\g{1}_\\g{2}_\\g{3} \\0"
+    )
   end
 
   def amended_article(binary) do
@@ -253,6 +354,11 @@ defmodule RUS.Parser do
       binary,
       fn m, v -> "#{@components[:annex]}N#{v} #{m}" end
     )
+    |> (&Regex.replace(
+          ~r/^Предписание\n/m,
+          &1,
+          "#{@components[:annex]} \\0"
+        )).()
   end
 
   def get_form(binary) do

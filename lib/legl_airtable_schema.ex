@@ -49,7 +49,7 @@ defmodule Legl.Airtable.Schema do
     # and is the rolling history of what's been
     # _records_ is a `t:list/0` of the set of records
     tail
-    |> Enum.reduce([%{fields | type: "title", text: head}], fn str, acc ->
+    |> Enum.reduce([%{fields | flow: "pre", type: regex.title_name, text: head}], fn str, acc ->
       last_record = hd(acc)
 
       case Regex.match?(~r/^\[::(#{record_types})::\]/, str) do
@@ -61,6 +61,12 @@ defmodule Legl.Airtable.Schema do
 
               Regex.match?(~r/^#{component_for_regex(:sub_article)}/, str) ->
                 sub_article(regex, str, last_record)
+
+              Regex.match?(~r/^#{component_for_regex(:para)}/, str) ->
+                para(regex, str, last_record)
+
+              Regex.match?(~r/^#{component_for_regex(:sub)}/, str) ->
+                sub(regex, str, last_record)
 
               Regex.match?(~r/^#{component_for_regex(:heading)}/, str) ->
                 heading(regex, str, last_record)
@@ -88,9 +94,6 @@ defmodule Legl.Airtable.Schema do
 
               Regex.match?(~r/^#{component_for_regex(:table)}/, str) ->
                 table(regex, str, last_record)
-
-              true ->
-                sub(str, last_record)
             end
 
           [this_record | acc]
@@ -138,7 +141,8 @@ defmodule Legl.Airtable.Schema do
             :act ->
               %{
                 last_record
-                | type: article_type,
+                | flow: "",
+                  type: article_type,
                   part: value,
                   text: ~s/#{part} #{i} #{str}/
               }
@@ -146,7 +150,8 @@ defmodule Legl.Airtable.Schema do
             :regulation ->
               %{
                 last_record
-                | type: article_type,
+                | flow: "",
+                  type: article_type,
                   section: value,
                   text: part <> str
               }
@@ -155,7 +160,8 @@ defmodule Legl.Airtable.Schema do
         [_, value, str] ->
           %{
             last_record
-            | type: article_type,
+            | flow: "",
+              type: article_type,
               part: value,
               text: str
           }
@@ -181,7 +187,8 @@ defmodule Legl.Airtable.Schema do
         [_, chap_num, txt] ->
           %{
             last_record
-            | type: regex.chapter_name,
+            | flow: "",
+              type: regex.chapter_name,
               chapter: chap_num,
               text: txt
           }
@@ -189,7 +196,8 @@ defmodule Legl.Airtable.Schema do
         [_, chap_num] ->
           %{
             last_record
-            | type: regex.chapter_name,
+            | flow: "",
+              type: regex.chapter_name,
               chapter: chap_num,
               text: str
           }
@@ -197,7 +205,8 @@ defmodule Legl.Airtable.Schema do
         chap_num ->
           %{
             last_record
-            | type: regex.chapter_name,
+            | flow: "",
+              type: regex.chapter_name,
               chapter: chap_num,
               text: str
           }
@@ -212,7 +221,8 @@ defmodule Legl.Airtable.Schema do
         [_, section_number, text] ->
           %{
             last_record
-            | type: regex.section_name,
+            | flow: "",
+              type: regex.section_name,
               section: section_number,
               text: text
           }
@@ -298,7 +308,7 @@ defmodule Legl.Airtable.Schema do
   @doc """
 
   """
-  def sub_article(regex, "[::aub_article::]" <> str, last_record) do
+  def sub_article(regex, "[::sub_article::]" <> str, last_record) do
     # str = String.replace(str, sub_article_emoji(), "")
     [_, value, str] = Regex.run(~r/#{regex.sub_article}/, str)
 
@@ -316,19 +326,25 @@ defmodule Legl.Airtable.Schema do
     end
   end
 
-  def sub(str, last_record) do
-    rest =
-      case Regex.match?(~r/^#{Legl.numbered_para_emoji()}/, str) do
-        true ->
-          <<_::binary-size(3), rest::binary>> = str
-          rest
+  def para(regex, "[::para::]" <> str, last_record) do
+    [para, txt] =
+      case Regex.run(~r/#{regex.para}/, str) do
+        [_, para, txt] ->
+          [para, txt]
 
-        false ->
-          <<_::binary-size(4), rest::binary>> = str
-          rest
+        nil ->
+          IO.puts("regex: #{regex.para} str: #{str}")
+          ["NaN", ""]
       end
 
-    %{last_record | type: "para", sub: last_record.sub + 1, text: rest}
+    %{last_record | type: regex.para_name, para: para, text: txt}
+    |> fields_reset(:para)
+  end
+
+  def sub(regex, "[::sub::]" <> str, last_record) do
+    [_, _article, _para, sub, txt] = Regex.run(~r/#{regex.sub}/, str)
+
+    %{last_record | type: regex.sub_name, sub: sub, text: txt}
   end
 
   @doc """
@@ -392,7 +408,8 @@ defmodule Legl.Airtable.Schema do
   def approval(regex, "[::approval::]" <> str, last_record) do
     %{
       last_record
-      | type: "#{regex.approval_name}",
+      | flow: "pre",
+        type: "#{regex.approval_name}",
         text: str
     }
     |> fields_reset(:all)

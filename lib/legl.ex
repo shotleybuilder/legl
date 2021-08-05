@@ -49,6 +49,8 @@ defmodule Legl do
     heading
     article
     sub_article
+    para
+    sub
     numbered_para
     amendment
     annex

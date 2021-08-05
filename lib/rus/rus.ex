@@ -1,6 +1,12 @@
 defmodule RUS do
   @moduledoc """
-  Parsing text copied from [mevzuat](https://www.mevzuat.gov.tr)
+  Parsing text copied from [mevzuat](https://www.pravo.gov.ru)
+
+  pravo.gov.ru has a .rtf download feature.
+  Upload into Google docs and copy from there.  This respects
+  the correct line length rather than being formatted if copying directly from pravo.gov.ru
+
+  SEARCH http://pravo.gov.ru/proxy/ips/?start_search&fattrib=1
   """
   @behaviour Country
   alias Legl.Airtable.Schema
@@ -13,53 +19,65 @@ defmodule RUS do
             section: "",
             article: "",
             para: "",
-            sub: 0,
+            sub: "",
             text: ""
 
   @impl true
   def schema do
     %AirtableSchema{
       country: :RUS,
+      title_name: "заглавие",
       part: ~s/^(\\d+)[ ](.*)/,
       part_name: "chast",
       chapter: ~s/^(\\d+)[ ](.*)/,
       chapter_name: "razdel",
       section: ~s/^(\\d+)[ ](.*)/,
       section_name: "glava",
-      heading: ~s//,
-      heading_name: "",
       article: ~s/^(\\d+[a-z]?-?\\d*)_?(\\d?)[ ](.*)/,
       article_name: "stat'ya",
-      sub_article: ~s//,
-      sub_article_name: "",
-      annex: ~s/^([A-Z]+\\d+)[ ](.*)/,
+      para_name: "stat'ya, abzats",
+      sub_name: "stat'ya, abzats, podpunkt",
+      annex: ~s/^([A-Z]*\\d*)[ ](.*)/,
       annex_name: "prilozheniye",
-      amendment: ~s//,
-      amendment_name: "",
+      amendment: ~s/^(\\d*)_?(\\d*)[ ](.*)/,
+      amendment_name: "изменения",
       form: ~s/^(\\d+)[ ](.*)/,
       form_name: "forma",
-      approval_name: "odobreniye",
+      approval_name: "утверждение",
       table_name: "tablitsa"
     }
   end
 
-  def clean(true) do
-    Legl.txt("original")
-    |> Path.absname()
-    |> File.read!()
-    |> RUS.Parser.clean_original()
-    |> (&IO.puts("cleaned: #{String.slice(&1, 0, 10)}...")).()
+  def clean_(source \\ "pravo") do
+    clean(source)
+    :ok
   end
 
   @doc false
-  @spec clean() :: String.t()
-  def clean(),
-    do: RUS.Parser.clean_original(File.read!(Path.absname(Legl.original())))
+  @spec clean(String.t()) :: String.t()
+  def clean(source) do
+    Legl.txt("original")
+    |> Path.absname()
+    |> File.read!()
+    |> RUS.Parser.clean_original(source)
+  end
 
-  @doc false
+  @doc """
+  Parse the copied text
+
+  Options
+  :source -> "cntd" or "pravo" defaults to "pravo"
+  :clean -> true = clean before parsing or false = use clean.txt
+  """
   @spec parse() :: :atom
-  def parse() do
-    binary = clean()
+  def parse(opts \\ []) do
+    source = Keyword.get(opts, :source, "pravo")
+
+    binary =
+      case Keyword.get(opts, :clean, true) do
+        true -> clean(source)
+        _ -> Legl.txt("clean") |> Path.absname() |> File.read!()
+      end
 
     Legl.txt("annotated")
     |> Path.absname()
@@ -81,18 +99,20 @@ defmodule RUS do
   def airtable(opts \\ []) when is_list(opts) do
     {:ok, binary} = File.read(Path.absname(Legl.annotated()))
 
+    chunk = Keyword.get(opts, :chunk, 200)
+
     binary = Schema.schema(%RUS{}, binary, schema(), opts)
 
     no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)
 
     cond do
-      no_of_lines < 50 ->
+      no_of_lines < chunk ->
         copy(binary)
         File.write(Legl.airtable(), binary)
 
       true ->
         String.split(binary, "\n")
-        |> Enum.chunk_every(50)
+        |> Enum.chunk_every(chunk)
         |> Enum.map(fn x -> Enum.join(x, "\n") end)
         |> Enum.reduce("", fn str, acc ->
           copy(str)

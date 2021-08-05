@@ -2,6 +2,7 @@ defmodule Types.AirtableSchema do
   @moduledoc false
   @type t :: %__MODULE__{
           country: :atom,
+          title_name: String.t(),
           part: String.t(),
           part_name: String.t(),
           chapter: String.t(),
@@ -15,7 +16,9 @@ defmodule Types.AirtableSchema do
           sub_article: String.t(),
           sub_article_name: String.t(),
           para: String.t(),
+          para_name: String.t(),
           sub: String.t(),
+          sub_name: String.t(),
           annex: String.t(),
           annex_name: String.t(),
           amendment: String.t(),
@@ -27,6 +30,7 @@ defmodule Types.AirtableSchema do
         }
   @enforce_keys [:article, :article_name]
   defstruct country: nil,
+            title_name: "title",
             part: "",
             part_name: "part",
             chapter: "",
@@ -39,8 +43,10 @@ defmodule Types.AirtableSchema do
             article_name: "article",
             sub_article: "",
             sub_article_name: "sub-article",
-            para: "",
-            sub: "",
+            para: ~s/^(\\d+)[ ](.*)/,
+            para_name: "article, paragraph",
+            sub: ~s/^(\\d+)_(\\d+)_(\\d+)[ ](.*)/,
+            sub_name: "article, paragraph, sub-paragraph",
             annex: "",
             annex_name: "",
             amendment: "",
