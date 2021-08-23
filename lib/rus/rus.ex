@@ -68,20 +68,29 @@ defmodule RUS do
   Options
   :source -> "cntd" or "pravo" defaults to "pravo"
   :clean -> true = clean before parsing or false = use clean.txt
+  :pattern -> :named means the articles are named 'Статья' and this is the default
   """
   @spec parse() :: :atom
   def parse(opts \\ []) do
     source = Keyword.get(opts, :source, "pravo")
 
     binary =
-      case Keyword.get(opts, :clean, true) do
-        true -> clean(source)
-        _ -> Legl.txt("clean") |> Path.absname() |> File.read!()
+      case Keyword.get(opts, :clean, false) do
+        false ->
+          clean(source)
+
+        _ ->
+          Legl.txt("clean")
+          |> Path.absname()
+          |> File.read!()
+          |> (&Kernel.binary_part(&1, 8, String.length(&1))).()
       end
+
+    pattern = Keyword.get(opts, :pattern, :named)
 
     Legl.txt("annotated")
     |> Path.absname()
-    |> File.write("#{RUS.Parser.parser(binary)}")
+    |> File.write("#{RUS.Parser.parser(binary, pattern)}")
 
     :ok
   end

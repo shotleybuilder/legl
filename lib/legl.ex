@@ -1,10 +1,8 @@
 defmodule Legl do
   @moduledoc false
 
-  alias Legl.Regex
-
   @regex %{
-    :aut => %Regex{
+    :aut => %Legl.Regex{
       chapter: ~s/^Artikel[ ](\\d+)|^([A-Z]+)\.?[ ]+HAUPTSTÜCK/,
       chapter_name: "artikel",
       section: ~s/(\\d+[a-z]?)/,
@@ -17,11 +15,11 @@ defmodule Legl do
       annex: ~s/(?:^Anlage[ ]([\\d|A-Z]+)|^(?:Anhang|ANHANG)[ ]+(\\d*[A-Z]*))/,
       annex_name: "anhang"
     },
-    :fin => %Regex{
+    :fin => %Legl.Regex{
       chapter: ~s/^(\\d+)/,
       article: ~s/^(\\d+)/
     },
-    :tur => %Regex{
+    :tur => %Legl.Regex{
       part: ~s/^(\\d+)[ ](.*)/,
       part_name: "bölüm_part",
       heading: ~s/^(\\d+)[ ](.*)/,
@@ -32,7 +30,7 @@ defmodule Legl do
       sub_article_name: "madde-paragraf",
       amendment: ~s//
     },
-    :uk => %Regex{
+    :uk => %Legl.Regex{
       part: ~s/^(\\d+[ ])(PART|Part)[ ](\\d|[A-Z])+[ ](.*)/,
       part_name: "part",
       heading: ~s/^(\\d+)[ ](.*)/,
@@ -41,84 +39,20 @@ defmodule Legl do
     }
   }
 
-  @components ~s(
-    content
-    part
-    chapter
-    section
-    heading
-    article
-    sub_article
-    para
-    sub
-    numbered_para
-    amendment
-    annex
-    signed
-    footnote
-    approval
-    forms
-    form
-    table
-  )
-  @doc """
-  A map of components as atoms
-
-  [:content, :part, :chapter, :section, :heading, :article, :sub_article,
-  :numbered_para, :amendment, :annex, :signed, :footnote, :approval, :forms,
-  :form]
-  """
-  def component_keys do
-    Enum.map(String.split(@components), fn x -> String.to_atom(x) end)
-  end
-
-  @doc """
-  A map of components with annotations
-
-  ["[::content::]", "[::part::]", "[::chapter::]", "[::section::]",
-   "[::heading::]", "[::article::]", "[::sub_article::]", "[::numbered_para::]",
-   "[::amendment::]", "[::annex::]", "[::signed::]", "[::footnote::]",
-   "[::approval::]", "[::forms::]", "[::form::]"]
-
-  """
-  def components do
-    Enum.map(String.split(@components), fn x -> "[::" <> x <> "::]" end)
-  end
-
-  def components(:regex) do
-    Enum.map(String.split(@components), fn x -> x end)
-  end
-
-  @doc """
-  Escaped for inclusion in regexes
-
-  ["\\[::content::\\]", "\\[::part::\\]", "\\[::chapter::\\]",
-   "\\[::section::\\]", "\\[::heading::\\]", "\\[::article::\\]",
-   "\\[::sub_article::\\]", "\\[::numbered_para::\\]", "\\[::amendment::\\]",
-   "\\[::annex::\\]", "\\[::signed::\\]", "\\[::footnote::\\]",
-   "\\[::approval::\\]", "\\[::forms::\\]", "\\[::form::\\]"]
-
-  """
-  def components_for_regex() do
-    components()
-    |> Enum.map(&Elixir.Regex.escape(&1))
-  end
-
-  def mapped_components do
-    Enum.zip(component_keys(), components())
-    |> Enum.reduce(%{}, fn {x, y}, acc -> Map.put(acc, x, y) end)
-  end
-
-  def mapped_components_for_regex() do
-    Enum.zip(component_keys(), components_for_regex())
-    |> Enum.reduce(%{}, fn {x, y}, acc -> Map.put(acc, x, y) end)
-  end
-
   def regex, do: @regex
+
+  alias Types.Component
+
+  @components Component.components()
 
   @roman ~s(I II III IV V VI VII VIII IX X XI XII XIII XIV XV)
 
+  @doc """
+  "XV XIV XIII XII XI X IX VIII VII VI V IV III II I"
+  """
   def roman, do: String.split(@roman) |> Enum.reverse() |> Enum.join(" ")
+
+  def roman_regex(), do: String.split(@roman) |> Enum.reverse() |> Enum.join("|")
 
   @roman_numerals String.split(@roman)
                   |> Enum.reduce({%{}, 1}, fn x, {map, inc} ->
@@ -126,15 +60,44 @@ defmodule Legl do
                   end)
                   |> Kernel.elem(0)
 
+  @doc """
+  A mapping of roman numeral to integer value
+
+  %{
+    "I" => 1,
+    "II" => 2,
+    "III" => 3,
+    "IV" => 4,
+    "IX" => 9,
+    "V" => 5,
+    "VI" => 6,
+    "VII" => 7,
+    "VIII" => 8,
+    "X" => 10,
+    "XI" => 11,
+    "XII" => 12,
+    "XIII" => 13,
+    "XIV" => 14,
+    "XV" => 15
+  }
+
+  """
   def roman_numerals(), do: @roman_numerals
 
-  @spec conv_roman_numeral(String.t()) :: Integer
+  @spec conv_roman_numeral(Integer | String.t()) :: Integer | String.t()
+  def conv_roman_numeral(""), do: ""
   def conv_roman_numeral(numeral) when is_integer(numeral), do: numeral
 
   def conv_roman_numeral(numeral) do
-    case Map.get(@roman_numerals, numeral) do
-      nil -> numeral
-      x -> x
+    case Regex.match?(~r/^[0-9]*$/, numeral) do
+      true ->
+        numeral
+
+      _ ->
+        case Map.get(@roman_numerals, numeral) do
+          nil -> numeral
+          x -> x
+        end
     end
   end
 
@@ -254,4 +217,41 @@ defmodule Legl do
   def no_join_emoji,
     do:
       ~s/#{chapter_emoji()}#{sub_chapter_emoji()}#{article_emoji()}#{sub_article_emoji()}#{numbered_para_emoji()}#{annex_emoji()}/
+
+  @spec airtable(Types.AirtableSchema.t(), []) :: :atom
+  def airtable(country_struct, country_schema, opts \\ []) when is_list(opts) do
+    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+
+    chunk = Keyword.get(opts, :chunk, 200)
+
+    binary = Legl.Airtable.Schema.schema(country_struct, binary, country_schema, opts)
+
+    no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)
+
+    cond do
+      no_of_lines < chunk ->
+        copy(binary)
+        File.write(Legl.airtable(), binary)
+
+      true ->
+        String.split(binary, "\n")
+        |> Enum.chunk_every(chunk)
+        |> Enum.map(fn x -> Enum.join(x, "\n") end)
+        |> Enum.reduce("", fn str, acc ->
+          copy(str)
+          ExPrompt.confirm("Pasted into Airtable?")
+          acc <> str
+        end)
+        |> (&File.write(Legl.airtable(), &1)).()
+    end
+
+    :ok
+  end
+
+  def copy(text) do
+    port = Port.open({:spawn, "xclip -selection clipboard"}, [])
+    Port.command(port, text)
+    Port.close(port)
+    IO.puts("copied to clipboard: #{String.slice(text, 0, 10)}...")
+  end
 end

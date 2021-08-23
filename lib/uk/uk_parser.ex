@@ -16,6 +16,24 @@ defmodule UK.Parser do
       amendment_emoji: 0
     ]
 
+  @uk_cardinals ~s(One Two Three Four Five Six Seven Eight Nine Ten)
+
+  @regex_uk_cardinals Regex.replace(~r/\n/, @uk_cardinals, "")
+                      |> (&Regex.replace(~r/[ ]/, &1, "|")).()
+
+  @uk_cardinal_integer String.split(@uk_cardinals)
+                       |> Enum.reduce({%{}, 1}, fn x, {map, inc} ->
+                         {Map.put(map, x, inc), inc + 1}
+                       end)
+                       |> Kernel.elem(0)
+
+  def cardinal_as_integer(cardinal) do
+    case Map.get(@uk_cardinal_integer, cardinal) do
+      nil -> ""
+      x -> Integer.to_string(x)
+    end
+  end
+
   @doc false
 
   def parser(:regulation = type) when is_atom(type) do

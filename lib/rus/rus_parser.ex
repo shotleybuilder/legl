@@ -8,7 +8,8 @@ defmodule RUS.Parser do
   # Ş, ş, Ü, ü
 
   # @emojis Legl.named_emojis()
-  @components Legl.mapped_components()
+  alias Types.Component
+  @components %Component{}
 
   def component_for_regex(name) when is_atom(name) do
     Legl.mapped_components() |> Map.get(name) |> Regex.escape()
@@ -60,7 +61,7 @@ defmodule RUS.Parser do
           |> rm_header()
           |> rm_footer()
           |> rm_makers_clause()
-          |> (&Kernel.<>("CLEANED\n", &1)).()
+          |> (&Kernel.<>("CLEANED", &1)).()
           |> Legl.Parser.rm_leading_tabs()
 
         _ ->
@@ -79,15 +80,10 @@ defmodule RUS.Parser do
 
   def rm_header(binary) do
     Regex.replace(
-      ~r/.*?Текст/s,
+      ~r/.*?Попробовать бесплатно/s,
       binary,
       ""
     )
-    |> (&Regex.replace(
-          ~r/.*?Попробовать бесплатно/s,
-          &1,
-          ""
-        )).()
   end
 
   def rm_makers_clause(binary) do
@@ -101,7 +97,7 @@ defmodule RUS.Parser do
   def rm_footer(binary) do
     binary
     |> (&Regex.replace(
-          ~r/\nРедакция документа с учетом.*|\nЭлектронный текст документа.*/s,
+          ~r/\nРедакция документа с учетом.*|\nЭлектронный текст документа.*|\nТекст документа.*/s,
           &1,
           ""
         )).()
@@ -117,8 +113,8 @@ defmodule RUS.Parser do
   Parses .pdf text copied from https://www.mevzuat.gov.tr/MevzuatMetin
 
   """
-  @spec parser(String.t()) :: String.t()
-  def parser(binary) do
+  @spec parser(String.t(), Atom) :: String.t()
+  def parser(binary, pattern) do
     binary
     |> get_amendments()
     |> get_title()
@@ -128,7 +124,7 @@ defmodule RUS.Parser do
     |> get_annex()
     |> get_form()
     |> get_form_para()
-    |> get_article()
+    |> get_article(pattern)
     |> get_para()
     |> get_sub()
     |> get_table()
@@ -234,10 +230,14 @@ defmodule RUS.Parser do
     roman_numerals = Regex.replace(~r/[ ]/, Legl.roman(), "|")
 
     Regex.replace(
-      ~r/^(?:РАЗДЕЛ|Раздел|ГЛАВА)[ ](#{roman_numerals})\.?[ ]?.*/m,
+      ~r/^(?:РАЗДЕЛ|Раздел|ГЛАВА)[ ](#{roman_numerals})\.?_?(\d*)[ ]?.*/m,
       binary,
-      fn match, chapter ->
-        "#{@components[:chapter]}#{Legl.conv_roman_numeral(chapter)} #{match}"
+      fn
+        match, chapter, "" ->
+          "#{@components[:chapter]}#{Legl.conv_roman_numeral(chapter)} #{match}"
+
+        match, chapter, section ->
+          "#{@components[:section]}#{section} #{match}"
       end
     )
   end
@@ -255,41 +255,45 @@ defmodule RUS.Parser do
     )
   end
 
-  def get_article(binary) do
-    case Regex.run(~r/^Статья[ ]\d+/m, binary) do
-      nil ->
-        Regex.replace(
-          ~r/^(\d+)\.[ ].*/m,
-          binary,
+  @doc """
+  Parse an article paragraph
+
+  :named articles are prefixed with Статья. This is the default
+  """
+
+  def get_article(binary, :named) do
+    amended_binary = amended_article(binary)
+
+    Regex.replace(
+      ~r/^Статья[ ](\d+-?\d*)_?(\d*).*/m,
+      amended_binary,
+      fn
+        m, art_num, "" ->
+          "#{@components[:article]}#{art_num} #{m}"
+
+        m, art_num, para_num ->
+          "#{@components[:para]}#{para_num} #{m}"
+      end
+    )
+  end
+
+  def get_article(binary, _) do
+    Regex.replace(
+      ~r/^(\d+)\.[ ].*/m,
+      binary,
+      fn
+        m, art_num ->
+          "#{@components[:article]}#{art_num} #{m}"
+      end
+    )
+    |> (&Regex.replace(
+          ~r/^\d+\.(\d+)\.[ ].*/m,
+          &1,
           fn
             m, art_num ->
-              "#{@components[:article]}#{art_num} #{m}"
+              "#{@components[:para]}#{art_num} #{m}"
           end
-        )
-        |> (&Regex.replace(
-              ~r/^\d+\.(\d+)\.[ ].*/m,
-              &1,
-              fn
-                m, art_num ->
-                  "#{@components[:article]}#{art_num} #{m}"
-              end
-            )).()
-
-      _ ->
-        amended_binary = amended_article(binary)
-
-        Regex.replace(
-          ~r/^Статья[ ](\d+-?\d*)_?(\d*).*/m,
-          amended_binary,
-          fn
-            m, art_num, "" ->
-              "#{@components[:article]}#{art_num} #{m}"
-
-            m, art_num, para_num ->
-              @components[:article] <> "#{art_num}_#{para_num} " <> m
-          end
-        )
-    end
+        )).()
   end
 
   def get_para(binary) do
@@ -342,7 +346,7 @@ defmodule RUS.Parser do
 
   def get_approval(binary) do
     Regex.replace(
-      ~r/^Президент/m,
+      ~r/^Президент|Председатель[ ]Совета[ ]Министров/m,
       binary,
       "#{@components[:approval]} \\0"
     )
@@ -355,7 +359,7 @@ defmodule RUS.Parser do
       fn m, v -> "#{@components[:annex]}N#{v} #{m}" end
     )
     |> (&Regex.replace(
-          ~r/^Предписание\n/m,
+          ~r/^Предписание\n|^НОРМЫ\n/m,
           &1,
           "#{@components[:annex]} \\0"
         )).()

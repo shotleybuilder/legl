@@ -4,7 +4,8 @@ defmodule Legl.Parser do
   @emojis Legl.named_emojis()
   @x_join_emojis Legl.emojis()
 
-  @components Legl.components()
+  alias Types.Component
+  @components Component.components()
 
   def components_for_regex() do
     Legl.components_for_regex()
@@ -30,20 +31,16 @@ defmodule Legl.Parser do
   def join(binary, country \\ nil)
 
   def join(binary, "UK") do
-    components = Enum.join(components_for_regex(), "|")
-
     Regex.replace(
-      ~r/(?:\r\n|\n)(?!#{components})/mu,
+      ~r/(?:\r\n|\n)(?!#{Component.components_for_regex_or()})/mu,
       binary,
       "#{Legl.pushpin_emoji()}"
     )
   end
 
   def join(binary, _country) do
-    components = Enum.join(components_for_regex(), "|")
-
     Regex.replace(
-      ~r/(?:\r\n|\n)(?!#{components})/mu,
+      ~r/(?:\r\n|\n)(?!#{Component.components_for_regex_or()})/mu,
       binary,
       " #{Legl.pushpin_emoji()} "
     )

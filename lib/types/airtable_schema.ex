@@ -1,7 +1,31 @@
 defmodule Types.AirtableSchema do
   @moduledoc false
+
+  @fields [
+    :flow,
+    :type,
+    :part,
+    :chapter,
+    :section,
+    :article,
+    :para,
+    :sub,
+    :text
+  ]
+
+  @number_fields [
+    :part,
+    :chapter,
+    :section,
+    :article,
+    :para,
+    :sub
+  ]
+
   @type t :: %__MODULE__{
           country: :atom,
+          fields: [],
+          number_fields: [],
           title_name: String.t(),
           part: String.t(),
           part_name: String.t(),
@@ -9,6 +33,8 @@ defmodule Types.AirtableSchema do
           chapter_name: String.t(),
           section: String.t(),
           section_name: String.t(),
+          sub_section: String.t(),
+          sub_section_name: String.t(),
           heading: String.t(),
           heading_name: String.t(),
           article: String.t(),
@@ -26,17 +52,24 @@ defmodule Types.AirtableSchema do
           amending_sub_article_name: String.t(),
           form: String.t(),
           form_name: String.t(),
-          approval_name: Strig.t()
+          approval_name: String.t(),
+          note: String.t(),
+          note_name: String.t(),
+          footnote_name: String.t()
         }
   @enforce_keys [:article, :article_name]
   defstruct country: nil,
+            fields: @fields,
+            number_fields: @number_fields,
             title_name: "title",
-            part: "",
+            part: ~s/^(\\d+)[ ](.*)/,
             part_name: "part",
-            chapter: "",
+            chapter: ~s/^(\\d+)[ ](.*)/,
             chapter_name: "chapter",
             section: "",
             section_name: "section",
+            sub_section: ~s/^(\\d+)[ ](.*)/,
+            sub_section_name: "sub-section",
             heading: "",
             heading_name: "heading",
             article: "",
@@ -47,7 +80,7 @@ defmodule Types.AirtableSchema do
             para_name: "article, paragraph",
             sub: ~s/^(\\d+)_(\\d+)_(\\d+)[ ](.*)/,
             sub_name: "article, paragraph, sub-paragraph",
-            annex: "",
+            annex: ~s/(\\d*)[ ](.*)/,
             annex_name: "",
             amendment: "",
             amendment_name: "",
@@ -56,5 +89,8 @@ defmodule Types.AirtableSchema do
             form_name: "form",
             approval_name: "approval",
             table: ~s/^(\\d+)[ ](.*)/,
-            table_name: "table"
+            table_name: "table",
+            note: ~s/[ ](.*)/,
+            note_name: "note",
+            footnote_name: "footnote"
 end
