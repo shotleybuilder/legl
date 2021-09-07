@@ -28,7 +28,9 @@ defmodule Legl.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.14", only: :dev, runtime: false},
-      {:ex_prompt, "~> 0.1.5"}
+      {:ex_prompt, "~> 0.1.5"},
+      {:tesla, "~> 1.4"},
+      {:hackney, "~> 1.6"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]

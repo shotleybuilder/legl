@@ -2,7 +2,7 @@ defmodule DE.Parser do
   alias Types.Component
 
   @components %Component{}
-  @roman_numerals Regex.replace(~r/[ ]/, Legl.roman(), "|")
+  #  @roman_numerals Regex.replace(~r/[ ]/, Legl.roman(), "|")
 
   @de_ordinals ~s(Erster
  Zweiter
@@ -45,7 +45,7 @@ defmodule DE.Parser do
   @spec clean_original(String.t()) :: String.t()
   def clean_original("CLEANED\n" <> binary) do
     binary
-    |> (&IO.puts("cleaned: #{String.slice(&1, 0, 10)}...")).()
+    |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
 
     binary
   end
@@ -97,20 +97,20 @@ defmodule DE.Parser do
         )).()
   end
 
-  @spec parser(String.t()) :: String.t()
-  def parser(binary) do
+  @spec parser(String.t(), String.t()) :: String.t()
+  def parser(binary, language) do
     binary
     |> get_footnote()
     |> rm_toc()
     |> get_title()
     |> get_appendix()
     |> get_annex()
-    |> get_part()
+    |> get_part(language)
     |> get_chapter()
-    |> get_section()
+    |> get_section(language)
     |> get_sub_section()
     |> get_approval()
-    |> get_article()
+    |> get_article(language)
     |> get_para()
     |> get_amendment()
     |> join_sub_paras()
@@ -122,12 +122,36 @@ defmodule DE.Parser do
     "#{@components.title} #{binary}"
   end
 
-  def get_part(binary) do
+  def get_part(binary, "DE") do
     Regex.replace(
       ~r/^Teil[ ](\d+).*/m,
       binary,
       "#{@components.part}\\g{1} \\0"
     )
+    |> (&Regex.replace(
+          ~r/^(#{@regex_de_ordinals})([ ]Teil)\n(.*)/m,
+          &1,
+          fn _m, n, s, t ->
+            "#{@components.part}#{ordinal_as_cardinal(n)} #{n}#{s}\n#{t}"
+          end
+        )).()
+  end
+
+  def get_part(binary, "EN") do
+    Regex.replace(
+      ~r/^(Part[ ])(\d+)/m,
+      binary,
+      fn _, s, n ->
+        "#{@components.part}#{n} #{s}#{n}"
+      end
+    )
+    |> (&Regex.replace(
+          ~r/^(Part[ ])([A-Za-z]+)/m,
+          &1,
+          fn _, s, n ->
+            "#{@components.part}#{UK.Parser.cardinal_as_integer(n)} #{s}#{n}"
+          end
+        )).()
   end
 
   def get_chapter(binary) do
@@ -138,7 +162,7 @@ defmodule DE.Parser do
     )
   end
 
-  def get_section(binary) do
+  def get_section(binary, "DE") do
     Regex.replace(
       ~r/^(#{@regex_de_ordinals})([ ]Abschnitt)/m,
       binary,
@@ -156,19 +180,20 @@ defmodule DE.Parser do
           &1,
           "#{@components.section}\\g{1} \\0"
         )).()
+  end
+
+  def get_section(binary, "EN") do
+    Regex.replace(
+      ~r/^(#{Legl.roman_regex()})\.\n(.*)/m,
+      binary,
+      fn _m, n, g2 ->
+        "#{@components.section}#{Legl.conv_roman_numeral(n)} #{n}.#{g2}"
+      end
+    )
     |> (&Regex.replace(
-          ~r/^(Part[ ])(\d+)/m,
+          ~r/^Section[ ](\d+[a-z]*).*/m,
           &1,
-          fn _, s, n ->
-            "#{@components.section}#{n} #{s}#{n}"
-          end
-        )).()
-    |> (&Regex.replace(
-          ~r/^(Part[ ])([A-Za-z]+)/m,
-          &1,
-          fn _, s, n ->
-            "#{@components.section}#{UK.Parser.cardinal_as_integer(n)} #{s}#{n}"
-          end
+          "#{@components.section}\\g{1} \\0"
         )).()
   end
 
@@ -180,17 +205,20 @@ defmodule DE.Parser do
     )
   end
 
-  def get_article(binary) do
+  def get_article(binary, "DE") do
     Regex.replace(
       ~r/^§[ ](\d+[a-z]*).*/m,
       binary,
       "#{@components.article}\\g{1} \\0"
     )
-    |> (&Regex.replace(
-          ~r/^Section[ ](\d+[a-z]*).*/m,
-          &1,
-          "#{@components.article}\\g{1} \\0"
-        )).()
+  end
+
+  def get_article(binary, "EN") do
+    Regex.replace(
+      ~r/^\((\d+)\).*/m,
+      binary,
+      "#{@components.article}\\g{1} \\0"
+    )
   end
 
   def get_para(binary) do
@@ -294,5 +322,26 @@ defmodule DE.Parser do
       binary,
       "\\g{1} \\g{2}"
     )
+  end
+
+  def dguv() do
+    binary =
+      Legl.txt("dguv")
+      |> Path.absname()
+      |> File.read!()
+      |> (&Regex.replace(
+            ~r/^(DGUV[ ]Information[ ])(\d+-\d+)[ ](.*)\n(\d{4})\.(\d+)/m,
+            &1,
+            "\\g{4}\t\\g{5}\t\\g{2}\t\\g{1}\\g{2}\t\\g{3}"
+          )).()
+      |> (&Regex.replace(
+            ~r/^[^0-9].*\n/m,
+            &1,
+            ""
+          )).()
+
+    Legl.txt("dguv_a")
+    |> Path.absname()
+    |> File.write(binary)
   end
 end

@@ -42,7 +42,7 @@ defmodule DE do
       title_name: "titel",
       part_name: "teil",
       chapter_name: "kapitel",
-      section: ~s/^(\\d+)[ ](.*)/,
+      section: ~s/^(\\d+[a-z]*)[ ](.*)/,
       section_name: "abschnitt",
       sub_section_name: "unterabschnitt",
       article: ~s/^(\\d+[a-z]?)[ ](.*)/,
@@ -79,8 +79,8 @@ defmodule DE do
   @spec parse() :: :atom
   def parse(opts \\ []) do
     binary =
-      case Keyword.get(opts, :clean, false) do
-        false ->
+      case Keyword.get(opts, :clean, true) do
+        true ->
           clean()
 
         _ ->
@@ -92,7 +92,7 @@ defmodule DE do
 
     Legl.txt("annotated")
     |> Path.absname()
-    |> File.write("#{DE.Parser.parser(binary)}")
+    |> File.write("#{DE.Parser.parser(binary, Keyword.get(opts, :language, "DE"))}")
 
     :ok
   end
