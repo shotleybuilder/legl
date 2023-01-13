@@ -1,5 +1,10 @@
 defmodule UK.Parser do
   @moduledoc false
+  alias Types.Component
+  @components %Component{}
+
+  @regex_components Component.mapped_components_for_regex()
+
   import Legl,
     only: [
       part_emoji: 0,
@@ -35,21 +40,96 @@ defmodule UK.Parser do
   end
 
   @doc false
+  @spec clean_original(String.t()) :: String.t()
+  def clean_original("CLEANED\n" <> binary) do
+    binary
+    |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
 
-  def parser(:regulation = type) when is_atom(type) do
-    {:ok, binary} = File.read(Path.absname(Legl.original()))
+    binary
+  end
+
+  def clean_original(binary) do
+    binary =
+      binary
+      |> (&Kernel.<>("CLEANED\n", &1)).()
+      |> Legl.Parser.rm_empty_lines()
+      |> collapse_amendment_text_between_quotes()
+      |> separate_part_chapter_schedule()
+      |> join_empty_numbered()
+      # |> rm_overview()
+      # |> rm_footer()
+      |> Legl.Parser.rm_leading_tabs()
+
+    Legl.txt("clean")
+    |> Path.absname()
+    |> File.write(binary)
+
+    clean_original(binary)
+  end
+
+  def separate_part_chapter_schedule(binary),
+    do:
+      Regex.replace(
+        ~r/^(PART[ ]\d+)([A-Z]+)/m,
+        binary,
+        "\\g{1} \\g{2}"
+      )
+      |> (&Regex.replace(
+            ~r/^(CHAPTER[ ]\d+)([A-Z]+)/m,
+            &1,
+            "\\g{1} \\g{2}"
+          )).()
+      |> (&Regex.replace(
+            ~r/^(SCHEDULE)([A-Z a-z]+)/m,
+            &1,
+            "\\g{1} \\g{2}"
+          )).()
+      |> (&Regex.replace(
+            ~r/^(SCHEDULE[ ]\d+)([A-Z a-z]+)/m,
+            &1,
+            "\\g{1} \\g{2}"
+          )).()
+
+  def collapse_amendment_text_between_quotes(binary) do
+    Regex.run(
+      ~r/(?:\r\n|\n)^[“][\s\S]*[”]/m,
+      binary
+    )
+    |> IO.inspect()
+
+    Regex.replace(
+      ~r/(?:\r\n|\n)^[“][\s\S]*[”]/m,
+      binary,
+      fn x -> "#{join(x)}" end
+    )
+  end
+
+  def join(binary) do
+    Regex.replace(
+      ~r/(\r\n|\n)/m,
+      binary,
+      "#{Legl.pushpin_emoji()}"
+    )
+  end
+
+  @doc false
+
+  def parser(binary, :regulation = type) when is_atom(type) do
+    # {:ok, binary} = File.read(Path.absname(Legl.original()))
 
     binary
     |> rm_header()
     |> rm_explanatory_note
-    |> Legl.Parser.rm_empty_lines()
     |> join_empty_numbered()
+    |> get_title()
     |> get_article()
-    |> get_sub_article()
+    |> get_para()
     |> get_part()
+    |> get_chapter()
     |> get_signed_section()
-    # get_heading() has to come after get_article
-    |> get_heading(:regulation)
+    |> get_annex()
+    # get_sub_section() has to come after get_article
+    |> get_sub_section(:regulation)
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
   end
@@ -60,7 +140,6 @@ defmodule UK.Parser do
     binary
     |> rm_header()
     |> rm_explanatory_note
-    |> Legl.Parser.rm_empty_lines()
     |> join_empty_numbered()
     |> get_chapter()
     |> get_amendments(:act)
@@ -76,6 +155,10 @@ defmodule UK.Parser do
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
     |> rm_amendment(:act)
+  end
+
+  def get_title(binary) do
+    "#{@components.title} #{binary}"
   end
 
   @doc """
@@ -132,10 +215,76 @@ defmodule UK.Parser do
       )
 
   @doc """
+  PART and Roman Part Number concatenate when copied e.g. PART IINFORMATION
+
+  """
+  @spec get_part(String.t()) :: String.t()
+  def get_part(binary) do
+    part_class_scheme =
+      cond do
+        Regex.match?(~r/^(PART|Part)[ ]+\d+/m, binary) -> "numeric"
+        Regex.match?(~r/^PART[ ]+A/m, binary) -> "alphabetic"
+        Regex.match?(~r/^PART[ ]+I/m, binary) -> "roman_numeric"
+        true -> "no parts"
+      end
+
+    case part_class_scheme do
+      "no parts" ->
+        binary
+
+      "numeric" ->
+        Regex.replace(
+          ~r/^(PART|Part)[ ](\d*)[ ]?([ A-Z]*)/m,
+          binary,
+          "#{@components.part}\\g{2} \\g{1} \\g{2} \\g{3}"
+        )
+
+      "alphabetic" ->
+        Regex.replace(
+          ~r/^PART[ ]([A-Z])[ ]?([ A-Z]+)/m,
+          binary,
+          fn _, value, text ->
+            index = Legl.conv_alphabetic_classes(value)
+            "#{@components.part}#{index} PART #{value} #{text}"
+          end
+        )
+
+      "roman_numeric" ->
+        Regex.replace(
+          ~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/m,
+          binary,
+          fn _, tens, units, text ->
+            numeral = tens <> units
+
+            {remaining_numeral, last_numeral} = String.split_at(numeral, -1)
+
+            # last_numeral = String.last(numeral)
+            # remaining_numeral = String.slice(numeral, 0..(String.length(numeral) - 2))
+
+            case Dictionary.match?("#{last_numeral}#{text}") do
+              true ->
+                value = Legl.conv_roman_numeral(remaining_numeral)
+                "#{@components.part}#{value} PART #{remaining_numeral} #{last_numeral}#{text}"
+
+              false ->
+                value = Legl.conv_roman_numeral(numeral)
+                "##{@components.part}#{value} PART #{numeral} #{text}"
+            end
+          end
+        )
+    end
+  end
+
+  @doc """
 
   """
   def get_chapter(binary),
-    do: Regex.replace(~r/^Chapter[ ]\d+/m, binary, "#{chapter_emoji()}\\0 ")
+    do:
+      Regex.replace(
+        ~r/^(Chapter|CHAPTER)[ ](\d+)/m,
+        binary,
+        "#{@components.chapter}\\g{2} \\0"
+      )
 
   @doc """
   Parse Act section headings & Regulation article headings.
@@ -149,15 +298,7 @@ defmodule UK.Parser do
       Regex.replace(
         ~r/^[A-Z][^\d\.][^\n]+[^\.](etc\.)?\n#{article_emoji()}(\d+)/m,
         binary,
-        "#{heading_emoji()}\\0"
-      )
-
-  def get_heading(binary, :regulation),
-    do:
-      Regex.replace(
-        ~r/^[^#{part_emoji()}|#{annex_emoji()}]([^\n]+)[^\.](etc\.)?\n#{article_emoji()}(\d+)/m,
-        binary,
-        "#{heading_emoji()}\\g{3} \\0"
+        "#{@components.heading}\\0"
       )
 
   @doc """
@@ -201,23 +342,36 @@ defmodule UK.Parser do
         "#{sub_article_emoji()}\\g{1} \\g{2}"
       )
 
+  def get_sub_section(binary, :regulation),
+    do:
+      Regex.replace(
+        ~r/^[^#{@regex_components.part}|#{@regex_components.chapter}|#{@regex_components.annex}]([^\n]+)[^\.](etc\.)?\n#{@regex_components.article}\d+[ ](\d+)/m,
+        binary,
+        "#{@components.sub_section}\\g{3} \\0"
+      )
+
   @doc """
   Parse the articles of Regulations.
   """
   def get_article(binary),
     do:
       Regex.replace(
-        ~r/^(\d+\.[ ]+)|(\d+\.(#{<<226, 128, 148>>}|\-))/m,
+        ~r/^(\d+)\.[ ]+/m,
         binary,
-        "#{article_emoji()}\\0"
+        "#{@components.article}\\g{1} \\0"
       )
+      |> (&Regex.replace(
+            ~r/^((\d+)\.(#{<<226, 128, 148>>}|\-)\(\d+\))/m,
+            &1,
+            "#{@components.article}\\g{2} \\0"
+          )).()
 
-  def get_sub_article(binary),
+  def get_para(binary),
     do:
       Regex.replace(
-        ~r/^\(\d+\)[ ][A-Z]/m,
+        ~r/^\((\d+)\)[ ][A-Z]/m,
         binary,
-        "#{sub_article_emoji()}\\0"
+        "#{@components.para}\\g{1} \\0"
       )
 
   @doc """
@@ -229,10 +383,15 @@ defmodule UK.Parser do
   def get_annex(binary),
     do:
       Regex.replace(
-        ~r/^SCHEDULE[ ]\d+[ ]?|^THE SCHEDULE|^SCHEDULE/m,
+        ~r/^SCHEDULE[ ](\d+).*/m,
         binary,
-        "#{annex_emoji()}\\0 "
+        "#{@components.annex}\\g{1} \\0 "
       )
+      |> (&Regex.replace(
+            ~r/^THE SCHEDULE|^SCHEDULE/m,
+            &1,
+            "#{@components.annex}1 \\0"
+          )).()
 
   def get_annex_heading(binary),
     do:
@@ -243,72 +402,15 @@ defmodule UK.Parser do
       )
 
   @doc """
-  PART and Roman Part Number concatenate when copied e.g. PART IINFORMATION
-
-  """
-  @spec get_part(String.t()) :: String.t()
-  def get_part(binary) do
-    part_class_scheme =
-      cond do
-        Regex.match?(~r/^(PART|Part)[ ]+\d/m, binary) -> "numeric"
-        Regex.match?(~r/^PART[ ]+A/m, binary) -> "alphabetic"
-        Regex.match?(~r/^PART[ ]+I/m, binary) -> "roman_numeric"
-        true -> "no parts"
-      end
-
-    case part_class_scheme do
-      "no parts" ->
-        binary
-
-      "numeric" ->
-        Regex.replace(
-          ~r/^(PART|Part)[ ](\d+)[ ]?([ A-Z]+)/m,
-          binary,
-          "#{part_emoji()}\\g{2} \\g{1} \\g{2} \\g{3}"
-        )
-
-      "alphabetic" ->
-        Regex.replace(
-          ~r/^PART[ ]([A-Z])[ ]?([ A-Z]+)/m,
-          binary,
-          fn _, value, text ->
-            index = Legl.conv_alphabetic_classes(value)
-            "#{part_emoji()}#{index} PART #{value} #{text}"
-          end
-        )
-
-      "roman_numeric" ->
-        Regex.replace(
-          ~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/m,
-          binary,
-          fn _, tens, units, text ->
-            numeral = tens <> units
-
-            {remaining_numeral, last_numeral} = String.split_at(numeral, -1)
-
-            # last_numeral = String.last(numeral)
-            # remaining_numeral = String.slice(numeral, 0..(String.length(numeral) - 2))
-
-            case Dictionary.match?("#{last_numeral}#{text}") do
-              true ->
-                value = Legl.conv_roman_numeral(remaining_numeral)
-                "#{part_emoji()}#{value} PART #{remaining_numeral} #{last_numeral}#{text}"
-
-              false ->
-                value = Legl.conv_roman_numeral(numeral)
-                "#{part_emoji()}#{value} PART #{numeral} #{text}"
-            end
-          end
-        )
-    end
-  end
-
-  @doc """
 
   """
   def get_signed_section(binary) do
     binary
-    |> (&Regex.replace(~r/^Signed by/m, &1, "#{signed_emoji()}\\0")).()
+    |> (&Regex.replace(
+          ~r/^Signed by/m,
+          &1,
+          "#{@components.signed}\\0"
+        )).()
     |> (&Regex.replace(
           ~r/^Sealed with the Official Seal/m,
           &1,

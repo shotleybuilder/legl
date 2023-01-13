@@ -412,6 +412,16 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:all, regex)
   end
 
+  def signed(regex, "[::signed::]" <> str, last_record) do
+    %{
+      last_record
+      | flow: "",
+        type: "#{regex.signed_name}",
+        text: str
+    }
+    |> fields_reset(:all, regex)
+  end
+
   def table(regex, "[::table::]" <> str, last_record) do
     [_, table_num, table] = Regex.run(~r/#{regex.table}/, str)
 

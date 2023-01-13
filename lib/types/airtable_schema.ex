@@ -55,7 +55,8 @@ defmodule Types.AirtableSchema do
           approval_name: String.t(),
           note: String.t(),
           note_name: String.t(),
-          footnote_name: String.t()
+          footnote_name: String.t(),
+          signed_name: String.t()
         }
   @enforce_keys [:article, :article_name]
   defstruct country: nil,
@@ -92,5 +93,6 @@ defmodule Types.AirtableSchema do
             table_name: "table",
             note: ~s/[ ](.*)/,
             note_name: "note",
-            footnote_name: "footnote"
+            footnote_name: "footnote",
+            signed_name: "signed"
 end

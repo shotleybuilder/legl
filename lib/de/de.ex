@@ -75,6 +75,7 @@ defmodule DE do
 
   Options
   :clean -> true = clean before parsing or false = use clean.txt
+  :language -> "EN" defaults to "DE"
   """
   @spec parse() :: :atom
   def parse(opts \\ []) do

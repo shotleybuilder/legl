@@ -3,6 +3,121 @@ defmodule UK do
   Parsing text copied from the plain view at [legislation.gov.uk](https://legislation.gov.uk)
   """
 
+  alias Types.AirtableSchema
+
+  @fields [
+    :flow,
+    :type,
+    :part,
+    :chapter,
+    :section,
+    :sub_section,
+    :article,
+    :para,
+    :sub,
+    :text
+  ]
+
+  @number_fields [
+    :part,
+    :chapter,
+    :section,
+    :sub_section,
+    :article,
+    :para,
+    :sub
+  ]
+
+  defstruct @fields
+
+  # @impl true
+  def schema do
+    %AirtableSchema{
+      country: :UK,
+      fields: @fields,
+      number_fields: @number_fields,
+      title_name: "title",
+      part_name: "part",
+      part: ~s/^(\\d+)[ ](.*)/,
+      chapter_name: "chapter",
+      chapter: ~s/^(\\d+)[ ](.*)/,
+      section_name: "section",
+      section: ~s/^(\\d+[a-z]*)[ ](.*)/,
+      heading_name: "article, heading",
+      heading: ~s/^(\\d+[a-z]*)[ ](.*)/,
+      sub_section_name: "article, heading",
+      article_name: "article",
+      article: ~s/^(\\d+)[ ](.*)/,
+      sub_article_name: "subarticle",
+      sub_article: ~s/^(\\d+)[ ](.*)/,
+      para_name: "sub-article",
+      para: ~s/^(\\d+)[ ](.*)/,
+      signed_name: "signed",
+      annex_name: "annex",
+      annex: ~s/^(\\d+)[ ](.*)/,
+      approval_name: "eingangsformel",
+      footnote_name: "footnote",
+      amendment: ~s/[ ](.*)/,
+      amendment_name: "§§"
+    }
+  end
+
+  def clean_() do
+    clean()
+    :ok
+  end
+
+  @doc false
+  @spec clean() :: String.t()
+  def clean() do
+    Legl.txt("original")
+    |> Path.absname()
+    |> File.read!()
+    |> UK.Parser.clean_original()
+  end
+
+  @doc """
+  Parse the copied text
+
+  Options
+  :clean -> true = clean before parsing or false = use clean.txt
+  """
+  @spec parse_new() :: :atom
+  def parse_new(opts \\ []) do
+    binary =
+      case Keyword.get(opts, :clean, true) do
+        true ->
+          clean()
+
+        _ ->
+          Legl.txt("clean")
+          |> Path.absname()
+          |> File.read!()
+          |> (&Kernel.binary_part(&1, 8, String.length(&1))).()
+      end
+
+    Legl.txt("annotated")
+    |> Path.absname()
+    |> File.write("#{UK.Parser.parser(binary, Keyword.get(opts, :type, :regulation))}")
+
+    :ok
+  end
+
+  @doc """
+  Create Airtable data using all fields
+
+  Run as:
+  iex>UK.airtable()
+
+  Options as list.
+
+  For fields, eg DE.airtable(fields: [:text])  See %DE{}
+  """
+  @spec airtable([]) :: :atom
+  def airtable(opts \\ [fields: @fields]) do
+    Legl.airtable(%UK{}, schema(), opts)
+  end
+
   alias UK.Parser, as: Parser
   alias UK.Schema, as: Schema
 
