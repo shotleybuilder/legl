@@ -25,6 +25,7 @@ defmodule UK.Parser do
                        end)
                        |> Kernel.elem(0)
 
+  @spec cardinal_as_integer(any) :: binary
   def cardinal_as_integer(cardinal) do
     case Map.get(@uk_cardinal_integer, cardinal) do
       nil -> ""
@@ -32,29 +33,33 @@ defmodule UK.Parser do
     end
   end
 
+  @spec clean_original(binary, any) :: binary
   @doc false
-  @spec clean_original(String.t(), :atom) :: String.t()
-  def clean_original("CLEANED\n" <> binary, type) do
+
+  def clean_original("CLEANED\n" <> binary, _type) do
     binary
     |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
 
     binary
   end
 
-  def clean_original(binary, :act = type) do
+  def clean_original(binary, :act) do
     binary =
       binary
       |> (&Kernel.<>("CLEANED\n", &1)).()
       |> Legl.Parser.rm_empty_lines()
+      |> collapse_amendment_text_between_quotes()
+      |> separate_part()
+      |> separate_chapter()
       |> separate_schedule()
-      |> join_empty_numbered()
       |> Legl.Parser.rm_leading_tabs()
+      |> join_empty_numbered()
 
     Legl.txt("clean")
     |> Path.absname()
     |> File.write(binary)
 
-    clean_original(binary, type)
+    clean_original(binary, :act)
   end
 
   def clean_original(binary, type) do
@@ -63,7 +68,10 @@ defmodule UK.Parser do
       |> (&Kernel.<>("CLEANED\n", &1)).()
       |> Legl.Parser.rm_empty_lines()
       |> collapse_amendment_text_between_quotes()
-      |> separate_part_chapter_schedule()
+      #|> separate_part_chapter_schedule()
+      |> separate_part()
+      |> separate_chapter()
+      |> separate_schedule()
       |> join_empty_numbered()
       # |> rm_overview()
       # |> rm_footer()
@@ -76,14 +84,34 @@ defmodule UK.Parser do
     clean_original(binary, type)
   end
 
+  @spec separate_part(binary) :: binary
+  def separate_part(binary),
+  do:
+    Regex.replace(
+      ~r/^((?:PART|Part)[ ]\d+)([A-Z a-z]+)/m,
+      binary,
+      "\\g{1} \\g{2}"
+    )
+
+  @spec separate_chapter(binary) :: binary
+  def separate_chapter(binary),
+  do:
+    Regex.replace(
+      ~r/^((?:CHAPTER|Chapter)[ ]\d+)([A-Z a-z]+)/m,
+      binary,
+      "\\g{1} \\g{2}"
+    )
+
+  @spec separate_schedule(binary) :: binary
   def separate_schedule(binary),
     do:
       Regex.replace(
-        ~r/^(SCHEDULE[ ]\d+)([A-Z a-z]+)/m,
+        ~r/^((?:SCHEDULE|Schedule)[ ]?\d*)([A-Z a-z]+)/m,
         binary,
         "\\g{1} \\g{2}"
       )
 
+  @spec separate_part_chapter_schedule(binary) :: binary
   def separate_part_chapter_schedule(binary),
     do:
       Regex.replace(
@@ -107,24 +135,10 @@ defmodule UK.Parser do
             "\\g{1} \\g{2}"
           )).()
 
-  def collapse_amendment_text_between_quotes(binary, :act = type) do
-    Regex.replace(
-      ~r/(?:insert—|substitute—)(?:\r\n|\n)^[“][\s\S]*?(?:\.”|”\.)/m,
-      binary,
-      fn x -> "#{join(x)}" end
-    )
-  end
-
-
+  @spec collapse_amendment_text_between_quotes(binary) :: binary
   def collapse_amendment_text_between_quotes(binary) do
-    Regex.run(
-      ~r/(?:\r\n|\n)^[“][\s\S]*[”]/m,
-      binary
-    )
-    |> IO.inspect()
-
     Regex.replace(
-      ~r/(?:\r\n|\n)^[“][\s\S]*[”]/m,
+      ~r/(?:inserte?d?—|substituted?—|adde?d?—|inserted the following Schedule—)(?:\r\n|\n)^[“][\s\S]*?(?:\.”|”\.)/m,
       binary,
       fn x -> "#{join(x)}" end
     )
@@ -138,6 +152,14 @@ defmodule UK.Parser do
     )
   end
 
+  def join_empty_numbered(binary),
+  do:
+    Regex.replace(
+      ~r/^(\(([a-z]+|[ivmcldx]+)\)|\d+\.?)(?:\r\n|\n)/m,
+      binary,
+      "\\g{1} "
+    )
+
   @doc false
 
   def parser(binary, :regulation = type) when is_atom(type) do
@@ -147,10 +169,10 @@ defmodule UK.Parser do
     |> rm_explanatory_note
     |> join_empty_numbered()
     |> get_title()
+    |> get_part_chapter(:part)
+    |> get_part_chapter(:chapter)
     |> get_article()
     |> get_para()
-    |> get_part()
-    |> get_chapter()
     |> get_signed_section()
     |> get_annex()
     # get_sub_section() has to come after get_article
@@ -165,9 +187,9 @@ defmodule UK.Parser do
     #|> rm_header()
     #|> rm_explanatory_note
     #|> join_empty_numbered()
-    |> collapse_amendment_text_between_quotes(type)
     |> get_title()
-    |> get_chapter()
+    |> get_part_chapter(:part)
+    |> get_part_chapter(:chapter)
     #|> get_amendments(:act)
     #|> get_modifications(:act)
     #|> get_sub_section(:act)
@@ -175,11 +197,9 @@ defmodule UK.Parser do
     |> get_A_section(:act)
     |> get_section(:act)
     |> get_sub_section(:act)
-    # get_heading() has to come after get_section
-    |> get_heading(:act)
-    |> get_part()
-    |> get_signed_section()
     |> get_annex()
+    |> get_heading(:act)
+    |> get_signed_section()
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
     #|> rm_amendment(:act)
@@ -234,25 +254,25 @@ defmodule UK.Parser do
         ""
       )
 
-  def join_empty_numbered(binary),
-    do:
-      Regex.replace(
-        ~r/^(\(([a-z]+|[ivmcldx]+)\)|\d+\.?)(?:\r\n|\n)/m,
-        binary,
-        "\\g{1} "
-      )
-
   @doc """
   PART and Roman Part Number concatenate when copied e.g. PART IINFORMATION
 
   """
-  @spec get_part(String.t()) :: String.t()
-  def get_part(binary) do
+  def get_part_chapter(binary, type) do
+
+    [type_regex, component] =
+      case type do
+        :part ->
+          ["PART|Part", "#{@components.part}"]
+        :chapter ->
+          ["CHAPTER|Chapter", "#{@components.chapter}"]
+      end
+
     part_class_scheme =
       cond do
-        Regex.match?(~r/^(PART|Part)[ ]+\d+/m, binary) -> "numeric"
-        Regex.match?(~r/^PART[ ]+A/m, binary) -> "alphabetic"
-        Regex.match?(~r/^PART[ ]+I/m, binary) -> "roman_numeric"
+        Regex.match?(~r/^(#{type_regex})[ ]+\d+/m, binary) -> "numeric"
+        Regex.match?(~r/^(#{type_regex})[ ]+A/m, binary) -> "alphabetic"
+        Regex.match?(~r/^(#{type_regex})[ ]+I/m, binary) -> "roman_numeric"
         true -> "no parts"
       end
 
@@ -262,29 +282,32 @@ defmodule UK.Parser do
 
       "numeric" ->
         Regex.replace(
-          ~r/^(PART|Part)[ ](\d*)[ ]?([ A-Z]*)/m,
+          ~r/^(#{type_regex})[ ](\d*)[ ]?([ A-Z]*)/m,
           binary,
-          "#{@components.part}\\g{2} \\g{1} \\g{2} \\g{3}"
+          "#{component}\\g{2} \\g{1} \\g{2} \\g{3}"
         )
 
       "alphabetic" ->
         Regex.replace(
-          ~r/^PART[ ]([A-Z])[ ]?([ A-Z]+)/m,
+          ~r/^(#{type_regex})[ ]([A-Z])[ ]?([ A-Z]+)/m,
           binary,
-          fn _, value, text ->
+          fn _, part_chapter, value, text ->
             index = Legl.conv_alphabetic_classes(value)
-            "#{@components.part}#{index} PART #{value} #{text}"
+            "#{component}#{index} #{part_chapter} #{value} #{text}"
           end
         )
 
       "roman_numeric" ->
         Regex.replace(
-          ~r/^PART[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Z]+)/m,
+          ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Za-z]+)/m,
           binary,
-          fn _, tens, units, text ->
+          fn _, part_chapter, tens, units, text ->
+
             numeral = tens <> units
 
             {remaining_numeral, last_numeral} = String.split_at(numeral, -1)
+
+            #IO.inspect("#{part}, #{tens}, #{units}, #{text}, #{numeral}, #{remaining_numeral}, #{last_numeral}")
 
             # last_numeral = String.last(numeral)
             # remaining_numeral = String.slice(numeral, 0..(String.length(numeral) - 2))
@@ -292,11 +315,11 @@ defmodule UK.Parser do
             case Dictionary.match?("#{last_numeral}#{text}") do
               true ->
                 value = Legl.conv_roman_numeral(remaining_numeral)
-                "#{@components.part}#{value} PART #{remaining_numeral} #{last_numeral}#{text}"
+                "#{component}#{value} #{part_chapter} #{remaining_numeral} #{last_numeral}#{text}"
 
               false ->
                 value = Legl.conv_roman_numeral(numeral)
-                "##{@components.part}#{value} PART #{numeral} #{text}"
+                "#{component}#{value} #{part_chapter} #{numeral} #{text}"
             end
           end
         )
@@ -357,7 +380,7 @@ defmodule UK.Parser do
       Regex.replace(
         ~r/^(\[F\d\d?)?[ ]?(\d{1,3}A)[ ]?([A-Z\.])([^\n]+)([^\.])(etc\.)?/m,
         binary,
-        "#{@components.section}\\g{1} \\g{2} \\g{3}\\g{4}\\g{5}\\g{6}"
+        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3}\\g{4}\\g{5}\\g{6}\\g{7}"
       )
 
   @doc """
@@ -368,7 +391,7 @@ defmodule UK.Parser do
   def get_sub_section(binary, :act),
     do:
       Regex.replace(
-        ~r/^(\[?F?\d*\((\d)+\))[ ]?([A-Z])/m,
+        ~r/^(\[?F?\d*\((\d+)\))[ ]?([A-Z])/m,
         binary,
         "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
       )
@@ -414,12 +437,12 @@ defmodule UK.Parser do
   def get_annex(binary),
     do:
       Regex.replace(
-        ~r/^SCHEDULE[ ](\d+).*/m,
+        ~r/^(?:SCHEDULE|Schedule)[ ](\d*)[ ][^.]*?(?:\n)/m,
         binary,
         "#{@components.annex}\\g{1} \\0 "
       )
       |> (&Regex.replace(
-            ~r/^THE SCHEDULE|^SCHEDULE/m,
+            ~r/^(?:THE SCHEDULE|The Schedule)|^(?:SCHEDULE|Schedule)[ ][^.]*?(?:\n)/m,
             &1,
             "#{@components.annex}1 \\0"
           )).()

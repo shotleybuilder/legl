@@ -67,7 +67,7 @@ defmodule Types.AirtableSchema do
             part_name: "part",
             chapter: ~s/^(\\d+)[ ](.*)/,
             chapter_name: "chapter",
-            section: ~s/^(\\d+[a-z]*)[ ](.*)/,
+            section: ~s/^(\\d+[a-zA-Z]*)[ ](.*)/,
             section_name: "section",
             sub_section: ~s/^(\\d+)[ ](.*)/,
             sub_section_name: "sub-section",

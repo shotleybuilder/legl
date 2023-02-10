@@ -92,13 +92,13 @@ defmodule UK do
     end
   end
 
+  @spec parse_new(keyword) :: :ok
   @doc """
   Parse the copied text
 
   Options
   :clean -> true = clean before parsing or false = use clean.txt
   """
-  @spec parse_new() :: :atom
   def parse_new(opts \\ []) do
     binary =
       case Keyword.get(opts, :clean, true) do
@@ -111,14 +111,18 @@ defmodule UK do
           |> File.read!()
           |> (&Kernel.binary_part(&1, 8, String.length(&1))).()
       end
-
-    Legl.txt("annotated")
-    |> Path.absname()
-    |> File.write("#{UK.Parser.parser(binary, Keyword.get(opts, :type, :regulation))}")
-
-    :ok
+      case Keyword.get(opts, :parse, true) do
+        true ->
+          Legl.txt("annotated")
+          |> Path.absname()
+          |> File.write("#{UK.Parser.parser(binary, Keyword.get(opts, :type, :regulation))}")
+          :ok
+        _ ->
+          :ok
+      end
   end
 
+  @spec clean_(:atom) :: :ok
   def clean_(type) do
     clean(type)
     :ok
@@ -133,6 +137,7 @@ defmodule UK do
     |> UK.Parser.clean_original(type)
   end
 
+  @spec airtable(keyword) :: :ok
   @doc """
   Create Airtable data using all fields
 
@@ -143,7 +148,6 @@ defmodule UK do
 
   For fields, eg DE.airtable(fields: [:text])  See %UK{}
   """
-  @spec airtable([]) :: :atom
   def airtable(opts) do
 
     type = Keyword.get(opts, :type, :regulation)

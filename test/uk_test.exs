@@ -52,8 +52,13 @@ defmodule UKTest do
     test "removes \n" do
       binary = ~s/(a)\nFoo\n(b)\nBar\n(i)\nFoo\n(ii)\nBar/
 
-      s = UK.join_empty_numbered(binary)
+      s = UK.Parser.join_empty_numbered(binary)
       assert s == "(a) Foo\n(b) Bar\n(i) Foo\n(ii) Bar"
+    end
+    test "removes \n in text" do
+      binary = ~s/(a)\nthe Secretary of State;\n(b)\nthe Agency;\n(c)\nSEPA; or/
+      s = UK.Parser.join_empty_numbered(binary)
+      assert s == ~s/(a) the Secretary of State;\n(b) the Agency;\n(c) SEPA; or/
     end
   end
 

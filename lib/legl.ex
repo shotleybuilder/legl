@@ -218,7 +218,7 @@ defmodule Legl do
     do:
       ~s/#{chapter_emoji()}#{sub_chapter_emoji()}#{article_emoji()}#{sub_article_emoji()}#{numbered_para_emoji()}#{annex_emoji()}/
 
-  @spec airtable(Types.AirtableSchema.t(), []) :: :atom
+  @spec airtable(atom | struct, atom | %{:title_name => any, optional(any) => any}, keyword) :: :ok
   def airtable(country_struct, country_schema, opts \\ []) when is_list(opts) do
     {:ok, binary} = File.read(Path.absname(Legl.annotated()))
 
@@ -226,12 +226,13 @@ defmodule Legl do
 
     binary = Legl.Airtable.Schema.schema(country_struct, binary, country_schema, opts)
 
+    File.write(Legl.airtable(), binary)
+
     no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)
 
     cond do
       no_of_lines < chunk ->
         copy(binary)
-        File.write(Legl.airtable(), binary)
 
       true ->
         String.split(binary, "\n")
@@ -242,7 +243,7 @@ defmodule Legl do
           ExPrompt.confirm("Pasted into Airtable?")
           acc <> str
         end)
-        |> (&File.write(Legl.airtable(), &1)).()
+        #|> (&File.write(Legl.airtable(), &1)).()
     end
 
     :ok
