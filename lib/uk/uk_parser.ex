@@ -282,7 +282,7 @@ defmodule UK.Parser do
 
       "numeric" ->
         Regex.replace(
-          ~r/^(#{type_regex})[ ](\d*)[ ]?([ A-Z]*)/m,
+          ~r/^(#{type_regex})[ ](\d+)[ ]?([ A-Z]*)/m,
           binary,
           "#{component}\\g{2} \\g{1} \\g{2} \\g{3}"
         )
