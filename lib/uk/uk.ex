@@ -1,10 +1,30 @@
-defmodule UK do
-  @moduledoc """
-  Parsing text copied from the plain view at [legislation.gov.uk](https://legislation.gov.uk)
-  """
-
-  alias Types.AirtableSchema
-
+defmodule UK.Act do
+  @fields [
+    :flow,
+    :type,
+    :part,
+    :chapter,
+    :heading,
+    :section,
+    :sub_section,
+    :article,
+    :para,
+    :text
+  ]
+  @number_fields [
+    :part,
+    :chapter,
+    :heading,
+    :section,
+    :sub_section,
+    :article,
+    :para,
+  ]
+  defstruct @fields
+  def fields(), do: @fields
+  def number_fields(), do: @number_fields
+end
+defmodule UK.Regulation do
   @fields [
     :flow,
     :type,
@@ -17,7 +37,6 @@ defmodule UK do
     :sub,
     :text
   ]
-
   @number_fields [
     :part,
     :chapter,
@@ -27,53 +46,50 @@ defmodule UK do
     :para,
     :sub
   ]
-
   defstruct @fields
+  def fields(), do: @fields
+  def number_fields(), do: @number_fields
+end
+defmodule UK do
+  @moduledoc """
+  Parsing text copied from the plain view at [legislation.gov.uk](https://legislation.gov.uk)
+  """
+
+  alias Types.AirtableSchema
 
   # @impl true
-  def schema do
-    %AirtableSchema{
-      country: :UK,
-      fields: @fields,
-      number_fields: @number_fields,
-      title_name: "title",
-      part_name: "part",
-      part: ~s/^(\\d+)[ ](.*)/,
-      chapter_name: "chapter",
-      chapter: ~s/^(\\d+)[ ](.*)/,
-      section_name: "section",
-      section: ~s/^(\\d+[a-z]*)[ ](.*)/,
-      heading_name: "article, heading",
-      heading: ~s/^(\\d+[a-z]*)[ ](.*)/,
-      sub_section_name: "article, heading",
-      article_name: "article",
-      article: ~s/^(\\d+)[ ](.*)/,
-      sub_article_name: "subarticle",
-      sub_article: ~s/^(\\d+)[ ](.*)/,
-      para_name: "sub-article",
-      para: ~s/^(\\d+)[ ](.*)/,
-      signed_name: "signed",
-      annex_name: "annex",
-      annex: ~s/^(\\d+)[ ](.*)/,
-      approval_name: "eingangsformel",
-      footnote_name: "footnote",
-      amendment: ~s/[ ](.*)/,
-      amendment_name: "§§"
-    }
-  end
-
-  def clean_() do
-    clean()
-    :ok
-  end
-
-  @doc false
-  @spec clean() :: String.t()
-  def clean() do
-    Legl.txt("original")
-    |> Path.absname()
-    |> File.read!()
-    |> UK.Parser.clean_original()
+  def schema(type) do
+    case type do
+      :act -> %AirtableSchema{
+          country: :UK,
+          fields: UK.Act.fields(),
+          number_fields: UK.Act.number_fields(),
+          heading: ~s/^(\\d+)[ ](.*)/
+        }
+      :regulation ->
+        %AirtableSchema{
+          country: :UK,
+          fields: UK.Regulation.fields(),
+          number_fields: UK.Regulation.number_fields(),
+          part: ~s/^(\\d+)[ ](.*)/,
+          chapter_name: "chapter",
+          chapter: ~s/^(\\d+)[ ](.*)/,
+          heading_name: "article, heading",
+          sub_section_name: "article, heading",
+          article_name: "article",
+          article: ~s/^(\\d+)[ ](.*)/,
+          sub_article_name: "subarticle",
+          sub_article: ~s/^(\\d+)[ ](.*)/,
+          para_name: "sub-article",
+          para: ~s/^(\\d+)[ ](.*)/,
+          signed_name: "signed",
+          annex_name: "annex",
+          annex: ~s/^(\\d+)[ ](.*)/,
+          footnote_name: "footnote",
+          amendment: ~s/[ ](.*)/,
+          amendment_name: "§§"
+        }
+    end
   end
 
   @doc """
@@ -87,7 +103,7 @@ defmodule UK do
     binary =
       case Keyword.get(opts, :clean, true) do
         true ->
-          clean()
+          clean(Keyword.get(opts, :type, :regulation))
 
         _ ->
           Legl.txt("clean")
@@ -103,6 +119,20 @@ defmodule UK do
     :ok
   end
 
+  def clean_(type) do
+    clean(type)
+    :ok
+  end
+
+  @doc false
+  @spec clean(:atom) :: String.t()
+  def clean(type) do
+    Legl.txt("original")
+    |> Path.absname()
+    |> File.read!()
+    |> UK.Parser.clean_original(type)
+  end
+
   @doc """
   Create Airtable data using all fields
 
@@ -111,11 +141,24 @@ defmodule UK do
 
   Options as list.
 
-  For fields, eg DE.airtable(fields: [:text])  See %DE{}
+  For fields, eg DE.airtable(fields: [:text])  See %UK{}
   """
   @spec airtable([]) :: :atom
-  def airtable(opts \\ [fields: @fields]) do
-    Legl.airtable(%UK{}, schema(), opts)
+  def airtable(opts) do
+
+    type = Keyword.get(opts, :type, :regulation)
+    fields =
+      case type do
+        :act -> UK.Act.fields
+        :regulation -> UK.Regulation.fields
+      end
+    struct =
+      case type do
+        :act -> %UK.Act{}
+        :regulation -> %UK.Regulation{}
+      end
+    opts = Enum.into(opts, [fields: fields])
+    Legl.airtable(struct, schema(type), opts)
   end
 
   alias UK.Parser, as: Parser

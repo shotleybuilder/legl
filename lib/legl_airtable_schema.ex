@@ -17,19 +17,20 @@ defmodule Legl.Airtable.Schema do
     record_type_opts =
       Keyword.get(opts, :records, Types.Component.components_as_list())
       |> Enum.join("|")
-
-    records = records(fields, binary, regex, record_type_opts)
+    type = Keyword.get(opts, :type, :regulation)
+    records = records(fields, binary, regex, record_type_opts, type)
 
     Enum.count(records) |> IO.inspect(label: "records")
 
     fields = Keyword.get(opts, :fields, opts)
+
 
     Enum.map(records, fn x -> conv_map_to_record_string(x, fields) end)
     |> Enum.reverse()
     |> Enum.join("\n")
   end
 
-  def records(fields, binary, regex, record_types) do
+  def records(fields, binary, regex, record_types, type) do
     # First line is always the title
     [head | tail] = String.split(binary, "\n", trim: true)
 
@@ -48,8 +49,7 @@ defmodule Legl.Airtable.Schema do
 
           case Regex.run(~r/^\[::([a-z_]+)::\]$/, tag) do
             [_m, tag] ->
-              this_record = apply(__MODULE__, String.to_atom(tag), [regex, str, last_record])
-
+              this_record = apply(__MODULE__, String.to_atom(tag), [regex, str, last_record, type])
               [this_record | acc]
 
             nil ->
@@ -93,8 +93,6 @@ defmodule Legl.Airtable.Schema do
   end
 
   def part(regex, "[::part::]" <> str, last_record, type \\ :regulation) do
-    # str = String.replace(str, part_emoji(), "")
-
     article_type =
       case last_record.flow do
         "post" -> "#{regex.annex_name}, #{regex.part_name}"
@@ -148,7 +146,7 @@ defmodule Legl.Airtable.Schema do
   * FIN `^(\\d+)`
   * UK `^Chapter[ ](\\d+)`
   """
-  def chapter(regex, "[::chapter::]" <> str, last_record) do
+  def chapter(regex, "[::chapter::]" <> str, last_record, type \\ :regulation) do
     record =
       case Regex.run(~r/#{regex.chapter}/m, str) do
         [_, chap_num, txt] ->
@@ -182,7 +180,39 @@ defmodule Legl.Airtable.Schema do
     fields_reset(record, :chapter, regex)
   end
 
-  def section(regex, "[::section::]" <> str, last_record) do
+  def heading(regex, "[::heading::]" <> str, last_record, type \\ :regulation) do
+    {value, str} =
+      case Regex.run(~r/#{regex.heading}/, str) do
+        [_, value, str] ->
+          {value, str}
+
+        nil ->
+          IO.inspect(str)
+          {"NaN", str}
+      end
+    case type do
+      :act ->
+        %{
+          last_record
+          | flow: "",
+            type: "#{regex.heading_name}",
+            heading: value,
+            text: str
+        }
+        |> fields_reset(:heading, regex)
+      :regulation ->
+        %{
+          last_record
+          | flow: "",
+            type: "#{regex.heading_name}",
+            article: value,
+            text: str
+        }
+        |> fields_reset(:article, regex)
+    end
+  end
+
+  def section(regex, "[::section::]" <> str, last_record, type \\ :regulation) do
     record =
       case Regex.run(~r/#{regex.section}/m, str) do
         [_, section_number, text] ->
@@ -209,7 +239,7 @@ defmodule Legl.Airtable.Schema do
     fields_reset(record, :section, regex)
   end
 
-  def sub_section(regex, "[::sub_section::]" <> str, last_record) do
+  def sub_section(regex, "[::sub_section::]" <> str, last_record, type \\ :regulation) do
     record =
       case Regex.run(~r/#{regex.sub_section}/m, str) do
         [_, n, t] ->
@@ -225,27 +255,6 @@ defmodule Legl.Airtable.Schema do
     fields_reset(record, :sub_section, regex)
   end
 
-  def heading(regex, "[::heading::]" <> str, last_record) do
-    {value, str} =
-      case Regex.run(~r/#{regex.heading}/, str) do
-        [_, value, str] ->
-          {value, str}
-
-        nil ->
-          IO.inspect(str)
-          {"NaN", str}
-      end
-
-    %{
-      last_record
-      | flow: "",
-        type: "#{regex.heading_name}",
-        article: value,
-        text: str
-    }
-    |> fields_reset(:article, regex)
-  end
-
   @doc """
   ## Regex
 
@@ -256,7 +265,7 @@ defmodule Legl.Airtable.Schema do
   * UK `^(\d+)\.(#{<<226, 128, 148>>}|\-)\((\d+)\)`
   * AUT `^§[ ](\d+)`
   """
-  def article(regex, "[::article::]" <> str, last_record) do
+  def article(regex, "[::article::]" <> str, last_record, type \\ :regulation) do
     case Regex.run(~r/#{regex.article}/, str) do
       nil ->
         case last_record.flow do
@@ -296,7 +305,7 @@ defmodule Legl.Airtable.Schema do
   @doc """
 
   """
-  def sub_article(regex, "[::sub_article::]" <> str, last_record) do
+  def sub_article(regex, "[::sub_article::]" <> str, last_record, type \\ :regulation) do
     # str = String.replace(str, sub_article_emoji(), "")
     [_, value, str] = Regex.run(~r/#{regex.sub_article}/, str)
 
@@ -314,7 +323,7 @@ defmodule Legl.Airtable.Schema do
     end
   end
 
-  def para(regex, "[::para::]" <> str, last_record) do
+  def para(regex, "[::para::]" <> str, last_record, type \\ :regulation) do
     [para, txt] =
       case Regex.run(~r/#{regex.para}/, str) do
         [_, para, txt] ->
@@ -329,7 +338,7 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:para, regex)
   end
 
-  def sub(regex, "[::sub::]" <> str, last_record) do
+  def sub(regex, "[::sub::]" <> str, last_record, type \\ :regulation) do
     [_, _article, _para, sub, txt] = Regex.run(~r/#{regex.sub}/, str)
 
     %{last_record | type: regex.sub_name, sub: sub, text: txt}
@@ -343,7 +352,7 @@ defmodule Legl.Airtable.Schema do
   * AUT `^Anlage[ ](\d+)`
 
   """
-  def annex(regex, "[::annex::]" <> str, last_record) do
+  def annex(regex, "[::annex::]" <> str, last_record, type \\ :regulation) do
     [_, annex_num, annex] = Regex.run(~r/#{regex.annex}/, str)
     annex_num = if annex_num != "", do: annex_num, else: "post"
 
@@ -356,7 +365,7 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:all, regex)
   end
 
-  def form(regex, "[::form::]" <> str, last_record) do
+  def form(regex, "[::form::]" <> str, last_record, type \\ :regulation) do
     [_, form_num, form] = Regex.run(~r/#{regex.form}/, str)
 
     %{
@@ -368,7 +377,7 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:part, regex)
   end
 
-  def amendment(regex, "[::amendment::]" <> str, last_record) do
+  def amendment(regex, "[::amendment::]" <> str, last_record, type \\ :regulation) do
     case Regex.run(~r/#{regex.amendment}/, str) do
       [_, art_num, para_num, str] ->
         cond do
@@ -402,7 +411,7 @@ defmodule Legl.Airtable.Schema do
     end
   end
 
-  def approval(regex, "[::approval::]" <> str, last_record) do
+  def approval(regex, "[::approval::]" <> str, last_record, type \\ :regulation) do
     %{
       last_record
       | flow: "pre",
@@ -412,7 +421,7 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:all, regex)
   end
 
-  def signed(regex, "[::signed::]" <> str, last_record) do
+  def signed(regex, "[::signed::]" <> str, last_record, type \\ :regulation) do
     %{
       last_record
       | flow: "",
@@ -422,7 +431,7 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:all, regex)
   end
 
-  def table(regex, "[::table::]" <> str, last_record) do
+  def table(regex, "[::table::]" <> str, last_record, type \\ :regulation) do
     [_, table_num, table] = Regex.run(~r/#{regex.table}/, str)
 
     %{
@@ -435,7 +444,7 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:part, regex)
   end
 
-  def note(regex, "[::note::]" <> str, last_record) do
+  def note(regex, "[::note::]" <> str, last_record, type \\ :regulation) do
     [_, note] = Regex.run(~r/#{regex.note}/, str)
 
     %{
@@ -447,7 +456,7 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:all, regex)
   end
 
-  def footnote(regex, "[::footnote::]" <> str, last_record) do
+  def footnote(regex, "[::footnote::]" <> str, last_record, type \\ :regulation) do
     [_, ftn] = Regex.run(~r/#{regex.note}/, str)
 
     %{

@@ -7,16 +7,9 @@ defmodule UK.Parser do
 
   import Legl,
     only: [
-      part_emoji: 0,
-      chapter_emoji: 0,
-      sub_chapter_emoji: 0,
-      heading_emoji: 0,
-      annex_heading_emoji: 0,
       article_emoji: 0,
       sub_article_emoji: 0,
-      numbered_para_emoji: 0,
       annex_emoji: 0,
-      signed_emoji: 0,
       pushpin_emoji: 0,
       amendment_emoji: 0
     ]
@@ -40,15 +33,31 @@ defmodule UK.Parser do
   end
 
   @doc false
-  @spec clean_original(String.t()) :: String.t()
-  def clean_original("CLEANED\n" <> binary) do
+  @spec clean_original(String.t(), :atom) :: String.t()
+  def clean_original("CLEANED\n" <> binary, type) do
     binary
     |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
 
     binary
   end
 
-  def clean_original(binary) do
+  def clean_original(binary, :act = type) do
+    binary =
+      binary
+      |> (&Kernel.<>("CLEANED\n", &1)).()
+      |> Legl.Parser.rm_empty_lines()
+      |> separate_schedule()
+      |> join_empty_numbered()
+      |> Legl.Parser.rm_leading_tabs()
+
+    Legl.txt("clean")
+    |> Path.absname()
+    |> File.write(binary)
+
+    clean_original(binary, type)
+  end
+
+  def clean_original(binary, type) do
     binary =
       binary
       |> (&Kernel.<>("CLEANED\n", &1)).()
@@ -64,8 +73,16 @@ defmodule UK.Parser do
     |> Path.absname()
     |> File.write(binary)
 
-    clean_original(binary)
+    clean_original(binary, type)
   end
+
+  def separate_schedule(binary),
+    do:
+      Regex.replace(
+        ~r/^(SCHEDULE[ ]\d+)([A-Z a-z]+)/m,
+        binary,
+        "\\g{1} \\g{2}"
+      )
 
   def separate_part_chapter_schedule(binary),
     do:
@@ -89,6 +106,15 @@ defmodule UK.Parser do
             &1,
             "\\g{1} \\g{2}"
           )).()
+
+  def collapse_amendment_text_between_quotes(binary, :act = type) do
+    Regex.replace(
+      ~r/(?:insert—|substitute—)(?:\r\n|\n)^[“][\s\S]*?(?:\.”|”\.)/m,
+      binary,
+      fn x -> "#{join(x)}" end
+    )
+  end
+
 
   def collapse_amendment_text_between_quotes(binary) do
     Regex.run(
@@ -115,7 +141,6 @@ defmodule UK.Parser do
   @doc false
 
   def parser(binary, :regulation = type) when is_atom(type) do
-    # {:ok, binary} = File.read(Path.absname(Legl.original()))
 
     binary
     |> rm_header()
@@ -134,27 +159,30 @@ defmodule UK.Parser do
     |> Legl.Parser.rm_tabs()
   end
 
-  def parser(:act = type) when is_atom(type) do
-    {:ok, binary} = File.read(Path.absname(Legl.original()))
+  def parser(binary, :act = type) when is_atom(type) do
 
     binary
-    |> rm_header()
-    |> rm_explanatory_note
-    |> join_empty_numbered()
+    #|> rm_header()
+    #|> rm_explanatory_note
+    #|> join_empty_numbered()
+    |> collapse_amendment_text_between_quotes(type)
+    |> get_title()
     |> get_chapter()
-    |> get_amendments(:act)
-    # |> get_modifications(:act)
-    |> get_sub_section(:act)
+    #|> get_amendments(:act)
+    #|> get_modifications(:act)
+    #|> get_sub_section(:act)
     # get_section() has to come after get_sub_section
     |> get_A_section(:act)
     |> get_section(:act)
+    |> get_sub_section(:act)
     # get_heading() has to come after get_section
     |> get_heading(:act)
     |> get_part()
     |> get_signed_section()
+    |> get_annex()
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
-    |> rm_amendment(:act)
+    #|> rm_amendment(:act)
   end
 
   def get_title(binary) do
@@ -287,46 +315,49 @@ defmodule UK.Parser do
       )
 
   @doc """
-  Parse Act section headings & Regulation article headings.
-  * Act
+  Parse Act section headings
   Format
   Heading
-  There is an initial captialisaiton and no ending period
+  There is an initial captialisation and no ending period
   """
   def get_heading(binary, :act),
     do:
       Regex.replace(
-        ~r/^[A-Z][^\d\.][^\n]+[^\.](etc\.)?\n#{article_emoji()}(\d+)/m,
+        ~r/^[A-Z][^\d\.][^\n]+[^\.](etc\.)?\n#{@regex_components.section}(\d+)/m,
         binary,
-        "#{@components.heading}\\0"
+        "#{@components.heading}\\g{2} \\0"
       )
 
   @doc """
-  Parse sections of Acts.  The equivalent of Regualtion articles.
+  Parse sections of Acts.  The equivalent of Regulation articles.
   Formats:
-  1Text
+  1Text - targetted by the 1st regex
+  1(1)Text - targetted by the 2nd regex
   """
   def get_section(binary, :act),
     do:
       Regex.replace(
-        # too restrictive ~r/^(\d+)([^\n]+)([^\.])(etc\.)?(\n#{sub_article_emoji()})/m,
         ~r/^(\[?F\d\d*,?[ ])?(\d{1,3})[ ]?([A-Z|\.])([^\n]+)([^\.])(etc\.)?/m,
         binary,
-        "#{article_emoji()}\\g{1}\\g{2} \\g{3}\\g{4}\\g{5}\\g{6}"
+        "#{@components.section}\\g{2} \\g{2} \\g{3}\\g{4}\\g{5}\\g{6}"
       )
+      |> (&Regex.replace(
+        ~r/^(\[?F\d\d*,?[ ])?(\d{1,3})(\(\d{1,3}\))?[ ]?([A-Z|\.])([^\n]+)([^\.])(etc\.)?/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1}\\g{2}\\g{3} \\g{4}\\g{5}\\g{6}\\g{7}"
+      )).()
 
   @doc """
-  Parse sections of Acts.  The equivalent of Regualtion articles.
+  Parse amended sections of Acts.
   Formats:
-  1Text
+
   """
   def get_A_section(binary, :act),
     do:
       Regex.replace(
-        # too restrictive ~r/^(\d+)([^\n]+)([^\.])(etc\.)?(\n#{sub_article_emoji()})/m,
         ~r/^(\[F\d\d?)?[ ]?(\d{1,3}A)[ ]?([A-Z\.])([^\n]+)([^\.])(etc\.)?/m,
         binary,
-        "#{article_emoji()}\\g{1} \\g{2} \\g{3}\\g{4}\\g{5}\\g{6}"
+        "#{@components.section}\\g{1} \\g{2} \\g{3}\\g{4}\\g{5}\\g{6}"
       )
 
   @doc """
@@ -337,9 +368,9 @@ defmodule UK.Parser do
   def get_sub_section(binary, :act),
     do:
       Regex.replace(
-        ~r/^(\[?F?\d*\(\d+\))[ ]?([A-Z])/m,
+        ~r/^(\[?F?\d*\((\d)+\))[ ]?([A-Z])/m,
         binary,
-        "#{sub_article_emoji()}\\g{1} \\g{2}"
+        "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
       )
 
   def get_sub_section(binary, :regulation),
@@ -414,7 +445,7 @@ defmodule UK.Parser do
     |> (&Regex.replace(
           ~r/^Sealed with the Official Seal/m,
           &1,
-          "#{signed_emoji()}\\0"
+          "#{@components.signed}\\0"
         )).()
   end
 

@@ -58,7 +58,7 @@ defmodule Types.AirtableSchema do
           footnote_name: String.t(),
           signed_name: String.t()
         }
-  @enforce_keys [:article, :article_name]
+  @enforce_keys []
   defstruct country: nil,
             fields: @fields,
             number_fields: @number_fields,
@@ -67,11 +67,11 @@ defmodule Types.AirtableSchema do
             part_name: "part",
             chapter: ~s/^(\\d+)[ ](.*)/,
             chapter_name: "chapter",
-            section: "",
+            section: ~s/^(\\d+[a-z]*)[ ](.*)/,
             section_name: "section",
             sub_section: ~s/^(\\d+)[ ](.*)/,
             sub_section_name: "sub-section",
-            heading: "",
+            heading: ~s/^(\\d+[a-z]*)[ ](.*)/,
             heading_name: "heading",
             article: "",
             article_name: "article",
@@ -82,7 +82,7 @@ defmodule Types.AirtableSchema do
             sub: ~s/^(\\d+)_(\\d+)_(\\d+)[ ](.*)/,
             sub_name: "article, paragraph, sub-paragraph",
             annex: ~s/(\\d*)[ ](.*)/,
-            annex_name: "",
+            annex_name: "annex",
             amendment: "",
             amendment_name: "",
             amending_sub_article_name: "",
