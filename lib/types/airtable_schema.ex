@@ -63,7 +63,7 @@ defmodule Types.AirtableSchema do
             fields: @fields,
             number_fields: @number_fields,
             title_name: "title",
-            part: ~s/^(\\d+)[ ](.*)/,
+            part: ~s/^(\\d+|[A-Z])[ ](.*)/,
             part_name: "part",
             chapter: ~s/^(\\d+)[ ](.*)/,
             chapter_name: "chapter",

@@ -71,7 +71,7 @@ defmodule UK do
           country: :UK,
           fields: UK.Regulation.fields(),
           number_fields: UK.Regulation.number_fields(),
-          part: ~s/^(\\d+)[ ](.*)/,
+          part: ~s/^(\\d+|[A-Z])[ ](.*)/,
           chapter_name: "chapter",
           chapter: ~s/^(\\d+)[ ](.*)/,
           heading_name: "article, heading",
@@ -279,7 +279,7 @@ defmodule UK do
   `iex(4)>UK.schema(:law, :act, [:article, :text])`
 
   """
-  @spec schema(part: part, type: uk_law_type) :: :ok | {:error, :file.posix()}
+
   def schema(options \\ []) when is_list(options) do
     %{type: type, part: part, fields: fields} = Enum.into(options, @schema_options)
     Schema.schemas(part, type, fields)
@@ -296,5 +296,11 @@ defmodule UK do
       end
 
     Schema.schemas(type, binary, fields)
+  end
+
+  def parse_amend() do
+
+    UK.Amend.parse_amend()
+
   end
 end

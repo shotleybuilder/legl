@@ -110,6 +110,7 @@ defmodule Legl do
     |> (&(&1 + 1)).()
   end
 
+  @spec txt(any) :: <<_::64, _::_*8>>
   def txt(name) do
     "lib/#{name}.txt"
   end
