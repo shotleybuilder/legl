@@ -298,9 +298,11 @@ defmodule UK do
     Schema.schemas(type, binary, fields)
   end
 
-  def parse_amend() do
-
+  def amends() do
     UK.Amend.parse_amend()
+  end
 
+  def amend_csv() do
+    UK.Amend.make_csv_file()
   end
 end

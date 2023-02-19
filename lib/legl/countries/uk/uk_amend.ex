@@ -3,16 +3,16 @@ defmodule UK.Amend do
   A script to list unique legislation IDs.
   Source is amending.txt and which is scrapped from the changes to legislation table in legislation.gov.uk
   Output is amends.txt
+  URL is of the form https://www.legislation.gov.uk/changes/affected/ukpga/1981/69?results-count=1000&sort=affecting-year-number
+  Where the results-count has all the amendments on a single page and the sort ensures affecting law is grouped
   """
+alias Types.ATLawSchema
 
 
   @spec parse_amend :: :ok
   def parse_amend do
 
-    binary =
-      Legl.txt("amending")
-      |> Path.absname()
-      |> File.read!()
+    binary = read_original()
 
     Legl.txt("amends")
     |> Path.absname()
@@ -21,8 +21,8 @@ defmodule UK.Amend do
     String.split(binary, "\n")
     |> Enum.reduce([],
       fn x, acc ->
-        [amending_title, year, number] = line_item(x)
-        id(amending_title, "UK_#{year}_#{number}_")
+        [amending_title, year, number, _, _] = line_item(x)
+        id(amending_title, year, number)
         |> (&[&1 | acc]).()
       end )
     |> Enum.uniq()
@@ -33,49 +33,127 @@ defmodule UK.Amend do
     :ok
   end
 
+  def read_original do
+    Legl.txt("original")
+      |> Path.absname()
+      |> File.read!()
+  end
+
   @spec parse(binary) :: binary
   def parse(binary) do
-    String.split(binary, "\n")
-    |> Enum.reduce([],
-      fn x, acc ->
-        line_item(x)
-        |> file_text()
-        |> (&[&1 | acc]).()
-      end )
-    |> Enum.uniq()
-    |> Enum.sort()
-    |> Enum.join("\n")
+    enumerable =
+      String.split(binary, "\n")
+      |> Enum.reduce([],
+        fn x, acc ->
+          line_item(x)
+          |> file_text()
+          |> (&[&1 | acc]).()
+        end )
+      |> Enum.uniq()
+    enumerable
+      |> Enum.count()
+      |> IO.inspect(label: "total")
+    enumerable
+      |> Enum.sort()
+      |> Enum.join("\n")
   end
 
   def line_item(str) do
-    [_amended_title, _year, _changed_provision, _type, amending_title, yr_num, _affecting_provision, _web, _note] = String.split(str, "\t")
+    {amending_title, yr_num, web} = get_record_values(String.split(str, "\t"))
+    if web != "Yes" do IO.puts("An amendment not on legislation.gov.uk") end
     <<year::binary-size(4), rest::binary>> = yr_num
-    number =
+    {number, region, type} =
       case rest do
-        " No. " <> number -> number
-        " c. " <> number -> number
-        " asp " <> number -> number
-        " anaw " <> number -> number
-        " asc " <> number -> number
+        " No. " <> number -> {number, "tbc", "uksi"}
+        " c. " <> number -> {number, "tbc", "ukpga"}
+        " asp " <> number -> {number, "Scotland", "asp"}
+        " anaw " <> number -> {number, "Wales", "anaw"}
+        " asc " <> number -> {number, "Scotland", "asp"}
       end
-    [amending_title, year, number]
+    [amending_title, year, number, region, type]
   end
 
-  def file_text([amending_title, year, number]) do
-    "#{id(amending_title, "UK_#{year}_#{number}_")}, #{amending_title}"
+  def get_record_values([_amended_title, _year, _changed_provision, _type, amending_title, yr_num, _affecting_provision, web, _note]) do
+    {amending_title, yr_num, web}
+  end
+  def get_record_values([_amended_title, _year, _changed_provision, _type, amending_title, yr_num, _affecting_provision, web]) do
+    {amending_title, yr_num, web}
+  end
+  def get_record_values([_amended_title, _year, _changed_provision, _type, amending_title, yr_num, _affecting_provision, web, _note, _]) do
+    {amending_title, yr_num, web}
   end
 
-  def id("The " <> amending_title = _amending_title, str) do
-    id(amending_title, str)
+  @doc """
+    .csv has this structure
+    "Title_EN", "Geo Parent", "Region", "Year", "Number", "Type", "Amends?", "Environment?"
+  """
+
+  def make_csv_file() do
+    csv_list =
+    #Create the heading
+    ATLawSchema.law_schema_as_list
+    |> Enum.join(", ")
+    |> (&[&1 | []]).()
+    #Add the records
+    read_original()
+    |> String.split("\n")
+    |> Enum.reduce(csv_list,
+      fn x, acc ->
+
+        [amending_title, year, number, region, type] = line_item(x)
+
+        amending_title =
+          remove_the(amending_title)
+          |> remove_year()
+          |> escape_commas()
+
+        amending_title
+        |> id(year, number)
+        |> (&[&1 | [amending_title, "United Kingdom", region, year, number, type, true, true]]).()
+        |> Enum.join(",")
+        |> (&[&1 | acc]).()
+      end
+    )
+    |> Enum.uniq()
+    |> Enum.reverse()
+    |> Enum.join("\n")
+    |> save_to_csv()
+
   end
 
-  def id(amending_title, str) do
+  def save_to_csv(binary) do
+    "lib/amending.csv"
+    |> Path.absname()
+    |> File.write(binary)
+    :ok
+  end
+
+  def file_text([amending_title, year, number, _, _]) do
+    "#{id(amending_title, year, number)}, #{amending_title}"
+  end
+
+  def remove_the("The " <> amending_title = _amending_title), do: amending_title
+  def remove_the(amending_title), do: amending_title
+
+  def remove_year(str) do
+    Regex.replace(~r/(.*?)([ ]\d{4})$/, str, "\\g{1}")
+  end
+
+  def escape_commas(str) do
+    case Regex.match?(~r/,/, str) do
+      true -> ~s/"#{str}"/
+      _ -> str
+    end
+  end
+
+  def id(amending_title, year, number) do
     amending_title
+    |> remove_the()
     |> downcase()
     |> split_title()
     |> proper_title()
     |> acronym()
-    |> (&Kernel.<>(str,&1)).()
+    |> (&Kernel.<>("UK_#{year}_#{number}_",&1)).()
   end
 
   @spec downcase(binary) :: binary

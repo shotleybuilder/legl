@@ -20,6 +20,9 @@ defmodule Legl.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application() do
     [
+      env: [
+        airtable_api_key: ""
+      ],
       extra_applications: [:logger]
     ]
   end
@@ -27,10 +30,15 @@ defmodule Legl.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:phoenix, "~> 1.6"},
       {:ex_doc, "~> 0.14", only: :dev, runtime: false},
       {:ex_prompt, "~> 0.1.5"},
       {:tesla, "~> 1.4"},
-      {:hackney, "~> 1.6"}
+      {:hackney, "~> 1.6"},
+      {:httpoison, "~> 1.6"},
+      {:gettext, "~> 0.18"},
+      {:jason, "~> 1.2"},
+      {:erlsom, git: "https://github.com/willemdj/erlsom.git"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]

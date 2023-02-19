@@ -2,8 +2,8 @@ defmodule Dictionary do
   @moduledoc false
 
   @empty_set MapSet.new()
-  @dictionary Path.absname("lib/uk/dictionary/dictionary.txt")
-  @word_list Path.absname("lib/uk/dictionary/words.txt")
+  @dictionary Path.absname("lib/legl/countries/uk/dictionary/dictionary.txt")
+  @word_list Path.absname("lib/legl/countries/uk/dictionary/words.txt")
   # Builds the @words MapSet at compile time
   @words Regex.split(~r/[\n+]/, @word_list |> File.read!())
          |> Enum.filter(fn x -> x != "" end)
