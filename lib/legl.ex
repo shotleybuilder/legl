@@ -115,6 +115,10 @@ defmodule Legl do
     "lib/#{name}.txt"
   end
 
+  def csv(name) do
+    "lib/#{name}.csv"
+  end
+
   def snippet, do: "lib/snippet.txt"
 
   def original, do: "lib/original.txt"

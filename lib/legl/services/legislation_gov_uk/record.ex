@@ -5,20 +5,22 @@ defmodule Legl.Services.LegislationGovUk.Record do
   # @legislation_gov_uk_api is a module attribute (constant) set to the env value
   # defined in dev.exs/prod.exs/test.exs.  Allows to mock the http call
 
-  defmodule Legislation.Response do
-    defstruct metadata: []
-  end
+  defstruct metadata: []
 
   def legislation(url) do
     case Legl.Services.LegislationGovUk.Client.run!(@endpoint <> url) do
 
-      { :ok, %{:content_type => :xml, :body => body} } ->
-        #IO.inspect(body.metadata)
+      {:ok, %{:content_type => :xml, :body => body}} ->
         { :ok,
           :xml,
-          %Legislation.Response{
+          %__MODULE__{
             metadata: body.metadata
           }
+        }
+
+      {:ok, %{:content_type => :html}} ->
+        { :ok,
+          :html
         }
 
       { :error, code, error } ->

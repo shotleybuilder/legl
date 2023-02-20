@@ -127,12 +127,12 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   # Then call sax_event_handler/3
   # *****************************************************************************
   def sax_event_handler({:startElement, _, element, _, _} = e, state) do
-    if Mix.env == :dev do IO.puts(["Start: ", element]) end
+    #if Mix.env == :dev do IO.puts(["Start: ", element]) end
     sax_event_handler(e, state, element)
   end
 
   def sax_event_handler({:endElement, _, element, _} = e, state) do
-    if Mix.env == :dev do IO.puts(["End: ", element]) end
+    #if Mix.env == :dev do IO.puts(["End: ", element]) end
     sax_event_handler(e, state, element)
   end
 

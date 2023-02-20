@@ -6,7 +6,6 @@ defmodule Legl.Services.Airtable.Records do
   #require Logger
   alias Legl.Services.Airtable.Client
   alias Legl.Services.Airtable.Url
-  alias Legl.Services.Airtable.AirtableParams
 
   def get_bases() do
     #{:ok, records} =
@@ -22,21 +21,6 @@ defmodule Legl.Services.Airtable.Records do
 
   Ensure the params are correct by enforcing against a %Params{} struct.
   Uses sensible defaults
-
-  Assembles the url to call the Airtable API returning the records as a stream
-  """
-  def run(params) do
-    with(
-      {:ok, params} <- AirtableParams.params_validation(params),
-      {:ok, params} = {_, %AirtableParams{}} <- AirtableParams.params_defaults(params),
-      {:ok, {jsonset, recordset}} <- get_records({[],[]}, params)
-     ) do
-      #Logger.info("**sgre** base=#{params.base}, table=#{params.table}")
-      {:ok, {jsonset, recordset}, params}
-    else
-      {:error, msg} -> {:error, msg}
-    end
-  end
 
   @doc """
   Handles pagination.

@@ -5,7 +5,7 @@ defmodule Legl.Services.Airtable.Client do
 
   def process_url(url) do
     @endpoint <> url
-    |> IO.inspect()
+    #|> IO.inspect()
   end
 
   @timeout ~s(timeout: Sorry, there was a delay in getting the information from Airtable and the request has timed out.  Please try again!)
