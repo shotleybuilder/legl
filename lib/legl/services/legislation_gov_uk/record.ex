@@ -38,6 +38,16 @@ defmodule Legl.Services.LegislationGovUk.Record do
     end
   end
 
+  def amendments_table(url) do
+    case Legl.Services.LegislationGovUk.ClientAmdTbl.run!(@endpoint <> url) do
+      { :ok, %{:content_type => :html, :body => body} } ->
+        case Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser(body) do
+          {:ok, map} -> {:ok, :html, map}
+          {:error, error} -> {:error, error}
+        end
+    end
+  end
+
 
 
 end

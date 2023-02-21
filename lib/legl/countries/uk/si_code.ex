@@ -136,13 +136,13 @@ defmodule Legl.Countries.Uk.SiCode do
       end)
     |> Enum.reverse()
     |> Enum.join("\n")
-    |> save_to_csv()
+    |> save_to_csv("lib/amending.csv")
 
   end
 
-  def save_to_csv(binary) do
+  def save_to_csv(binary, filename) do
     line_count = binary |> String.graphemes |> Enum.count(& &1 == "\n")
-    "lib/amending.csv"
+    filename
     |> Path.absname()
     |> File.write(binary)
     {:ok, line_count}
@@ -191,9 +191,79 @@ defmodule Legl.Countries.Uk.SiCode do
       end
       |> (&([name | &1])).()
       |> (&([&1 | acc])).()
-
     end)
-    #|> IO.inspect
+    |> split_si_code_csv()
+  end
+
+  @doc """
+  Procedure splits the .csv into 4 separate .csv files for upload into Airtable.
+  This is needed because AT will overwrite any blank or out-of-date fields contained in the .csv
+  CSV 1 - SI Codes with a populated Region field
+  CSV 2 - SI Codes w/o a region field
+  CSV 3 - records for which an ERROR was returned
+  CSV 4 - records with empty SI Code field
+  """
+  def split_si_code_csv(records) do
+
+    csv1 =
+      Enum.flat_map(records, fn x ->
+        case Enum.count(x) do
+          3 -> [x]
+          _ -> []
+        end
+      end)
+      |> (&[["Name", "SI CODE", "Region"] | &1]).()
+
+    csv2 =
+      Enum.filter(records, fn x ->
+        case x do
+          [_, "ERROR" <> _] -> :true
+          _ -> :false
+        end
+    end)
+    |> (&[["Name", "SI CODE"] | &1]).()
+
+    csv3 =
+      Enum.reduce(records, [], fn x, acc ->
+        case Enum.count(x) do
+          2 ->
+            case x do
+              [_, "ERROR" <> _] -> acc
+              [_, ""] -> acc
+              [name, si_code] -> [[name, String.upcase(si_code)] | acc]
+            end
+          _ ->
+            acc
+        end
+      end)
+    csv4 =
+      Enum.reduce(records, [], fn x, acc ->
+        case Enum.count(x) do
+          2 ->
+            case x do
+              [_, "ERROR" <> _] -> acc
+              [_, ""] -> [x | acc]
+              _ -> acc
+            end
+          _ ->
+            acc
+        end
+      end)
+      |> (&[["Name", "SI CODE"] | &1]).()
+
+    [{"lib/si_code_regions.csv", csv1}, {"lib/error_si_codes.csv", csv2}, {"lib/si_codes.csv", csv3}, {"lib/empty_si_codes.csv", csv4}]
+    |> Enum.each(fn x -> save_csv(x) end)
+
+
+  end
+
+  def save_csv({filename, records}) do
+    Enum.reduce(records, [], fn x, acc ->
+      [Enum.join(x, ",") | acc]
+    end)
+    |> Enum.reverse()
+    |> Enum.join("\n")
+    |> save_to_csv(filename)
   end
 
   def si_code(si_code) do
@@ -202,19 +272,19 @@ defmodule Legl.Countries.Uk.SiCode do
 
       Regex.match?(~r/[A-Z]*?,[ ]+ENGLAND[ ]+AND[ ]+WALES$/, si_code) ->
         [_, si_code] = Regex.run(~r/^(.*?),[ ]+ENGLAND[ ]+AND[ ]+WALES$/, si_code)
-        [si_code, "ENGLAND,WALES"]
+        [si_code, "England,Wales"]
 
       Regex.match?(~r/[A-Z]*?,[ ]+ENGLAND$/, si_code) ->
         [_, si_code] = Regex.run(~r/^(.*?),[ ]+ENGLAND$/, si_code)
-        [si_code, "ENGLAND"]
+        [si_code, "England"]
 
       Regex.match?(~r/[A-Z]*?,[ ]+WALES$/, si_code) ->
         [_, si_code] = Regex.run(~r/^(.*?),[ ]+WALES$/, si_code)
-        [si_code, "WALES"]
+        [si_code, "Wales"]
 
       Regex.match?(~r/[A-Z]*?,[ ]+NORTHERN IRELAND$/, si_code) ->
         [_, si_code] = Regex.run(~r/^(.*?),[ ]+NORTHERN IRELAND$/, si_code)
-        [si_code, "NORTHERN IRELAND"]
+        [si_code, "Northern Ireland"]
 
       true -> [si_code]
 
