@@ -5,7 +5,10 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Amendment do
   https://github.com/philss/floki
   """
   def amendment_parser(html) do
-    Floki.parse_document(html)
+
+    {:ok, document} = Floki.parse_document(html) # -> {:ok, document}
+    Floki.find(document, "tbody")
+    |> (&({:ok, &1})).()
   end
 
 end

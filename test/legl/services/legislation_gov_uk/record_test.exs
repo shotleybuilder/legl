@@ -19,11 +19,10 @@ defmodule Legl.Services.LegislationGovUk.RecordTest do
 
     describe "Legl.Services.LegislationGovUk.Record.amendments_table/1" do
       test "amendments" do
-        response = amendments_table(
+        response = response = amendments_table(
           "/changes/affected/ukpga/2013/10/data.xml?results-count=1000&sort=affecting-year-number"
         )
-        assert {:ok, _} = response
-        IO.inspect response
+        assert is_list(response)
       end
     end
 end

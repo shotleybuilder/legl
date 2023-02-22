@@ -22,4 +22,9 @@ defmodule Legl.Utility do
   defp display_time(f, t) do
     IO.puts("#{f} takes #{t} microseconds or #{t / 1_000_000} seconds")
   end
+
+  def todays_date() do
+    DateTime.utc_now()
+    |> (&("#{&1.day}/#{&1.month}/#{&1.year}")).()
+  end
 end
