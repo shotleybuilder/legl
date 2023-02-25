@@ -16,13 +16,29 @@ defmodule Legl.Services.LegislationGovUk.RecordTest do
       end
     end
 
-
     describe "Legl.Services.LegislationGovUk.Record.amendments_table/1" do
       test "amendments" do
-        response = response = amendments_table(
+        response = amendments_table(
           "/changes/affected/ukpga/2013/10/data.xml?results-count=1000&sort=affecting-year-number"
         )
         assert is_list(response)
       end
     end
+
+    describe "applied/1" do
+      test "records with unapplied changes" do
+        records = [
+          ~w[title amending_title path type year number yes],
+          ~w[title amending_title path type year number no],
+          ~w[title amending_title path type year number see_note],
+          ~w[title amending_title2 path type year number yes],
+          ~w[title amending_title3 path type year number yes],
+          ~w[title amending_title3 path type year number no]
+        ]
+        resp = applied(records)
+        assert is_list(resp)
+        IO.inspect(resp)
+      end
+    end
+
 end

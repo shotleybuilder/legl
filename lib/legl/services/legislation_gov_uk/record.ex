@@ -2,6 +2,8 @@ defmodule Legl.Services.LegislationGovUk.Record do
 
   require Logger
 
+  alias Legl.Airtable.AirtableIdField
+
   @endpoint "https://www.legislation.gov.uk"
 
   # @legislation_gov_uk_api is a module attribute (constant) set to the env value
@@ -43,6 +45,7 @@ defmodule Legl.Services.LegislationGovUk.Record do
   def amendments_table(url) do
     case Legl.Services.LegislationGovUk.ClientAmdTbl.run!(@endpoint <> url) do
       { :ok, %{:content_type => :html, :body => body} } ->
+        File.write!("lib/amendments.html", body)
         case Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser(body) do
           {:ok, response} -> amendments_table_records(url, response)
         end
@@ -76,45 +79,52 @@ defmodule Legl.Services.LegislationGovUk.Record do
     ["The Scrap Metal Dealers Act 2013 (Commencement and Transitional Provisions) Order 2013",
     "uksi", "2013", "1966", "Yes", "coming into force", []]
   """
-  def amendments_table_records(_url, []), do: []
-  def amendments_table_records(url, [{"tbody", _, records}]) do
+  def amendments_table_records(_url, []), do: {:ok, nil, []}
+  def amendments_table_records(_url, [{"tbody", _, records}]) do
 
     #"/changes/affected/ukpga/2010/10/data.xml?results-count=1000&sort=affecting-year-number"
-    [_, otype, oyear, onumber] = Regex.run(~r/\/changes\/affected\/([a-z]+?)\/(\d{4})\/(\d+)\/data\.xml\?results-count=1000&sort=affecting-year-number/, url)
+    #[_, otype, oyear, onumber] = Regex.run(~r/\/changes\/affected\/([a-z]+?)\/(\d{4})\/(\d+)\/data\.xml\?results-count=1000&sort=affecting-year-number/, url)
 
-    Enum.reduce(records, [], fn {_, _, x}, acc ->
+    IO.inspect(Enum.count(records), label: "record.ex: number of records")
+    #IO.inspect(records, limit: :infinity)
+    amending_records =
+      Enum.reduce(records, [], fn {_, _, x}, acc ->
 
-      case process_amendment_table_row(x) do
-        {:ok, _amendment_type, title, path, yr_num, _applied?, _note} ->
+        case process_amendment_table_row(x) do
+          {:ok, title, _amendment_type, amending_title, path, yr_num, applied?, _note} ->
 
-          [_, type, year, number] = Regex.run(~r/^\/id\/([a-z]*)\/(\d{4})\/(\d+)/, path)
-          [_, year2, number2] = Regex.run(~r/(\d{4}).*?(\d+)/, yr_num)
+            [_, type, year, number] = Regex.run(~r/^\/id\/([a-z]*)\/(\d{4})\/(\d+)/, path)
 
-          if otype == type && oyear == year && onumber == number do
-            #amended (original law) is the same as the amending and needs to be dropped
-            acc
+            case Regex.run(~r/(\d{4}).*?(\d+)/, yr_num) do
+              [_, year2, number2] ->
+                if year != year2 do Logger.warning("Year doesn't match #{path}") end
+                if number != number2 do Logger.warning("Number doesn't match #{path}") end
+              nil -> [[title, amending_title, path, type, year, number, applied?] | acc]
+            end
 
-          else
-            if year != year2 do Logger.warning("Year doesn't match #{path}") end
-            if number != number2 do Logger.warning("Number doesn't match #{path}") end
+            [[title, amending_title, path, type, year, number, applied?] | acc]
 
-            [[title, path, type, year, number] | acc]
-          end
-        {:error, "no match"} -> acc
-      end
+          {:error, "no match"} -> acc
+        end
 
-    end)
-    |> Enum.uniq()
+      end)
+
+    stats = stats(amending_records)
+    #|> IO.inspect(limit: :infinity)
+    Enum.uniq(amending_records)
+    |> remove_self_amending()
+    #|> IO.inspect(limit: :infinity)
+    |> applied()
     #|> save_amendments_as_csv_file()
-
+    |> (&({:ok, stats, &1})).()
   end
 
   @pattern quote do: [
-    {"td", _, _},
-    {"td", _, _},
-    {"td", _, _},
-    {"td", _, [var!(amendment_type)]},
     {"td", _, [{_, _, [var!(title)]}]},
+    {"td", _, _},
+    {"td", _, _},
+    {"td", _, [var!(amendment_effect)]},
+    {"td", _, [{_, _, [var!(amending_title)]}]},
     {"td", _, [{_, [{"href", var!(path)}], [var!(yr_num)]}]},
     {"td", _, _},
     {"td", _, [{_, _, [var!(applied?)]}]},
@@ -124,9 +134,61 @@ defmodule Legl.Services.LegislationGovUk.Record do
   def process_amendment_table_row(row) do
     #IO.puts(Macro.to_string(@pattern))
     case row do
-      unquote(@pattern) -> {:ok, amendment_type, title, path, yr_num, applied?, note}
+      unquote(@pattern) -> {:ok, title, amendment_effect, amending_title, path, yr_num, applied?, note}
       _ -> {:error, "no match"}
     end
+  end
+
+  def stats(records) do
+    Legl.Countries.Uk.UkAmendClient.pre_uniq_summary_amendment_stats(records)
+  end
+
+  defp uniq_by_amending_title(records) do
+    Enum.uniq_by(records, fn [_title, amending_title, _path, _type, _year, _number, _applied?] -> amending_title end)
+  end
+
+  @doc """
+    Groups the amendments by law and then combines the tag that decribes if the amended law has actually
+    been updated on the legislation.gov.uk website.  Captures the tags as a comma separated string in the
+    variable 'applied?'
+  """
+  def applied([]), do: []
+  def applied(records) do
+    #create a list of the uniq titles in the records
+    uniq_titles = uniq_by_amending_title(records)
+
+    grouped_by_title =
+    Enum.map(uniq_titles, fn [_title, amending_title, _path, _type, _year, _number, _applied?] ->
+      Enum.reduce(records, [], fn [_title, amending_title2, _path, _type, _year, _number, _applied?] = x, acc ->
+        if amending_title == amending_title2 do
+          [x | acc]
+        else
+          acc
+        end
+      end)
+    end)
+
+    Enum.map(grouped_by_title, fn x ->
+      {list, str} =
+      Enum.reduce(x, {[], []}, fn [_title, _amending_title, _path, _type, _year, _number, applied?] = y, {_acc, str} ->
+        {y, [applied? | str]}
+      end)
+      #","<>str = str
+      #str = ~s/"#{str}"/
+      List.replace_at(list, 6, str)
+    end)
+  end
+
+  def remove_self_amending([]), do: []
+  def remove_self_amending(records) do
+    Enum.reduce(records, [],
+      fn [title, amending_title, _, _, _, _, _] = x, acc ->
+        if title == amending_title do
+          acc
+        else
+          [x | acc]
+        end
+    end)
   end
 
   def save_amendments_as_csv_file(records) do

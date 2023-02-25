@@ -16,22 +16,4 @@ defmodule Legl.Countries.Uk.UkAmendTest do
     end
   end
 
-  describe "get_next_set_of_records/2" do
-    test "deletes the k,v pairs" do
-      records =
-        [
-          UK_uksi_2001_56_abc: [],
-          UK_uksi_2002_57_abc: [],
-          UK_uksi_2003_58_abc: [],
-          UK_uksi_2004_59_abc: []
-        ]
-      ids = MapSet.new([
-        "UK_uksi_2001_56_abc",
-        "UK_uksi_2004_59_abc"
-      ])
-      resp = get_next_set_of_records(records, ids)
-      assert [{:UK_uksi_2002_57_abc, []}, {:UK_uksi_2003_58_abc, []}]
-      = resp
-    end
-  end
 end

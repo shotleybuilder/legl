@@ -6,8 +6,10 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Amendment do
   """
   def amendment_parser(html) do
 
-    {:ok, document} = Floki.parse_document(html) # -> {:ok, document}
+    {:ok, document} = Floki.parse_document(html)
+    #IO.inspect(document, limit: :infinity)
     Floki.find(document, "tbody")
+    #|> IO.inspect()
     |> (&({:ok, &1})).()
   end
 
