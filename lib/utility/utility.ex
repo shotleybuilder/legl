@@ -27,4 +27,8 @@ defmodule Legl.Utility do
     DateTime.utc_now()
     |> (&("#{&1.day}/#{&1.month}/#{&1.year}")).()
   end
+
+  def csv_quote_enclosure(string) do
+    ~s/"#{string}"/
+  end
 end

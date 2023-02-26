@@ -113,17 +113,27 @@ defmodule Legl.Countries.Uk.UkAmendClientTest do
       resp = count_amendments_for_each_law(
         amendment_ids(@data), @data
       )
+      #|> IO.inspect()
       assert [
+        {"UK_uksi_2013_1966_SMDACTPO", 4},
         {"UK_ukpga_2021_26_FA", 2},
-        {"UK_uksi_2016_1154_EPEWR", 1},
-        {"UK_uksi_2013_1966_SMDACTPO", 4}
+        {"UK_uksi_2016_1154_EPEWR", 1}
       ] = resp
     end
 
-    test "summary_amendment_stats/1" do
-      resp = summary_amendment_stats(@data)
-      assert "" = resp
+    test "pre_uniq_summary_amendment_stats/1" do
+      resp = pre_uniq_summary_amendment_stats(@data)
+      assert %{} = resp
+      assert 0 == resp.self
+      assert nil == resp.laws
+      assert 7 = resp.amendments
+      assert "\"UK_uksi_2013_1966_SMDACTPO - 4💚️UK_ukpga_2021_26_FA - 2💚️UK_uksi_2016_1154_EPEWR - 1\""
     end
+
+    #test "at_stats_amendments_count_per_law/1" do
+    #  resp = at_stats_amendments_count_per_law(@data)
+    #  assert "" = resp
+    #end
 
   end
 

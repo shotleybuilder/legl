@@ -45,10 +45,13 @@ defmodule Legl.Services.LegislationGovUk.Record do
   def amendments_table(url) do
     case Legl.Services.LegislationGovUk.ClientAmdTbl.run!(@endpoint <> url) do
       { :ok, %{:content_type => :html, :body => body} } ->
-        File.write!("lib/amendments.html", body)
+        #File.write!("lib/amendments.html", body)
         case Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser(body) do
           {:ok, response} -> amendments_table_records(url, response)
         end
+      {:error, code, response} ->
+        IO.puts("************* #{code} #{response} **************")
+        {:ok, nil, []}
     end
   end
   @doc """
@@ -79,12 +82,14 @@ defmodule Legl.Services.LegislationGovUk.Record do
     ["The Scrap Metal Dealers Act 2013 (Commencement and Transitional Provisions) Order 2013",
     "uksi", "2013", "1966", "Yes", "coming into force", []]
   """
-  def amendments_table_records(_url, []), do: {:ok, nil, []}
+  def amendments_table_records(_url, []) do
+    IO.puts("record.ex: number of records: 0")
+    {:ok, nil, []}
+  end
   def amendments_table_records(_url, [{"tbody", _, records}]) do
 
     #"/changes/affected/ukpga/2010/10/data.xml?results-count=1000&sort=affecting-year-number"
     #[_, otype, oyear, onumber] = Regex.run(~r/\/changes\/affected\/([a-z]+?)\/(\d{4})\/(\d+)\/data\.xml\?results-count=1000&sort=affecting-year-number/, url)
-
     IO.inspect(Enum.count(records), label: "record.ex: number of records")
     #IO.inspect(records, limit: :infinity)
     amending_records =
