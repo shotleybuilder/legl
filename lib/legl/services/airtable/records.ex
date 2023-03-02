@@ -14,19 +14,19 @@ defmodule Legl.Services.Airtable.Records do
   end
 
   @doc """
-  Action: get data from Airtable
+    Action: get data from Airtable
 
-  $ curl https://api.airtable.com/v0/appj4oaimWQfwtUri/UK%20-%20England%20&%20Wales%20-%20Pollution \
-  -H "Authorization: Bearer YOUR_SECRET_API_TOKEN"
+    $ curl https://api.airtable.com/v0/appj4oaimWQfwtUri/UK%20-%20England%20&%20Wales%20-%20Pollution \
+    -H "Authorization: Bearer YOUR_SECRET_API_TOKEN"
 
-  Ensure the params are correct by enforcing against a %Params{} struct.
-  Uses sensible defaults
+    Ensure the params are correct by enforcing against a %Params{} struct.
+    Uses sensible defaults
 
-  @doc """
-  Handles pagination.
-  Airtable returns {"records": [], "offset": "a_record_id"}
-  when more records than pageSize or default of 100 are returned
+    Handles pagination.
+    Airtable returns {"records": [], "offset": "a_record_id"}
+    when more records than pageSize or default of 100 are returned
   """
+
   def get_records({jsonset, recordset}, params) when is_list(recordset) do
     with(
       {:ok, url} <- Url.url(params.base, params.table, params.options),
@@ -63,9 +63,9 @@ defmodule Legl.Services.Airtable.Records do
   def get(url) do
     Stream.resource(
       fn -> Client.get!(
-          url,
-          ["Accept": "Application/json; Charset=utf-8"],
-          [stream_to: self(), async: :once])
+        url,
+        ["Accept": "Application/json; Charset=utf-8"],
+        [stream_to: self(), async: :once])
       end,
       fn %HTTPoison.AsyncResponse{id: id} = resp ->
         receive do

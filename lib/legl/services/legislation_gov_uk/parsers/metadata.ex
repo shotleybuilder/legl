@@ -144,24 +144,11 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
       element_acc: ""
     })
   end
-
   # *****************************************************************************
   # COMMON CATCHER RETURNS STATE
   # *****************************************************************************
   # def sax_event_handler( what?, state), do: ( IO.inspect(what?); state ) # %{ state | parsed?: false }
   def sax_event_handler(_, state), do: state
-
-  # *****************************************************************************
-  # TEST a SINGLE SECTION
-  # *****************************************************************************
-  # def sax_event_handler( { :startElement, _, element, _, _},
-  #   %{ main_section: main_section } = state )
-  #   when main_section != :explanatory_notes and main_section != :versions
-  #   and element != 'ExplanatoryNotes' and element != 'Versions',
-  #   do: state
-  # def sax_event_handler( { :endElement, _, _element, _},
-  #   %{ main_section: main_section } = state )
-  #   when main_section != :explanatory_notes and main_section != :versions, do: state
   # ****************************************************************************
   # <metadata>
   # *****************************************************************************

@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.SiCode do
+defmodule Legl.Countries.Uk.UkSiCode do
   @moduledoc """
   Module automates read of the SI Code for a piece of law and posts the result into Airtable.
 
@@ -7,10 +7,10 @@ defmodule Legl.Countries.Uk.SiCode do
   Currently this is -
     UK 🇬🇧️ E 💚️.  The module accepts 'UK E' w/o the emojis.
   """
-  alias Legl.Services.Airtable.AtBases
-  alias Legl.Services.Airtable.AtTables
+
   alias Legl.Services.Airtable.Records
   alias Legl.Services.LegislationGovUk.Record
+  alias Legl.Services.Airtable.AtBasesTables
 
   def si_code_process(base_name) do
     with {:ok, recordset} <- get_at_records_with_empty_si_code(base_name),
@@ -20,7 +20,7 @@ defmodule Legl.Countries.Uk.SiCode do
       IO.puts("csv file saved with #{count} records")
       :ok
     else
-      {:error, error} -> IO.puts(error)
+      {:error, error} -> IO.puts("#{error}")
     end
   end
 
@@ -42,17 +42,18 @@ defmodule Legl.Countries.Uk.SiCode do
   """
   def get_at_records_with_empty_si_code(base_name) do
     with(
-      {:ok, {base_id, table_id}} <- get_base_table_id(base_name),
+      {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(base_name),
       params = %{
         base: base_id,
         table: table_id,
         options:
           %{
-          fields: ["Name", "Title_EN", "SI Code", "leg.gov.uk intro text"],
-          formula: ~s/{SI Code}="Empty"/}
+          fields: ["Name", "Title_EN", "SI CODE", "leg.gov.uk intro text"],
+          formula: ~s/{SI CODE}="Empty"/}
         },
       {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
     ) do
+      IO.puts("Records returned from Airtable")
       {:ok, recordset}
     else
       {:error, error} -> {:error, error}
@@ -70,26 +71,17 @@ defmodule Legl.Countries.Uk.SiCode do
         path = resource_path(Map.get(fields, "leg.gov.uk intro text"))
         si_code =
           case get_si_code(path) do
-            {:ok, si_code} -> si_code
-            {:error, error} -> "ERROR #{error}"
+            {:ok, si_code} -> si_code |> IO.inspect(label: "leg.gov.uk: ")
+            {:error, error} ->
+              IO.inspect(error, label: "leg.gov.uk: ERROR: ")
+              "ERROR #{error}"
           end
-        %{x | "fields" => %{x["fields"] | "SI Code" => si_code}}
+        %{x | "fields" => %{x["fields"] | "SI CODE" => si_code}}
         #[x | acc]
     end)
     #{:ok, records}
     |> (&{:ok, &1}).()
 
-  end
-
-  def get_base_table_id(base_name) do
-    with(
-      {:ok, base_id} <- AtBases.get_base_id(base_name),
-      {:ok, table_id} <- AtTables.get_table_id(base_id, "uk")
-    ) do
-      {:ok, {base_id, table_id}}
-    else
-      {:error, error} -> {:error, error}
-    end
   end
 
   def resource_path(url) do
@@ -127,11 +119,11 @@ defmodule Legl.Countries.Uk.SiCode do
   """
   def make_csv(records) do
     csv_list =
-      Enum.join(["Name,", "SI Code"])
+      Enum.join(["Name,", "SI CODE"])
       |> (&[&1 | []]).()
 
       Enum.reduce(records, csv_list,
-        fn %{"fields" => %{"Name" => name, "SI Code" => si_code}}, acc ->
+        fn %{"fields" => %{"Name" => name, "SI CODE" => si_code}}, acc ->
           [Enum.join([name, si_code], ",") | acc]
       end)
     |> Enum.reverse()
