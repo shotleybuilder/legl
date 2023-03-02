@@ -5,7 +5,7 @@ defmodule Legl.Services.LegislationGovUk.RecordEnactingText do
   def enacting_text(url) do
     case Legl.Services.LegislationGovUk.ClientEnactingText.run!(@endpoint <> url) do
 
-      {:ok, %{:content_type => :xml, :body => %{acc: [acc]}}} ->
+      {:ok, %{:content_type => :xml, :body => %{acc: acc}}} ->
         #IO.inspect(acc)
         { :ok,
           :xml,

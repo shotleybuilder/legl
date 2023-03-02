@@ -39,21 +39,20 @@ defmodule Legl.Countries.Uk.UkParentChild do
 
   def get_child_laws_from_leg_gov_uk(records) do
     #records =
-      Enum.into(records, [],
-        fn %{"fields" => %{"Type" => type, "Year" => year, "Number" => number}} = x ->
-          path = introduction_path(type, year, number)
-          enacting_text =
-            case get_parent(path) do
-              {:ok, enacting_text} -> enacting_text |> IO.inspect(label: "leg.gov.uk: ")
-              {:error, error} ->
-                IO.inspect(error, label: "leg.gov.uk: ERROR: ")
-                "ERROR #{error}"
-            end
-          fields = Map.put_new(x["fields"], :enacting_text, enacting_text)
-          %{x | "fields" => fields}
-          #[x | acc]
-      end)
-    #{:ok, records}
+    Enum.into(records, [],
+      fn %{"fields" => %{"Type" => type, "Year" => year, "Number" => number}} = x ->
+        path = introduction_path(type, year, number)
+        response =
+          case get_parent(path) do
+            {:ok, response} -> response
+            {:error, error} ->
+              IO.inspect(error, label: "leg.gov.uk: ERROR: ")
+              "ERROR #{error}"
+          end
+        {:ok, enacting_laws} = parse_enacting_text(response)
+        enacting_laws = Map.merge(x["fields"], enacting_laws)
+        %{x | "fields" => enacting_laws}
+    end)
     |> (&{:ok, &1}).()
   end
   @doc """
@@ -71,19 +70,107 @@ defmodule Legl.Countries.Uk.UkParentChild do
   """
   def get_parent(path) do
     case RecordEnactingText.enacting_text(path) do
-      {:ok, :xml, %{enacting_text: text}} ->
-        {:ok, text}
+      {:ok, :xml, response} ->
+        {:ok, response}
       {:ok, :html} -> {:ok, "not found"}
       {:error, _code, error} -> {:error, error}
     end
   end
 
-  def introduction_path(type, year, number) do
+  def parse_enacting_text(%{enacting_text: enacting_text, urls: urls} = response) do
+    [_, txt] = Regex.run(~r/powers[ ]conferred[ a-z]*?by(.*)$/, enacting_text)
+    IO.inspect(txt)
+    matches = Regex.scan(~r/f\d{5}/m, txt)
+    IO.inspect(matches)
+    urls =
+      Enum.map(matches, fn [x] ->
+        Map.get(urls, x) |> to_string()
+      end)
+    IO.inspect(urls)
+    parents =
+      Enum.reduce(urls, [], fn x, acc ->
+        case x do
+          "" -> acc
+          _ ->
+            [_, type, year, number] =
+              Regex.run(~r/http:\/\/www.legislation.gov.uk\/id\/([a-z]*?)\/(\d{4})\/(\d+)$/, x)
+            {:ok, title} =
+              introduction_path(type, year, number)
+              |> get_title()
+            [{title, type, year, number} | acc]
+        end
+      end)
+    {:ok, Map.put_new(response, :enacting_laws, parents)}
+  end
+
+  def get_title(path) do
+    case Legl.Services.LegislationGovUk.Record.legislation(path) do
+      {:ok, :xml, %{metadata: %{title: title}}} ->
+        {:ok, title}
+      {:ok, :html} -> {:ok, "not found"}
+      {:error, _code, error} -> {:error, error}
+    end
+  end
+
+  defp introduction_path(type, year, number) do
      "/#{type}/#{year}/#{number}/introduction/made/data.xml"
   end
 
-  def make_csv(records) do
 
+  def make_csv(records) do
+    Enum.reduce(records, [],
+      fn %{
+        "fields" =>
+        %{
+          "Name" => name,
+          "Title_EN" => title,
+          "Type" => type,
+          "Year" => year,
+          "Number" => number,
+          enacting_laws: enacting_laws
+        }
+        } = _law, acc ->
+        at_parent = at_parent(enacting_laws)
+        [~s/#{name}, #{title}, #{type}, #{year}, #{number},#{at_parent}/ | acc]
+        |> new_acting_laws(enacting_laws)
+    end)
+    |> field_names()
+    |> Enum.join("\n")
+    |> save_to_csv("lib/amending.csv")
+  end
+
+  def save_to_csv(binary, filename) do
+    line_count = binary |> String.graphemes |> Enum.count(& &1 == "\n")
+    filename
+    |> Path.absname()
+    |> File.write(binary)
+    {:ok, line_count}
+  end
+  @doc """
+    Content of the Airtable Parent field.
+    A comma separated list within quote marks of the Airtable ID field (Name).
+    "UK_ukpga_2010_41_abcd,UK_uksi_2013_57_abcd"
+  """
+  def at_parent(enacting_laws) do
+    Enum.map(enacting_laws, fn {title, type, year, number} ->
+      Legl.Airtable.AirtableTitleField.title_clean(title)
+      |> Legl.Airtable.AirtableIdField.id(type, year, number)
+    end)
+    |> Enum.sort()
+    |> Enum.join(", ")
+    |> Legl.Utility.csv_quote_enclosure()
+  end
+
+  def new_acting_laws(recs, enacting_laws) do
+    Enum.reduce(enacting_laws, recs, fn {title, type, year, number}, acc ->
+      title = Legl.Airtable.AirtableTitleField.title_clean(title)
+      name = Legl.Airtable.AirtableIdField.id(title, type, year, number)
+      [~s/#{name},"#{title}",#{type},#{year},#{number}/ | acc]
+    end)
+  end
+
+  def field_names(records) do
+    [~s/Name,Title_EN,Type,Year,Number,Child\sof/ | records]
   end
 
 end
