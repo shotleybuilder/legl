@@ -1,10 +1,12 @@
 defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
 
   defmodule EnactingTextState do
-    defstruct enacting_text: false,
+    defstruct introductory_text: false,
+              enacting_text: false,
               element_acc: "",
               acc: %{
                 enacting_text: nil,
+                introductory_text: nil,
                 urls: nil
               },
               footnote_section: false,
@@ -19,24 +21,26 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
   end
 
   def sax_event_handler({:startElement, _, 'EnactingText', _, _}, state) , do: %{state | element_acc: "", enacting_text: true}
-
   def sax_event_handler({:endElement, _, 'EnactingText', _}, state) do
-    #{_, acc} =
-      #get_and_update_in(state.acc, [Access.at(0), :enacting_text], &{&1, state.element_acc })
     acc = %{state.acc | enacting_text: state.element_acc}
     Map.merge(state, %{acc: acc, element_acc: "", enacting_text: false})
+  end
+
+  def sax_event_handler({:startElement, _, 'IntroductoryText', _, _}, state) , do: %{state | element_acc: "", introductory_text: true}
+  def sax_event_handler({:endElement, _, 'IntroductoryText', _}, state) do
+    acc = %{state.acc | introductory_text: state.element_acc}
+    Map.merge(state, %{acc: acc, element_acc: "", introductory_text: false})
   end
 
   def sax_event_handler({:startElement, _, 'FootnoteRef', _, [{:attribute, _id, [], [], ref}] = _attr}, state) do
     footnotes = Map.put_new(state.footnotes, "#{ref}", nil)
     state = %{state | footnotes: footnotes}
-    case state.enacting_text do
+    case state.enacting_text || state.introductory_text do
       true ->
         %{state | element_acc: "#{state.element_acc} #{ref}"}
       _ -> state
     end
   end
-
   def sax_event_handler({:endElement, _, 'FootnoteRef', _}, state), do: state
 
   def sax_event_handler({:startElement, _, 'Footnotes', _, _}, state) do
@@ -61,7 +65,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
               _ -> acc
             end
           end)
-        footnotes = %{state.footnotes | "#{state.footnote}" => uri}
+        footnotes = Map.put(state.footnotes, "#{state.footnote}", uri)
         %{state | footnotes: footnotes}
       _ -> state
     end

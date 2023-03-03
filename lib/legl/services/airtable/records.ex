@@ -26,16 +26,16 @@ defmodule Legl.Services.Airtable.Records do
     Airtable returns {"records": [], "offset": "a_record_id"}
     when more records than pageSize or default of 100 are returned
   """
-
   def get_records({jsonset, recordset}, params) when is_list(recordset) do
     with(
       {:ok, url} <- Url.url(params.base, params.table, params.options),
       {:ok, json} <- get(url),
       data <- Jason.decode!(json),
-      %{"json" => json, "records" => records, "offset" => offset} <- get_records(json, data),
-      options = Map.put(params.options, :offset, offset),
+      %{"json" => json, "records" => records, "offset" => offset} <- set_params(json, data)
+      ) do
+      IO.puts("Call to Airtable returned #{Enum.count(records)} records")
+      options = Map.put(params.options, :offset, offset)
       params = Map.put(params, :options, options)
-    ) do
       get_records({jsonset ++ json, recordset ++ records}, params)
     else
       %{"json" => json, "records" => records} ->
@@ -44,18 +44,20 @@ defmodule Legl.Services.Airtable.Records do
         {:error, error}
     end
   end
-  def get_records(json, %{"records" => records, "offset" => offset}) do
+  def set_params(json, %{"records" => records, "offset" => offset}) do
     %{"json" => json, "records" => records, "offset" => offset}
   end
-  def get_records(json, %{"records" => records}) do
+  def set_params(json, %{"records" => records}) do
     %{"json" => json, "records" => records}
   end
-  def get_records(_, %{"error" => error}) do
+  def set_params(_, %{"error" => error}) do
     {:error, error}
   end
-  def get_records(json, records) do
+  def set_params(json, records) do
     %{"json" => json, "records" => records}
   end
+
+
 
   @doc """
     Get the records from the Airtable API endpoint as a stream
