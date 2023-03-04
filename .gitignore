@@ -31,3 +31,5 @@ lib/*/at_formula/
 *.beam
 *.html
 *.csv
+
+airtable_data.ex

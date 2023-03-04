@@ -9,7 +9,7 @@ defmodule Legl.Countries.Uk.UkParentChild do
 
   def get_child_process(base_name) do
     with {:ok, recordset} <- get_at_records_with_empty_parent(base_name),
-      {:ok, recordset} <- get_parent_laws_from_leg_gov_uk(recordset),
+      #{:ok, recordset} <- get_parent_laws_from_leg_gov_uk(recordset),
       {:ok, count } <- make_csv(recordset)
     do
       IO.puts("csv saved with #{count} records")
@@ -166,14 +166,18 @@ defmodule Legl.Countries.Uk.UkParentChild do
           true ->
             path = introduction_path(type, year, number)
               case get_parent(path) do
-                {:ok, response} ->
-                  case parse_enacting_text(response) do
+                {:ok, %{
+              introductory_text: _introductory_text,
+              enacting_text: enacting_text,
+              urls: urls
+            } = response} ->
+                  case parse_enacting_text(enacting_text, urls, response) do
                     {:ok, enacting_laws} ->
                       enacting_laws = Map.merge(x["fields"], enacting_laws)
                       record = %{x | "fields" => enacting_laws}
                       make_csv_record(record)
                       [record | acc]
-                    {:error} -> acc
+                    {:error, _error} -> acc
                   end
                 {:error, error} ->
                   IO.inspect(error, label: "leg.gov.uk: ERROR: ")
@@ -197,22 +201,30 @@ defmodule Legl.Countries.Uk.UkParentChild do
     end
   end
 
-  def get_parent_laws_from_leg_gov_uk(records) do
-    #records =
-    Enum.into(records, [],
-      fn %{"fields" => %{"Type" => type, "Year" => year, "Number" => number}} = x ->
+  def get_parent_laws_from_leg_gov_uk() do
+    Airtable.at_data()
+    |> Enum.reduce([],
+      fn %{"fields" => %{"Type" => type, "Year" => year, "Number" => number}} = x, acc ->
         path = introduction_path(type, year, number)
-        response =
-          case get_parent(path) do
-            {:ok, response} -> response
-            {:error, error} ->
-              IO.inspect(error, label: "leg.gov.uk: ERROR: ")
-              "ERROR #{error}"
-          end
-        {:ok, enacting_laws} = parse_enacting_text(response)
-        enacting_laws = Map.merge(x["fields"], enacting_laws)
-        %{x | "fields" => enacting_laws}
-    end)
+        with(
+          {:ok,
+            %{
+              introductory_text: introductory_text,
+              enacting_text: enacting_text,
+              urls: urls
+            } = response
+          } <- get_parent(path),
+          {:ok, response} <- parse_enacting_text(introductory_text, urls, response),
+          {:ok, response} <- parse_enacting_text(enacting_text, urls, response)
+        ) do
+          enacting_laws = Map.merge(x["fields"], response)
+          record = %{x | "fields" => enacting_laws}
+          make_csv_record(record)
+          [record | acc]
+        else
+          {:error, _error} -> acc
+        end
+      end)
     |> (&{:ok, &1}).()
   end
   @doc """
@@ -237,11 +249,12 @@ defmodule Legl.Countries.Uk.UkParentChild do
     end
   end
 
-  def parse_enacting_text(%{enacting_text: nil, urls: _urls} = response) do
+  def parse_enacting_text(nil, _urls, response) do
     {:ok, Map.put_new(response, :enacting_laws, [])}
   end
 
-  def parse_enacting_text(%{enacting_text: enacting_text, urls: urls} = response) do
+  #def parse_enacting_text(%{enacting_text: enacting_text, urls: urls} = response) do
+  def parse_enacting_text(enacting_text, urls, response) do
     [_, txt] =
       cond do
         Regex.match?(~r/powers[ ]conferred[ a-z]*?by(.*)$/, enacting_text) == true ->
@@ -250,7 +263,7 @@ defmodule Legl.Countries.Uk.UkParentChild do
         true -> [nil, nil]
       end
     case txt do
-      nil -> {:error}
+      nil -> {:error, "no match parsing_enacting_text"}
       _ ->
       IO.inspect(txt)
       matches = Regex.scan(~r/f\d{5}/m, txt)
