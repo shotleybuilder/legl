@@ -4,7 +4,7 @@
 defmodule Lgl.Countries.Uk.SiCodeTest do
 
   use ExUnit.Case
-  import Legl.Countries.Uk.SiCode
+  import Legl.Countries.Uk.UkSiCode
 
   @moduletag :uk
 
@@ -50,6 +50,24 @@ defmodule Lgl.Countries.Uk.SiCodeTest do
         response = get_si_code_from_legl_gov_uk(records)
         assert {:ok, res} = response
         IO.inspect res
+    end
+  end
+
+  @si_codes %{
+    "createdTime" => "2023-02-16T13:42:00.000Z",
+    "fields" =>
+    %{
+      "Name" => "UK_asp_2020_14_AWPPPSA",
+      "SI_Code_(from_Children)" => ["ANIMALS", "ANIMALS", "WILDLIFE"],
+      "Title_EN" => "Animals and Wildlife (Penalties, Protections and Powers) (Scotland) Act"
+    },
+    "id" => "recugIRm1xH6aQGr5"
+  }
+
+  describe "unique parent si codes" do
+    test "uniq_si_codes/1" do
+      %{"SI CODE" => si_codes} = uniq_si_codes(@si_codes)# |> IO.inspect()
+      assert ["ANIMALS", "WILDLIFE"] = si_codes
     end
   end
 

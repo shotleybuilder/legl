@@ -29,7 +29,9 @@ defmodule Legl.Services.Airtable.Records do
   def get_records({jsonset, recordset}, params) when is_list(recordset) do
     with(
       {:ok, url} <- Url.url(params.base, params.table, params.options),
+      IO.inspect(url),
       {:ok, json} <- get(url),
+      IO.inspect(json),
       data <- Jason.decode!(json),
       %{"json" => json, "records" => records, "offset" => offset} <- set_params(json, data)
       ) do

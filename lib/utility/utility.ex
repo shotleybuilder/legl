@@ -31,4 +31,8 @@ defmodule Legl.Utility do
   def csv_quote_enclosure(string) do
     ~s/"#{string}"/
   end
+
+  def csv_list_quote_enclosure(string) do
+    ~s/[#{string}]/
+  end
 end
