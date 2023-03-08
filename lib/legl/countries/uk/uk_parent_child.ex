@@ -21,6 +21,8 @@ defmodule Legl.Countries.Uk.UkParentChild do
 
   @doc """
     THe AT base field for parent laws is called 'Child of'
+    Run in console as
+    Legl.Countries.Uk.UkParentChild.get_at_records_with_empty_parent("UK E", true)
   """
   def get_at_records_with_empty_parent(base_name, filesave? \\ false) do
     with(
@@ -31,12 +33,11 @@ defmodule Legl.Countries.Uk.UkParentChild do
         options:
           %{
           fields: ["Name", "Title_EN", "Type", "Year", "Number", "Child of"],
-          formula: ~s/AND({Child of}=BLANK(),{Type}="uksi")/}
+          formula: ~s/AND({Child of}=BLANK(),{Type}="wsi")/}
         },
       {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
     ) do
       IO.puts("Records returned from Airtable")
-      IO.inspect(recordset)
       if filesave? == true do save_to_file(recordset) end
       {:ok, recordset}
     else
@@ -158,64 +159,57 @@ defmodule Legl.Countries.Uk.UkParentChild do
     )
   end
 
-  def step_parent_laws_from_leg_gov_uk(records) do
-    #clear_and_header_row_csv()
-    Enum.reduce(records, [],
-      fn %{"fields" => %{"Type" => type, "Year" => year, "Number" => number}} = x, acc ->
-        case prompt(x) do
-          true ->
-            path = introduction_path(type, year, number)
-              case get_parent(path) do
-                {:ok, %{
-              introductory_text: _introductory_text,
-              enacting_text: enacting_text,
-              urls: urls
-            } = response} ->
-                  case parse_enacting_text(enacting_text, urls, response) do
-                    {:ok, enacting_laws} ->
-                      enacting_laws = Map.merge(x["fields"], enacting_laws)
-                      record = %{x | "fields" => enacting_laws}
-                      make_csv_record(record)
-                      [record | acc]
-                    {:error, _error} -> acc
-                  end
-                {:error, error} ->
-                  IO.inspect(error, label: "leg.gov.uk: ERROR: ")
-                  acc
-              end
-          false ->
-            acc
-        end
-    end)
-    |> (&{:ok, &1}).()
+  def step_parent_laws_from_leg_gov_uk() do
+    step_parent_laws_from_leg_gov_uk(Airtable.at_data())
   end
 
-  def prompt(%{"fields" => %{"Name" => name, "Title_EN" => title, "Type" => [type]}}) do
-    case type do
-      "ukpga" -> false #no parents for an Act
-      "asp" -> false
-      "msw" -> false
-      "ukcm" -> false
-      _ -> IO.puts(~s/#{name} #{title}/)
-        true #ExPrompt.confirm(~s/#{name} #{title}/)
+  def step_parent_laws_from_leg_gov_uk(records) do
+    #clear_and_header_row_csv()
+    records = Enum.sort_by(records, &(&1["fields"]["Name"]), :desc)
+    for %{"fields" => f} = n <- records do
+        case ExPrompt.confirm(~s/#{f["Name"]} #{f["Title"]}/) do
+          true ->
+            path = introduction_path(f["Type"], f["Year"], f["Number"])
+            with(
+              {:ok, response} <- get_parent(path)
+            ) do
+              view_text_as_csv(response)
+            end
+          false ->
+            n
+        end
+    end
+    :ok
+  end
+
+  def view_text_as_csv(text) do
+    for {_k, v} when is_binary(v) == true <- text  do
+      File.write!("lib/amending.csv" |> Path.absname(), v)
+      #save_txt_to_csv(v, "lib/amending.csv" |> Path.absname())
     end
   end
 
+  def save_txt_to_csv(txt, filename) do
+    {:ok, file} =
+      filename |> File.open([:utf8, :append])
+      IO.puts(file, txt)
+      File.close(file)
+  end
+  @doc """
+    Legl.Countries.Uk.UkParentChild.get_parent_laws_from_leg_gov_uk()
+  """
   def get_parent_laws_from_leg_gov_uk() do
-    Airtable.at_data()
-    |> Enum.reduce([],
-      fn %{"fields" => %{"Type" => type, "Year" => year, "Number" => number}} = x, acc ->
+    get_parent_laws_from_leg_gov_uk(Airtable.at_data())
+  end
+
+  def get_parent_laws_from_leg_gov_uk(records) do
+    Enum.reduce(records, [],
+      fn %{"fields" => %{"Type" => type, "Year" => year, "Number" => number, "Title_EN" => title}} = x, acc ->
+        IO.puts("#{title}")
         path = introduction_path(type, year, number)
         with(
-          {:ok,
-            %{
-              introductory_text: introductory_text,
-              enacting_text: enacting_text,
-              urls: urls
-            } = response
-          } <- get_parent(path),
-          {:ok, response} <- parse_enacting_text(introductory_text, urls, response),
-          {:ok, response} <- parse_enacting_text(enacting_text, urls, response)
+          {:ok, response} <- get_parent(path),
+          {:ok, response} <- parse_filter(response)
         ) do
           enacting_laws = Map.merge(x["fields"], response)
           record = %{x | "fields" => enacting_laws}
@@ -225,7 +219,9 @@ defmodule Legl.Countries.Uk.UkParentChild do
           {:error, _error} -> acc
         end
       end)
-    |> (&{:ok, &1}).()
+    dedupe_new_law()
+    dedupe_parents()
+    :ok
   end
   @doc """
     Parses xml containing clauses with the following patterns:
@@ -249,53 +245,95 @@ defmodule Legl.Countries.Uk.UkParentChild do
     end
   end
 
-  def parse_enacting_text(nil, _urls, response) do
-    {:ok, Map.put_new(response, :enacting_laws, [])}
+  def parse_filter(
+    %{
+      introductory_text: introductory_text,
+      enacting_text: enacting_text,
+      urls: urls
+    } =
+    response) do
+      joined_text = text(introductory_text, enacting_text)
+      cond do
+        joined_text == nil -> {:ok, Map.put_new(response, :enacting_laws, [])}
+        Regex.match?(~r/an Order under sections.*? of the Transport and Works Act 1992/, joined_text) == true ->
+          {:ok, Map.put_new(response, :enacting_laws, [{"Transport and Works Act", "ukpga", "1992", "42"}])}
+        Regex.match?(~r/in exercise of the powers in section.*? of the European Union \(Withdrawal\) Act 2018/, joined_text) == true ->
+          {:ok, Map.put_new(response, :enacting_laws, [{"European Union (Withdrawal) Act", "ukpga", "2018", "16"}])}
+        Regex.match?(~r/[T|t]he Secretary of State, in exercise of the powers.*? section[s]? 114.*? and 120.*? of the 2008 Act/, joined_text) ==  true ->
+          {:ok, Map.put_new(response, :enacting_laws, [{"Planning Act", "ukpga", "2008", "29"}])}
+        Regex.match?(~r/An application has been made to the Secretary of State under section 37 of the Planning Act 2008/, joined_text) == true ->
+          {:ok, Map.put_new(response, :enacting_laws, [{"Planning Act", "ukpga", "2008", "29"}])}
+        Regex.match?(~r/The Secretary of State has decided to grant development consent.*? of the 2008 Act/, joined_text) == true ->
+          {:ok, Map.put_new(response, :enacting_laws, [{"Planning Act", "ukpga", "2008", "29"}])}
+        Regex.match?(~r/^.*?powers conferred by.*?and now vested in it/, joined_text) == true ->
+          Regex.run(~r/^.*?powers conferred by.*?and now vested in it/, joined_text)
+          |> List.first()
+          |> parse_text(urls, response)
+        Regex.match?(~r/^.*?power[s]?[ ]conferred[ a-z]*?by.*?[:|\.|—|;]/, joined_text) == true ->
+          #save_txt_to_csv(jtext, "lib/amending.csv" |> Path.absname())
+          Regex.run(~r/^.*?power[s]?[ ]conferred[ a-z]*?by.*?[:|\.|—|;]/, joined_text)
+          |> List.first()
+          |> parse_text(urls, response)
+        Regex.match?(~r/f\d{5}/m, enacting_text) ==  true ->
+          parse_text(enacting_text, urls, response)
+        true ->
+          {:ok, response}
+      end
+  end
+  def text(nil, nil), do: nil
+  def text(nil, enacting_text), do: Regex.replace(~r/\n/m, enacting_text, " ")
+  def text(introductory_text, nil), do: Regex.replace(~r/\n/m, introductory_text, " ")
+  def text(introductory_text, enacting_text) do
+    Regex.replace(~r/\n/m, introductory_text, " ")<>" "<>Regex.replace(~r/\n/m, enacting_text, " ")
+    |> String.trim()
   end
 
-  #def parse_enacting_text(%{enacting_text: enacting_text, urls: urls} = response) do
-  def parse_enacting_text(enacting_text, urls, response) do
-    [_, txt] =
-      cond do
-        Regex.match?(~r/powers[ ]conferred[ a-z]*?by(.*)$/, enacting_text) == true ->
-          enacting_text = Regex.replace(~r/\n/m, enacting_text, " ")
-          Regex.run(~r/power[s]?[ ]conferred[ a-z]*?by(.*)$/, enacting_text)
-        true -> [nil, nil]
-      end
-    case txt do
-      nil -> {:error, "no match parsing_enacting_text"}
+  def parse_text(nil, _urls, response) do
+    {:ok, response}
+  end
+
+  def parse_text(text, urls, response) do
+    #jtext = Regex.replace(~r/\n/m, text, " ") #|> IO.inspect
+    matches = Regex.scan(~r/f\d{5}/m, text)
+    case matches do
       _ ->
-      IO.inspect(txt)
-      matches = Regex.scan(~r/f\d{5}/m, txt)
-      urls =
-        Enum.map(matches, fn [x] ->
-          Map.get(urls, x) |> to_string()
-        end)
-      parents =
-        Enum.reduce(urls, [], fn x, acc ->
-          case x do
-            "" -> acc
-            _ ->
-              cond do
-                Regex.match?(
-                  ~r/http:\/\/www.legislation.gov.uk\/id\/([a-z]*?)\/(\d{4})\/(\d+)$/, x) == true ->
-                    [_, type, year, number] =
-                      Regex.run(~r/http:\/\/www.legislation.gov.uk\/id\/([a-z]*?)\/(\d{4})\/(\d+)$/, x)
-                      case introduction_path(type, year, number) |> get_title() do
-                        {:ok, title} -> [{title, type, year, number} | acc]
-                        {:error, error} -> [{error, type, year, number} | acc]
-                      end
-                Regex.match?(
-                  ~r/http:\/\/www.legislation.gov.uk\/european\/directive\/(\d{4})\/(\d+)$/, x) == true ->
-                    [_, year, number] =
-                      Regex.run(~r/http:\/\/www.legislation.gov.uk\/european\/directive\/(\d{4})\/(\d+)$/, x)
-                    [{"eu law", "eudr", year, number} | acc]
-              end
-          end
-        end)
-        |> Enum.uniq()
-      {:ok, Map.put_new(response, :enacting_laws, parents)}
+        parents =
+          urls(urls, matches)
+          |> parents()
+        {:ok, Map.put_new(response, :enacting_laws, parents)}
     end
+
+  end
+
+  def urls(urls, matches) do
+    Enum.map(matches, fn [x] ->
+      Map.get(urls, x) |> to_string()
+    end)
+  end
+
+  def parents(urls) do
+    Enum.reduce(urls, [], fn x, acc ->
+      case x do
+        "" -> acc
+        _ ->
+          cond do
+            Regex.match?(
+              ~r/http:\/\/www.legislation.gov.uk\/id\/([a-z]*?)\/(\d{4})\/(\d+)$/, x) == true ->
+                [_, type, year, number] =
+                  Regex.run(~r/http:\/\/www.legislation.gov.uk\/id\/([a-z]*?)\/(\d{4})\/(\d+)$/, x)
+                  case introduction_path(type, year, number) |> get_title() do
+                    {:ok, title} -> [{title, type, year, number} | acc]
+                    {:error, error} -> [{error, type, year, number} | acc]
+                  end
+            Regex.match?(
+              ~r/http:\/\/www.legislation.gov.uk\/european\/directive\/(\d{4})\/(\d+)$/, x) == true ->
+                [_, year, number] =
+                  Regex.run(~r/http:\/\/www.legislation.gov.uk\/european\/directive\/(\d{4})\/(\d+)$/, x)
+                [{"eu law", "eudr", year, number} | acc]
+          end
+      end
+    end)
+    |> Enum.uniq()
   end
 
   def get_title(path) do
@@ -307,7 +345,7 @@ defmodule Legl.Countries.Uk.UkParentChild do
     end
   end
 
-  defp introduction_path(type, year, number) do
+  def introduction_path(type, year, number) do
      "/#{type}/#{year}/#{number}/introduction/made/data.xml"
   end
 
@@ -328,14 +366,21 @@ defmodule Legl.Countries.Uk.UkParentChild do
       enacting_laws: enacting_laws
     }
     } = _law) do
-
-    at_parent = at_parent(enacting_laws)
-    title = title |> Legl.Utility.csv_quote_enclosure()
-    [~s/#{name},#{title},#{type},#{year},#{number},#{at_parent}/]
-    |> new_acting_laws(enacting_laws)
-    |> Enum.reverse()
-    |> save_record_to_csv()
+    case enacting_laws do
+      [] -> :ok
+      "" -> :ok
+      nil -> :ok
+      _ ->
+        at_parent = at_parent(enacting_laws)
+        title = title |> Legl.Utility.csv_quote_enclosure()
+        [~s/#{name},#{title},#{type},#{year},#{number},#{at_parent}/]
+        |> new_acting_laws(enacting_laws)
+        |> Enum.reverse()
+        |> save_record_to_csv()
+    end
   end
+
+  def make_csv_record(_record), do: :ok
 
   def make_csv_record(), do: nil
 
@@ -357,6 +402,8 @@ defmodule Legl.Countries.Uk.UkParentChild do
       IO.puts(file, child)
       File.close(file)
   end
+
+
 
   #*****************************************************************
   #Deal with all records at once
@@ -390,6 +437,26 @@ defmodule Legl.Countries.Uk.UkParentChild do
     |> Path.absname()
     |> File.write(binary)
     {:ok, line_count}
+  end
+  @doc """
+
+  """
+  def dedupe_parents do
+    File.read!(@parents_csv)
+    |> String.split("\n")
+    |> Enum.uniq()
+    |> (&(["Name,Title_EN,Type,Year,Number,Child of"|&1])).()
+    |> Enum.join("\n")
+    |> (&(File.write!(@parents_csv, &1))).()
+  end
+
+  def dedupe_new_law do
+    File.read!(@new_law_csv_file)
+    |> String.split("\n")
+    |> Enum.uniq()
+    |> (&(["Name,Title_EN,Type,Year,Number"|&1])).()
+    |> Enum.join("\n")
+    |> (&(File.write!(@new_law_csv_file, &1))).()
   end
 
   #*****************************************************************
