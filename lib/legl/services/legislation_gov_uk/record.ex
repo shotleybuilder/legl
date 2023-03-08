@@ -2,7 +2,7 @@ defmodule Legl.Services.LegislationGovUk.Record do
 
   require Logger
 
-  alias Legl.Airtable.AirtableIdField
+  #alias Legl.Airtable.AirtableIdField
 
   @endpoint "https://www.legislation.gov.uk"
 

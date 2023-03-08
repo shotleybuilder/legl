@@ -10,7 +10,7 @@ defmodule Legl.Services.LegislationGovUk.RecordTest do
     describe "Legl.Services.LegislationGovUk.Record.legislation/1" do
       test "metadata" do
         response = legislation(
-          "/uksi/2016/547/introduction/made/data.xml")
+          "/uksi/2000/1562/introduction/made/data.xml")
         assert {:ok, :xml, md} = response
         IO.inspect(md)
       end

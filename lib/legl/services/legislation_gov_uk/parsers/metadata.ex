@@ -5,7 +5,8 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   defmodule SaxState do
     defstruct [
       ele: nil,
-      metadata: %{},
+      metadata: %{subject: []},
+      si_code: false,
       # core control
       # main_section [:metadata, :contents, :prelims, :resources, :schedules, :earlier_orders, :body, :explanatory_notes, :versions :footnotes]
       main_section: nil,
@@ -140,8 +141,9 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   # END DOCUMENT
   # *******************************************************************************
   def sax_event_handler(:endDocument, state) do
+    subject = Enum.reverse(state.metadata.subject)
     Map.merge(state, %{
-      element_acc: ""
+      element_acc: "", metadata: %{state.metadata | subject: subject}
     })
   end
   # *****************************************************************************
@@ -157,6 +159,21 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
     do: %{state | main_section: :metadata}
 
   def sax_event_handler({:endElement, _, 'Metadata', 'ukm'}, state, _), do: state
+
+  def sax_event_handler({:startElement, _, 'TotalParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
+  do: %{state | metadata: Map.put(state.metadata, :paras_total, value)}
+
+  def sax_event_handler({:startElement, _, 'BodyParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
+  do: %{state | metadata: Map.put(state.metadata, :paras_body, value)}
+
+  def sax_event_handler({:startElement, _, 'ScheduleParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
+  do: %{state | metadata: Map.put(state.metadata, :paras_schedule, value)}
+
+  def sax_event_handler({:startElement, _, 'AttachmentParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
+  do: %{state | metadata: Map.put(state.metadata, :paras_attachment, value)}
+
+  def sax_event_handler({:startElement, _, 'TotalImages', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
+  do: %{state | metadata: Map.put(state.metadata, :images, value)}
 
   def sax_event_handler({:startElement, _, metadata, 'ukm', _}, state, _)
       when metadata in @metadata,
@@ -190,10 +207,16 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   end
 
   def sax_event_handler({:endElement, _, 'link', 'atom'}, state, _), do: state
+
   # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # DUBLIN CORE
   # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # dc:title
+  #def sax_event_handler({:startElement, _, _, 'dc', _} = v, state, _) do
+  #  IO.inspect(v)
+  #  %{state | element_acc: ""}
+  #end
+
   def sax_event_handler({:startElement, _, 'title', 'dc', _}, state, _),
     do: %{state | element_acc: ""}
 
@@ -201,11 +224,33 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
     %{state | metadata: Map.put(state.metadata, :title, state.element_acc), element_acc: ""}
   end
 
-  def sax_event_handler({:startElement, _, 'subject', 'dc', _}, state, _),
-  do: %{state | element_acc: ""}
+  def sax_event_handler({:startElement, _, 'subject', 'dc', [{:attribute, 'scheme', [], [], 'SIheading'}]}, state, _),
+  do: %{state | element_acc: "", si_code: true}
+
+  def sax_event_handler({:startElement, _, 'subject', 'dc', _}, state, _), do: state
 
   def sax_event_handler({:endElement, _, 'subject', 'dc'}, %{main_section: :metadata} = state, _) do
-    %{state | metadata: Map.put(state.metadata, :subject, state.element_acc), element_acc: ""}
+    case state.si_code do
+      true ->
+        %{state | metadata: Map.put(state.metadata, :si_code, state.element_acc), element_acc: "", si_code: false}
+      false ->
+        subject = [String.downcase(state.element_acc) | state.metadata.subject]
+        %{state | metadata: Map.put(state.metadata, :subject, subject), element_acc: ""}
+    end
+  end
+
+  def sax_event_handler({:startElement, _, 'modified', 'dc', _}, state, _),
+  do: %{state | element_acc: ""}
+
+  def sax_event_handler({:endElement, _, 'modified', 'dc'}, %{main_section: :metadata} = state, _) do
+    %{state | metadata: Map.put(state.metadata, :modified, state.element_acc), element_acc: ""}
+  end
+
+  def sax_event_handler({:startElement, _, 'description', 'dc', _}, state, _),
+  do: %{state | element_acc: ""}
+
+  def sax_event_handler({:endElement, _, 'description', 'dc'}, %{main_section: :metadata} = state, _) do
+    %{state | metadata: Map.put(state.metadata, :description, state.element_acc), element_acc: ""}
   end
 
   # <dc:creator> <dc:subject> <dc:description> <dc:publisher> <dc:contributor> <dc:date>
