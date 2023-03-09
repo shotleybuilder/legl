@@ -5,7 +5,16 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   defmodule SaxState do
     defstruct [
       ele: nil,
-      metadata: %{subject: []},
+      metadata: %{
+        md_subjects: [],
+        md_description: nil,
+        md_total_paras: nil,
+        md_body_paras: nil,
+        md_schedule_paras: nil,
+        md_attachment_paras: nil,
+        md_images: nil,
+        md_modified: nil
+      },
       si_code: false,
       # core control
       # main_section [:metadata, :contents, :prelims, :resources, :schedules, :earlier_orders, :body, :explanatory_notes, :versions :footnotes]
@@ -141,9 +150,9 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   # END DOCUMENT
   # *******************************************************************************
   def sax_event_handler(:endDocument, state) do
-    subject = Enum.reverse(state.metadata.subject)
+    subjects = Enum.reverse(state.metadata.md_subjects)
     Map.merge(state, %{
-      element_acc: "", metadata: %{state.metadata | subject: subject}
+      element_acc: "", metadata: %{state.metadata | md_subjects: subjects}
     })
   end
   # *****************************************************************************
@@ -161,19 +170,19 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   def sax_event_handler({:endElement, _, 'Metadata', 'ukm'}, state, _), do: state
 
   def sax_event_handler({:startElement, _, 'TotalParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
-  do: %{state | metadata: Map.put(state.metadata, :paras_total, value)}
+  do: %{state | metadata: Map.put(state.metadata, :md_total_paras, value)}
 
   def sax_event_handler({:startElement, _, 'BodyParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
-  do: %{state | metadata: Map.put(state.metadata, :paras_body, value)}
+  do: %{state | metadata: Map.put(state.metadata, :md_body_paras, value)}
 
   def sax_event_handler({:startElement, _, 'ScheduleParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
-  do: %{state | metadata: Map.put(state.metadata, :paras_schedule, value)}
+  do: %{state | metadata: Map.put(state.metadata, :md_schedule_paras, value)}
 
   def sax_event_handler({:startElement, _, 'AttachmentParagraphs', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
-  do: %{state | metadata: Map.put(state.metadata, :paras_attachment, value)}
+  do: %{state | metadata: Map.put(state.metadata, :md_attachment_paras, value)}
 
   def sax_event_handler({:startElement, _, 'TotalImages', 'ukm',  [{:attribute, 'Value', [], [], value}]}, state, _),
-  do: %{state | metadata: Map.put(state.metadata, :images, value)}
+  do: %{state | metadata: Map.put(state.metadata, :md_images, value)}
 
   def sax_event_handler({:startElement, _, metadata, 'ukm', _}, state, _)
       when metadata in @metadata,
@@ -234,8 +243,8 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
       true ->
         %{state | metadata: Map.put(state.metadata, :si_code, state.element_acc), element_acc: "", si_code: false}
       false ->
-        subject = [String.downcase(state.element_acc) | state.metadata.subject]
-        %{state | metadata: Map.put(state.metadata, :subject, subject), element_acc: ""}
+        subject = [String.downcase(state.element_acc) | state.metadata.md_subjects]
+        %{state | metadata: Map.put(state.metadata, :md_subjects, subject), element_acc: ""}
     end
   end
 
@@ -243,14 +252,14 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   do: %{state | element_acc: ""}
 
   def sax_event_handler({:endElement, _, 'modified', 'dc'}, %{main_section: :metadata} = state, _) do
-    %{state | metadata: Map.put(state.metadata, :modified, state.element_acc), element_acc: ""}
+    %{state | metadata: Map.put(state.metadata, :md_modified, state.element_acc), element_acc: ""}
   end
 
   def sax_event_handler({:startElement, _, 'description', 'dc', _}, state, _),
   do: %{state | element_acc: ""}
 
   def sax_event_handler({:endElement, _, 'description', 'dc'}, %{main_section: :metadata} = state, _) do
-    %{state | metadata: Map.put(state.metadata, :description, state.element_acc), element_acc: ""}
+    %{state | metadata: Map.put(state.metadata, :md_description, state.element_acc), element_acc: ""}
   end
 
   # <dc:creator> <dc:subject> <dc:description> <dc:publisher> <dc:contributor> <dc:date>
