@@ -58,5 +58,61 @@ defmodule Legl.Countries.Uk.UkExtentTest do
     end
   end
 
+  @data_wales [
+    {"section-1", "W"},
+    {"section-2", "W"},
+    {"section-3", "W"},
+    {"section-4", "W"},
+    {"section-5", "W"},
+    {"section-6", "W"},
+    {"section-7", "W"},
+    {"section-8", "W"},
+    {"section-9", "W"},
+    {"section-10", "W"},
+    {"section-11", "W"},
+    {"section-12", "W"},
+    {"section-13", "W"},
+    {"section-14", "W"},
+    {"section-15", "W"},
+    {"section-16", "W"},
+    {"section-17", "W"},
+    {"section-17A", "W"},
+    {"section-18", "W"},
+    {"section-19", "W"},
+    {"section-20", "W"},
+    {"section-21", "W"},
+    {"section-22", "W"},
+    {"schedule-paragraph-1", "W"},
+    {"schedule-paragraph-2", "W"}
+  ]
+
+  describe "w transforming the records" do
+    test "w uniq_extent" do
+      resp = uniq_extent(@data_wales)
+      assert [
+        "W"
+      ] = resp
+    end
+    test "w create_map/1" do
+      resp = uniq_extent(@data_wales) |> create_map()
+      assert %{
+        "W" => []
+      } = resp
+    end
+    test "w regions/1" do
+      resp = uniq_extent(@data_wales) |> regions()
+      assert is_bitstring(resp)
+    end
+    test "w emoji_flags/1" do
+      resp = emoji_flags("W")
+      res = Legl.wales_flag_emoji()<>" W"
+      assert res = resp
+    end
+    test "w extent_transformation" do
+      resp = extent_transformation(@data_wales)
+      assert {:ok, %{geo_extent: "\"W💚️All provisions\"", geo_region: "\"Wales\""}} = resp
+    end
+  end
+
 
 end

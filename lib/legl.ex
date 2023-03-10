@@ -171,6 +171,18 @@ defmodule Legl do
   def nor_flag_emoji, do: <<0x1F1F3::utf8>> <> <<0x1F1F1::utf8>>
 
   def uk_flag_emoji, do: <<0x1F1EC::utf8>> <> <<0x1F1E7::utf8>>
+  def england_flag_emoji() do
+    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE0065::utf8>> <> <<0xE006E::utf8>> <> <<0xE0067::utf8>> <> <<0xE007F::utf8>>
+  end
+  def wales_flag_emoji() do
+    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE0077::utf8>> <> <<0xE006C::utf8>> <> <<0xE0073::utf8>> <> <<0xE007F::utf8>>
+  end
+  def scotland_flag_emoji() do
+    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE0073::utf8>> <> <<0xE0063::utf8>> <> <<0xE0074::utf8>> <> <<0xE007F::utf8>>
+  end
+  def northern_ireland_flag_emoji() do
+    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE006E::utf8>> <> <<0xE0069::utf8>> <> <<0xE0072::utf8>> <> <<0xE007F::utf8>>
+  end
 
   # 🎈 balloon
   def part_emoji, do: <<0x1F388::utf8>>

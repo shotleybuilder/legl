@@ -4,7 +4,7 @@ defmodule Legl.Countries.Uk.UkExtent do
   alias Legl.Services.Airtable.Records
   alias Legl.Services.LegislationGovUk.RecordGeneric
 
-  @at_type ["mwa"]
+  @at_type ["uksi"]
   @at_csv "airtable_extents"
   @doc """
     Legl.Countries.Uk.UkExtent.full_workflow
@@ -42,7 +42,7 @@ defmodule Legl.Countries.Uk.UkExtent do
           %{
             view: "EXTENT",
             fields: ["Name", "Title_EN", "leg.gov.uk contents text"],
-            formula: ~s/{type}="#{type}"/
+            formula: ~s/AND({type}="#{type}",{Geo_Extent}=BLANK())/
           }
         },
       {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
@@ -89,6 +89,7 @@ defmodule Legl.Countries.Uk.UkExtent do
   def make_csv_workflow(name, url) do
     with(
       {:ok, data} <- get_extent_leg_gov_uk(url),
+      #IO.inspect(data),
       {:ok, %{
         geo_extent: extents,
         geo_region: regions
@@ -98,53 +99,45 @@ defmodule Legl.Countries.Uk.UkExtent do
       |> Legl.Utility.append_to_csv(@at_csv)
       :ok
     else
+      :ok -> :ok
       {:error, error} -> {:error, error}
     end
   end
 
   def get_extent_leg_gov_uk(url) do
     with(
-      {:ok, :xml, %{extents: data}} <- RecordGeneric.extent(url),
-      #
-      IO.inspect(data)
+      {:ok, :xml, %{extents: data}} <- RecordGeneric.extent(url)
     ) do
       {:ok, data}
     else
+      {:error, 307, _error} ->
+        adjust_url(url)
       {:error, code, error} -> {:error, "#{code}: #{error}"}
       {:ok, :html} -> {:error, :html}
     end
   end
 
-  def extent_transformation(data) do
+  def adjust_url(url) do
+    url =
+      case Regex.match?(~r/made/, url) do
+        true ->
+          Regex.replace(~r/made/, url, "enacted")
+        _ ->
+          Regex.replace(~r/contents/, url, "contents/made")
+      end
+    get_extent_leg_gov_uk(url)
+  end
 
+  def extent_transformation([{}]), do: :ok
+  def extent_transformation(data) do
+    #IO.inspect(data, limit: :infinity)
     #get the unique extent
     uniq_extent = uniq_extent(data)
 
-    #use extent as the keys to a map where each section amends
-    extents = create_map(uniq_extent) #|> IO.inspect
-
     regions = regions(uniq_extent)
 
-    extents =
-    Enum.reduce(data, extents,
-      fn {content, extent}, acc ->
-        #IO.inspect(acc)
-        [content | acc["#{extent}"]]
-        |> (&(%{acc | "#{extent}" => &1})).()
-    end)
-    #sort the map
-    extents =
-      Enum.map(extents, fn {k, v} -> {k, Enum.reverse(v)} end) #|> IO.inspect
-      |> Enum.sort_by(&(elem(&1, 0)) |> byte_size(), :desc)
-      #|> IO.inspect
+    extents = extents(data, uniq_extent)
 
-    #make the string
-    extents =
-      Enum.reduce(extents, "", fn {k, v}, acc ->
-        acc <> ~s/#{k}💚️#{Enum.join(v, ", ")}💚️/
-      end)
-      #remove the trailing heart
-      |> (&(Regex.replace(~r/💚️$/, &1, ""))).()
     {:ok,
       %{
         geo_extent: ~s/\"#{extents}\"/,
@@ -153,8 +146,62 @@ defmodule Legl.Countries.Uk.UkExtent do
     }
   end
 
+  def extents(_data, [uniq_extent]) do
+    uniq_extent = emoji_flags(uniq_extent)
+    ~s/#{uniq_extent}💚️All provisions/
+  end
+
+  def extents(data, uniq_extent) do
+    #use extent as the keys to a map where each section amends
+    extents = create_map(uniq_extent) #|> IO.inspect
+    #IO.inspect(data, limit: :infinity)
+    extents =
+      Enum.reduce(data, extents,
+        fn {content, extent}, acc ->
+          #IO.inspect(acc)
+          [content | acc["#{extent}"]]
+          |> (&(%{acc | "#{extent}" => &1})).()
+          {}, acc -> acc
+      end)
+
+    #sort the map
+    extents =
+      Enum.map(extents, fn {k, v} -> {k, Enum.reverse(v)} end) #|> IO.inspect
+      |> Enum.sort_by(&(elem(&1, 0)) |> byte_size(), :desc)
+      #|> IO.inspect
+
+    #make the string
+    Enum.reduce(extents, "", fn {k, v}, acc ->
+      #IO.inspect(k)
+      k = emoji_flags(k)
+      acc <> ~s/#{k}💚️#{Enum.join(v, ", ")}💚️/
+    end)
+    #remove the trailing heart
+    |> (&(Regex.replace(~r/💚️$/, &1, ""))).()
+  end
+
+  def emoji_flags("E+W+S+NI" = k), do: Legl.uk_flag_emoji()<>" "<>k
+  def emoji_flags(k) do
+    enacts = String.split(k, "+")
+    Enum.reduce(enacts, [], fn x, acc ->
+      case x do
+        "E" -> [Legl.england_flag_emoji() | acc]
+        "W" -> [Legl.wales_flag_emoji() | acc]
+        "S" -> [Legl.scotland_flag_emoji() | acc]
+        "NI" -> [Legl.northern_ireland_flag_emoji() | acc]
+      end
+    end)
+    |> Enum.reverse()
+    |> Enum.join(" ")
+    |> (&(&1<>" "<>k)).()
+  end
+
   def uniq_extent(data) do
-    Enum.map(data, fn {_, extent} -> extent end)
+    Enum.reduce(data, [],
+      fn
+        {_, extent}, acc -> [extent | acc]
+        {}, acc -> acc
+    end)
     |> Enum.uniq()
     |> Enum.sort_by(&byte_size/1, :desc)
   end
@@ -163,10 +210,10 @@ defmodule Legl.Countries.Uk.UkExtent do
     Enum.reduce(uniq_extent, %{}, fn x, acc ->
       Map.put(acc, x, [])
     end)
-
   end
 
   def regions(extents) do
+
     regions =
       Enum.reduce(extents, [], fn x, acc ->
         case x do
@@ -189,17 +236,28 @@ defmodule Legl.Countries.Uk.UkExtent do
       end)
       |> Enum.uniq()
 
-    ordered_regions = []
-    ordered_regions =
-      if "Northern Ireland" in regions do ["Northern Ireland" | ordered_regions] end
-    ordered_regions =
-      if "Scotland" in regions do ["Scotland" | ordered_regions] end
-    ordered_regions =
-      if "Wales" in regions do ["Wales" | ordered_regions] end
-    ordered_regions =
-      if "England" in regions do ["England" | ordered_regions] end
+    ordered_regions = ordered_regions(regions)
 
     ~s/\"#{Enum.join(ordered_regions, ",")}\"/
+  end
+
+  def ordered_regions(regions) do
+    Enum.reduce(regions, {"", "", "", ""}, fn x, acc ->
+      case x do
+        "England" -> Tuple.insert_at(acc, 0, x)
+        "Wales" -> Tuple.insert_at(acc, 1, x)
+        "Scotland" -> Tuple.insert_at(acc, 2, x)
+        "Northern Ireland" -> Tuple.insert_at(acc, 3, x)
+      end
+    end)
+    |> Tuple.to_list()
+    |> Enum.reduce([], fn x, acc ->
+      case x do
+        "" -> acc
+        _ -> [x | acc]
+      end
+    end)
+    |> Enum.reverse()
   end
 
 end
