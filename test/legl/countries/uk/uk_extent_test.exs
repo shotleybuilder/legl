@@ -5,6 +5,20 @@ defmodule Legl.Countries.Uk.UkExtentTest do
   use ExUnit.Case
   import Legl.Countries.Uk.UkExtent
 
+  describe "persist data for at upload" do
+    test "make_csv_workflow" do
+      resp = make_csv_workflow("test", "/ukpga/2023/1/contents/data.xml")
+      assert :ok = resp
+    end
+  end
+
+  describe "get a leg_gov_uk record" do
+    test "get_extent_leg_gov_uk/1" do
+      url =  "/ukpga/2023/1/contents/data.xml"
+      {:ok, resp} = get_extent_leg_gov_uk(url)
+      assert {"section-1", "E+W+S+NI"} = List.first(resp)
+    end
+  end
 
   @data [
     {"section-1", "E+W+S+NI"},
@@ -43,4 +57,6 @@ defmodule Legl.Countries.Uk.UkExtentTest do
       } = resp
     end
   end
+
+
 end

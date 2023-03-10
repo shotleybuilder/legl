@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.UkParentChild do
 
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
-  alias Legl.Services.LegislationGovUk.RecordEnactingText
+  alias Legl.Services.LegislationGovUk.RecordGeneric
 
   @new_law_csv_file "lib/airtable_new_law?.csv" |> Path.absname()
   @parents_csv "lib/airtable_parents.csv" |> Path.absname()
@@ -237,7 +237,7 @@ defmodule Legl.Countries.Uk.UkParentChild do
     The key elements being the phrase "conferred by" and the footnote references.
   """
   def get_parent(path) do
-    case RecordEnactingText.enacting_text(path) do
+    case RecordGeneric.enacting_text(path) do
       {:ok, :xml, response} ->
         {:ok, response}
       {:ok, :html} -> {:ok, "not found"}

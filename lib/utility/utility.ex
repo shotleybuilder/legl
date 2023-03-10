@@ -35,4 +35,29 @@ defmodule Legl.Utility do
   def csv_list_quote_enclosure(string) do
     ~s/[#{string}]/
   end
+
+  def append_to_csv(binary, filename) do
+    {:ok, file} =
+      "lib/#{filename}.csv"
+      |> Path.absname()
+      |> File.open([:utf8, :append])
+    IO.puts(file, binary)
+    File.close(file)
+    :ok
+  end
+
+  def save_at_records_to_file(records) when is_list(records) do
+    {:ok, file} =
+      "lib/airtable.txt"
+      |> Path.absname()
+      |> File.open([:utf8, :write])
+    IO.puts(file, inspect(records, limit: :infinity))
+    File.close(file)
+    :ok
+  end
+
+  def resource_path(url) do
+    [_, path] = Regex.run(~r"^http:\/\/www.legislation.gov.uk(.*)", url)
+    path
+  end
 end

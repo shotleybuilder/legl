@@ -1,5 +1,120 @@
 defmodule Legl.Countries.Uk.UkExtent do
 
+  alias Legl.Services.Airtable.AtBasesTables
+  alias Legl.Services.Airtable.Records
+  alias Legl.Services.LegislationGovUk.RecordGeneric
+
+  @at_type ["mwa"]
+  @at_csv "airtable_extents"
+  @doc """
+    Legl.Countries.Uk.UkExtent.full_workflow
+  """
+  def full_workflow() do
+    csv_header_row()
+    Enum.each(@at_type, fn x -> full_workflow(x) end)
+  end
+
+  def full_workflow(type) do
+    with(
+      {:ok, recordset} <- get_records_from_at("UK E", type, false),
+      {:ok, msg} <- enumerate_at_records(recordset)
+    ) do
+      IO.puts(msg)
+    end
+  end
+
+  @doc """
+    Accessor prepopulated with parameters
+  """
+  def get_records_from_at() do
+    get_records_from_at("UK E", @at_type, true)
+  end
+  @doc """
+    Legl.Countries.Uk.UkExtent.get_records_from_at("UK E", "ukpga", true)
+  """
+  def get_records_from_at(base_name, type, filesave?) do
+    with(
+      {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(base_name),
+      params = %{
+        base: base_id,
+        table: table_id,
+        options:
+          %{
+            view: "EXTENT",
+            fields: ["Name", "Title_EN", "leg.gov.uk contents text"],
+            formula: ~s/{type}="#{type}"/
+          }
+        },
+      {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
+    ) do
+      IO.puts("Records returned from Airtable")
+      if filesave? == true do Legl.Utility.save_at_records_to_file(recordset) end
+      if filesave? == false do {:ok, recordset} end
+    else
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  def enumerate_at_records(records) do
+    Enum.each(records, fn x ->
+      fields = Map.get(x, "fields")
+      name = Map.get(fields, "Name")
+      path = Legl.Utility.resource_path(Map.get(fields, "leg.gov.uk contents text"))
+      with(
+        :ok <- make_csv_workflow(name, path)
+      ) do
+        IO.puts("#{fields["Title_EN"]}")
+      else
+        {:error, error} ->
+          IO.puts("ERROR #{error} with #{fields["Title_EN"]}")
+        {:error, :html} ->
+          IO.puts(".html from #{fields["Title_EN"]}")
+      end
+    end)
+    {:ok, "metadata properties saved to csv"}
+    #|> (&{:ok, &1}).()
+  end
+
+  @fields ~w[
+    Name
+    Geo_Region
+    Geo_Extent
+  ]
+
+  def csv_header_row() do
+    Enum.join(@fields, ",")
+    |> Legl.Utility.append_to_csv(@at_csv)
+  end
+
+  def make_csv_workflow(name, url) do
+    with(
+      {:ok, data} <- get_extent_leg_gov_uk(url),
+      {:ok, %{
+        geo_extent: extents,
+        geo_region: regions
+      }} <- extent_transformation(data)
+    ) do
+      ~s/#{name},#{regions},#{extents}/
+      |> Legl.Utility.append_to_csv(@at_csv)
+      :ok
+    else
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  def get_extent_leg_gov_uk(url) do
+    with(
+      {:ok, :xml, %{extents: data}} <- RecordGeneric.extent(url),
+      #
+      IO.inspect(data)
+    ) do
+      {:ok, data}
+    else
+      {:error, code, error} -> {:error, "#{code}: #{error}"}
+      {:ok, :html} -> {:error, :html}
+    end
+  end
+
   def extent_transformation(data) do
 
     #get the unique extent
@@ -26,13 +141,15 @@ defmodule Legl.Countries.Uk.UkExtent do
     #make the string
     extents =
       Enum.reduce(extents, "", fn {k, v}, acc ->
-        #IO.puts("#{k} #{v}")
-        acc <> ~s/#{k}\n#{Enum.join(v, ", ")}\n/
+        acc <> ~s/#{k}💚️#{Enum.join(v, ", ")}💚️/
       end)
-
-    %{
-      geo_extent: extents,
-      geo_region: regions
+      #remove the trailing heart
+      |> (&(Regex.replace(~r/💚️$/, &1, ""))).()
+    {:ok,
+      %{
+        geo_extent: ~s/\"#{extents}\"/,
+        geo_region: regions
+      }
     }
   end
 
@@ -42,16 +159,11 @@ defmodule Legl.Countries.Uk.UkExtent do
     |> Enum.sort_by(&byte_size/1, :desc)
   end
 
-  def sorter(binary) do
-    binary
-    |> String.graphemes()
-    |> Enum.count(& &1 == "+")
-  end
-
   def create_map(uniq_extent) do
     Enum.reduce(uniq_extent, %{}, fn x, acc ->
       Map.put(acc, x, [])
     end)
+
   end
 
   def regions(extents) do

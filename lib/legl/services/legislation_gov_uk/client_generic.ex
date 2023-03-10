@@ -1,21 +1,21 @@
-defmodule Legl.Services.LegislationGovUk.ClientEnactingText do
+defmodule Legl.Services.LegislationGovUk.ClientGeneric do
 
-  def run!(url) do
+  def run!(url, parser) do
     case HTTPoison.get!(url, %{}, stream_to: self()) do
       %HTTPoison.AsyncResponse{id: id} ->
-        async_response( { id, %{} } )
+        async_response({id, %{}}, parser)
     end
   end
 
-  defp async_response({id, data}) do
+  defp async_response({id, data}, parser) do
 
     receive do
 
       %HTTPoison.AsyncStatus{id: ^id, code: 200} ->
-        async_response({id, data})
+        async_response({id, data}, parser)
 
       %HTTPoison.AsyncStatus{id: ^id, code: 301} ->
-        async_response({id, data})
+        async_response({id, data}, parser)
 
       %HTTPoison.AsyncStatus{id: ^id, code: 404} ->
         {:error, 404, "resource not found"}
@@ -28,33 +28,31 @@ defmodule Legl.Services.LegislationGovUk.ClientEnactingText do
               |> Map.new
               |> content_type?()
         data = Map.merge( data, %{ content_type: ct, body: "" } )
-        async_response( {id, data} )
+        async_response({id, data}, parser)
 
       %HTTPoison.AsyncRedirect{id: ^id, headers: headers, to: to} ->
         ct =  headers |> Map.new |> content_type?()
         data = Map.merge( data, %{ content_type: ct, to: to } )
-        async_response( {id, data} )
+        async_response({id, data}, parser)
 
       %HTTPoison.AsyncChunk{id: ^id, chunk: chunk} ->
         data.content_type
         |> case do
           :xml ->
-            c_state = { id, %{ data | body: data.body <> chunk } }
-            { :ok, acc_out, _ } =
-              :erlsom.parse_sax( chunk, nil,
-              &Legl.Services.LegislationGovUk.Parsers.EnactingText.sax_event_handler/2,
-              [ { :continuation_function, &async_response/2, c_state } ] )
-            { :ok,
-              %{ content_type: :xml,
-              body: acc_out
-              }
-            }
+            c_state = {id, %{data | body: data.body <> chunk}}
+
+            {:ok, acc_out, _} =
+              :erlsom.parse_sax(chunk, nil,
+              parser,
+              [{:continuation_function, &async_response/2, c_state}])
+
+            {:ok, %{content_type: :xml, body: acc_out}}
           _ ->
-            async_response( { id, %{ data | body: data.body <> chunk } } )
+            async_response({id, %{ data | body: data.body <> chunk}}, parser)
           end
 
-      %HTTPoison.AsyncEnd{ id: ^id } ->
-        { :ok, %{ content_type: data.content_type, body:  data.body } }
+      %HTTPoison.AsyncEnd{id: ^id} ->
+        {:ok, %{ content_type: data.content_type, body:  data.body}}
 
     end
 
