@@ -4,8 +4,9 @@ defmodule Legl.Countries.Uk.UkExtent do
   alias Legl.Services.Airtable.Records
   alias Legl.Services.LegislationGovUk.RecordGeneric
 
-  @at_type ["uksi"]
+  @at_type ["asc"]
   @at_csv "airtable_extents"
+  @at_name "UK_uksi_2004_1959_ALNITCR"
   @doc """
     Legl.Countries.Uk.UkExtent.full_workflow
   """
@@ -13,10 +14,24 @@ defmodule Legl.Countries.Uk.UkExtent do
     csv_header_row()
     Enum.each(@at_type, fn x -> full_workflow(x) end)
   end
+  @doc """
+    Legl.Countries.Uk.UkExtent.single_law
+  """
+  def single_law() do
+    csv_header_row()
+    formula = ~s/{Name}="#{@at_name}"/
+    with(
+      {:ok, recordset} <- get_records_from_at("UK E", false, formula),
+      {:ok, msg} <- enumerate_at_records(recordset)
+    ) do
+      IO.puts(msg)
+    end
+  end
 
   def full_workflow(type) do
+    formula = ~s/AND({type}="#{type}",{Geo_Extent}=BLANK())/
     with(
-      {:ok, recordset} <- get_records_from_at("UK E", type, false),
+      {:ok, recordset} <- get_records_from_at("UK E", false, formula),
       {:ok, msg} <- enumerate_at_records(recordset)
     ) do
       IO.puts(msg)
@@ -32,7 +47,7 @@ defmodule Legl.Countries.Uk.UkExtent do
   @doc """
     Legl.Countries.Uk.UkExtent.get_records_from_at("UK E", "ukpga", true)
   """
-  def get_records_from_at(base_name, type, filesave?) do
+  def get_records_from_at(base_name, filesave?, formula) do
     with(
       {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(base_name),
       params = %{
@@ -42,7 +57,7 @@ defmodule Legl.Countries.Uk.UkExtent do
           %{
             view: "EXTENT",
             fields: ["Name", "Title_EN", "leg.gov.uk contents text"],
-            formula: ~s/AND({type}="#{type}",{Geo_Extent}=BLANK())/
+            formula: formula
           }
         },
       {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
@@ -83,13 +98,12 @@ defmodule Legl.Countries.Uk.UkExtent do
 
   def csv_header_row() do
     Enum.join(@fields, ",")
-    |> Legl.Utility.append_to_csv(@at_csv)
+    |> Legl.Utility.write_to_csv(@at_csv)
   end
 
   def make_csv_workflow(name, url) do
     with(
       {:ok, data} <- get_extent_leg_gov_uk(url),
-      #IO.inspect(data),
       {:ok, %{
         geo_extent: extents,
         geo_region: regions
@@ -113,7 +127,9 @@ defmodule Legl.Countries.Uk.UkExtent do
       {:error, 307, _error} ->
         adjust_url(url)
       {:error, code, error} -> {:error, "#{code}: #{error}"}
-      {:ok, :html} -> {:error, :html}
+      {:ok, :html} ->
+        IO.puts("#{url}")
+        {:error, :html}
     end
   end
 
@@ -132,6 +148,9 @@ defmodule Legl.Countries.Uk.UkExtent do
   def extent_transformation(data) do
     #IO.inspect(data, limit: :infinity)
     #get the unique extent
+    data = clean_data(data)
+    IO.inspect(data, limit: :infinity)
+
     uniq_extent = uniq_extent(data)
 
     regions = regions(uniq_extent)
@@ -146,6 +165,17 @@ defmodule Legl.Countries.Uk.UkExtent do
     }
   end
 
+  def clean_data(data) do
+    Enum.reduce(data, [],
+      fn
+        {}, acc -> acc
+        {_extents}, acc -> acc
+        {provisions, "(E+W)"}, acc -> [{provisions, "E+W"} | acc]
+        {provisions, "EW"}, acc -> [{provisions, "E+W"} | acc]
+        {provisions, extent}, acc ->  [{provisions, extent} | acc]
+    end)
+  end
+
   def extents(_data, [uniq_extent]) do
     uniq_extent = emoji_flags(uniq_extent)
     ~s/#{uniq_extent}💚️All provisions/
@@ -157,11 +187,13 @@ defmodule Legl.Countries.Uk.UkExtent do
     #IO.inspect(data, limit: :infinity)
     extents =
       Enum.reduce(data, extents,
-        fn {content, extent}, acc ->
-          #IO.inspect(acc)
-          [content | acc["#{extent}"]]
-          |> (&(%{acc | "#{extent}" => &1})).()
+        fn
+          {content, extent}, acc ->
+            #IO.inspect(acc)
+            [content | acc["#{extent}"]]
+            |> (&(%{acc | "#{extent}" => &1})).()
           {}, acc -> acc
+          {_extents}, acc -> acc
       end)
 
     #sort the map
@@ -201,6 +233,7 @@ defmodule Legl.Countries.Uk.UkExtent do
       fn
         {_, extent}, acc -> [extent | acc]
         {}, acc -> acc
+        {_extent}, acc -> acc
     end)
     |> Enum.uniq()
     |> Enum.sort_by(&byte_size/1, :desc)

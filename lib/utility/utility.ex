@@ -46,6 +46,16 @@ defmodule Legl.Utility do
     :ok
   end
 
+  def write_to_csv(binary, filename) do
+    {:ok, file} =
+      "lib/#{filename}.csv"
+      |> Path.absname()
+      |> File.open([:utf8, :write])
+    IO.puts(file, binary)
+    File.close(file)
+    :ok
+  end
+
   def save_at_records_to_file(records) when is_list(records) do
     {:ok, file} =
       "lib/airtable.txt"
