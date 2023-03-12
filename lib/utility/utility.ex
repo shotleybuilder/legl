@@ -70,4 +70,10 @@ defmodule Legl.Utility do
     [_, path] = Regex.run(~r"^http:\/\/www.legislation.gov.uk(.*)", url)
     path
   end
+
+  def yyyy_mm_dd(date) do
+    [_, year, month, day] = Regex.run(~r/(\d{4})-(\d{2})-(\d{2})/, date)
+    "#{day}/#{month}/#{year}"
+  end
+
 end

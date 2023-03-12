@@ -246,7 +246,7 @@ defmodule Legl.Countries.Uk.UkExtent do
   end
 
   def regions(extents) do
-
+    #change this to String.split on '+' and Enum the list
     regions =
       Enum.reduce(extents, [], fn x, acc ->
         case x do
