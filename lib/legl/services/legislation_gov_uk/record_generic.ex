@@ -53,4 +53,19 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
 
     end
   end
+
+  def repeal_revoke(url) do
+    with(
+      {:ok, %{:content_type => :html, :body => body}} <-
+        Legl.Services.LegislationGovUk.ClientAmdTbl.run!(@endpoint <> url),
+      {:ok, response} <-
+        Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser(body)
+    ) do
+      response
+    else
+      {:error, code, response} ->
+        IO.puts("************* #{code} #{response} **************")
+        {:ok, nil, []}
+    end
+  end
 end

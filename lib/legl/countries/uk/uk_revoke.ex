@@ -1,5 +1,10 @@
 defmodule Legl.Countries.Uk.UkRevoke do
-
+  @moduledoc """
+    This module checks the repealed or revoked status of a
+    piece of legislaton by testing for the appending words
+    'repealed' or 'revoked' at the end of the title element in
+    the .xml
+  """
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
   alias Legl.Services.LegislationGovUk.RecordGeneric

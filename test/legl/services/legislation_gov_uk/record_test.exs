@@ -4,6 +4,7 @@ defmodule Legl.Services.LegislationGovUk.RecordTest do
 
   use ExUnit.Case
   import Legl.Services.LegislationGovUk.Record
+  import Legl.Services.LegislationGovUk.RecordGeneric
 
     @moduletag :legislation_gov_uk
 
@@ -38,6 +39,27 @@ defmodule Legl.Services.LegislationGovUk.RecordTest do
         resp = applied(records)
         assert is_list(resp)
         IO.inspect(resp)
+      end
+    end
+
+    describe "repeal_revoke/1" do
+      test "revoked" do
+        url =
+          "/changes/affected/uksi/2021/705?results-count=1000&sort=affecting-year-number"
+        resp = repeal_revoke(url)
+        assert is_list(resp)
+      end
+      test "repealed" do
+        url =
+          "/changes/affected/ukpga/2003/12?results-count=1000&sort=affecting-year-number"
+        resp = repeal_revoke(url)
+        assert is_list(resp)
+      end
+      test "no amendments" do
+        url =
+          "/changes/affected/uksi/2023/118?results-count=1000&sort=affecting-year-number"
+        resp = repeal_revoke(url)
+        assert [] = resp
       end
     end
 
