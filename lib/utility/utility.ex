@@ -28,6 +28,11 @@ defmodule Legl.Utility do
     |> (&("#{&1.day}/#{&1.month}/#{&1.year}")).()
   end
 
+  def csv_header_row(fields, at_csv) do
+    Enum.join(fields, ",")
+    |> Legl.Utility.write_to_csv(at_csv)
+  end
+
   def csv_quote_enclosure(string) do
     ~s/"#{string}"/
   end
@@ -67,7 +72,7 @@ defmodule Legl.Utility do
   end
 
   def resource_path(url) do
-    [_, path] = Regex.run(~r"^http:\/\/www.legislation.gov.uk(.*)", url)
+    [_, path] = Regex.run(~r"^https:\/\/www.legislation.gov.uk(.*)", url)
     path
   end
 

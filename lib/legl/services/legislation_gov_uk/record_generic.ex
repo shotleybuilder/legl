@@ -61,11 +61,9 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
       {:ok, response} <-
         Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser(body)
     ) do
-      response
+      {:ok, response}
     else
-      {:error, code, response} ->
-        IO.puts("************* #{code} #{response} **************")
-        {:ok, nil, []}
+      {:error, code, response} -> {:error, code, response}
     end
   end
 end
