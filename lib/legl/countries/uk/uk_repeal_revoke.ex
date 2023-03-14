@@ -14,9 +14,30 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
   alias Legl.Countries.Uk.UkAirtable, as: AT
   alias Legl.Airtable.AirtableIdField, as: ID
 
-  @at_type ["ukpga"]
+  defstruct [
+    :title,
+    :amending_title,
+    :path,
+    :type,
+    :year,
+    :number,
+    :code,
+    :revoked_by,
+    :description
+  ]
+
+  @at_type %{
+    ukpga: ["ukpga"],
+    uksi: ["uksi"],
+    ni: ["nia", "apni", "nisi", "nisr", "nisro"],
+    s: ["asp", "ssi"],
+    uk: ["ukpga", "uksi"],
+    w: ["anaw", "mwa", "wsi"],
+    o: ["ukcm", "ukla", "asc"]
+  }
   @at_csv "airtable_repeal_revoke"
-  @code "❌ Revoked / Repealed / Abolished"
+  @code_full "❌ Revoked / Repealed / Abolished"
+  @code_part "⭕ Part Revocation / Repeal"
   @at_url_field "leg.gov.uk - changes"
 
   @fields ~w[
@@ -31,15 +52,17 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
 
     Having set @at_type and the formula to return the correct AT records for process
   """
-  def full_workflow() do
+  def full_workflow(t) when is_atom(t) do
+    t = Map.get(@at_type, t)
     Legl.Utility.csv_header_row(@fields, @at_csv)
-    Enum.each(@at_type, fn x -> full_workflow(x) end)
+    Enum.each(t, fn x -> full_workflow(x) end)
   end
 
   def full_workflow(type) do
     #formula = ~s/AND({type}="#{type}",{Live?}=BLANK())/
     #formula = ~s/{type}="#{type}"/
-    formula = ~s/AND({type}="#{type}",{Live?}="#{@code}")/
+    #formula = ~s/AND({type}="#{type}",{Live?}="#{@code_part}")/
+    formula = ~s/AND({type}="#{type}",OR({Live?}="#{@code_part}",{Live?}="#{@code_full}"))/
     opts =
       [
         formula: formula,
@@ -59,22 +82,11 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
   def make_csv_workflow(name, url) do
     with(
       {:ok, table_data} <- Record.repeal_revoke(url),
-      {:ok,
-        %{
-          title: _title,
-          amending_title: amending_title,
-          path: _path,
-          type: type,
-          year: year,
-          number: number
-        }
-      } <- process_amendment_table(table_data),
-      description <- repeal_revoke_description(table_data)
+      {:ok, result} <- repeal_revoke_description(table_data),
+      {:ok, result} <- process_amendment_table(table_data, result),
+      {:ok, result} <- at_revoked_by_field(table_data, result)
     ) do
-      id = ID.id(amending_title, type, year, number)
-      ~s/#{name},#{@code},#{id},#{description}/
-      |> Legl.Utility.append_to_csv(@at_csv)
-      :ok
+      save_to_csv(name, result)
     else
       :ok -> :ok
       {nil, msg} -> IO.puts("#{name} ---> #{msg}")
@@ -83,33 +95,52 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
       {:error, error} -> {:error, error}
     end
   end
+  def save_to_csv(_name, %{description: ""}) do
+    # no revokes or repeals
+    :ok
+  end
+  def save_to_csv(_name, %{description: nil}) do
+    # no revokes or repeals
+    :ok
+  end
+  def save_to_csv(name, r) do
+    # part revoke or repeal
+    if "" != r.description |> to_string() |> String.trim() do
+      ~s/#{name},#{r.code},#{r.revoked_by},#{r.description}/
+      |> Legl.Utility.append_to_csv(@at_csv)
+    end
+    :ok
+  end
 
-  def process_amendment_table([]) do
+  def process_amendment_table([], _) do
     IO.puts("record.ex: number of records: 0")
     {nil, "no amendments - not repealed nor revoked"}
   end
 
-  def process_amendment_table([{"tbody", _, records}]) do
-    table =
-      Enum.reduce(records, %{}, fn {_, _, x}, acc ->
+  def process_amendment_table(_, %{description: nil}), do: {nil, "not repealed nor revoked"}
+
+  def process_amendment_table([{"tbody", _, records}], result) do
+    result =
+      Enum.reduce_while(records, result, fn {_, _, x}, acc ->
         case proc_amd_tbl_row(x) do
           {:ok, title, "Regulations", "revoked", amending_title, path} ->
-            update_acc(title, amending_title, path, acc)
+            update_acc(title, amending_title, path, @code_full, acc)
+
+          {:ok, title, "Order", "revoked", amending_title, path} ->
+            update_acc(title, amending_title, path, @code_full, acc)
 
           {:ok, title, "Act", "repealed", amending_title, path} ->
-            update_acc(title, amending_title, path, acc)
+            update_acc(title, amending_title, path, @code_full, acc)
 
-          _ -> acc
+          _ -> {:cont, acc}
         end
       end)
-    case Enum.count(table) do
-      0 -> {nil, "not repealed nor revoked"}
-      _ -> {:ok, table}
-    end
+    {:ok, result}
   end
 
-  def update_acc(title, amending_title, path, acc) do
+  def update_acc(title, amending_title, path, code, acc) do
     [_, type, year, number] = Regex.run(~r/^\/id\/([a-z]*)\/(\d{4})\/(\d+)/, path)
+
     Map.merge(acc,
       %{
         title: title,
@@ -117,8 +148,10 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
         path: path,
         type: type,
         year: year,
-        number: number
+        number: number,
+        code: code
       })
+    |> (&({:halt, &1})).()
   end
 
   @pattern quote do: [
@@ -137,6 +170,7 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     case row do
       unquote(@pattern) ->
         {:ok, title, amendment_target, amendment_effect, amending_title, path}
+        #|> IO.inspect()
       _ -> {:error, "no match"}
     end
   end
@@ -146,6 +180,10 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
         Revocation / repeal phrase
           Provisions revoked or repealed
   """
+  def repeal_revoke_description([]) do
+    IO.puts("record.ex: number of records: 0")
+    {nil, "no amendments - not repealed nor revoked"}
+  end
   def repeal_revoke_description(records) do
     records
     |> revoke_repeal_details()
@@ -153,8 +191,42 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     |> sort_on_amending_law_year()
     |> convert_to_string()
     |> string_for_at_field()
+    |> (&({:ok, &1})).()
   end
+  @doc """
 
+  """
+  def at_revoked_by_field(records, result) do
+    records
+    |> revoke_repeal_details()
+    |> Enum.reduce([], fn {_, _, _, x}, acc ->
+      x = Regex.replace(~r/\s/u, x, " ")
+      [_, title] =
+        case Regex.run(~r/(.*)[ ]\d*💚️/, x) do
+          [_, title] -> [nil, title]
+          _ ->
+            Regex.run(~r/(.*)[ ]\d{4}[ ]\(repealed\)💚️/, x)
+        end
+      [_, type, year, number] = Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d*)/, x)
+      [ID.id(title, type, year, number) | acc]
+    end)
+    |> Enum.uniq()
+    |> Enum.join(",")
+    |> Legl.Utility.csv_quote_enclosure()
+    |> (&(Map.merge(result, %{revoked_by: &1}))).()
+    |> (&({:ok, &1})).()
+  end
+  @doc """
+    INPUT
+    OUTPUT
+    [
+      {"Forestry Act 1967", "s. 39(5)", "repealed",
+      "Requirements of Writing (Scotland) Act 1995💚️https://legislation.gov.uk/id/ukpga/1995/7"},
+      {"Forestry Act 1967", "Act", "power to repealed or amended (prosp.)",
+      "Government of Wales Act 1998💚️https://legislation.gov.uk/id/ukpga/1998/38"},
+      ...
+    ]
+  """
   def revoke_repeal_details([{"tbody", _, records}]) do
     Enum.reduce(records, [], fn {_, _, x}, acc ->
       case proc_amd_tbl_row(x) do
@@ -175,9 +247,7 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
 
   @doc """
     INPUT
-      [
-        {title, amendment_target, amendment_effect, amending_title, path}
-      ]
+      From revoke_repeal_details/1
     OUTPUT
       [
         %{"The Scotland Act 1998 ... Order 1999💚️https://legislation.gov.uk/id/uksi/1999/1747" =>
@@ -198,7 +268,21 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
       |> (&([%{k => &1} | acc])).()
     end)
   end
-
+  @doc """
+    OUTPUT
+    [
+      "1995": %{
+        "Requirements of Writing (Scotland) Act 1995💚️https://legislation.gov.uk/id/ukpga/1995/7" => %{
+          "repealed" => ["s. 39(5)"]
+        }
+      },
+      "1998": %{
+        "Government of Wales Act 1998💚️https://legislation.gov.uk/id/ukpga/1998/38" => %{
+          "power to repealed or amended (prosp.)" => ["Act"]
+        }
+        ...
+    ]
+  """
   def sort_on_amending_law_year(records) do
     Enum.reduce(records, [], fn(record, acc) ->
       [key] = Map.keys(record)
@@ -207,7 +291,13 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     end)
     |> Enum.sort(:asc)
   end
-
+  @doc """
+    OUTPUT
+    [
+      "💚️Forestry and Land Management (Scotland) Act 2018💚️https://legislation.gov.uk/id/asp/2018/8💚️\trepealed💚️\t\tAct",
+      ...
+    ]
+  """
   def convert_to_string(records) do
     Enum.reduce(records, [], fn({_, record}, acc) ->
       Enum.into(record, "", fn {k, v} ->
@@ -221,10 +311,24 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
       |> (&([&1 | acc])).()
     end)
   end
-
+@doc """
+  OUTPUT
+    %Legl.Countries.Uk.UkRepealRevoke{
+              title: nil,
+              amending_title: nil,
+              path: nil,
+              type: nil,
+              year: nil,
+              number: nil,
+              code: "⭕ Part Revocation / Repeal",
+              description:
+              "\"Forestry and Land Management (Scotland) Act 2018💚️https://legislation.gov.uk/id/asp/2018/8💚️\trepealed💚️\t\tAct
+    }
+"""
   def string_for_at_field(records) do
     Enum.join(records)
     |> (&(Regex.replace(~r/^💚️/, &1, ""))).()
     |> Legl.Utility.csv_quote_enclosure()
+    |> (&(Map.merge(%__MODULE__{}, %{description: &1, code: @code_part}))).()
   end
 end

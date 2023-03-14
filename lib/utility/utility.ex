@@ -34,7 +34,11 @@ defmodule Legl.Utility do
   end
 
   def csv_quote_enclosure(string) do
-    ~s/"#{string}"/
+    if "" != string |> to_string() |> String.trim() do
+      ~s/"#{string}"/
+    else
+      string
+    end
   end
 
   def csv_list_quote_enclosure(string) do
@@ -76,6 +80,9 @@ defmodule Legl.Utility do
     path
   end
 
+  def type_year_number(path) do
+    Regex.run(~r/\/(a-z)*?\/(\d{2})\/(\d{2})/, path)
+  end
   def yyyy_mm_dd(date) do
     [_, year, month, day] = Regex.run(~r/(\d{4})-(\d{2})-(\d{2})/, date)
     "#{day}/#{month}/#{year}"
