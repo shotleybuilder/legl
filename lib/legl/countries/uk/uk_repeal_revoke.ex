@@ -10,7 +10,7 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
 
   """
 
-  alias Legl.Services.LegislationGovUk.RecordGeneric, as: Record
+  alias Legl.Services.LegislationGovUk.RecordGeneric
   alias Legl.Countries.Uk.UkAirtable, as: AT
   alias Legl.Airtable.AirtableIdField, as: ID
 
@@ -25,6 +25,9 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     :revoked_by,
     :description
   ]
+
+  @client &Legl.Services.LegislationGovUk.ClientAmdTbl.run!/1
+  @parser &Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser/1
 
   @at_type %{
     ukpga: ["ukpga"],
@@ -81,7 +84,7 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
 
   def make_csv_workflow(name, url) do
     with(
-      {:ok, table_data} <- Record.repeal_revoke(url),
+      {:ok, table_data} <- RecordGeneric.leg_gov_uk_html(url, @client, @parser),
       {:ok, result} <- repeal_revoke_description(table_data),
       {:ok, result} <- process_amendment_table(table_data, result),
       {:ok, result} <- at_revoked_by_field(table_data, result)
