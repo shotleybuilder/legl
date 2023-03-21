@@ -32,4 +32,9 @@ lib/*/at_formula/
 *.html
 *.csv
 
+lib/si_code_regions.csv
+lib/si_codes.csv
+lib/empty_si_codes.csv
+lib/error_si_codes.csv
+
 airtable_data.ex
