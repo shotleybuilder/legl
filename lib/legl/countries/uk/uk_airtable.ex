@@ -42,6 +42,18 @@ defmodule Legl.Countries.Uk.UkAirtable do
     end
   end
 
+  def enumerate_at_records({file, records}, func) do
+    Enum.each(records, fn x ->
+      fields = Map.get(x, "fields")
+      IO.puts("#{fields["Title_EN"]}")
+      with(
+        {:ok, msg} <- func.(file, fields)
+      ) do
+        {:ok, msg}
+      end
+    end)
+  end
+
   def enumerate_at_records(records, field, func) do
     Enum.each(records, fn x ->
       fields = Map.get(x, "fields")
