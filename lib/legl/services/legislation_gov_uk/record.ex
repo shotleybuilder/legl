@@ -22,21 +22,26 @@ defmodule Legl.Services.LegislationGovUk.Record do
           }
         }
 
-      {:ok, %{:content_type => :html}} ->
-        { :ok,
-          :html
-        }
+      {:ok, %{:content_type => :html}} -> {:ok, :html}
 
-      { :error, code, error } ->
+      {:error, code, error} ->
         #Some older legislation doesn't have .../made/data.xml api
         case code do
+          #temporary redirect
+          307 ->
+            if String.contains?(url, "made") != :true do
+              legislation(String.replace(url, "data.xml", "made/data.xml"))
+            else
+              {:error, code, error}
+            end
           404 ->
             if String.contains?(url, "/made/") do
               legislation(String.replace(url, "/made", "") )
             else
-              { :error, code, error }
+              {:error, code, error}
             end
-          _ -> { :error, code, error }
+          _ ->
+            {:error, code, error}
         end
 
     end

@@ -75,6 +75,14 @@ defmodule Legl.Utility do
     :ok
   end
 
+  def count_csv_rows(filename) do
+    binary =
+      "lib/"<>filename<>".csv"
+      |> Path.absname()
+      |> File.read!()
+    binary |> String.graphemes |> Enum.count(& &1 == "\n")
+  end
+
   def resource_path(url) do
     [_, path] = Regex.run(~r"^https:\/\/www.legislation.gov.uk(.*)", url)
     path
@@ -83,9 +91,25 @@ defmodule Legl.Utility do
   def type_year_number(path) do
     Regex.run(~r/\/(a-z)*?\/(\d{2})\/(\d{2})/, path)
   end
+
+  def split_name(name) do
+    case Regex.run(~r/_([a-z]*?)_(\d{4})_(\d*?)_/, name) do
+      [_, type, year, number] ->
+        {type, year, number}
+      _ ->
+        #UK_ukpga_1960_Eliz2/8-9/34_RSA
+        case Regex.run(~r/_([a-z]*?)_\d{4}_(.*?)_/, name) do
+          [_, type, number] ->
+            {type, number}
+          nil -> {:error, ~s/no match for #{name}/}
+        end
+    end
+  end
+
   def yyyy_mm_dd(date) do
     [_, year, month, day] = Regex.run(~r/(\d{4})-(\d{2})-(\d{2})/, date)
     "#{day}/#{month}/#{year}"
   end
+
 
 end

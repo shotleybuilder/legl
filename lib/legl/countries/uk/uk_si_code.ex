@@ -9,19 +9,41 @@ defmodule Legl.Countries.Uk.UkSiCode do
   """
 
   alias Legl.Services.Airtable.Records
-  alias Legl.Services.LegislationGovUk.Record
   alias Legl.Services.Airtable.AtBasesTables
 
-  def si_code_process(base_name) do
-    with {:ok, recordset} <- get_at_records_with_empty_si_code(base_name),
-     {:ok, recordset} <- get_si_code_from_legl_gov_uk(recordset),
-     {:ok, count} <- make_csv(recordset, "amending")
+  @at_csv "amending"
+  @default_opts %{
+    base_name: "UK E"
+  }
+  @doc """
+    Can be called with an optional view name
+
+    Legl.Countries.Uk.UkSiCode.si_code_process([view: view])
+
+  """
+
+  def si_code_process(opts \\ []) do
+
+    opts = Enum.into(opts, @default_opts)
+
+    {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
+    IO.puts(file, "Name,SI Code")
+
+    with {:ok, recordset} <- get_at_records_with_empty_si_code(opts),
+     :ok <- get_and_save_si_code_from_legl_gov_uk(recordset, file),
+     :ok <- rm_last_line(@at_csv),
+     {:ok, records} <- clean_csv(),
+     #IO.inspect(limit: :infinity),
+     :ok <- split_si_code_csv(records)
     do
-      IO.puts("csv file saved with #{count} records")
+      Legl.Utility.count_csv_rows(@at_csv)
+      |> (&(IO.puts("csv file saved with #{&1} records"))).()
       :ok
     else
       {:error, error} -> IO.puts("#{error}")
     end
+
+    File.close(file)
   end
 
   @doc """
@@ -40,16 +62,20 @@ defmodule Legl.Countries.Uk.UkSiCode do
       "id" => "rec5v3jwxYikGJXRQ"
     }]
   """
-  def get_at_records_with_empty_si_code(base_name) do
-    with(
-      {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(base_name),
-      params = %{
-        base: base_id,
-        table: table_id,
-        options:
-          %{
+  def get_at_records_with_empty_si_code(opts) do
+    options =
+      Enum.into(opts,
+        %{
           fields: ["Name", "Title_EN", "SI CODE", "leg.gov.uk intro text"],
-          formula: ~s/{SI CODE}="Empty"/}
+          formula: ~s/{SI CODE}=BLANK()/}
+      )
+    with(
+      {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(opts.base_name),
+      params =
+        %{
+          base: base_id,
+          table: table_id,
+          options: options
         },
       {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
     ) do
@@ -62,72 +88,46 @@ defmodule Legl.Countries.Uk.UkSiCode do
   @doc """
     Legl.Countries.Uk.UkSiCode.get_parent_at_records_with_multi_si_codes("UK E")
   """
-  def get_parent_at_records_with_multi_si_codes(base_name, filesave? \\ false) do
-    with(
-      {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(base_name),
-      params = %{
-        base: base_id,
-        table: table_id,
-        options:
-          %{
-          view: "SI_CODE-PARENTS",
-          fields: ["Name", "Title_EN", "SI_Code_(from_Children)"],
-          formula: ~s/{SI_Code_Children_(Count)}>1/}
-        },
-      {:ok, {_, recordset}} <- Records.get_records({[],[]}, params),
-      uniq_recordset <- Enum.map(recordset, fn x -> uniq_si_codes(x) end)
-    ) do
-      IO.puts("Records returned from Airtable")
-      if filesave? == true do save_to_file(uniq_recordset) end
-      make_csv(uniq_recordset, "airtable_parent_si_codes")
-    else
-      {:error, error} -> {:error, error}
-    end
-  end
 
-  def uniq_si_codes(
-    %{"fields" =>
-      %{"SI_Code_(from_Children)" => si_codes}
-    } = record) do
-    Enum.uniq(si_codes)
-    |> Enum.sort()
-    |> Enum.join(",")
-    |> Legl.Utility.csv_quote_enclosure()
-    |> (&(Map.put_new(record["fields"], "SI CODE", &1))).()
-  end
-
-  def save_to_file(records) when is_list(records) do
-    {:ok, file} =
-      "lib/airtable.txt"
-      |> Path.absname()
-      |> File.open([:read, :utf8, :write])
-    IO.puts(file, inspect(records, limit: :infinity))
-    File.close(file)
+  def get_and_save_si_code_from_legl_gov_uk(at_records, file) do
+    Enum.each(at_records, fn x ->
+      name = x |> Map.get("fields") |> Map.get("Name")
+      with(
+        {:ok, path} <- name |> resource_path(),
+        {:ok, si_code} <- get_si_code(path)
+      ) do
+        si_code =
+          if si_code != "" do si_code else "_NO_SI_CODE" end
+        ~s/#{name},#{si_code}/
+        |> (&(IO.puts(file, &1))).()
+      else
+        {:error, error} ->
+          IO.inspect(error, label: "ERROR: ")
+        {:error, code, error} ->
+          IO.puts("ERROR: #{code} #{error}")
+      end
+    end)
     :ok
   end
 
+  def rm_last_line(filename) do
+    path = "lib/#{filename}.csv" |> Path.absname()
+    File.read!(path)
+    |> (&(Regex.replace(~r/\s*\Z/, &1, ""))).()
+    |> (&(File.write!(path, &1))).()
+    :ok
+  end
   @doc """
-
+    /uksi/1995/304/introduction/made/data.xml
   """
-  def get_si_code_from_legl_gov_uk(records) do
-
-    #records =
-    Enum.into(records, [], fn x ->
-        fields = Map.get(x, "fields")
-        path = resource_path(Map.get(fields, "leg.gov.uk intro text"))
-        si_code =
-          case get_si_code(path) do
-            {:ok, si_code} -> si_code |> IO.inspect(label: "leg.gov.uk: ")
-            {:error, error} ->
-              IO.inspect(error, label: "leg.gov.uk: ERROR: ")
-              "ERROR #{error}"
-          end
-        %{x | "fields" => %{x["fields"] | "SI CODE" => si_code}}
-        #[x | acc]
-    end)
-    #{:ok, records}
-    |> (&{:ok, &1}).()
-
+  def resource_path("UK"<>name) do
+    case Legl.Utility.split_name(name) do
+      {type, year, number} ->
+        {:ok, ~s[/#{type}/#{year}/#{number}/introduction/data.xml]}
+      {:error, error} -> {:error, error}
+      {type, number} ->
+        {:ok, ~s[/#{type}/#{number}/introduction/data.xml]}
+    end
   end
 
   def resource_path(url) do
@@ -149,45 +149,16 @@ defmodule Legl.Countries.Uk.UkSiCode do
   """
   #todo: check that we've got the right piece of law by comparing title
   def get_si_code(path) do
-    case Record.legislation(path) do
-      {:ok, :xml, %{metadata: %{title: _title, subject: si_code}}} ->
+    case Legl.Services.LegislationGovUk.Record.legislation(path) do
+      {:ok, :xml, %{metadata: %{title: _title, si_code: si_code}}} ->
         {:ok, si_code}
       {:ok, :xml, %{metadata: %{title: _title}}} ->
         {:ok, ""}
       {:ok, :html} -> {:ok, "not found"}
-      {:error, _code, error} -> {:error, error}
+      {:error, code, error} -> {:error, code, error}
     end
   end
 
-  @doc """
-    .csv has this structure
-    "Name","Title_EN","SI Code"
-  """
-  def make_csv(records, filename) do
-    csv_list =
-      Enum.join(["Name,", "SI CODE"])
-      |> (&[&1 | []]).()
-
-      Enum.reduce(records, csv_list,
-        fn
-          %{"Name" => name, "SI CODE" => si_code}, acc ->
-            [Enum.join([name, si_code], ",") | acc]
-          %{"fields" => %{"Name" => name, "SI CODE" => si_code}}, acc ->
-          [Enum.join([name, si_code], ",") | acc]
-      end)
-    |> Enum.reverse()
-    |> Enum.join("\n")
-    |> save_to_csv("lib/#{filename}.csv")
-
-  end
-
-  def save_to_csv(binary, filename) do
-    line_count = binary |> String.graphemes |> Enum.count(& &1 == "\n")
-    filename
-    |> Path.absname()
-    |> File.write(binary)
-    {:ok, line_count}
-  end
 
   def clean_csv do
     Legl.csv("amending")
@@ -195,6 +166,7 @@ defmodule Legl.Countries.Uk.UkSiCode do
     |> File.read!()
     |> String.split("\n")
     |> Enum.map(fn x -> x end)
+    |> IO.inspect(limit: :infinity)
     |> Enum.reduce([], fn x, acc ->
 
       [name, si_code] = String.split(x, ",", parts: 2)
@@ -216,15 +188,15 @@ defmodule Legl.Countries.Uk.UkSiCode do
                 [si_code2] ->
                   case si_code(x) do
                     [si_code1, region1] ->
-                      [Enum.join([si_code2, si_code1], ","), [region1]]
+                      [join([si_code2, si_code1]), [region1]]
                     [si_code1] ->
-                      [Enum.join([si_code2, si_code1], ",")]
+                      [join([si_code2, si_code1])]
                   end
                 [si_code2, region2] ->
                   case si_code(x) do
                     [si_code1, region1] ->
-                      [Enum.join([si_code2, si_code1], ","), Enum.join([region2, region1], ",")]
-                    [si_code1] -> [Enum.join([si_code2, si_code1], ","), region2]
+                      [join([si_code2, si_code1]), join([region2, region1])]
+                    [si_code1] -> [join([si_code2, si_code1]), region2]
                   end
               end
           end)
@@ -233,7 +205,48 @@ defmodule Legl.Countries.Uk.UkSiCode do
       |> (&([name | &1])).()
       |> (&([&1 | acc])).()
     end)
-    |> split_si_code_csv()
+    |> (&({:ok, &1})).()
+  end
+
+  def join([term1, term2]) do
+    ~s/"#{term1},#{term2}"/
+  end
+
+  def si_code(si_code) do
+
+    cond do
+
+      Regex.match?(~r/[A-Z ]*?,[ ]+ENGLAND[ ]+AND[ ]+WALES[ ]+[A-Z ]*?,[ ]SCOTLAND$/, si_code) ->
+        [_, si_code] = Regex.run(~r/^(.*?),[ ]+ENGLAND[ ]+AND[ ]+WALES/, si_code)
+        [si_code, ~s/"England,Wales,Scotland"/]
+
+      Regex.match?(~r/[A-Z ]*?[ ]+ENGLAND[ ]+AND[ ]+WALES[ ]+AND[ ]+SCOTLAND$/, si_code) ->
+        [_, si_code] = Regex.run(~r/^(.*?)[ ]+ENGLAND[ ]+AND[ ]+WALES/, si_code)
+        [si_code, ~s/"England,Wales,Scotland"/]
+
+      Regex.match?(~r/[A-Z ]*?,[ ]+ENGLAND[ ]+AND[ ]+WALES$/, si_code) ->
+        [_, si_code] = Regex.run(~r/^(.*?),[ ]+ENGLAND[ ]+AND[ ]+WALES$/, si_code)
+        [si_code, ~s/"England,Wales"/]
+
+      Regex.match?(~r/[A-Z ]*?,[ ]+ENGLAND$/, si_code) ->
+        [_, si_code] = Regex.run(~r/^(.*?),[ ]+ENGLAND$/, si_code)
+        [si_code, "England"]
+
+      Regex.match?(~r/[A-Z ]*?,[ ]+WALES$/, si_code) ->
+        [_, si_code] = Regex.run(~r/^(.*?),[ ]+WALES$/, si_code)
+        [si_code, "Wales"]
+
+      Regex.match?(~r/[A-Z ]*?,[ ]+SCOTLAND$/, si_code) ->
+        [_, si_code] = Regex.run(~r/^(.*?),[ ]+SCOTLAND$/, si_code)
+        [si_code, "Scotland"]
+
+      Regex.match?(~r/[A-Z ]*?,[ ]+NORTHERN IRELAND$/, si_code) ->
+        [_, si_code] = Regex.run(~r/^(.*?),[ ]+NORTHERN IRELAND$/, si_code)
+        [si_code, "Northern Ireland"]
+
+      true -> [si_code]
+
+    end
   end
 
   @doc """
@@ -253,7 +266,7 @@ defmodule Legl.Countries.Uk.UkSiCode do
           _ -> []
         end
       end)
-      |> (&[["Name", "SI CODE", "Region"] | &1]).()
+      |> (&[["Name", "SI CODE", "Geo_Region"] | &1]).()
 
     csv2 =
       Enum.filter(records, fn x ->
@@ -277,6 +290,7 @@ defmodule Legl.Countries.Uk.UkSiCode do
             acc
         end
       end)
+
     csv4 =
       Enum.reduce(records, [], fn x, acc ->
         case Enum.count(x) do
@@ -307,29 +321,14 @@ defmodule Legl.Countries.Uk.UkSiCode do
     |> save_to_csv(filename)
   end
 
-  def si_code(si_code) do
-
-    cond do
-
-      Regex.match?(~r/[A-Z]*?,[ ]+ENGLAND[ ]+AND[ ]+WALES$/, si_code) ->
-        [_, si_code] = Regex.run(~r/^(.*?),[ ]+ENGLAND[ ]+AND[ ]+WALES$/, si_code)
-        [si_code, "England,Wales"]
-
-      Regex.match?(~r/[A-Z]*?,[ ]+ENGLAND$/, si_code) ->
-        [_, si_code] = Regex.run(~r/^(.*?),[ ]+ENGLAND$/, si_code)
-        [si_code, "England"]
-
-      Regex.match?(~r/[A-Z]*?,[ ]+WALES$/, si_code) ->
-        [_, si_code] = Regex.run(~r/^(.*?),[ ]+WALES$/, si_code)
-        [si_code, "Wales"]
-
-      Regex.match?(~r/[A-Z]*?,[ ]+NORTHERN IRELAND$/, si_code) ->
-        [_, si_code] = Regex.run(~r/^(.*?),[ ]+NORTHERN IRELAND$/, si_code)
-        [si_code, "Northern Ireland"]
-
-      true -> [si_code]
-
-    end
+  def save_to_csv(binary, filename) do
+    line_count = binary |> String.graphemes |> Enum.count(& &1 == "\n")
+    filename
+    |> Path.absname()
+    |> File.write(binary)
+    {:ok, line_count}
   end
+
+
 
 end

@@ -24,7 +24,7 @@ defmodule Legl.Services.Airtable.Url do
     fn {key, value}, acc ->
       case key do
         :max_records -> update_params(acc, "maxRecords=" <> value)
-        :view -> update_params(acc, "view=" <> value)
+        :view -> update_params(acc, ~s/view=#{URI.encode(value)}/)
         :fields -> update_params(acc, fields(value))
         :formula ->
           encode_formula(value)
@@ -35,6 +35,7 @@ defmodule Legl.Services.Airtable.Url do
     end)
     |> remove_trailing_ampasand()
     |> (&(Map.get(&1,:path) <> "?" <> Map.get(&1, :options))).()
+    #|> IO.inspect()
     |> (&({:ok, &1})).()
   end
 
