@@ -95,7 +95,7 @@ defmodule Legl.Utility do
   end
 
   def split_name(name) do
-    case Regex.run(~r/_([a-z]*?)_(\d{4})_(\d*?)_/, name) do
+    case Regex.run(~r/_([a-z]*?)_(\d{4})_(.*?)_/, name) do
       [_, type, year, number] ->
         {type, year, number}
       _ ->

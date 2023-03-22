@@ -38,6 +38,7 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     w: ["anaw", "mwa", "wsi"],
     o: ["ukcm", "ukla", "asc", "ukmo", "apgb", "aep"]
   }
+
   @at_csv "airtable_repeal_revoke"
   @code_full "❌ Revoked / Repealed / Abolished"
   @code_part "⭕ Part Revocation / Repeal"
