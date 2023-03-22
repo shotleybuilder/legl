@@ -22,7 +22,7 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
   def run(t) when is_atom(t) do
 
     {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
-    IO.puts(file, "Name,leg.gov.uk Search")
+    IO.puts(file, "Name,leg.gov.uk_Search_paste")
 
     t = Map.get(@at_type, t)
     Enum.each(t, fn x -> run(file, x) end)
@@ -31,8 +31,9 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
   end
 
   def run(file, type) do
-    #formula = ~s/{leg.gov.uk Search}=BLANK()/
-    formula = ~s/AND({leg.gov.uk Search}=BLANK(),{type}="#{type}")/
+    #formula = ~s/{leg.gov.uk_Search_paste}=BLANK()/
+    #formula = ~s/AND({leg.gov.uk_Search_paste}=BLANK(),{Search}!=BLANK(),{type_code}="#{type}")/
+    formula = ~s/AND({Search}!=BLANK(),{type_code}="#{type}")/
     opts =
       [
         formula: formula,
@@ -42,13 +43,12 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
     func = &__MODULE__.make_csv/2
     with(
       {:ok, records} <- AT.get_records_from_at(opts),
-      IO.inspect(records, limit: :infinity),
+      #IO.inspect(records, limit: :infinity),
       {:ok, msg} <- AT.enumerate_at_records({file, records}, func)
     ) do
       IO.puts(msg)
     end
   end
-
 
   def make_csv(file,
     %{
@@ -71,11 +71,12 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
           end)
       end
 
+    txt = Enum.reverse(txt)
+
     ~s/#{name},#{Enum.join(txt, "💚")}/
-    |> IO.inspect()
+    #|> IO.inspect()
     |> (&(IO.puts(file, &1))).()
-
-    {:ok, "csv saved"}
-
   end
+
+  def make_csv(_file, _fields), do: :ok
 end

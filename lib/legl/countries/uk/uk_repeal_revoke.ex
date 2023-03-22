@@ -36,11 +36,12 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     s: ["asp", "ssi"],
     uk: ["ukpga", "uksi"],
     w: ["anaw", "mwa", "wsi"],
-    o: ["ukcm", "ukla", "asc"]
+    o: ["ukcm", "ukla", "asc", "ukmo", "apgb", "aep"]
   }
   @at_csv "airtable_repeal_revoke"
   @code_full "❌ Revoked / Repealed / Abolished"
   @code_part "⭕ Part Revocation / Repeal"
+  @code_live "✔ In force"
   @at_url_field "leg.gov.uk - changes"
 
   @fields ~w[
@@ -48,7 +49,7 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     Live?
     Revoked_by
     Live?_description
-  ]
+  ] |> Enum.join(",")
   @doc """
     Run in iex as
      Legl.Countries.Uk.UkRepealRevoke.full_workflow()
@@ -56,71 +57,82 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
     Having set @at_type and the formula to return the correct AT records for process
   """
   def full_workflow(t) when is_atom(t) do
+
+    {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
+    IO.puts(file, @fields)
+
     t = Map.get(@at_type, t)
-    Legl.Utility.csv_header_row(@fields, @at_csv)
-    Enum.each(t, fn x -> full_workflow(x) end)
+    Enum.each(t, fn x -> full_workflow(file, x) end)
+
+    File.close(file)
   end
 
-  def full_workflow(type) do
-    #formula = ~s/AND({type}="#{type}",{Live?}=BLANK())/
-    #formula = ~s/{type}="#{type}"/
-    #formula = ~s/AND({type}="#{type}",{Live?}="#{@code_part}")/
-    formula = ~s/AND({type}="#{type}",OR({Live?}="#{@code_part}",{Live?}="#{@code_full}"))/
+  def full_workflow(file, type) do
+    formula = ~s/AND({type_code}="#{type}",{Live?}=BLANK())/
+    #formula = ~s/{type_code}="#{type}"/
+    #formula = ~s/AND({type_code}="#{type}",{Live?}="#{@code_part}")/
+    #formula = ~s/AND({type_code}="#{type}",OR({Live?}="#{@code_part}",{Live?}="#{@code_full}"))/
     opts =
       [
         formula: formula,
         fields: ["Name", "Title_EN", @at_url_field],
         view: "REPEALED_REVOKED"
       ]
-    func = &__MODULE__.make_csv_workflow/2
+    func = &__MODULE__.make_csv_workflow/3
     with(
       {:ok, records} <- AT.get_records_from_at(opts),
-      #IO.inspect(records, limit: :infinity),
-      {:ok, msg} <- AT.enumerate_at_records(records, @at_url_field, func)
+      {:ok, msg} <- AT.enumerate_at_records({file, records}, @at_url_field, func)
     ) do
       IO.puts(msg)
     end
   end
 
-  def make_csv_workflow(name, url) do
+  def make_csv_workflow(file, name, url) do
     with(
       {:ok, table_data} <- RecordGeneric.leg_gov_uk_html(url, @client, @parser),
       {:ok, result} <- repeal_revoke_description(table_data),
       {:ok, result} <- process_amendment_table(table_data, result),
       {:ok, result} <- at_revoked_by_field(table_data, result)
     ) do
-      save_to_csv(name, result)
+      save_to_csv(name, result, file)
     else
       :ok -> :ok
-      {nil, msg} -> IO.puts("#{name} ---> #{msg}")
+      {:live, result} ->
+        save_to_csv(name, result, file)
+      {:error, code, response, _} ->
+        IO.puts("#{code} #{response}")
+      {nil, msg} ->
+        IO.puts("#{name} #{msg}")
       {:error, code, response} ->
-        IO.puts("************* #{code} #{response} **************")
-      {:error, error} -> {:error, error}
+        IO.puts("#{code} #{response}")
+      {:error, error} ->
+        {:error, error}
     end
   end
-  def save_to_csv(_name, %{description: ""}) do
+  def save_to_csv(name, %{description: ""}, file) do
     # no revokes or repeals
-    :ok
+    ~s/#{name},#{@code_live}/ |> (&(IO.puts(file, &1))).()
   end
-  def save_to_csv(_name, %{description: nil}) do
+  def save_to_csv(name, %{description: nil}, file) do
     # no revokes or repeals
-    :ok
+    ~s/#{name},#{@code_live}/ |> (&(IO.puts(file, &1))).()
   end
-  def save_to_csv(name, r) do
+  def save_to_csv(name, r, file) do
     # part revoke or repeal
     if "" != r.description |> to_string() |> String.trim() do
       ~s/#{name},#{r.code},#{r.revoked_by},#{r.description}/
-      |> Legl.Utility.append_to_csv(@at_csv)
+      |> (&(IO.puts(file, &1))).()
     end
     :ok
   end
 
-  def process_amendment_table([], _) do
-    IO.puts("record.ex: number of records: 0")
-    {nil, "no amendments - not repealed nor revoked"}
+  def process_amendment_table([], result) do
+    {:live, Map.put(result, :code, @code_live)}
   end
 
-  def process_amendment_table(_, %{description: nil}), do: {nil, "not repealed nor revoked"}
+  def process_amendment_table(_, %{description: nil} = result) do
+    {:live, Map.put(result, :code, @code_live)}
+  end
 
   def process_amendment_table([{"tbody", _, records}], result) do
     result =
@@ -184,8 +196,8 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
           Provisions revoked or repealed
   """
   def repeal_revoke_description([]) do
-    IO.puts("record.ex: number of records: 0")
-    {nil, "no amendments - not repealed nor revoked"}
+    Map.merge(%__MODULE__{}, %{description: nil, code: @code_live})
+    |> (&({:live, &1})).()
   end
   def repeal_revoke_description(records) do
     records
@@ -208,9 +220,16 @@ defmodule Legl.Countries.Uk.UkRepealRevoke do
         case Regex.run(~r/(.*)[ ]\d*💚️/, x) do
           [_, title] -> [nil, title]
           _ ->
-            Regex.run(~r/(.*)[ ]\d{4}[ ]\(repealed\)💚️/, x)
+            case Regex.run(~r/(.*)[ ]\d{4}[ ]\(repealed\)💚️/, x) do
+              [_, title] ->
+                [nil, title]
+              _ ->
+                IO.puts("PROBLEM TITLE #{x}")
+                [nil, x]
+            end
         end
-      [_, type, year, number] = Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d*)/, x)
+      [_, type, year, number] =
+        Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d*)/, x)
       [ID.id(title, type, year, number) | acc]
     end)
     |> Enum.uniq()

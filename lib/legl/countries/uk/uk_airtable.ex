@@ -47,21 +47,23 @@ defmodule Legl.Countries.Uk.UkAirtable do
       fields = Map.get(x, "fields")
       IO.puts("#{fields["Title_EN"]}")
       with(
-        {:ok, msg} <- func.(file, fields)
+        :ok <- func.(file, fields)
       ) do
-        {:ok, msg}
+        :ok
       end
     end)
+    {:ok, "records saved to .csv"}
   end
 
-  def enumerate_at_records(records, field, func) do
+  def enumerate_at_records({file, records}, field, func) do
+    #IO.inspect(records, limit: :infinity)
     Enum.each(records, fn x ->
       fields = Map.get(x, "fields")
       name = Map.get(fields, "Name")
       IO.puts("#{fields["Title_EN"]}")
       path = Legl.Utility.resource_path(Map.get(fields, field))
       with(
-        :ok <- func.(name, path)
+        :ok <- func.(file, name, path)
       ) do
         :ok
       else
