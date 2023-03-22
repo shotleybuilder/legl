@@ -61,7 +61,7 @@ defmodule Legl.Countries.Uk.UkAirtable do
       fields = Map.get(x, "fields")
       name = Map.get(fields, "Name")
       IO.puts("#{fields["Title_EN"]}")
-      path = Legl.Utility.resource_path(Map.get(fields, field))
+      {:ok, path} = Legl.Utility.resource_path(Map.get(fields, field))
       with(
         :ok <- func.(file, name, path)
       ) do

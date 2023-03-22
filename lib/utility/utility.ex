@@ -84,8 +84,10 @@ defmodule Legl.Utility do
   end
 
   def resource_path(url) do
-    [_, path] = Regex.run(~r"^https:\/\/www.legislation.gov.uk(.*)", url)
-    path
+    case Regex.run(~r"^https:\/\/www.legislation.gov.uk(.*)", url) do
+      [_, path] -> {:ok, path}
+      _ -> {:error, "Problem getting path from url: #{url}"}
+    end
   end
 
   def type_year_number(path) do

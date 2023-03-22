@@ -5,92 +5,25 @@ defmodule Legl.Countries.Uk.UkRevoke do
     'repealed' or 'revoked' at the end of the title element in
     the .xml
   """
-  alias Legl.Services.Airtable.AtBasesTables
-  alias Legl.Services.Airtable.Records
+
+  alias Legl.Countries.Uk.UkAirtable, as: AT
   alias Legl.Services.LegislationGovUk.RecordGeneric
 
-  @at_type ["uksi"]
+  @at_type %{
+    ukpga: ["ukpga"],
+    uksi: ["uksi"],
+    ni: ["nia", "apni", "nisi", "nisr", "nisro"],
+    s: ["asp", "ssi"],
+    uk: ["ukpga", "uksi"],
+    w: ["anaw", "mwa", "wsi"],
+    o: ["ukcm", "ukla", "asc", "ukmo", "apgb", "aep"]
+  }
   @at_csv "airtable_revocations"
+  @code_full "❌ Revoked / Repealed / Abolished"
+  @code_part "⭕ Part Revocation / Repeal"
+  @code_live "✔ In force"
   @at_name "UK_ukpga_1964_40_HA"
-
-  def single_law() do
-    csv_header_row()
-    formula = ~s/{Name}="#{@at_name}"/
-    with(
-      {:ok, recordset} <- get_records_from_at("UK E", false, formula),
-      IO.inspect(recordset),
-      {:ok, msg} <- enumerate_at_records(recordset)
-    ) do
-      IO.puts(msg)
-    else
-      {:error, error} ->
-        IO.puts("#{error}")
-    end
-  end
-
-  def full_workflow() do
-    csv_header_row()
-    Enum.each(@at_type, fn x -> full_workflow(x) end)
-  end
-
-  def full_workflow(type) do
-    #formula = ~s/AND({type}="#{type}",{Live?}=BLANK())/
-    formula = ~s/{type}="#{type}"/
-    with(
-      {:ok, recordset} <- get_records_from_at("UK E", false, formula),
-      {:ok, msg} <- enumerate_at_records(recordset)
-    ) do
-      IO.puts(msg)
-    end
-  end
-
-  def get_records_from_at() do
-    get_records_from_at("UK E", @at_type, true)
-  end
-  @doc """
-    Legl.Countries.Uk.UkExtent.get_records_from_at("UK E", true)
-  """
-  def get_records_from_at(base_name, filesave?, formula) do
-    with(
-      {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(base_name),
-      params = %{
-        base: base_id,
-        table: table_id,
-        options:
-          %{
-            view: "REPEALED_REVOKED",
-            fields: ["Name", "Title_EN", "leg.gov.uk resources xml"],
-            formula: formula
-          }
-        },
-      {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
-    ) do
-      IO.puts("Records returned from Airtable")
-      if filesave? == true do Legl.Utility.save_at_records_to_file(recordset) end
-      if filesave? == false do {:ok, recordset} end
-    else
-      {:error, error} -> {:error, error}
-    end
-  end
-
-  def enumerate_at_records(records) do
-    Enum.each(records, fn x ->
-      fields = Map.get(x, "fields")
-      name = Map.get(fields, "Name")
-      path = Legl.Utility.resource_path(Map.get(fields, "leg.gov.uk resources xml"))
-      with(
-        :ok <- make_csv_workflow(name, path)
-      ) do
-        IO.puts("#{fields["Title_EN"]}")
-      else
-        {:error, error} ->
-          IO.puts("ERROR #{error} with #{fields["Title_EN"]}")
-        {:error, :html} ->
-          IO.puts(".html from #{fields["Title_EN"]}")
-      end
-    end)
-    {:ok, "metadata properties saved to csv"}
-  end
+  @at_url_field "leg.gov.uk resources xml"
 
   @fields ~w[
     Name
@@ -98,14 +31,74 @@ defmodule Legl.Countries.Uk.UkRevoke do
     md_restrict_start_date
     md_dct_valid_date
     Geo_region_check
-  ]
+  ] |> Enum.join(",")
 
-  def csv_header_row() do
-    Enum.join(@fields, ",")
-    |> Legl.Utility.write_to_csv(@at_csv)
+  def open_file() do
+    {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
+    IO.puts(file, @fields)
+    file
   end
 
-  def make_csv_workflow(name, url) do
+  def single_law() do
+    file = open_file()
+
+    opts = [formula: ~s/{Name}="#{@at_name}"/]
+    full_workflow(file, opts)
+
+    File.close(file)
+  end
+
+  @doc """
+    Legl.Countries.Uk.UkRevoke.run(opt)
+    where opt is an atom :ukpga, :uksi, :ni, :s, :uk, :w, :o
+  """
+  def run(t) when is_atom(t) do
+    case Map.get(@at_type, t) do
+      nil -> IO.puts("ERROR with option")
+      types -> run(types)
+    end
+  end
+  def run(types) when is_list(types) do
+    file = open_file()
+    Enum.each(types, fn type ->
+      IO.puts(">>>#{type}")
+      opts = [formula: ~s/AND({type_code}="#{type}",{Live?}="#{@code_live}")/]
+      full_workflow(file, opts)
+    end)
+    File.close(file)
+  end
+
+  @default_opts %{
+    fields: ["Name", "Title_EN", "leg.gov.uk resources xml"],
+    view: "REPEALED_REVOKED"
+  }
+
+  def full_workflow(file, opts \\ []) do
+    #formula = ~s/AND({type_code}="#{type}",{Live?}=BLANK())/
+    #formula = ~s/{type_code}="#{type}"/
+
+    opts = Enum.into(opts, @default_opts)
+
+    func = &__MODULE__.make_csv_workflow/3
+    with(
+      {:ok, records} <- AT.get_records_from_at(opts),
+      #IO.inspect(records),
+      {:ok, msg} <- AT.enumerate_at_records({file, records}, @at_url_field, func)
+    ) do
+      IO.puts(msg)
+    end
+  end
+
+  def create_path(name) do
+    case Legl.Utility.split_name(name) do
+      {type, year, number} ->
+        ~s[/#{type}/#{year}/#{number}/resources/data.xml]
+      {type, number} ->
+        ~s[/#{type}/#{number}/resources/data.xml]
+    end
+  end
+
+  def make_csv_workflow(file, name, url) do
     with(
      %{
         dct_valid: valid,
@@ -116,17 +109,15 @@ defmodule Legl.Countries.Uk.UkRevoke do
       } <- get_revocation_leg_gov_uk(url)
     ) do
       ~s/#{name},#{revocation_type(revoked?)},#{date},#{valid},"#{make_geo_region_list(extent)}"/
-      |> Legl.Utility.append_to_csv(@at_csv)
-      #if valid != date do IO.puts("Dates are different") end
-      :ok
+      |> (&(IO.puts(file, &1))).()
     else
       :ok -> :ok
       {:error, error} -> {:error, error}
     end
   end
 
-  def revocation_type(true), do: "❌ Revoked / Repealed / Abolished"
-  def revocation_type(false), do: "✔ In force"
+  def revocation_type(true), do: @code_full
+  def revocation_type(false), do: @code_live
 
   @doc """
     Legl.Countries.Uk.UkRevoke.get_revocation_leg_gov_uk("/ukpga/1964/40/resources/data.xml")
