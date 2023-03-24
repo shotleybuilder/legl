@@ -29,6 +29,7 @@ defmodule Legl.Countries.Uk.UkSearch do
 
   @climate_change [
     ~w[
+      carbon\u00a0accounting
       climate\u00a0change
       energy\u00a0conservation
       sustainable\u00a0energy
@@ -171,17 +172,15 @@ defmodule Legl.Countries.Uk.UkSearch do
   """
   def run(search, opts \\ []) do
     opts = Enum.into(opts, search_terms())
-    #IO.inspect(opts)
+    IO.inspect(opts)
     search_set = Map.get(opts, search) #|> IO.inspect()
     {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
-    IO.puts(file, "Name,Title_EN,type_code,year,number,search")
+    IO.puts(file, "Name,Title_EN,type_code,year,number,search_paste")
     results =
       Enum.reduce(search_set, %{}, fn search_terms, acc ->
         workflow(search_terms, opts.search_type, acc)
       end)
-    Enum.each(results, fn {_k, v} ->
-      save_to_csv(file, v)
-    end)
+    Enum.each(results, fn {_k, v} -> save_to_csv(file, v) end)
     File.close(file)
   end
 
@@ -196,17 +195,17 @@ defmodule Legl.Countries.Uk.UkSearch do
           _ ->
             URI.encode(~s[/all?text="#{search}"&results-count=1000&sort=year])
         end
-      get_search_results(url, search, acc)
+      get_search_results(url, search_type, search, acc)
     end)
   end
 
-  def get_search_results(url, search, results) do
+  def get_search_results(url, search_type, search, results) do
     with(
       IO.puts("#{url}"),
       {:ok, table_data} <- RecordGeneric.leg_gov_uk_html(url, @client, @parser),
-      {:ok, results} <- process_search_table(table_data, search, results)
+      {:ok, results} <- process_search_table(table_data, search, results),
+      {:ok, results} <- rm_matching_title_for_all_text_search(search_type, search, results)
     ) do
-      #IO.inspect(result)
       results
     else
       {:error, code, _url, error} ->
@@ -219,6 +218,21 @@ defmodule Legl.Countries.Uk.UkSearch do
     search = ~s/"#{Enum.join(r.search, ",")}"/ |> String.trim
     ~s/#{r.name},"#{r.title}",#{r.type},#{r.year},#{r.number},#{search}/
     |> (&(IO.puts(file, &1))).()
+  end
+
+  def rm_matching_title_for_all_text_search(:title, _search, results), do: {:ok, results}
+  def rm_matching_title_for_all_text_search(_, search, results) do
+
+    Enum.reduce(results, %{}, fn {k, v}, acc ->
+      %{title: title} = v
+      IO.puts("#{title} #{search}")
+      case String.match?(String.downcase(title), ~r/#{search}/) do
+        :true -> acc
+        _ -> Map.put(acc, k, v)
+      end
+    end)
+    |> (&({:ok, &1})).()
+
   end
   @doc """
         {

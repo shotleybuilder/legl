@@ -1,82 +1,101 @@
 defmodule Legl.Countries.Uk.UkExtent do
 
-  alias Legl.Services.Airtable.AtBasesTables
-  alias Legl.Services.Airtable.Records
   alias Legl.Services.LegislationGovUk.RecordGeneric
+  alias Legl.Countries.Uk.UkTypeCode
+  alias Legl.Countries.Uk.UkAirtable, as: AT
 
   @at_type ["asc"]
   @at_csv "airtable_extents"
   @at_name "UK_uksi_2004_1959_ALNITCR"
-  @doc """
-    Legl.Countries.Uk.UkExtent.full_workflow
-  """
-  def full_workflow() do
-    csv_header_row()
-    Enum.each(@at_type, fn x -> full_workflow(x) end)
+
+  @fields ~w[
+    Name
+    Geo_Region
+    Geo_Extent
+  ] |> Enum.join(",")
+
+  @default_opts %{
+      base_name: "UK E",
+      t: :uksi,
+      view: "EXTENT",
+      fields: ["Name", "Title_EN", "leg.gov.uk contents text"]
+    }
+
+  def open_file() do
+    {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write, :read])
+    IO.puts(file, @fields)
+    file
   end
+
   @doc """
     Legl.Countries.Uk.UkExtent.single_law
   """
-  def single_law() do
-    csv_header_row()
-    formula = ~s/{Name}="#{@at_name}"/
+  def single_law(opts \\ []) do
+
+    file = open_file()
+
+    opts = Enum.into(opts, @default_opts)
+    opts = Map.merge(opts, %{formula: ~s/{Name}="#{@at_name}"/, file: file})
+
     with(
-      {:ok, recordset} <- get_records_from_at("UK E", false, formula),
-      {:ok, msg} <- enumerate_at_records(recordset)
+      {:ok, recordset} <- AT.get_records_from_at(opts),
+      {:ok, msg} <- enumerate_at_records(recordset, opts)
+    ) do
+      IO.puts(msg)
+    end
+
+    File.close(file)
+
+  end
+
+  def run(opts \\ []) when is_list(opts) do
+
+    file = open_file()
+
+    opts = Enum.into(opts, @default_opts) |> Map.put(:file, file)
+
+    case Map.get(%UkTypeCode{}, Map.get(opts, :t)) do
+
+      nil ->
+        IO.puts("ERROR with option")
+
+      types when is_list(types) ->
+
+        Enum.each(types, fn type ->
+          IO.puts(">>>#{type}")
+          opts = Map.put(opts, :type, type)
+          full_workflow(opts)
+        end)
+
+      type when is_binary(type) ->
+        opts = Map.put(opts, :type, type)
+        full_workflow(opts)
+    end
+
+    File.close(file)
+
+  end
+
+  def full_workflow(opts) do
+
+    opts = Map.put(opts, :formula, ~s/AND({type}="#{opts.type}",{Geo_Extent}=BLANK())/)
+
+    with(
+      {:ok, records} <- AT.get_records_from_at(opts),
+      IO.inspect(records),
+      {:ok, msg} <- enumerate_at_records(records, opts)
     ) do
       IO.puts(msg)
     end
   end
 
-  def full_workflow(type) do
-    formula = ~s/AND({type}="#{type}",{Geo_Extent}=BLANK())/
-    with(
-      {:ok, recordset} <- get_records_from_at("UK E", false, formula),
-      {:ok, msg} <- enumerate_at_records(recordset)
-    ) do
-      IO.puts(msg)
-    end
-  end
-
-  @doc """
-    Accessor prepopulated with parameters
-  """
-  def get_records_from_at() do
-    get_records_from_at("UK E", @at_type, true)
-  end
-  @doc """
-    Legl.Countries.Uk.UkExtent.get_records_from_at("UK E", "ukpga", true)
-  """
-  def get_records_from_at(base_name, filesave?, formula) do
-    with(
-      {:ok, {base_id, table_id}} <- AtBasesTables.get_base_table_id(base_name),
-      params = %{
-        base: base_id,
-        table: table_id,
-        options:
-          %{
-            view: "EXTENT",
-            fields: ["Name", "Title_EN", "leg.gov.uk contents text"],
-            formula: formula
-          }
-        },
-      {:ok, {_, recordset}} <- Records.get_records({[],[]}, params)
-    ) do
-      IO.puts("Records returned from Airtable")
-      if filesave? == true do Legl.Utility.save_at_records_to_file(recordset) end
-      if filesave? == false do {:ok, recordset} end
-    else
-      {:error, error} -> {:error, error}
-    end
-  end
-
-  def enumerate_at_records(records) do
+  def enumerate_at_records(records, opts) do
     Enum.each(records, fn x ->
       fields = Map.get(x, "fields")
       name = Map.get(fields, "Name")
       path = Legl.Utility.resource_path(Map.get(fields, "leg.gov.uk contents text"))
       with(
-        :ok <- make_csv_workflow(name, path)
+        :ok <- make_csv_workflow(name, path, opts)
       ) do
         IO.puts("#{fields["Title_EN"]}")
       else
@@ -96,12 +115,7 @@ defmodule Legl.Countries.Uk.UkExtent do
     Geo_Extent
   ]
 
-  def csv_header_row() do
-    Enum.join(@fields, ",")
-    |> Legl.Utility.write_to_csv(@at_csv)
-  end
-
-  def make_csv_workflow(name, url) do
+  def make_csv_workflow(name, url, opts) do
     with(
       {:ok, data} <- get_extent_leg_gov_uk(url),
       {:ok, %{
@@ -110,7 +124,7 @@ defmodule Legl.Countries.Uk.UkExtent do
       }} <- extent_transformation(data)
     ) do
       ~s/#{name},#{regions},#{extents}/
-      |> Legl.Utility.append_to_csv(@at_csv)
+      |> (&(IO.puts(opts.file, &1))).()
       :ok
     else
       :ok -> :ok
