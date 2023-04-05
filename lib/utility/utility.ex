@@ -113,5 +113,12 @@ defmodule Legl.Utility do
     "#{day}/#{month}/#{year}"
   end
 
+  def duplicate_records(list) do
+    list
+    |> Enum.group_by(&(&1))
+    |> Enum.filter(fn {_, [_,_|_]} -> true; _ -> false end)
+    |> Enum.map(fn {x, _} -> x end)
+  end
+
 
 end

@@ -5,10 +5,10 @@ defmodule UK.Parser do
 
   @regex_components Component.mapped_components_for_regex()
 
+  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+[S]|E\\+W"
+
   import Legl,
     only: [
-      article_emoji: 0,
-      sub_article_emoji: 0,
       annex_emoji: 0,
       pushpin_emoji: 0,
       amendment_emoji: 0
@@ -106,7 +106,7 @@ defmodule UK.Parser do
   def separate_schedule(binary),
     do:
       Regex.replace(
-        ~r/^((?:SCHEDULE|Schedule)[ ]?\d*)([A-Z a-z]+)/m,
+        ~r/^((?:SCHEDULE|Schedule)[ ]?\d+)([A-Z a-z]+)/m,
         binary,
         "\\g{1} \\g{2}"
       )
@@ -125,7 +125,7 @@ defmodule UK.Parser do
             "\\g{1} \\g{2}"
           )).()
       |> (&Regex.replace(
-            ~r/^(SCHEDULE)([A-Z a-z]+)/m,
+            ~r/^(SCHEDULE)S?([A-Z a-z]+)/m,
             &1,
             "\\g{1} \\g{2}"
           )).()
@@ -162,6 +162,29 @@ defmodule UK.Parser do
 
   @doc false
 
+  def parser(binary, :act = type) when is_atom(type) do
+
+    binary
+    |> get_title()
+    |> get_part_chapter(:part)
+    |> get_part_chapter(:chapter)
+    #|> get_modifications(:act)
+    # get_section() has to come after get_sub_section
+    |> get_annex()
+    |> get_A_section(:act)
+    |> get_section(:act)
+    |> get_sub_section(:act)
+    |> get_amendments(:act)
+    |> get_signed_section()
+    |> revise_section_number(:act)
+    |> get_heading(:act)
+    |> Legl.Parser.join()
+    |> Legl.Parser.rm_tabs()
+    |> move_region_to_end(:act)
+    |> add_missing_region_to_section(:act)
+    #|> rm_amendment(:act)
+  end
+
   def parser(binary, :regulation = type) when is_atom(type) do
 
     binary
@@ -179,30 +202,6 @@ defmodule UK.Parser do
     |> get_sub_section(:regulation)
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
-  end
-
-  def parser(binary, :act = type) when is_atom(type) do
-
-    binary
-    #|> rm_header()
-    #|> rm_explanatory_note
-    #|> join_empty_numbered()
-    |> get_title()
-    |> get_part_chapter(:part)
-    |> get_part_chapter(:chapter)
-    #|> get_amendments(:act)
-    #|> get_modifications(:act)
-    #|> get_sub_section(:act)
-    # get_section() has to come after get_sub_section
-    |> get_A_section(:act)
-    |> get_section(:act)
-    |> get_sub_section(:act)
-    |> get_annex()
-    |> get_heading(:act)
-    |> get_signed_section()
-    |> Legl.Parser.join()
-    |> Legl.Parser.rm_tabs()
-    #|> rm_amendment(:act)
   end
 
   def get_title(binary) do
@@ -282,9 +281,9 @@ defmodule UK.Parser do
 
       "numeric" ->
         Regex.replace(
-          ~r/^(#{type_regex})[ ](\d+)[ ]?([ A-Z]*)/m,
+          ~r/^(#{type_regex})[ ](\d+)[ ]?(#{@region_regex})(.*)/m,
           binary,
-          "#{component}\\g{2} \\g{1} \\g{2} \\g{3}"
+          "#{component}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}"
         )
 
       "alphabetic" ->
@@ -346,28 +345,38 @@ defmodule UK.Parser do
   def get_heading(binary, :act),
     do:
       Regex.replace(
-        ~r/^[A-Z][^\d\.][^\n]+[^\.](etc\.)?\n#{@regex_components.section}(\d+)/m,
+        ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})(\n#{@regex_components.section})(\d+)/m,
         binary,
-        "#{@components.heading}\\g{2} \\0"
+        "#{@components.heading}\\g{5} \\g{1} \\g{2}[::region::]\\g{3}\\g{4}\\g{5}"
       )
 
   @doc """
   Parse sections of Acts.  The equivalent of Regulation articles.
   Formats:
-  1Text - targetted by the 1st regex
-  1(1)Text - targetted by the 2nd regex
+  1Text - targetted by the 2nd regex
+  1(1)Text - targetted by the 1st regex
   """
   def get_section(binary, :act),
     do:
       Regex.replace(
-        ~r/^(\[?F\d\d*,?[ ])?(\d{1,3})[ ]?([A-Z|\.])([^\n]+)([^\.])(etc\.)?/m,
+        ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*)(#{@region_regex})/m,
         binary,
-        "#{@components.section}\\g{2} \\g{2} \\g{3}\\g{4}\\g{5}\\g{6}"
+        "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
       )
       |> (&Regex.replace(
-        ~r/^(\[?F\d\d*,?[ ])?(\d{1,3})(\(\d{1,3}\))?[ ]?([A-Z|\.])([^\n]+)([^\.])(etc\.)?/m,
+        ~r/^(\d{1,3})(#{@region_regex})(.*)/m,
         &1,
-        "#{@components.section}\\g{2} \\g{1}\\g{2}\\g{3} \\g{4}\\g{5}\\g{6}\\g{7}"
+        "#{@components.section}\\g{1} \\g{1} \\g{3} [::region::]\\g{2}"
+      )).()
+      |> (&Regex.replace(
+        ~r/^(\d{1,3})[ ]?(.*?)(#{@region_regex})/m,
+        &1,
+        "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
+      )).()
+      |> (&Regex.replace(
+        ~r/^(\d{1,3})\((\d{1,3})\)[ ]?(.*)/m,
+        &1,
+        "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
       )).()
 
   @doc """
@@ -377,11 +386,32 @@ defmodule UK.Parser do
   """
   def get_A_section(binary, :act),
     do:
+      #5[F39(1)]Text...
       Regex.replace(
-        ~r/^(\[F\d\d?)?[ ]?(\d{1,3}A)[ ]?([A-Z\.])([^\n]+)([^\.])(etc\.)?/m,
+        ~r/^(\d+[A-Z]?)(\[F\d{1,4})\((\d+)\)(.*)(#{@region_regex})/m,
         binary,
-        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3}\\g{4}\\g{5}\\g{6}\\g{7}"
+        "#{@components.section}\\g{2} \\g{1}-\\g{3} \\g{1}\\g{2}(\\g{3})\\g{4} [::region::]\\g{5}"
       )
+      #[F364A(1)The paragraph text...
+      |> (&Regex.replace(
+        ~r/^(\[F\d{1,4}[A-Z])\((\d{1,3})\)(.*)/m,
+        &1,
+        "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
+      )).()
+      #[F332AE+W+N.I.The regulations ...
+      |> (&Regex.replace(
+        ~r/^(\[F\d{1,4}[A-Z]?)(#{@region_regex})(.*)/m,
+        &1,
+        "#{@components.section}\\g{1} \\g{1}(\\g{3}) [::region::]\\g{2}"
+      )).()
+      #[F35(5)For the purposes...
+      #[F48(2A)Regulations
+      #[F42(2) In this
+      |> (&Regex.replace(
+        ~r/^(\[F\d{1,4})\((\d{1,3}[A-Z]?)\)[ ]?(.*)/m,
+        &1,
+        "#{@components.sub_section}\\g{1} \\g{2} \\g{1}(\\g{2}) \\g{3}"
+      )).()
 
   @doc """
   Parse sub-sections of Acts.
@@ -391,7 +421,7 @@ defmodule UK.Parser do
   def get_sub_section(binary, :act),
     do:
       Regex.replace(
-        ~r/^(\[?F?\d*\((\d+)\))[ ]?([A-Z])/m,
+        ~r/^(\[?F?\d*[A-Z]?\((\d+[A-Z]?)\))[ ]?([“A-Z])/m,
         binary,
         "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
       )
@@ -437,15 +467,20 @@ defmodule UK.Parser do
   def get_annex(binary),
     do:
       Regex.replace(
-        ~r/^(?:SCHEDULE|Schedule)[ ](\d*)[ ][^.]*?(?:\n)/m,
+        ~r/^(F?\d*)(SCHEDULES?|Schedules?)[ ](\d*)[ ]?(#{@region_regex})([^.]*?)(?:\n)/m,
         binary,
-        "#{@components.annex}\\g{1} \\0 "
+        "#{@components.annex}\\g{3} \\g{1}\\g{2} \\g{3} \\g{5} [::region::]\\g{4}\n"
       )
       |> (&Regex.replace(
             ~r/^(?:THE SCHEDULE|The Schedule)|^(?:SCHEDULE|Schedule)[ ][^.]*?(?:\n)/m,
             &1,
             "#{@components.annex}1 \\0"
           )).()
+      |> (&Regex.replace(
+        ~r/^(SCHEDULES|Schedules)(?:\n)/m,
+        &1,
+        "#{@components.annex} \\0"
+      )).()
 
   def get_annex_heading(binary),
     do:
@@ -481,9 +516,9 @@ defmodule UK.Parser do
   def get_amendments(binary, :act),
     do:
       Regex.replace(
-        ~r/^Textual[ ]Amendments|Extent[ ]Information|Modifications etc\.[ ]\(not altering text\)/m,
+        ~r/^(Textual[ ]Amendments|Extent[ ]Information|Modifications etc\.[ ]\(not altering text\))/m,
         binary,
-        "#{amendment_emoji()}\\0"
+        "#{@components.amendment}\\g{1}"
       )
 
   @doc """
@@ -496,4 +531,93 @@ defmodule UK.Parser do
         binary,
         "#{amendment_emoji()}\\0"
       )
+
+  @doc """
+    An amended section has the following pattern
+      [::section::]F1234 F1234 Section title
+    This function converts to
+      [::section::]34 F1234 Section title
+    By keeping a track of the last section number and incrementing by 1.
+
+    Also, adds the section number to the amendment
+      From
+        [::amendment::]Textual Amendment ...
+      To
+        [::amendment::]10 Textual Amendment ...
+  """
+
+  def revise_section_number(binary, :act) do
+    acc =
+      String.split(binary, "\n")
+      |> Enum.reduce([], fn
+
+        "[::section::][F" <> x, acc ->
+          amd_type =
+            cond do
+              #[::section::][F39 5-1 5[F39(1)]Para
+              Regex.match?(~r/\d+[ ]\d+-\d+[ ]/, x) -> :section_and_sub_section
+              #[::section::][F384A-1 [F384A(1)
+              Regex.match?(~r/\d+[A-Z]-\d+/, x) -> :amended_section_and_sub_section
+              #[::section::][F332A [F332A
+              Regex.match?(~r/\d+[A-Z]/, x) -> :amended_section
+              true -> IO.inspect("ERROR #{x}")
+            end
+          [_, num, str] =
+            case amd_type do
+              :section_and_sub_section ->
+                Regex.run(~r/(\d+-\d+)[ ](.*)/, x)
+              :amended_section_and_sub_section ->
+                Regex.run(~r/\d{2}(\d[A-Z]-\d+)[ ](.*)/, x)
+              :amended_section ->
+                Regex.run(~r/\d{2}(\d[A-Z])[ ](.*)/, x)
+            end
+
+            ["[::section::]#{num} #{str}" | acc]
+
+        "[::sub_section::][F" <> x, acc ->
+
+          amd_type =
+            cond do
+              #[::sub_section::][F48 2A [F48(2A) Para
+              Regex.match?(~r/\d+[ ]\d+[A-Z][ ]/, x) -> :amended_sub_section
+              #[F42 2 [F42(2) Para
+              Regex.match?(~r/\d+[ ]\d+[ ]/, x) -> :sub_section
+            end
+
+          [_, num, str] =
+            case amd_type do
+              :amended_sub_section ->
+                Regex.run(~r/(\d[A-Z])[ ](.*)/, x)
+              :sub_section ->
+                Regex.run(~r/^\d+[ ](\d+)[ ](.*)/, x)
+            end
+
+            ["[::sub_section::]#{num} #{str}" | acc]
+
+        x, acc ->
+          [x | acc]
+
+      end)
+    acc
+    |> Enum.reverse()
+    |> Enum.join("\n")
+  end
+
+  def move_region_to_end(binary, :act) do
+    Regex.replace(~r/(.*)([ ]\[::region::\].*?)([ ].*)/m, binary, "\\g{1}\\g{3}\\g{2}")
+  end
+
+  def add_missing_region_to_section(binary, :act) do
+    String.split(binary, "\n")
+    |> Enum.reduce([], fn
+      "[::section::]" <> x, acc ->
+        case String.match?(x, ~r/\[::region::\]/) do
+          true -> ["[::section::]#{x}" | acc]
+          _ -> [~s/[::section::]#{x} [::region::]/ | acc]
+        end
+      x, acc -> [x | acc]
+    end)
+    |> Enum.reverse
+    |> Enum.join("\n")
+  end
 end

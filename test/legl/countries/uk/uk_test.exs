@@ -110,11 +110,26 @@ defmodule UKTest do
     end
   end
 
+  describe "get_section/2" do
+    test "section with no region" do
+      binary = ~s/6(1)Section 103 of the Utilities Act 2000/
+      assert UK.Parser.get_section(binary, :act) ==
+        ~s/[::section::]6 6(1) Section 103 of the Utilities Act 2000/
+    end
+  end
+
   describe "get_annex/1" do
     test "SCHEDULE 1" do
       binary = ~s/\nSCHEDULE 1Name\n/
-      s = UK.get_annex(binary)
+      s = UK.Parser.get_annex(binary)
       assert s == ~s/\n#{Legl.annex_emoji()}SCHEDULE 1 Name\n/
+    end
+
+    test "Schedules" do
+      binary = ~s/SCHEDULE 1 U.K.The Committee on Climate Change\nSCHEDULE 2 U.K.Trading schemes\nSCHEDULE 3 U.K.Trading schemes regulations: further provisions\nSCHEDULE 4 U.K.Trading schemes: powers to require information\nF31SCHEDULE 5E+WWaste reduction schemes\nSCHEDULE 6 E+W+N.I.Charges for [F11single use carrier bags][F11carrier bags]\nSCHEDULE 7 U.K.Renewable transport fuel obligations\nSCHEDULE 8 E+W+SCarbon emissions reduction targets/
+
+      s = UK.Parser.get_annex(binary)
+      assert s == "[::annex::]1 SCHEDULE 1 The Committee on Climate Change [::region::]U.K.\n[::annex::]2 SCHEDULE 2 Trading schemes [::region::]U.K.\n[::annex::]3 SCHEDULE 3 Trading schemes regulations: further provisions [::region::]U.K.\n[::annex::]4 SCHEDULE 4 Trading schemes: powers to require information [::region::]U.K.\n[::annex::]5 F31SCHEDULE 5 Waste reduction schemes [::region::]E+W\n[::annex::]6 SCHEDULE 6 Charges for [F11single use carrier bags][F11carrier bags] [::region::]E+W+N.I.\n[::annex::]7 SCHEDULE 7 Renewable transport fuel obligations [::region::]U.K.\n[::annex::]8 SCHEDULE 8 Carbon emissions reduction targets [::region::]E+W+S"
     end
   end
 

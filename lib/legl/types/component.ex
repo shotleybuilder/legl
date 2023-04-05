@@ -28,22 +28,22 @@ defmodule Types.Component do
   def components_as_list, do: Enum.map(String.split(@components), fn x -> x end)
 
   _doc = """
-  A map of components as atoms
+    A map of components as atoms
 
-  [:content, :part, :chapter, :section, :heading, :article, :sub_article,
-  :numbered_para, :amendment, :annex, :signed, :footnote, :approval, :forms,
-  :form]
+    [:content, :part, :chapter, :section, :heading, :article, :sub_article,
+    :numbered_para, :amendment, :annex, :signed, :footnote, :approval, :forms,
+    :form]
   """
 
   @component_keys Enum.map(String.split(@components), fn x -> String.to_atom(x) end)
 
   _doc = """
-  A map of components with annotations
+    A map of components with annotations
 
-  ["[::content::]", "[::part::]", "[::chapter::]", "[::section::]",
-   "[::heading::]", "[::article::]", "[::sub_article::]", "[::numbered_para::]",
-   "[::amendment::]", "[::annex::]", "[::signed::]", "[::footnote::]",
-   "[::approval::]", "[::forms::]", "[::form::]"]
+    ["[::content::]", "[::part::]", "[::chapter::]", "[::section::]",
+    "[::heading::]", "[::article::]", "[::sub_article::]", "[::numbered_para::]",
+    "[::amendment::]", "[::annex::]", "[::signed::]", "[::footnote::]",
+    "[::approval::]", "[::forms::]", "[::form::]"]
   """
 
   @component_tags Enum.map(String.split(@components), fn x -> "[::" <> x <> "::]" end)

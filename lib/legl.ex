@@ -124,7 +124,7 @@ defmodule Legl do
   def original, do: "lib/original.txt"
   def original_annex, do: "lib/original-annex.txt"
 
-  def annotated, do: "lib/annotated.txt"
+  @annotated Path.absname("lib/annotated.txt")
   def annotated_annex, do: "lib/annotated-annex.txt"
 
   def airtable, do: "lib/airtable.txt"
@@ -235,35 +235,38 @@ defmodule Legl do
     do:
       ~s/#{chapter_emoji()}#{sub_chapter_emoji()}#{article_emoji()}#{sub_article_emoji()}#{numbered_para_emoji()}#{annex_emoji()}/
 
-  @spec airtable(atom | struct, atom | %{:title_name => any, optional(any) => any}, keyword) :: :ok
-  def airtable(country_struct, country_schema, opts \\ []) when is_list(opts) do
-    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+  @spec airtable(atom | %{:title_name => any, optional(any) => any}, keyword) :: :ok
+  def airtable(country_schema, opts \\ []) when is_list(opts) do
+
+    {:ok, binary} = File.read(@annotated)
 
     chunk = Keyword.get(opts, :chunk, 200)
 
-    binary = Legl.Airtable.Schema.schema(country_struct, binary, country_schema, opts)
+    binary = Legl.Airtable.Schema.schema(binary, country_schema, opts)
 
     File.write(Legl.airtable(), binary)
 
     no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)
 
-    cond do
-      no_of_lines < chunk ->
-        copy(binary)
-
+    case Keyword.get(opts, :tdl) do
       true ->
-        String.split(binary, "\n")
-        |> Enum.chunk_every(chunk)
-        |> Enum.map(fn x -> Enum.join(x, "\n") end)
-        |> Enum.reduce("", fn str, acc ->
-          copy(str)
-          ExPrompt.confirm("Pasted into Airtable?")
-          acc <> str
-        end)
-        #|> (&File.write(Legl.airtable(), &1)).()
-    end
+        cond do
+          no_of_lines < chunk ->
+            copy(binary)
 
-    :ok
+          true ->
+            String.split(binary, "\n")
+            |> Enum.chunk_every(chunk)
+            |> Enum.map(fn x -> Enum.join(x, "\n") end)
+            |> Enum.reduce("", fn str, acc ->
+              copy(str)
+              ExPrompt.confirm("Pasted into Airtable?")
+              acc <> str
+            end)
+            :ok
+        end
+      _ -> :ok
+    end
   end
 
   def copy(text) do
