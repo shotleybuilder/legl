@@ -66,16 +66,23 @@ defmodule Legl.Airtable.Schema do
 
     records =
       records(binary, regex, opts)
+      #|> Enum.reverse()
+      |> Enum.reduce([], fn record, acc ->
+        #IO.inspect(record)
+        record = add_id_and_name_to_record(opts.name, record)
+        #copy_to_csv(file, record)
+        [record | acc]
+      end)
 
-    Enum.reverse(records)
-    |> Enum.reduce([], fn record, acc ->
+    Enum.each(records, fn record ->
       #IO.inspect(record)
-      record = add_id_and_name_to_record(opts.name, record)
       copy_to_csv(file, record)
-      [record | acc]
     end)
-    |> Enum.reduce([], fn x, acc -> Map.get(x, :id) |> (&([&1 | acc])).() end)
-    |> Legl.Utility.duplicate_records() |> IO.inspect(label: "Duplicates")
+
+    #Find any dupes
+    Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&([&1 | acc])).() end)
+    |> Legl.Utility.duplicate_records()
+    |> IO.inspect(label: "Duplicates")
 
     File.close(file)
 
@@ -175,6 +182,7 @@ defmodule Legl.Airtable.Schema do
     id =
       make_id(name, record)
       |> amending?(record)
+      |> commencing?(record)
     Map.put(record, :id, id)
     |> Map.put(:name, name)
   end
@@ -247,6 +255,8 @@ defmodule Legl.Airtable.Schema do
   end
   def amending?(id, _), do: id
 
+  def commencing?(id, %{type: "commencement"} = _record), do: id <> "_c"
+  def commencing?(id, _), do: id
 
   def title(regex, "[::title::]" <> str, last_record) do
     %{
@@ -464,6 +474,9 @@ defmodule Legl.Airtable.Schema do
   end
 
   def sub_section(regex, "[::sub_section::]" <> str, last_record, _type) do
+
+    fields_reset(last_record, :sub_section, regex)
+
     record =
       case Regex.run(~r/#{regex.sub_section}/m, str) do
         [_, n, t] ->
@@ -577,16 +590,35 @@ defmodule Legl.Airtable.Schema do
 
   """
   def annex(regex, "[::annex::]" <> str, last_record, _type) do
-    [_, annex_num, annex] = Regex.run(~r/#{regex.annex}/, str)
-    annex_num = if annex_num != "", do: annex_num, else: "post"
 
-    %{
-      last_record
-      | type: regex.annex_name,
-        text: annex,
-        flow: annex_num
-    }
-    |> fields_reset(:all, regex)
+      case Regex.run(~r/#{regex.annex}/, str) do
+
+        [_, annex_num, annex, region] ->
+
+          annex_num = if annex_num != "", do: annex_num, else: "post"
+
+          %{
+            last_record
+            | type: regex.annex_name,
+              text: annex,
+              flow: annex_num,
+              region: region
+          }
+          |> fields_reset(:all, regex)
+
+        [_, annex_num, annex] ->
+
+          annex_num = if annex_num != "", do: annex_num, else: "post"
+
+          %{
+            last_record
+            | type: regex.annex_name,
+              text: annex,
+              flow: annex_num
+          }
+          |> fields_reset(:all, regex)
+
+      end
   end
 
   def form(regex, "[::form::]" <> str, last_record, _type) do
@@ -602,14 +634,24 @@ defmodule Legl.Airtable.Schema do
   end
 
   def amendment(%{country: :UK} = regex,  "[::amendment::]" <> str, last_record, _type) do
+
+    sub_section =
+      case last_record.sub_section do
+        "" -> "1"
+        _ ->
+          Map.get(last_record, :sub_section) |> String.to_integer() |> (&(Kernel.+(&1, 1))).() |> Integer.to_string()
+      end
+
     case Regex.run(~r/#{regex.amendment}/, str) do
+
       [_, amd_code, str] ->
         %{
           last_record
           | type: Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},#{amd_code(amd_code)}"),
-            text: amd_code<>str
+            text: amd_code<>str,
+            sub_section: sub_section
         }
-        |> fields_reset(:section, regex)
+        |> fields_reset(:sub_section, regex)
     end
   end
 
@@ -655,6 +697,24 @@ defmodule Legl.Airtable.Schema do
             text: str
         }
     end
+  end
+
+  def commencement(%{country: :UK} = regex,  "[::commencement::]" <> str, last_record, _type) do
+    sub_section =
+      case last_record.sub_section do
+        "" -> "1"
+        _ ->
+          Map.get(last_record, :sub_section) |> String.to_integer() |> (&(Kernel.+(&1, 1))).() |> Integer.to_string()
+      end
+
+      %{
+        last_record
+        | type: "#{regex.commencement_name}",
+          text: str,
+          sub_section: sub_section
+      }
+      |> fields_reset(:sub_section, regex)
+
   end
 
   def amd_code(code) do

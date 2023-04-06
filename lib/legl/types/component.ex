@@ -13,6 +13,7 @@ defmodule Types.Component do
     sub
     numbered_para
     amendment
+    commencement
     annex
     signed
     footnote
@@ -81,6 +82,7 @@ defmodule Types.Component do
           approval: String.t(),
           article: String.t(),
           chapter: String.t(),
+          commencement: String.t(),
           content: String.t(),
           footnote: String.t(),
           form: String.t(),

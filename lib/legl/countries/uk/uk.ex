@@ -31,7 +31,8 @@ defmodule UK do
           section: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           amendment: ~s/^([A-Z])(.*)/,
           sub_section: ~s/^(\\d+[A-Z]?)[ ](.*)/,
-          amendment_name: "amendment"
+          amendment_name: "amendment",
+          annex: ~s/(\\d*)[ ](.*)[ ]\\[::region::\\](.*)/
         }
       :regulation ->
         %AirtableSchema{

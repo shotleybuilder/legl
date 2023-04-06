@@ -175,6 +175,7 @@ defmodule UK.Parser do
     |> get_section(:act)
     |> get_sub_section(:act)
     |> get_amendments(:act)
+    |> get_commencements(:act)
     |> get_signed_section()
     |> revise_section_number(:act)
     |> get_heading(:act)
@@ -350,6 +351,14 @@ defmodule UK.Parser do
         "#{@components.heading}\\g{5} \\g{1} \\g{2}[::region::]\\g{3}\\g{4}\\g{5}"
       )
 
+  def get_A_heading(binary, :act),
+    do:
+      Regex.replace(
+        ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})(\n#{@regex_components.section}|\n#{@regex_components.amendment})(\d+)/m,
+        binary,
+        "#{@components.heading}\\g{5} \\g{1} \\g{2}[::region::]\\g{3}\\g{4}\\g{5}"
+      )
+
   @doc """
   Parse sections of Acts.  The equivalent of Regulation articles.
   Formats:
@@ -404,6 +413,12 @@ defmodule UK.Parser do
         &1,
         "#{@components.section}\\g{1} \\g{1}(\\g{3}) [::region::]\\g{2}"
       )).()
+      #F68Text    Missing the opening square bracket
+      |> (&Regex.replace(
+        ~r/^(\F\d{1,4})[ ]?(.*)(#{@region_regex})/m,
+        &1,
+        "#{@components.section}[\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
+      )).()
       #[F35(5)For the purposes...
       #[F48(2A)Regulations
       #[F42(2) In this
@@ -411,6 +426,12 @@ defmodule UK.Parser do
         ~r/^(\[F\d{1,4})\((\d{1,3}[A-Z]?)\)[ ]?(.*)/m,
         &1,
         "#{@components.sub_section}\\g{1} \\g{2} \\g{1}(\\g{2}) \\g{3}"
+      )).()
+      #F5(1). . . . . . Missing the opening square bracket
+      |> (&Regex.replace(
+        ~r/^(\F\d{1,4})\((\d{1,3}[A-Z]?)\)[ ]?(.*)/m,
+        &1,
+        "#{@components.sub_section}[\\g{1} \\g{2} \\g{1}(\\g{2}) \\g{3}"
       )).()
 
   @doc """
@@ -472,10 +493,20 @@ defmodule UK.Parser do
         "#{@components.annex}\\g{3} \\g{1}\\g{2} \\g{3} \\g{5} [::region::]\\g{4}\n"
       )
       |> (&Regex.replace(
-            ~r/^(?:THE SCHEDULE|The Schedule)|^(?:SCHEDULE|Schedule)[ ][^.]*?(?:\n)/m,
+        ~r/^(SCHEDULE|Schedule)(#{@region_regex})([^.]*?)(?:\n)/m,
+        &1,
+        "#{@components.annex}1 \\g{1} \\g{3} [::region::]\\g{2}\n"
+      )).()
+      |> (&Regex.replace(
+            ~r/^(?:SCHEDULE|Schedule)[ ][^.]*?(?:\n)/m,
             &1,
             "#{@components.annex}1 \\0"
           )).()
+      |> (&Regex.replace(
+        ~r/^(?:THE SCHEDULE|The Schedule)[ ][^.]*?(?:\n)/m,
+        &1,
+        "#{@components.annex}1 \\0"
+      )).()
       |> (&Regex.replace(
         ~r/^(SCHEDULES|Schedules)(?:\n)/m,
         &1,
@@ -520,6 +551,24 @@ defmodule UK.Parser do
         binary,
         "#{@components.amendment}\\g{1}"
       )
+      |> (&Regex.replace(
+        ~r/^(F\d+)(S\.)[ ](\d+\(?\d*\)?)(.*)/m,
+        &1,
+        "\\g{1} \\g{2}\\g{3}\\g{4}"
+      )).()
+
+  def get_commencements(binary, :act),
+    do:
+      Regex.replace(
+        ~r/^(Commencement[ ]Information)/m,
+        binary,
+        "#{@components.commencement}\\g{1}"
+      )
+      |> (&Regex.replace(
+        ~r/^(I\d+)(S\.)[ ](\d+\(?\d*\)?)(.*)/m,
+        &1,
+        "\\g{1} \\g{2}\\g{3}\\g{4}"
+      )).()
 
   @doc """
   Revised Acts
@@ -559,7 +608,9 @@ defmodule UK.Parser do
               #[::section::][F384A-1 [F384A(1)
               Regex.match?(~r/\d+[A-Z]-\d+/, x) -> :amended_section_and_sub_section
               #[::section::][F332A [F332A
-              Regex.match?(~r/\d+[A-Z]/, x) -> :amended_section
+              Regex.match?(~r/\d+[A-Z]/, x) -> :amended_section_A
+              #[::section::][F332A [F332A
+              Regex.match?(~r/\d+/, x) -> :amended_section
               true -> IO.inspect("ERROR #{x}")
             end
           [_, num, str] =
@@ -568,8 +619,15 @@ defmodule UK.Parser do
                 Regex.run(~r/(\d+-\d+)[ ](.*)/, x)
               :amended_section_and_sub_section ->
                 Regex.run(~r/\d{2}(\d[A-Z]-\d+)[ ](.*)/, x)
-              :amended_section ->
+              :amended_section_A ->
                 Regex.run(~r/\d{2}(\d[A-Z])[ ](.*)/, x)
+              :amended_section ->
+                [n] = Regex.run(~r/^\d+/, x)
+                case String.length(n) do
+                  2 -> Regex.run(~r/\d{1}(\d+)[ ](.*)/, x)
+                  3 -> Regex.run(~r/\d{1}(\d+)[ ](.*)/, x)
+                  4 -> Regex.run(~r/\d{2}(\d+)[ ](.*)/, x)
+                end
             end
 
             ["[::section::]#{num} #{str}" | acc]
@@ -580,7 +638,7 @@ defmodule UK.Parser do
             cond do
               #[::sub_section::][F48 2A [F48(2A) Para
               Regex.match?(~r/\d+[ ]\d+[A-Z][ ]/, x) -> :amended_sub_section
-              #[F42 2 [F42(2) Para
+              #[::sub_section::][F42 2 [F42(2) Para
               Regex.match?(~r/\d+[ ]\d+[ ]/, x) -> :sub_section
             end
 
