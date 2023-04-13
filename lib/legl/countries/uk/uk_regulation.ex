@@ -4,21 +4,23 @@ defmodule UK.Regulation do
     :type,
     :part,
     :chapter,
+    :heading,
     :section,
     :sub_section,
     :article,
     :para,
-    :sub,
-    :text
+    :sub_para,
+    :text,
+    :region
   ]
   @number_fields [
     :part,
     :chapter,
+    :heading,
     :section,
     :sub_section,
-    :article,
     :para,
-    :sub
+    :sub_para
   ]
 
   defstruct @fields

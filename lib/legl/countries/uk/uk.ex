@@ -42,20 +42,28 @@ defmodule UK do
           part: ~s/^(\\d+|[A-Z])[ ](.*)/,
           chapter_name: "chapter",
           chapter: ~s/^(\\d+)[ ](.*)/,
-          heading_name: "article, heading",
-          sub_section_name: "article, heading",
+
+          heading: ~s/^(\\d+[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading_name: "heading",
+
+          article: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)/,
           article_name: "article",
-          article: ~s/^(\\d+)[ ](.*)/,
-          sub_article_name: "subarticle",
+
           sub_article: ~s/^(\\d+)[ ](.*)/,
-          para_name: "sub-article",
+          sub_article_name: "sub-article",
+
           para: ~s/^(\\d+)[ ](.*)/,
+          para_name: "sub-article",
+
           signed_name: "signed",
+
+          annex: ~s/^(\\d*[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
           annex_name: "annex",
-          annex: ~s/^(\\d+)[ ](.*)/,
+
           footnote_name: "footnote",
-          amendment: ~s/[ ](.*)/,
-          amendment_name: "§§"
+
+          amendment: ~s/^([A-Z])(.*)/,
+          amendment_name: "amendment"
         }
     end
   end
@@ -189,21 +197,14 @@ defmodule UK do
 
     `>iex -S mix`
 
-    `iex(1)>UK.schema()`
+    `iex(1)>UK.schema(name: "airtable-id", type: :regulation)`
 
-    or with Options
-
-    `iex(2)>UK.schema(part: :annex, type: :regulation)`
-
-    `iex(3)>UK.schema(:law, :regulation)`
-
-    `iex(4)>UK.schema(:law, :act, [:article, :text])`
   """
-  def airtable(name, opts \\ []) do
+  def airtable(opts \\ []) do
 
     opts =
       Enum.into(opts, @airtable_default_opts)
-      |> Map.put(:name, name)
+      #|> Map.put(:name, name)
 
     # fields as a list
     # [:flow, :type, :part, :chapter, :heading, :section, :sub_section, :article, :para, :text, :region]
