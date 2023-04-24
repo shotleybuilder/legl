@@ -121,5 +121,13 @@ defmodule Legl.Utility do
     |> Enum.sort()
   end
 
+  def rm_dupe_spaces(binary) do
+    # remove double, triple and quadruple spaces
+    Regex.replace(
+      ~r/^(\[::annex::\].*)/m,
+      binary,
+      fn _, x -> String.replace(x, ~r/[ ]{2,4}/, " ") end
+    )
+  end
 
 end
