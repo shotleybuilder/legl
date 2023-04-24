@@ -600,9 +600,14 @@ defmodule Legl.Airtable.Schema do
 
       case Regex.run(~r/#{regex.annex}/, str) do
 
-        [_, annex_num, annex, region] ->
+        [_, annex_num, annex, annex_name, region] ->
 
-          annex_num = if annex_num != "", do: annex_num, else: "post"
+          annex_num =
+            cond do
+              annex_num != "" -> annex_num
+              annex_name == "SCHEDULE" -> "1"
+              true -> "post"
+            end
 
           %{
             last_record

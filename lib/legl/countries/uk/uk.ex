@@ -27,12 +27,12 @@ defmodule UK do
           fields: UK.Act.fields(),
           number_fields: UK.Act.number_fields(),
           part: ~s/^(\\d+|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
-          heading: ~s/^(\\d+)[ ](.*)[ ]\\[::region::\\](.*)/,
-          section: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^([A-Z]?\\d+[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
+          section: ~s/^([A-Z]?\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           amendment: ~s/^([A-Z])(.*)/,
           sub_section: ~s/^(\\d+[A-Z]?)[ ](.*)/,
           amendment_name: "amendment",
-          annex: ~s/(\\d*)[ ](.*)[ ]\\[::region::\\](.*)/
+          annex: ~s/(\\d*)[ ]((SCHEDULES?).*)[ ]\\[::region::\\](.*)/
         }
       :regulation ->
         %AirtableSchema{
@@ -111,6 +111,8 @@ defmodule UK do
 
     opts = Enum.into(opts, @parse_default_opts)
 
+    IO.inspect(opts, label: "Options: ")
+
     binary =
       case opts.clean do
         true ->
@@ -134,19 +136,13 @@ defmodule UK do
     end
   end
 
-  @spec clean_(:atom) :: :ok
-  def clean_(type) do
-    clean(type)
-    :ok
-  end
-
   @doc false
   @spec clean(:atom) :: String.t()
   def clean(type) do
     Legl.txt("original")
     |> Path.absname()
     |> File.read!()
-    |> UK.Parser.clean_original(type)
+    |> Legl.Countries.Uk.UkClean.clean_original(type)
   end
 
   @airtable_default_opts %{
@@ -197,7 +193,7 @@ defmodule UK do
 
     `>iex -S mix`
 
-    `iex(1)>UK.schema(name: "airtable-id", type: :regulation)`
+    `iex(1)>UK.airtable(name: "airtable-id", type: :regulation)`
 
   """
   def airtable(opts \\ []) do
