@@ -116,18 +116,31 @@ defmodule Legl.Utility do
   def duplicate_records(list) do
     list
     |> Enum.group_by(&(&1))
+    #|> IO.inspect()
     |> Enum.filter(fn {_, [_,_|_]} -> true; _ -> false end)
+    #|> IO.inspect()
     |> Enum.map(fn {x, _} -> x end)
     |> Enum.sort()
   end
-
-  def rm_dupe_spaces(binary) do
+  @doc """
+  Removes duped spaces in a line as captured by the marker
+  e.g. "\\[::annex::\\]"
+  """
+  def rm_dupe_spaces(binary, regex) do
     # remove double, triple and quadruple spaces
     Regex.replace(
-      ~r/^(\[::annex::\].*)/m,
+      ~r/^(#{regex}.*)/m,
       binary,
       fn _, x -> String.replace(x, ~r/[ ]{2,4}/, " ") end
     )
+  end
+
+  def alphabet_map() do
+    Enum.reduce(
+      Enum.zip(1..24, String.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "", trim: true)),
+      %{},
+      fn {x, y}, acc -> Map.put(acc, :"#{x}", y)
+    end)
   end
 
 end

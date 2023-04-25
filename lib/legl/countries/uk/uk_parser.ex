@@ -5,7 +5,8 @@ defmodule UK.Parser do
 
   @regex_components Component.mapped_components_for_regex()
 
-  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|N\\.I\\.|S"
+  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
+  @country_regex "N\\.I\\.|S|W|E"
 
   import Legl,
     only: [
@@ -57,7 +58,6 @@ defmodule UK.Parser do
   end
 
   def parser(binary, :regulation = type) when is_atom(type) do
-
     binary
     |> rm_header()
     |> rm_explanatory_note
@@ -73,14 +73,13 @@ defmodule UK.Parser do
     |> get_annex()
     |> provision_before_schedule()
     |> get_table()
-    # get_sub_section() has to come after get_article
-    #|> get_sub_section(:regulation)
     |> get_A_heading(:regulation)
     |> get_heading(:regulation)
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
     |> move_region_to_end(:regulation)
     |> add_missing_region()
+    |> rm_triangles()
   end
 
   def get_title(binary) do
@@ -239,11 +238,16 @@ defmodule UK.Parser do
       &1,
       "#{@components.heading}\\g{4} \\g{1} [::region::]\\g{2}\\g{3}\\g{4}"
     )).()
+    |> (&Regex.replace(
+      ~r/^([A-Z].*?)(#{@country_regex})(\n#{@regex_components.article})(\d+)/m,
+      &1,
+      "#{@components.heading}\\g{4} \\g{1} [::region::]\\g{2}\\g{3}\\g{4}"
+    )).()
     #Not every heading in Regulations has a Region
     |> (&Regex.replace(
       ~r/^([A-Z].*?)(\n#{@regex_components.article})(\d+)/m,
       &1,
-      "#{@components.heading}\\g{3} \\g{1} \\g{3}\\g{4}"
+      "#{@components.heading}\\g{3} \\g{1} \\g{2}\\g{3}"
     )).()
 
   def get_A_heading(binary, :act),
@@ -399,22 +403,48 @@ defmodule UK.Parser do
   """
   def get_article(binary),
     do:
-      Regex.replace(
+    binary
+      |> (&Regex.replace(
+        ~r/^(\d+)(\.[ ]+.*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.article}\\g{1} \\g{1}\\g{2} [::region::]\\g{3}"
+      )).()
+      #3.  A declaration of conformity must include—S
+      |> (&Regex.replace(
+        ~r/^(\d+)(\.[ ]+.*)(#{@country_regex})$/m,
+        &1,
+        "#{@components.article}\\g{1} \\g{1}\\g{2} [::region::]\\g{3}"
+      )).()
+      #
+      |> (&Regex.replace(
         ~r/^(\d+)\.[ ]+/m,
-        binary,
+        &1,
         "#{@components.article}\\g{1} \\0"
-      )
+      )).()
+      #[🔺F21🔺8E.—(1) The Scottish
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
+        &1,
+        "#{@components.article}\\g{2}-\\g{3} \\0"
+      )).()
       #12A.—(1) This regulation
       |> (&Regex.replace(
         ~r/^(\d+[A-Z])\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
         &1,
         "#{@components.article}\\g{1}-\\g{2} \\0"
       )).()
+      #[🔺F21🔺8.—(1) The Scottish
       |> (&Regex.replace(
-            ~r/^(\d+)\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
-            &1,
-            "#{@components.article}\\g{1}-\\g{2} \\0"
-          )).()
+        ~r/^(\[?🔺F\d+🔺)(\d+)\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
+        &1,
+        "#{@components.article}\\g{2}-\\g{3} \\0"
+      )).()
+      |> (&Regex.replace(
+        ~r/^(\d+)\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
+        &1,
+        "#{@components.article}\\g{1}-\\g{2} \\0"
+      )).()
+      |> (&Legl.Utility.rm_dupe_spaces(&1, "\\[::article::\\]")).()
 
   def get_sub_article(binary),
     do:
@@ -423,6 +453,11 @@ defmodule UK.Parser do
         binary,
         "#{@components.sub_article}\\g{1} \\0"
       )
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\((\d+)\)[ ][A-Z])/m,
+        &1,
+        "#{@components.sub_article}\\g{3} \\g{1} \\g{2}"
+      )).()
 
   @doc """
   Mark-up Schedules
@@ -432,21 +467,23 @@ defmodule UK.Parser do
   """
   def get_annex(binary),
     do:
-      Regex.replace(
-        ~r/^(\[?F?\d*)(SCHEDULES?|Schedules?)[ ]?(\d*[A-Z]?[ ]?)(#{@region_regex})([^.]*?)(?:\n)/m,
-        binary,
+      binary
+      |> (&Regex.replace(
+        ~r/^(\[?🔺?F?\d*🔺?)(SCHEDULES?|Schedules?)[ ]?(\d*[A-Z]?[ ]?)(#{@region_regex})([^.]*?)(?:\n)/m,
+        &1,
         "#{@components.annex}\\g{3} \\g{1} \\g{2} \\g{3} \\g{5} [::region::]\\g{4}\n"
-      )
+        )).()
       |> (&Regex.replace(
         ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]?(#{@region_regex})([^.]*?)(?:\n)/m,
         &1,
         "#{@components.annex}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}\n"
-      )).()
+        )).()
       |> (&Regex.replace(
         ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]?([^.]*?)(?:\n)/m,
         &1,
         "#{@components.annex}\\g{2} \\g{1} \\g{2} \\g{3}\n"
         )).()
+      # SCHEDULE Identified Improvement Measures
       |> (&Regex.replace(
         ~r/^(?:SCHEDULE|Schedule)[^S|^s][ ]?[^.]*?(?:\n)/m,
         &1,
@@ -472,7 +509,7 @@ defmodule UK.Parser do
   def provision_before_schedule(binary), do:
     binary
     |> (&Regex.replace(
-      ~r/^(Regulation.*)\n(\[::annex::].*)/m,
+      ~r/^(Regulation.*|Article.*)\n(\[::annex::].*)/m,
       &1,
       "\\g{2} 📌\\g{1}"
     )).()
@@ -507,7 +544,7 @@ defmodule UK.Parser do
   @doc """
   Revised Acts
   """
-  def get_amendments(binary, _type),
+  def get_amendments(binary, :act),
     do:
       Regex.replace(
         ~r/^(Textual[ ]Amendments|Extent[ ]Information|Modifications etc\.[ ]\(not altering text\))/m,
@@ -518,6 +555,20 @@ defmodule UK.Parser do
         ~r/^(F\d+)(S\.)[ ](\d+\(?\d*\)?)(.*)/m,
         &1,
         "\\g{1} \\g{2}\\g{3}\\g{4}"
+      )).()
+
+  def get_amendments(binary, :regulation),
+    do:
+      binary
+      |> (&Regex.replace(
+        ~r/^(Textual[ ]Amendments|Extent[ ]Information|Modifications etc\.[ ]\(not altering text\))/m,
+        &1,
+        "#{@components.amendment}\\g{1}"
+      )).()
+      |> (&Regex.replace(
+        ~r/^(🔺F\d+🔺)([^\.].*)/m,
+        &1,
+        "#{@components.amendment}\\g{1} \\g{2}"
       )).()
 
   def get_commencements(binary, _type),
@@ -655,6 +706,11 @@ defmodule UK.Parser do
         case String.match?(x, ~r/\[::region::\]/) do
           true -> ["[::heading::]#{x}" | acc]
           _ -> [~s/[::heading::]#{x} [::region::]/ | acc]
+        end
+      "[::article::]" <> x, acc ->
+        case String.match?(x, ~r/\[::region::\]/) do
+          true -> ["[::article::]#{x}" | acc]
+          _ -> [~s/[::article::]#{x} [::region::]/ | acc]
         end
       x, acc -> [x | acc]
     end)

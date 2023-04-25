@@ -1,9 +1,7 @@
 defmodule Legl.Countries.Uk.UkClean do
 
   def clean_original("CLEANED\n" <> binary, _type) do
-    binary
-    |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
-
+    binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
     binary
   end
 
@@ -42,6 +40,9 @@ defmodule Legl.Countries.Uk.UkClean do
       # |> rm_overview()
       # |> rm_footer()
       |> Legl.Parser.rm_leading_tabs()
+      |> tag_efs()
+      |> tag_txt_amend_efs()
+      |> tag_extents()
 
     Legl.txt("clean")
     |> Path.absname()
@@ -131,6 +132,12 @@ defmodule Legl.Countries.Uk.UkClean do
       "\\g{1} "
     )
 
+  @doc """
+  A function to process tag_efs in 'original.txt' outside of running the parse process.
+  Result is saved to 'a_original.txt'.
+
+  iex> Legl.Countries.Uk.UkClean.tag_efs()
+  """
   def tag_efs() do
 
     txt =
@@ -165,15 +172,30 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   def tag_efs({last_ef, ef, binary}) do
+    binary = tag_previous_encountered_efs(binary, ef)
     case Regex.run(~r/#{ef}/, binary) do
       nil ->
         {last_ef, binary}
       _ ->
-        binary = Regex.replace(~r/#{ef}/m, binary, "🔺\\g{0}🔺")
+        binary =
+          Regex.replace(~r/#{ef}/m, binary, "🔺\\g{0}🔺")
+          |> (&Regex.replace(
+            ~r/🔺🔺/, &1, "🔺"
+          )).()
         "F" <> index = ef
         next_ef = ~s/F#{String.to_integer(index) + 1}/
         tag_efs({ef, next_ef, binary})
     end
+  end
+  @doc """
+  Tag previously encountered efs that appear at the start of a line
+  """
+  def tag_previous_encountered_efs(line, "F" <> index = _ef) do
+    efs = Enum.map(String.to_integer(index)..1, fn x -> ~s/F#{x}/ end)
+    Enum.reduce(efs, line, fn x, acc ->
+      Regex.replace(~r/^#{x}/, acc, "🔺\\g{0}🔺")
+      |> (&Regex.replace(~r/^\[(#{x})/,&1,"[🔺\\g{1}🔺")).()
+    end)
   end
 
   def tag_txt_amend_efs(binary) do
@@ -182,5 +204,9 @@ defmodule Legl.Countries.Uk.UkClean do
       binary,
       "🔺\\g{1}🔺\\g{2}"
     )
+  end
+
+  def tag_extents(binary) do
+    Regex.replace(~r/^(E\d+)(This[ ]version)/m, binary, "\\g{1} \\g{2}")
   end
 end

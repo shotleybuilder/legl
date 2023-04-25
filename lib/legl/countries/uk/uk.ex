@@ -39,14 +39,14 @@ defmodule UK do
           country: :UK,
           fields: UK.Regulation.fields(),
           number_fields: UK.Regulation.number_fields(),
-          part: ~s/^(\\d+|[A-Z])[ ](.*)/,
+          part: ~s/^(\\d+|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
           chapter_name: "chapter",
           chapter: ~s/^(\\d+)[ ](.*)/,
 
           heading: ~s/^(\\d+[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
           heading_name: "heading",
 
-          article: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)/,
+          article: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           article_name: "article",
 
           sub_article: ~s/^(\\d+)[ ](.*)/,
