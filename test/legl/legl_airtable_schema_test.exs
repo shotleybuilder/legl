@@ -33,4 +33,20 @@ defmodule Legl.Airtable.Schema.Test do
       assert "test1__1_1" == id
     end
   end
+
+  describe "fields_reset/3" do
+    test "para" do
+      record = %{
+        part: "1",
+        chapter: "",
+        heading: "1",
+        section: "1",
+        sub_section: "1",
+        para: "1",
+        sub_para: "2"
+      }
+      reset = fields_reset(record, :para, UK.schema(:regulation), 0)
+      assert Map.get(reset, :para) == ""
+    end
+  end
 end

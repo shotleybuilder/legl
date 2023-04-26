@@ -17,6 +17,7 @@ defmodule Legl.Airtable.Schema do
     "Sub_Section||Sub_Regulation",
     "Paragraph",
     "Sub_Paragraph",
+    "Amendment",
     "paste_text_here",
     "Region"
   ]
@@ -191,6 +192,7 @@ defmodule Legl.Airtable.Schema do
     sub_section: sub_section,
     para: para,
     sub_para: sub_para,
+    amendment: amendment,
     region: region,
     text: text
   } = _record) do
@@ -206,6 +208,7 @@ defmodule Legl.Airtable.Schema do
       sub_section,
       para,
       sub_para,
+      amendment,
       Legl.Utility.csv_quote_enclosure(text),
       region
     ]
@@ -243,11 +246,24 @@ defmodule Legl.Airtable.Schema do
   ~s/#{name}-#{flow}_#{make_numeric_id(r)}/
   |> String.trim_trailing("_")
 
+  @spec make_numeric_id(
+          atom
+          | %{
+              :chapter => any,
+              :heading => any,
+              :para => any,
+              :part => any,
+              :section => any,
+              :sub_para => any,
+              :sub_section => any,
+              optional(any) => any
+            }
+        ) :: binary
   def make_numeric_id(r), do:
-    ~s/#{r.part}_#{r.chapter}_#{r.heading}_#{r.section}_#{r.sub_section}_#{r.para}/
+    ~s/#{r.part}_#{r.chapter}_#{r.heading}_#{r.section}_#{r.sub_section}_#{r.para}_#{r.sub_para}/
     |> String.trim_trailing("_")
 
-  def amending?(id, %{type: ~s/"amendment,general"/} = _record), do: id <> "_ag"
+  def amending?(id, %{type: ~s/"amendment,general"/, amendment: amd} = _record), do: id <> "_ag_" <> amd
   def amending?(id, %{type: ~s/"amendment,textual"/} = _record), do: id <> "_at"
   def amending?(id, %{type: ~s/"amendment,extent"/} = _record), do: id <> "_ae"
   def amending?(id, %{type: ~s/"amendment,modification"/} = _record), do: id <> "_am"
@@ -674,23 +690,18 @@ defmodule Legl.Airtable.Schema do
 
   def amendment(%{country: :UK} = regex,  "[::amendment::]" <> str, last_record, _type) do
 
-    sub_section =
-      case last_record.sub_section do
-        "" -> "1"
-        _ ->
-          Map.get(last_record, :sub_section) |> String.to_integer() |> (&(Kernel.+(&1, 1))).() |> Integer.to_string()
-      end
-
     case Regex.run(~r/#{regex.amendment}/, str) do
 
-      [_, amd_code, str] ->
+      [_, amd_code, amd_num, str] ->
         %{
           last_record
           | type: Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},#{amd_code(amd_code)}"),
-            text: amd_code<>str,
-            sub_section: sub_section
+            text: amd_code<>amd_num<>str,
+            amendment: amd_num,
+            sub_section: ""
         }
-        |> fields_reset(:sub_section, regex)
+        #|> IO.inspect()
+        #|> fields_reset(:amendment, regex)
     end
   end
 
@@ -789,8 +800,11 @@ defmodule Legl.Airtable.Schema do
 
     [_, table_num, table] = Regex.run(~r/#{regex.table}/, str)
 
+    #IO.puts("___T___\ntype: #{last_record.type}\nsection: #{last_record.section}\nsub_section: #{last_record.sub_section}\npara: #{last_record.para}")
+
     field =
       cond do
+        last_record.type == regex.sub_table_name && last_record.para != "" -> :sub_section
         last_record.section == "" -> :section
         last_record.sub_section == "" -> :sub_section
         true -> :para
@@ -802,6 +816,30 @@ defmodule Legl.Airtable.Schema do
         "#{field}": table_num
       }
     )
+    |> fields_reset(field, regex)
+
+  end
+
+  def sub_table(regex, "[::sub_table::]" <> str, last_record, _type) do
+
+    [_, table_num, text] = Regex.run(~r/#{regex.table}/, str)
+
+    #IO.puts("___ST___\ntype: #{last_record.type}\nsection: #{last_record.section}\nsub_section: #{last_record.sub_section}\npara: #{last_record.para}")
+
+    field =
+      cond do
+        last_record.section == "" -> :section
+        last_record.sub_section == "" -> :sub_section
+        true -> :para
+      end
+
+    Map.merge(last_record,
+      %{type: regex.sub_table_name,
+        text: text,
+        "#{field}": table_num
+      }
+    )
+    |> IO.inspect()
     |> fields_reset(field, regex)
 
   end
@@ -836,13 +874,19 @@ defmodule Legl.Airtable.Schema do
       _ -> str
     end
   end
+  @doc """
+  Resets all numeric fields to "" in the hierarchy below the field
+  If the optional step is set to 0 then the given field is also set to ""
+  """
 
-  def fields_reset(record, :all, %{number_fields: fields}) do
+  def fields_reset(record, field, regex, step \\ 1)
+
+  def fields_reset(record, :all, %{number_fields: fields}, _step) do
     Enum.reduce(fields, record, fn x, acc -> Map.replace(acc, x, "") end)
   end
 
-  def fields_reset(record, field, %{number_fields: fields}) do
-    index = Enum.find_index(fields, fn x -> x == field end) |> (&Kernel.+(&1, 1)).()
+  def fields_reset(record, field, %{number_fields: fields}, step) do
+    index = Enum.find_index(fields, fn x -> x == field end) |> (&Kernel.+(&1, step)).()
     {_, fields} = Enum.split(fields, index)
     Enum.reduce(fields, record, fn x, acc -> Map.replace(acc, x, "") end)
   end
@@ -905,7 +949,7 @@ defmodule Legl.Airtable.Schema do
         case dupe == record.id do
           :true ->
             record =
-              %{record | para: letter_from_number(fm_acc)}
+              %{record | sub_para: letter_from_number(fm_acc)}
               |> (&Map.put(&1, :id, make_id(&1))).()
             {[record], fm_acc + 1}
           _ ->

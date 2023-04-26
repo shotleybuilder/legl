@@ -53,7 +53,8 @@ defmodule UK.Parser do
     |> Legl.Parser.rm_tabs()
     |> move_region_to_end(:act)
     |> add_missing_region()
-    |> rm_triangles()
+    |> rm_emoji("🔺")
+    |> rm_emoji("🇨")
     #|> rm_amendment(:act)
   end
 
@@ -72,14 +73,17 @@ defmodule UK.Parser do
     |> get_signed_section()
     |> get_annex()
     |> provision_before_schedule()
+    |> get_sub_table() #Has to come before table
     |> get_table()
+    |> rm_table_ref()
     |> get_A_heading(:regulation)
     |> get_heading(:regulation)
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
     |> move_region_to_end(:regulation)
     |> add_missing_region()
-    |> rm_triangles()
+    |> rm_emoji("🔺")
+    |> rm_emoji("🇨")
   end
 
   def get_title(binary) do
@@ -146,7 +150,7 @@ defmodule UK.Parser do
 
     part_class_scheme =
       cond do
-        Regex.match?(~r/^(#{type_regex})[ ]+\d+/m, binary) -> "numeric"
+        Regex.match?(~r/^\[?🔺?F?\d*🔺?(#{type_regex})[ ]+\d+/m, binary) -> "numeric"
         Regex.match?(~r/^(#{type_regex})[ ]+A/m, binary) -> "alphabetic"
         Regex.match?(~r/^(#{type_regex})[ ]+I/m, binary) -> "roman_numeric"
         true -> :false
@@ -162,6 +166,12 @@ defmodule UK.Parser do
           binary,
           "#{component}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}"
         )
+        #🔺F226🔺PART 7U.K.Transitional provisions
+        |> (&Regex.replace(
+          ~r/^(\[?🔺F\d+🔺)(#{type_regex})[ ](\d+)[ ]?(#{@region_regex})(.*)/m,
+          &1,
+          "#{component}\\g{3} \\g{1} \\g{2} \\g{3} \\g{5} [::region::]\\g{4}"
+        )).()
 
       "alphabetic" ->
         Regex.replace(
@@ -234,12 +244,7 @@ defmodule UK.Parser do
   do:
     binary
     |> (&Regex.replace(
-      ~r/^([A-Z].*?)(#{@region_regex})(\n#{@regex_components.article})(\d+)/m,
-      &1,
-      "#{@components.heading}\\g{4} \\g{1} [::region::]\\g{2}\\g{3}\\g{4}"
-    )).()
-    |> (&Regex.replace(
-      ~r/^([A-Z].*?)(#{@country_regex})(\n#{@regex_components.article})(\d+)/m,
+      ~r/^([A-Z].*?)(#{@region_regex})(\n#{@regex_components.article})(\d+[A-Z]?)/m,
       &1,
       "#{@components.heading}\\g{4} \\g{1} [::region::]\\g{2}\\g{3}\\g{4}"
     )).()
@@ -415,6 +420,12 @@ defmodule UK.Parser do
         &1,
         "#{@components.article}\\g{1} \\g{1}\\g{2} [::region::]\\g{3}"
       )).()
+      #3.—[🔺F4🔺(1) These Regulations apply to energy-related products.]
+      |> (&Regex.replace(
+        ~r/^(\d+[A-Z]?)\.(?:#{<<226, 128, 148>>}|\-)(\[?🔺F\d+🔺)\((\d+)\)/m,
+        &1,
+        "#{@components.article}\\g{1}-\\g{3} \\0"
+      )).()
       #
       |> (&Regex.replace(
         ~r/^(\d+)\.[ ]+/m,
@@ -433,11 +444,24 @@ defmodule UK.Parser do
         &1,
         "#{@components.article}\\g{1}-\\g{2} \\0"
       )).()
+      #21A.  The maximum amount
+      |> (&Regex.replace(
+        ~r/^(\d+[A-Z])(\.[ ]+)/m,
+        &1,
+        "#{@components.article}\\g{1} \\0"
+      )).()
       #[🔺F21🔺8.—(1) The Scottish
       |> (&Regex.replace(
         ~r/^(\[?🔺F\d+🔺)(\d+)\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
         &1,
         "#{@components.article}\\g{2}-\\g{3} \\0"
+      )).()
+      #🔺F226🔺25.  . . .
+      #🔺F80🔺4A.  . .
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z]?)(\.[ ]+[\. ]*)/m,
+        &1,
+        "#{@components.article}\\g{2} \\g{1} \\g{2}\\g{3}"
       )).()
       |> (&Regex.replace(
         ~r/^(\d+)\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
@@ -458,6 +482,12 @@ defmodule UK.Parser do
         &1,
         "#{@components.sub_article}\\g{3} \\g{1} \\g{2}"
       )).()
+      #🔺F187🔺(10) . .   Desc: a revoked sub_article
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\((\d+)\)[\. ]*)/m,
+        &1,
+        "#{@components.sub_article}\\g{3} \\g{1} \\g{2}"
+      )).()
 
   @doc """
   Mark-up Schedules
@@ -473,15 +503,29 @@ defmodule UK.Parser do
         &1,
         "#{@components.annex}\\g{3} \\g{1} \\g{2} \\g{3} \\g{5} [::region::]\\g{4}\n"
         )).()
+      #[🔺F227🔺SCHEDULE [🔺F228🔺1] U.K.SUSTAINABILITY CRITERIA
       |> (&Regex.replace(
-        ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]?(#{@region_regex})([^.]*?)(?:\n)/m,
+        ~r/^(\[?🔺?F?\d*🔺?)(SCHEDULES?|Schedules?)[ ]?(\[?🔺?F?\d*🔺?)(\d*[A-Z]?)(\]?)[ ]?(#{@region_regex})([^.]*?)(?:\n)/m,
+        &1,
+        "#{@components.annex}\\g{4} \\g{1} \\g{2} \\g{3} \\g{4}\\g{5} \\g{7} [::region::]\\g{6}\n"
+        )).()
+      #
+      |> (&Regex.replace(
+        ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]*(#{@region_regex})([^.]*?)(?:\n)/m,
         &1,
         "#{@components.annex}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}\n"
         )).()
+      #SCHEDULE 1 Application to the Crown etc.
       |> (&Regex.replace(
-        ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]?([^.]*?)(?:\n)/m,
+        ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]?([^.]*?|.*etc\.)(?:\n)/m,
         &1,
         "#{@components.annex}\\g{2} \\g{1} \\g{2} \\g{3}\n"
+        )).()
+      #SCHEDULE U.K.List of the elements referred to in regulation 18(5)
+      |> (&Regex.replace(
+        ~r/^(SCHEDULES?|Schedules?)[ ]?(#{@region_regex})([^.]*?)(?:\n)/m,
+        &1,
+        "#{@components.annex}1 \\g{1} \\g{3} [::region::]\\g{2}\n"
         )).()
       # SCHEDULE Identified Improvement Measures
       |> (&Regex.replace(
@@ -520,6 +564,22 @@ defmodule UK.Parser do
       ~r/^Table[ ](\d+)/m,
       &1,
       "#{@components.table}\\g{1} \\0"
+    )).()
+
+  def rm_table_ref(binary), do:
+    binary
+    |> (&Regex.replace(
+      ~r/^(#{@regex_components.table}|#{@regex_components.sub_table}[\S\s]*?)(#{@regex_components.sub_article})/m,
+      &1,
+      "\\g{1}"
+    )).()
+
+  def get_sub_table(binary), do:
+    binary
+    |> (&Regex.replace(
+      ~r/^Table[ ]\d+\.(\d+)/m,
+      &1,
+      "#{@components.sub_table}\\g{1} \\0"
     )).()
   @doc """
 
@@ -566,7 +626,7 @@ defmodule UK.Parser do
         "#{@components.amendment}\\g{1}"
       )).()
       |> (&Regex.replace(
-        ~r/^(🔺F\d+🔺)([^\.].*)/m,
+        ~r/^(🔺F\d+🔺)([^\.\(].*)/m,
         &1,
         "#{@components.amendment}\\g{1} \\g{2}"
       )).()
@@ -581,17 +641,23 @@ defmodule UK.Parser do
       |> (&Regex.replace(
         ~r/^(I\d+)(S\.)[ ](\d+\(?\d*\)?)(.*)/m,
         &1,
-        "\\g{1} \\g{2}\\g{3}\\g{4}"
+        "🇨\\g{1} \\g{2}\\g{3}\\g{4}"
       )).()
       |> (&Regex.replace(
         ~r/^(I\d+)(Art\.)[ ](\d+\(?\d*\)?)(.*)/m,
         &1,
-        "\\g{1} \\g{2}\\g{3}\\g{4}"
+        "🇨\\g{1} \\g{2}\\g{3}\\g{4}"
       )).()
       |> (&Regex.replace(
         ~r/^(I\d+)(Sch\.)[ ](\d+\(?\d*\)?)(.*)/m,
         &1,
-        "\\g{1} \\g{2}\\g{3}\\g{4}"
+        "🇨\\g{1} \\g{2}\\g{3}\\g{4}"
+      )).()
+      #I58Sch. para. 10 in force at 22.4.2021, see reg. 1(2)
+      |> (&Regex.replace(
+        ~r/^(I\d+)(Sch\.)(.*)/m,
+        &1,
+        "🇨\\g{1} \\g{2}\\g{3}"
       )).()
 
   @doc """
@@ -712,14 +778,19 @@ defmodule UK.Parser do
           true -> ["[::article::]#{x}" | acc]
           _ -> [~s/[::article::]#{x} [::region::]/ | acc]
         end
+      "[::part::]" <> x, acc ->
+        case String.match?(x, ~r/\[::region::\]/) do
+          true -> ["[::part::]#{x}" | acc]
+          _ -> [~s/[::part::]#{x} [::region::]/ | acc]
+        end
       x, acc -> [x | acc]
     end)
     |> Enum.reverse
     |> Enum.join("\n")
   end
 
-  def rm_triangles(binary) do
-    Regex.replace(~r/🔺/m, binary, "")
+  def rm_emoji(binary, emoji) do
+    Regex.replace(~r/#{emoji}/m, binary, "")
   end
 
 end

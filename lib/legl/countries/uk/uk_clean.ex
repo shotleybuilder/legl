@@ -43,6 +43,7 @@ defmodule Legl.Countries.Uk.UkClean do
       |> tag_efs()
       |> tag_txt_amend_efs()
       |> tag_extents()
+      |> closing_quotes()
 
     Legl.txt("clean")
     |> Path.absname()
@@ -105,7 +106,7 @@ defmodule Legl.Countries.Uk.UkClean do
   @spec collapse_amendment_text_between_quotes(binary) :: binary
   def collapse_amendment_text_between_quotes(binary) do
     Regex.replace(
-      ~r/(?:inserte?d?—|substituted?—|adde?d?—|inserted the following Schedule—)(?:\r\n|\n)^[“][\s\S]*?(?:\.”\.|\.”|”\.)/m,
+      ~r/(?:inserte?d?—|substituted?—|adde?d?—|inserted the following Schedule—)(?:\r\n|\n)^[“][\s\S]*?(?:\.”\.|\.”|”\.|”;)/m,
       binary,
       fn x -> "#{join(x)}" end
     )
@@ -208,5 +209,9 @@ defmodule Legl.Countries.Uk.UkClean do
 
   def tag_extents(binary) do
     Regex.replace(~r/^(E\d+)(This[ ]version)/m, binary, "\\g{1} \\g{2}")
+  end
+
+  def closing_quotes(binary) do
+    Regex.replace(~r/(.)\"/m, binary, "\\g{1}”")
   end
 end

@@ -21,6 +21,7 @@ defmodule Types.Component do
     forms
     form
     table
+    sub_table
     note
   )
 
@@ -73,6 +74,7 @@ defmodule Types.Component do
       sub: "[::sub::]",
       sub_article: "[::sub_article::]",
       table: "[::table::]",
+      sub_table: "[::sub_table::]",
       title: "[::title::]"
     }
   """
@@ -97,6 +99,7 @@ defmodule Types.Component do
           sub: String.t(),
           sub_article: String.t(),
           table: String.t(),
+          sub_table: String.t(),
           title: String.t()
         }
 

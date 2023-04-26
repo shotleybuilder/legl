@@ -10,6 +10,7 @@ defmodule UK.Regulation do
     :article,
     :para,
     :sub_para,
+    :amendment,
     :text,
     :region
   ]
@@ -20,7 +21,8 @@ defmodule UK.Regulation do
     :section,
     :sub_section,
     :para,
-    :sub_para
+    :sub_para,
+    :amendment
   ]
 
   defstruct @fields
@@ -34,8 +36,10 @@ defmodule UK.Regulation do
       sub_section: "",
       article: "",
       para: "",
-      sub: "",
-      text: ""
+      sub_para: "",
+      amendment: "",
+      text: "",
+      region: ""
     }
   """
   def regulation, do:

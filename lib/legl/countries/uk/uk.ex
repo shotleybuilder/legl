@@ -58,11 +58,11 @@ defmodule UK do
           signed_name: "signed",
 
           annex: ~s/^(\\d*[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
-          annex_name: "annex",
+          annex_name: "schedule",
 
           footnote_name: "footnote",
 
-          amendment: ~s/^([A-Z])(.*)/,
+          amendment: ~s/^([A-Z])(\\d+)(.*)/,
           amendment_name: "amendment"
         }
     end
