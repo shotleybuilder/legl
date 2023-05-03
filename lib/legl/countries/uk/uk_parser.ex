@@ -40,10 +40,12 @@ defmodule UK.Parser do
     |> get_part_chapter(:chapter)
     #|> get_modifications(:act)
     |> get_annex()
+    |> provision_before_schedule()
     |> get_A_section(:act)
     |> get_section(:act)
     |> get_sub_section(:act)
     |> get_amendments(:act)
+    |> get_modifications(:act)
     |> get_commencements(:act)
     |> get_signed_section()
     #|> revise_section_number(:act)
@@ -55,6 +57,7 @@ defmodule UK.Parser do
     |> add_missing_region()
     |> rm_emoji("🔺")
     |> rm_emoji("🇨")
+    |> rm_emoji("🇲")
     #|> rm_amendment(:act)
   end
 
@@ -84,6 +87,7 @@ defmodule UK.Parser do
     |> add_missing_region()
     |> rm_emoji("🔺")
     |> rm_emoji("🇨")
+    |> rm_emoji("🇲")
   end
 
   def get_title(binary) do
@@ -185,9 +189,9 @@ defmodule UK.Parser do
 
       "roman_numeric" ->
         Regex.replace(
-          ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([ A-Za-z]+)/m,
+          ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})[ ]?(#{@region_regex})(.+)/m,
           binary,
-          fn _, part_chapter, tens, units, text ->
+          fn _, part_chapter, tens, units, region, text ->
 
             numeral = tens <> units
 
@@ -201,11 +205,11 @@ defmodule UK.Parser do
             case Dictionary.match?("#{last_numeral}#{text}") do
               true ->
                 value = Legl.conv_roman_numeral(remaining_numeral)
-                "#{component}#{value} #{part_chapter} #{remaining_numeral} #{last_numeral}#{text}"
+                "#{component}#{value} #{part_chapter} #{remaining_numeral} #{last_numeral}#{text} [::region::]#{region}"
 
               false ->
                 value = Legl.conv_roman_numeral(numeral)
-                "#{component}#{value} #{part_chapter} #{numeral} #{text}"
+                "#{component}#{value} #{part_chapter} #{numeral}#{text} [::region::]#{region}"
             end
           end
         )
@@ -235,9 +239,9 @@ defmodule UK.Parser do
     do:
       binary
       |> (&Regex.replace(
-        ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+#{@regex_components.section})(.*?[ ])/m,
+        ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-?\d*[ ])/m,
         &1,
-        "#{@components.heading}\\g{5}\\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}"
+        "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
       )).()
 
   def get_heading(binary, :regulation),
@@ -289,6 +293,12 @@ defmodule UK.Parser do
         binary,
         "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
       )
+      #6B.(1)Section 2(1) does not entitle
+      |> (&Regex.replace(
+        ~r/^(\d{1,3}[A-Z]?)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.section}\\g{1}-\\g{2} \\g{1}.(\\g{2}) \\g{3} [::region::]\\g{4}"
+      )).()
       #A1The net-zero emissions targetS
       |> (&Regex.replace(
         ~r/^([A-Z]\d{1,3})([A-Z].*)(#{@region_regex})$/m,
@@ -316,6 +326,7 @@ defmodule UK.Parser do
         &1,
         "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
       )).()
+      |> Legl.Utility.rm_dupe_spaces("\\[::section::\\]")
 
   @doc """
   Parse amended sections of Acts.
@@ -325,17 +336,36 @@ defmodule UK.Parser do
   def get_A_section(binary, :act),
     do:
       binary
+
       #[🔺F4🔺2AModification of the interim targetsS
       |> (&Regex.replace(
-        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[ ]?([A-Z].*)(#{@region_regex})$/m,
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?([A-Z].*)(#{@region_regex})$/m,
         &1,
-        "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
+        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
+      )).()
+      #[🔺F56🔺25A.Salt marshes and flatsE
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?([A-Z].*)(#{@country_regex})$/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
+      )).()
+      #[🔺F135🔺13A.ELand which is coastal margin and
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?(#{@country_regex})([A-Z].*)$/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{4} [::region::]\\g{3}"
       )).()
       #🔺F2🔺1The 2050 targetS
       |> (&Regex.replace(
         ~r/^(\[?🔺F\d+🔺)(\d+)(.*)(#{@region_regex})$/m,
         &1,
-        "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
+        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
+      )).()
+      #🔺F157🔺5E+W. . . . . .
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z]?)(#{@region_regex})(\.[ ][\. ]*)/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1} \\g{2}\\g{4} [::region::]\\g{3}"
       )).()
       #5[F39(1)]Text...
       |> (&Regex.replace(
@@ -539,7 +569,7 @@ defmodule UK.Parser do
         "#{@components.annex}1 \\0"
       )).()
       |> (&Regex.replace(
-        ~r/^(SCHEDULES|Schedules)(?:\n)/m,
+        ~r/^(SCHEDULES|Schedules)/m,
         &1,
         "#{@components.annex} \\0"
       )).()
@@ -553,7 +583,7 @@ defmodule UK.Parser do
   def provision_before_schedule(binary), do:
     binary
     |> (&Regex.replace(
-      ~r/^(Regulation.*|Article.*)\n(\[::annex::].*)/m,
+      ~r/^(Regulation.*|Article.*|Section.*)\n(\[::annex::].*)/m,
       &1,
       "\\g{2} 📌\\g{1}"
     )).()
@@ -604,31 +634,32 @@ defmodule UK.Parser do
   @doc """
   Revised Acts
   """
-  def get_amendments(binary, :act),
-    do:
-      Regex.replace(
-        ~r/^(Textual[ ]Amendments|Extent[ ]Information|Modifications etc\.[ ]\(not altering text\))/m,
-        binary,
-        "#{@components.amendment}\\g{1}"
-      )
-      |> (&Regex.replace(
-        ~r/^(F\d+)(S\.)[ ](\d+\(?\d*\)?)(.*)/m,
-        &1,
-        "\\g{1} \\g{2}\\g{3}\\g{4}"
-      )).()
-
-  def get_amendments(binary, :regulation),
+  def get_amendments(binary, _type),
     do:
       binary
       |> (&Regex.replace(
-        ~r/^(Textual[ ]Amendments|Extent[ ]Information|Modifications etc\.[ ]\(not altering text\))/m,
+        ~r/^(Textual[ ]Amendments|Extent[ ]Information)/m,
         &1,
-        "#{@components.amendment}\\g{1}"
+        "#{@components.amendment_heading}\\g{1}"
       )).()
       |> (&Regex.replace(
         ~r/^(🔺F\d+🔺)([^\.\(].*)/m,
         &1,
-        "#{@components.amendment}\\g{1} \\g{2}"
+        "#{@components.amendment}\\g{1}\\g{2}"
+      )).()
+
+  def get_modifications(binary, _type),
+    do:
+      binary
+      |> (&Regex.replace(
+        ~r/^(Modifications etc\.[ ]\(not altering text\))/m,
+        &1,
+        "#{@components.modification_heading}\\g{1}"
+      )).()
+      |> (&Regex.replace(
+        ~r/^(🇲C\d+🇲)([^\.\(].*)/m,
+        &1,
+        "#{@components.modification}\\g{1}\\g{2}"
       )).()
 
   def get_commencements(binary, _type),
@@ -636,40 +667,13 @@ defmodule UK.Parser do
       Regex.replace(
         ~r/^(Commencement[ ]Information)/m,
         binary,
-        "#{@components.commencement}\\g{1}"
+        "#{@components.commencement_heading}\\g{1}"
       )
       |> (&Regex.replace(
-        ~r/^(I\d+)(S\.)[ ](\d+\(?\d*\)?)(.*)/m,
+        ~r/^(🇨I\d+🇨)([^\.\(].*)/m,
         &1,
-        "🇨\\g{1} \\g{2}\\g{3}\\g{4}"
+        "#{@components.commencement}\\g{1}\\g{2}"
       )).()
-      |> (&Regex.replace(
-        ~r/^(I\d+)(Art\.)[ ](\d+\(?\d*\)?)(.*)/m,
-        &1,
-        "🇨\\g{1} \\g{2}\\g{3}\\g{4}"
-      )).()
-      |> (&Regex.replace(
-        ~r/^(I\d+)(Sch\.)[ ](\d+\(?\d*\)?)(.*)/m,
-        &1,
-        "🇨\\g{1} \\g{2}\\g{3}\\g{4}"
-      )).()
-      #I58Sch. para. 10 in force at 22.4.2021, see reg. 1(2)
-      |> (&Regex.replace(
-        ~r/^(I\d+)(Sch\.)(.*)/m,
-        &1,
-        "🇨\\g{1} \\g{2}\\g{3}"
-      )).()
-
-  @doc """
-  Revised Acts
-  """
-  def get_modifications(binary, :act),
-    do:
-      Regex.replace(
-        ~r/^Modifications etc\.[ ]\(not altering text\)/m,
-        binary,
-        "#{amendment_emoji()}\\0"
-      )
 
   @doc """
     An amended section has the following pattern
@@ -790,7 +794,8 @@ defmodule UK.Parser do
   end
 
   def rm_emoji(binary, emoji) do
-    Regex.replace(~r/#{emoji}/m, binary, "")
+    Regex.replace(~r/#{emoji}([A-Z]\d+)#{emoji}/m, binary, "\\g{1} ")
+    |> Legl.Utility.rm_dupe_spaces("\\[::amendment::\\]|\\[::commencement::\\]")
   end
 
 end

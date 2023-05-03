@@ -29,9 +29,9 @@ defmodule UK do
           part: ~s/^(\\d+|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
           heading: ~s/^([A-Z]?\\d+[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
           section: ~s/^([A-Z]?\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
-          amendment: ~s/^([A-Z])(.*)/,
           sub_section: ~s/^(\\d+[A-Z]?)[ ](.*)/,
-          amendment_name: "amendment",
+          amendment: ~s/^([A-Z])(\\d+)(.*)/,
+          modification: ~s/^(C)(\\d+)(.*)/,
           annex: ~s/(\\d*)[ ]((SCHEDULES?).*)[ ]\\[::region::\\](.*)/
         }
       :regulation ->
@@ -63,7 +63,6 @@ defmodule UK do
           footnote_name: "footnote",
 
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
-          amendment_name: "amendment"
         }
     end
   end
@@ -147,8 +146,6 @@ defmodule UK do
 
   @airtable_default_opts %{
     type: :regulation,
-    clean: true,
-    parse: true,
     csv: true,
     tdl: false, #tab delimited list
     chunk: 200
@@ -201,6 +198,8 @@ defmodule UK do
     opts =
       Enum.into(opts, @airtable_default_opts)
       #|> Map.put(:name, name)
+
+    IO.inspect(opts, label: "Options: ")
 
     # fields as a list
     # [:flow, :type, :part, :chapter, :heading, :section, :sub_section, :article, :para, :text, :region]

@@ -18,6 +18,8 @@ defmodule Legl.Countries.Uk.UkClean do
       |> join_empty_numbered()
       |> tag_efs()
       |> tag_txt_amend_efs()
+      |> tag_mods_cees()
+      |> tag_comencing_ies()
 
     Legl.txt("clean")
     |> Path.absname()
@@ -74,7 +76,7 @@ defmodule Legl.Countries.Uk.UkClean do
   def separate_schedule(binary),
     do:
       Regex.replace(
-        ~r/^((?:SCHEDULE|Schedule)[ ]?\d*)([A-Z a-z]+)/m,
+        ~r/^((?:SCHEDULES?|Schedules?)[ ]?\d*)([A-Z a-z]*)/m,
         binary,
         "\\g{1} \\g{2}"
       )
@@ -93,9 +95,9 @@ defmodule Legl.Countries.Uk.UkClean do
             "\\g{1} \\g{2}"
           )).()
       |> (&Regex.replace(
-            ~r/^(SCHEDULES?)([A-Z a-z]+)/m,
+            ~r/^(SCHEDULE)(S?)([A-Z a-z]*)/m,
             &1,
-            "\\g{1} \\g{2}"
+            "\\g{1}\\g{2}\\g{3}"
           )).()
       |> (&Regex.replace(
             ~r/^(SCHEDULE[ ]\d+)([A-Z a-z]+)/m,
@@ -203,7 +205,23 @@ defmodule Legl.Countries.Uk.UkClean do
     Regex.replace(
       ~r/^(F\d+)(S\.[ ]|Words)/m,
       binary,
-      "🔺\\g{1}🔺\\g{2}"
+      "🔺\\g{1}🔺 \\g{2}"
+    )
+  end
+
+  def tag_mods_cees(binary) do
+    Regex.replace(
+      ~r/^(C\d+)(.*)/m,
+      binary,
+      "🇲\\g{1}🇲\\g{2}"
+    )
+  end
+
+  def tag_comencing_ies(binary) do
+    Regex.replace(
+      ~r/^(Commencement Information)\n(I\d+)(.*)/m,
+      binary,
+      "\\g{1}\n🇨\\g{2}🇨 \\g{3}"
     )
   end
 

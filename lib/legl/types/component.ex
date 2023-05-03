@@ -12,7 +12,11 @@ defmodule Types.Component do
     para
     sub
     numbered_para
+    amendment_heading
     amendment
+    modification_heading
+    modification
+    commencement_heading
     commencement
     annex
     signed
@@ -56,10 +60,13 @@ defmodule Types.Component do
 
     %Types.Component{
       amendment: "[::amendment::]",
+      amendment_heading: "[::amendment_heading::]",
       annex: "[::annex::]",
       approval: "[::approval::]",
       article: "[::article::]",
       chapter: "[::chapter::]",
+      commencement: "[::commencement::]",
+      commencement_heading: "[::commencement_heading::]",
       content: "[::content::]",
       footnote: "[::footnote::]",
       form: "[::form::]",
@@ -80,11 +87,13 @@ defmodule Types.Component do
   """
   @type t :: %__MODULE__{
           amendment: String.t(),
+          amendment_heading: String.t(),
           annex: String.t(),
           approval: String.t(),
           article: String.t(),
           chapter: String.t(),
           commencement: String.t(),
+          commencement_heading: String.t(),
           content: String.t(),
           footnote: String.t(),
           form: String.t(),

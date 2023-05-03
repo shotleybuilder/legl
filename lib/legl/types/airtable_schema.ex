@@ -49,6 +49,8 @@ defmodule Types.AirtableSchema do
           annex_name: String.t(),
           amendment: String.t(),
           amendment_name: String.t(),
+          modification: String.t(),
+          modification_name: String.t(),
           commencement: String.t(),
           commencement_name: String.t(),
           amending_sub_article_name: String.t(),
@@ -85,10 +87,19 @@ defmodule Types.AirtableSchema do
             sub_name: "article, paragraph, sub-paragraph",
             annex: ~s/(\\d*)[ ](.*)/,
             annex_name: "annex",
+
             amendment: "",
-            amendment_name: "",
-            commencement: ~s/^(.*)/,
+            amendment_heading: ~s/.*/,
+            amendment_name: "amendment",
+
+            modification: ~s/^([A-Z])(\\d+)(.*)/,
+            modification_heading: ~s/.*/,
+            modification_name: "modification",
+
+            commencement: ~s/^([A-Z])(\\d+)(.*)/,
+            commencement_heading: ~s/.*/,
             commencement_name: "commencement",
+
             amending_sub_article_name: "",
             form: "",
             form_name: "form",

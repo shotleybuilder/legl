@@ -131,7 +131,7 @@ defmodule Legl.Utility do
     Regex.replace(
       ~r/^(#{regex}.*)/m,
       binary,
-      fn _, x -> String.replace(x, ~r/[ ]{2,4}/, " ") end
+      fn _, x -> String.replace(x, ~r/[ ]{2,4}/m, " ") end
     )
   end
 
