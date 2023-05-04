@@ -18,6 +18,10 @@ defmodule Types.Component do
     modification
     commencement_heading
     commencement
+    extent_heading
+    extent
+    editorial_heading
+    editorial
     annex
     signed
     footnote
@@ -26,6 +30,7 @@ defmodule Types.Component do
     form
     table
     sub_table
+    table_row
     note
   )
 

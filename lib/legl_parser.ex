@@ -7,9 +7,9 @@ defmodule Legl.Parser do
   alias Types.Component
   @components Component.components()
 
-  def components_for_regex() do
-    Legl.components_for_regex()
-  end
+  #def components_for_regex() do
+  #  Legl.components_for_regex()
+  #end
 
   def rm_top_line(binary),
     do: Regex.replace(~r/^[ \t]*(?:\r\n|\n)+/, binary, "")
@@ -27,6 +27,9 @@ defmodule Legl.Parser do
 
   Google translate for Finnish misses some pushpin_emoji.  Therefore,
   these are seperated with spaces
+
+  Regex uses the negative lookahead (?!).
+  Matches the line return before the component and replaces with the pushpin emoji.
   """
   def join(binary, country \\ nil)
 
@@ -44,6 +47,11 @@ defmodule Legl.Parser do
       binary,
       " #{Legl.pushpin_emoji()} "
     )
+    |> (&Regex.replace(
+      ~r/\n#{Component.mapped_components_for_regex().table_row}/,
+      &1,
+      " #{Legl.pushpin_emoji()} "
+    )).()
   end
 
   def rm_leading_tabs(binary),

@@ -47,7 +47,8 @@ defmodule Legl.Airtable.Schema do
   end
 
   @default_schema_opts %{
-    records: Types.Component.components_as_list()
+    records: Types.Component.components_as_list(),
+    dedupe: :true
   }
 
   # alias __MODULE__
@@ -81,20 +82,26 @@ defmodule Legl.Airtable.Schema do
 
     #Dedupe the records if there are duplicate IDs
     records =
-      case Enum.count(dupes) do
-        0 -> records
-        _ ->
-            make_record_duplicates_uniq(dupes, records)
-            |> Enum.map(fn record ->
-              if record.para != "", do: IO.inspect(record, label: "Deduped record")
-              record
-            end)
+      case opts.dedupe do
+        :true ->
+          case Enum.count(dupes) do
+            0 -> records
+            _ ->
+                make_record_duplicates_uniq(dupes, records)
+                |> Enum.map(fn record ->
+                  if record.para != "", do: IO.inspect(record, label: "Deduped record")
+                  record
+                end)
+          end
+        _ -> records
       end
 
-    #Check the deduping worked
-    Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&([&1 | acc])).() end)
+    if opts.dedupe, do:
+      #Check the deduping worked
+      Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&([&1 | acc])).() end)
       |> Legl.Utility.duplicate_records()
       |> IO.inspect(label: "Duplicates", limit: :infinity)
+
 
     #'Changes' field holds list of changes (amendments, mods) applying to that record
     r = List.last(records)
@@ -104,7 +111,7 @@ defmodule Legl.Airtable.Schema do
         amendments: {r.max_amendments, "F"},
         modifications: {r.max_modifications, "C"},
         commencements: {r.max_commencements, "I"},
-        enactments: {r.max_enactments, "E"}
+        extents: {r.max_extents, "E"}
       ]
 
     #Print change stats to the console
@@ -149,7 +156,7 @@ defmodule Legl.Airtable.Schema do
 
   def find_change_in_record({code, rng, record}) do
     Enum.reduce(1..rng, record, fn n, acc ->
-      case String.contains?(record.text, ~s/#{code}#{n}/) do
+      case String.contains?(record.text, ~s/#{code}#{n} /) do
         :true ->
           changes = [~s/#{code}#{n}/ | acc.changes]
           %{acc | changes: changes}
@@ -888,6 +895,37 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type: "#{regex.commencement_name}",
+            text: code<>num<>str,
+            amendment: num,
+            sub_section: ""
+        }
+    end
+  end
+
+  def extent_heading(%{country: :UK} = regex,  "[::extent_heading::]" <> str, last_record, _type) do
+    case Regex.run(~r/#{regex.extent_heading}/, str) do
+      [cmc_hd] ->
+        %{
+          last_record
+          | type: Legl.Utility.csv_quote_enclosure("#{regex.heading_name},#{regex.extent_name}"),
+            text: cmc_hd
+        }
+      |> fields_reset(:section, regex)
+    end
+  end
+
+  def extent(%{country: :UK} = regex,  "[::extent::]" <> str, last_record, _type) do
+    case Regex.run(~r/#{regex.extent}/, str) do
+      [_, code, num, str] ->
+
+        last_record =
+          if last_record.max_extents < String.to_integer(num),
+            do: %{last_record | max_commencements: String.to_integer(num)},
+            else: last_record
+
+        %{
+          last_record
+          | type: "#{regex.extent_name}",
             text: code<>num<>str,
             amendment: num,
             sub_section: ""

@@ -41,12 +41,15 @@ defmodule UK.Parser do
     #|> get_modifications(:act)
     |> get_annex()
     |> provision_before_schedule()
+    |> get_table()
     |> get_A_section(:act)
     |> get_section(:act)
     |> get_sub_section(:act)
     |> get_amendments(:act)
     |> get_modifications(:act)
     |> get_commencements(:act)
+    |> get_extents(:act)
+    |> get_editorial(:act)
     |> get_signed_section()
     #|> revise_section_number(:act)
     |> get_A_heading(:act)
@@ -55,9 +58,7 @@ defmodule UK.Parser do
     |> Legl.Parser.rm_tabs()
     |> move_region_to_end(:act)
     |> add_missing_region()
-    |> rm_emoji("🔺")
-    |> rm_emoji("🇨")
-    |> rm_emoji("🇲")
+    |> rm_emoji(["🇨", "🇪", "🇲", "🇽", "🔺", "🔻"])
     #|> rm_amendment(:act)
   end
 
@@ -188,10 +189,11 @@ defmodule UK.Parser do
         )
 
       "roman_numeric" ->
+        #🔺F1🔺Part IE+W The National Parks Commission
         Regex.replace(
-          ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})[ ]?(#{@region_regex})(.+)/m,
+          ~r/^(\[?🔺?F?\d*🔺?)(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})[ ]?(#{@region_regex})(.+)/m,
           binary,
-          fn _, part_chapter, tens, units, region, text ->
+          fn _, amd_code, part_chapter, tens, units, region, text ->
 
             numeral = tens <> units
 
@@ -205,11 +207,11 @@ defmodule UK.Parser do
             case Dictionary.match?("#{last_numeral}#{text}") do
               true ->
                 value = Legl.conv_roman_numeral(remaining_numeral)
-                "#{component}#{value} #{part_chapter} #{remaining_numeral} #{last_numeral}#{text} [::region::]#{region}"
+                "#{component}#{value} #{part_chapter} #{remaining_numeral} #{last_numeral} #{amd_code}#{text} [::region::]#{region}"
 
               false ->
                 value = Legl.conv_roman_numeral(numeral)
-                "#{component}#{value} #{part_chapter} #{numeral}#{text} [::region::]#{region}"
+                "#{component}#{value} #{part_chapter} #{numeral} #{amd_code}#{text} [::region::]#{region}"
             end
           end
         )
@@ -305,9 +307,18 @@ defmodule UK.Parser do
         &1,
         "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
       )).()
-      # 8ANitrogen balance sheetS
+      #8ANitrogen balance sheetS
+      #18D Group 2 offences and licences etc. : power to enter premises E+W
+      #19XBOffences in connection with enforcement powersE+W
       |> (&Regex.replace(
-        ~r/^(\d{1,3}[A-Z])([A-Z].*)(#{@region_regex})$/m,
+        ~r/^(\d{1,3}[A-Z][A-Z]?)[ ]?([A-Z].*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
+      )).()
+      #14NSpecies control orders: entry by warrant etc.S
+      #19ZD Power to take samples: ScotlandS
+      |> (&Regex.replace(
+        ~r/^(\d{1,3}[A-Z][A-Z]?)[ ]?([A-Z].*)(#{@country_regex})$/m,
         &1,
         "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
       )).()
@@ -321,6 +332,13 @@ defmodule UK.Parser do
         &1,
         "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
       )).()
+      #1 Protection of wild birds, their nests and eggs.S
+      |> (&Regex.replace(
+        ~r/^(\d{1,3})[ ]?(.*?)(#{@country_regex})$/m,
+        &1,
+        "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
+      )).()
+      #
       |> (&Regex.replace(
         ~r/^(\d{1,3})\((\d{1,3})\)[ ]?(.*)/m,
         &1,
@@ -337,17 +355,33 @@ defmodule UK.Parser do
     do:
       binary
 
-      #[🔺F4🔺2AModification of the interim targetsS
+      #[🔺F4🔺2AModification of the interim targetsE+W
+      #[🔺F46🔺 15 Meaning of “nature reserve.”E+W
+      #[🔺F161🔺 19XA Constables' powers in connection with samplesE+W
+      #[🔺F428🔺 47 [F427Grants to the Countryside Council for Wales]E+W
       |> (&Regex.replace(
-        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?([A-Z].*)(#{@region_regex})$/m,
+        ~r/^(\[?🔺F\d+🔺)[ ]?(\d+[A-Z]?[A-Z]?)[\. ]?([A-Z\[].*)(#{@region_regex})$/m,
         &1,
         "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
       )).()
-      #[🔺F56🔺25A.Salt marshes and flatsE
+      #[🔺F246🔺 [F245 27ZA Application of Part 1 to England and WalesE+W
       |> (&Regex.replace(
-        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?([A-Z].*)(#{@country_regex})$/m,
+        ~r/^(\[?🔺F\d+🔺)[ ](\[F\d+)[ ](\d+[A-Z]?[A-Z]?)[\. ]?([A-Z].*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.section}\\g{3} \\g{1} \\g{2} \\g{3} \\g{4} [::region::]\\g{5}"
+      )).()
+      #[🔺F56🔺25A.Salt marshes and flatsE
+      #[🔺F165🔺 19ZC Wildlife inspectors: ScotlandS
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)[ ]?(\d+[A-Z][A-Z]?)[\. ]?([A-Z].*)(#{@country_regex})$/m,
         &1,
         "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
+      )).()
+      #[🔺F298🔺3AE+WAn order designating a National Park
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?(#{@region_regex})([A-Z].*)/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{4} [::region::]\\g{3}"
       )).()
       #[🔺F135🔺13A.ELand which is coastal margin and
       |> (&Regex.replace(
@@ -366,6 +400,36 @@ defmodule UK.Parser do
         ~r/^(\[?🔺F\d+🔺)(\d+[A-Z]?)(#{@region_regex})(\.[ ][\. ]*)/m,
         &1,
         "#{@components.section}\\g{2} \\g{1} \\g{2}\\g{4} [::region::]\\g{3}"
+      )).()
+      #[🔺F374🔺 38 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .E+W+S
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)[ ]?(\d+[A-Z]?)([\. ]*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1} \\g{2}\\g{3} [::region::]\\g{4}"
+      )).()
+      #🔺F36🔺11. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)(\d+[A-Z]?)(\.[ ][\. ]*)/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1}\\g{2}\\g{3}"
+      )).()
+      #[🔺F505🔺 🔺X5🔺 61 Ploughing of public rights of way.E+W
+      |> (&Regex.replace(
+        ~r/^(\[?🔺F\d+🔺)[ ](\[?🔺X\d+🔺)[ ](\d+[A-Z]?)[ ]([A-Z].*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.section}\\g{3} \\g{1}\\g{2}\\g{3} \\g{4} [::region::]\\g{5}"
+      )).()
+      #🔺X3🔺 35 National nature reserves.E+W+S
+      |> (&Regex.replace(
+        ~r/^(\[?🔺X\d+🔺)[ ](\d+[A-Z]?)[ ]([A-Z].*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
+      )).()
+      #🔺X4🔺 [🔺F364🔺 37A Ramsar sites.E+W
+      |> (&Regex.replace(
+        ~r/^(\[?🔺X\d+🔺)[ ](\[🔺F\d+🔺)[ ](\d+[A-Z]?)[ ]([A-Z].*)(#{@region_regex})$/m,
+        &1,
+        "#{@components.section}\\g{3} \\g{1}\\g{2}\\g{3} \\g{4} [::region::]\\g{5}"
       )).()
       #5[F39(1)]Text...
       |> (&Regex.replace(
@@ -419,11 +483,35 @@ defmodule UK.Parser do
   """
   def get_sub_section(binary, :act),
     do:
+      #(1)[F60 [F61 The [F62 Natural Resources Body
       Regex.replace(
-        ~r/^(\[?F?\d*[A-Z]?\((\d+[A-Z]?)\))[ ]?([“A-Z])/m,
+        ~r/^(\[?F?\d*[A-Z]?\((\d+[A-Z]?)\))[ ]?([,\[“A-Z])/m,
         binary,
         "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
       )
+      #[🔺F5🔺(1)The provisions
+      #[🔺F50🔺(1)] In this Part of this Act
+      #[🔺F250🔺 (1) ]In relation to land in Wales
+      #[🔺F252🔺 (2) Subsection (3) applies where—
+      #[🔺F416🔺 (1) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+      #🔺X9🔺 (1)The enactments mentioned
+      |> (&Regex.replace(
+        ~r/^(\[?🔺[FX]\d+[A-Z]?🔺[ ]?\((\d+[A-Z]?)\))[\] ]*(.*)/m,
+        &1,
+        "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
+      )).()
+      #🔺F28🔺 [ (4A) In any proceedings
+      |> (&Regex.replace(
+        ~r/^(🔺F\d+🔺[ ]\[[ ]?\((\d+[A-Z]?)\))(.*)/m,
+        &1,
+        "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
+      )).()
+      #🔺F383🔺 [🔺F384🔺 (1) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+      |> (&Regex.replace(
+        ~r/^(🔺F\d+🔺[ ]\[🔺F\d+[A-Z]?🔺[ ]?\((\d+[A-Z]?)\))(.*)/m,
+        &1,
+        "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
+      )).()
 
   def get_sub_section(binary, :regulation),
     do:
@@ -539,6 +627,12 @@ defmodule UK.Parser do
         &1,
         "#{@components.annex}\\g{4} \\g{1} \\g{2} \\g{3} \\g{4}\\g{5} \\g{7} [::region::]\\g{6}\n"
         )).()
+      #SCHEDULE E+W+S . . . 🔺F14🔺
+      |> (&Regex.replace(
+        ~r/^(SCHEDULE|Schedule)[ ]?(#{@region_regex})(.*?🔺F\d+🔺)(?:\n)/m,
+        &1,
+        "#{@components.annex}1 \\g{1} \\g{3} [::region::]\\g{2}\n"
+        )).()
       #
       |> (&Regex.replace(
         ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]*(#{@region_regex})([^.]*?)(?:\n)/m,
@@ -595,6 +689,16 @@ defmodule UK.Parser do
       &1,
       "#{@components.table}\\g{1} \\0"
     )).()
+    |> (&Regex.replace(
+      ~r/.+?\t.*/m,
+      &1,
+      "#{@components.table_row}\\0"
+    )).()
+    |> (&Regex.replace(
+      ~r/^(?:[\dA-Z\(]).+?\t.+?\t.*/m,
+      &1,
+      "#{@components.table_row}\\0"
+    )).()
 
   def rm_table_ref(binary), do:
     binary
@@ -638,14 +742,14 @@ defmodule UK.Parser do
     do:
       binary
       |> (&Regex.replace(
-        ~r/^(Textual[ ]Amendments|Extent[ ]Information)/m,
+        ~r/^(Textual[ ]Amendments)/m,
         &1,
         "#{@components.amendment_heading}\\g{1}"
       )).()
       |> (&Regex.replace(
-        ~r/^(🔺F\d+🔺)([^\.\(].*)/m,
+        ~r/^🔻F\d+🔻.*/m,
         &1,
-        "#{@components.amendment}\\g{1}\\g{2}"
+        "#{@components.amendment}\\0"
       )).()
 
   def get_modifications(binary, _type),
@@ -673,6 +777,32 @@ defmodule UK.Parser do
         ~r/^(🇨I\d+🇨)([^\.\(].*)/m,
         &1,
         "#{@components.commencement}\\g{1}\\g{2}"
+      )).()
+
+  def get_extents(binary, _type),
+    do:
+      Regex.replace(
+        ~r/^(Extent[ ]Information)/m,
+        binary,
+        "#{@components.extent_heading}\\g{1}"
+      )
+      |> (&Regex.replace(
+        ~r/^(🇪E\d+🇪)([^\.\(].*)/m,
+        &1,
+        "#{@components.extent}\\g{1}\\g{2}"
+      )).()
+
+  def get_editorial(binary, _type),
+    do:
+      Regex.replace(
+        ~r/^(Editorial[ ]Information)/m,
+        binary,
+        "#{@components.editorial_heading}\\g{1}"
+      )
+      |> (&Regex.replace(
+        ~r/^(🇽X\d+🇽)([^\.\(].*)/m,
+        &1,
+        "#{@components.editorial}\\g{1}\\g{2}"
       )).()
 
   @doc """
@@ -793,9 +923,14 @@ defmodule UK.Parser do
     |> Enum.join("\n")
   end
 
-  def rm_emoji(binary, emoji) do
-    Regex.replace(~r/#{emoji}([A-Z]\d+)#{emoji}/m, binary, "\\g{1} ")
-    |> Legl.Utility.rm_dupe_spaces("\\[::amendment::\\]|\\[::commencement::\\]")
+  @components_dedupe "\\[::editorial_heading::\\]|\\[::editorial::\\]|\\[::amendment::\\]|\\[::commencement::\\]"
+  def rm_emoji(binary, emojii) when is_list(emojii) do
+    Enum.reduce(emojii, binary, fn emoji, acc ->
+      Regex.replace(~r/#{emoji}([A-Z]\d+)#{emoji}/m, acc, "\\g{1} ")
+    end)
+    |> Legl.Utility.rm_dupe_spaces(@components_dedupe)
   end
+
+
 
 end

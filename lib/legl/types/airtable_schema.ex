@@ -100,6 +100,10 @@ defmodule Types.AirtableSchema do
             commencement_heading: ~s/.*/,
             commencement_name: "commencement",
 
+            extent: ~s/^([A-Z])(\\d+)(.*)/,
+            extent_heading: ~s/.*/,
+            extent_name: "extent",
+
             amending_sub_article_name: "",
             form: "",
             form_name: "form",

@@ -32,7 +32,7 @@ defmodule UK do
           sub_section: ~s/^(\\d+[A-Z]?)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
-          annex: ~s/(\\d*)[ ]((SCHEDULES?).*)[ ]\\[::region::\\](.*)/
+          annex: ~s/(\\d*[A-Z]?)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
         }
       :regulation ->
         %AirtableSchema{

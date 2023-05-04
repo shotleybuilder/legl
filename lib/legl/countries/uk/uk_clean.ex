@@ -1,5 +1,8 @@
 defmodule Legl.Countries.Uk.UkClean do
 
+  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
+  @country_regex "N\\.I\\.|S|W|E"
+
   def clean_original("CLEANED\n" <> binary, _type) do
     binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
     binary
@@ -16,10 +19,20 @@ defmodule Legl.Countries.Uk.UkClean do
       |> separate_schedule()
       |> Legl.Parser.rm_leading_tabs()
       |> join_empty_numbered()
-      |> tag_efs()
       |> tag_txt_amend_efs()
+      |> tag_sub_efs
+      |> tag_schedule_efs()
+      #|> tag_efs()
       |> tag_mods_cees()
-      |> tag_comencing_ies()
+      |> tag_commencing_ies()
+      |> tag_extent_ees()
+      |> tag_editorial_xes()
+      |> rm_marginal_citations()
+      |> opening_quotes()
+      |> closing_quotes()
+      |> tag_section_efs()
+      |> space_efs()
+      |> list_spare_efs()
 
     Legl.txt("clean")
     |> Path.absname()
@@ -44,7 +57,7 @@ defmodule Legl.Countries.Uk.UkClean do
       |> Legl.Parser.rm_leading_tabs()
       |> tag_efs()
       |> tag_txt_amend_efs()
-      |> tag_extents()
+      |> tag_extent_ees()
       |> closing_quotes()
 
     Legl.txt("clean")
@@ -182,9 +195,7 @@ defmodule Legl.Countries.Uk.UkClean do
       _ ->
         binary =
           Regex.replace(~r/#{ef}/m, binary, "🔺\\g{0}🔺")
-          |> (&Regex.replace(
-            ~r/🔺🔺/, &1, "🔺"
-          )).()
+          |> (&Regex.replace(~r/🔺🔺/, &1, "🔺")).()
         "F" <> index = ef
         next_ef = ~s/F#{String.to_integer(index) + 1}/
         tag_efs({ef, next_ef, binary})
@@ -200,13 +211,32 @@ defmodule Legl.Countries.Uk.UkClean do
       |> (&Regex.replace(~r/^\[(#{x})/,&1,"[🔺\\g{1}🔺")).()
     end)
   end
-
+  @doc """
+  🔻 is used to tag Textual Amendments separately to other amendment tags
+  """
   def tag_txt_amend_efs(binary) do
-    Regex.replace(
-      ~r/^(F\d+)(S\.[ ]|Words)/m,
-      binary,
-      "🔺\\g{1}🔺 \\g{2}"
-    )
+    binary
+    #F578 By S. I.
+    |> (&Regex.replace(
+      ~r/S\.[ ]I\./,
+      &1,
+      "S.I."
+    )).()
+    #F438Definition substituted by Agriculture Act 1986
+    #F535 Sch. ZA1 inserted
+    #F537Entry in Sch
+    #F903Para reference (a)
+    |> (&Regex.replace(
+      ~r/^(F\d+)[ ]?(Ss?c?h?\.[ ]|Words?|Definition[ ]|Entry?i?e?s?|By.*?S\.I\.|Para\.?[ ])/m,
+      &1,
+      "🔻\\g{1}🔻 \\g{2}"
+    )).()
+    #F121964 c. 29.
+    |> (&Regex.replace(
+      ~r/^(F\d+?)(\d{4} c\. \d+)/m,
+      &1,
+      "🔻\\g{1}🔻 \\g{2}"
+    )).()
   end
 
   def tag_mods_cees(binary) do
@@ -217,19 +247,241 @@ defmodule Legl.Countries.Uk.UkClean do
     )
   end
 
-  def tag_comencing_ies(binary) do
+  def tag_commencing_ies(binary) do
     Regex.replace(
       ~r/^(Commencement Information)\n(I\d+)(.*)/m,
       binary,
-      "\\g{1}\n🇨\\g{2}🇨 \\g{3}"
-    )
+      "\\g{1}\n🇨\\g{2}🇨 \\g{3}")
   end
 
-  def tag_extents(binary) do
-    Regex.replace(~r/^(E\d+)(This[ ]version)/m, binary, "\\g{1} \\g{2}")
+  def tag_extent_ees(binary) do
+    Regex.replace(~r/^(Extent Information)\n^(E\d+)(.*)/m,
+    binary,
+    "\\g{1}\n🇪\\g{2}🇪 \\g{3}")
+  end
+
+  def tag_editorial_xes(binary) do
+
+    binary =
+      Regex.replace(~r/^(Editorial[ ]Information)\n^(X\d+)(.*)/m,
+      binary,
+      "\\g{1}\n🇽\\g{2}🇽 \\g{3}")
+
+    xes =
+      collect_tags("🇽X(\\d+)🇽", binary)
+
+    IO.puts("xes: #{List.first(xes)}")
+
+    Enum.reduce(xes, binary, fn x, acc ->
+      acc
+      |> (&Regex.replace(
+        ~r/^(X#{x})([^ ])/m,
+        &1,
+        "🔺\\g{1}🔺 \\g{2}"
+      )).()
+      |> (&Regex.replace(
+        ~r/^(X#{x})([ ])/m,
+        &1,
+        "🔺\\g{1}🔺\\g{2}"
+      )).()
+      #[F505X561 Ploughing of public rights of way.E+W
+      |> (&Regex.replace(
+        ~r/^\[(F\d+)(X#{x})([^ ])/m,
+        &1,
+        "\[🔺\\g{1}🔺 🔺\\g{2}🔺 \\g{3}"
+      )).()
+    end)
+    #|> IO.inspect(limit: :infinity)
+  end
+
+  def opening_quotes(binary) do
+    Regex.replace(~r/[ ]\"(.)/m, binary, " “\\g{1}")
   end
 
   def closing_quotes(binary) do
-    Regex.replace(~r/(.)\"/m, binary, "\\g{1}”")
+    Regex.replace(~r/(.)\"(\.| )/m, binary, "\\g{1}”\\g{2}")
   end
+
+  def rm_marginal_citations(binary) do
+    binary
+    |> (&Regex.replace(
+      ~r/^Marginal[ ]Citations\n/m,
+      &1,
+      ""
+    )).()
+    |> (&Regex.replace(
+      ~r/^M\d+([ ]|\.).*\n/m,
+      &1,
+      ""
+    )).()
+  end
+
+  def tag_section_efs(binary) do
+    efs = collect_tags("🔻F(\\d+)🔻", binary)
+    IO.puts("efs: #{List.first(efs)}")
+    lines = String.split(binary, "\n")
+    Enum.reduce(lines, [], fn line, acc -> [tag_section_efs(line, efs) | acc] end)
+    |> Enum.reverse()
+    |> Enum.join("\n")
+  end
+
+  def tag_section_efs("[F" <> line, efs) when is_binary(line) do
+    line = ~s/[F#{line}/
+    # sections carry a region tag at the end, so we use this to reduce the number of lines processed
+    case Regex.match?(~r/(#{@region_regex}|#{@country_regex})$/, line) do
+      :true ->
+        Enum.reduce_while(efs, line, fn ef, acc ->
+          #[F505X561 Ploughing.E+W
+          #[F51166BApplication
+          #[F51970A Service
+          #[F52470BEffect
+          #[F165 19ZC Wildlife inspectors: ScotlandS
+          case Regex.run(~r/^\[F#{ef}[ ]?(\d+[A-Z]*)[ ]?([A-Z].*)/, line) do
+            nil -> {:cont, acc}
+            [_, id, text] -> {:halt, ~s/[🔺F#{ef}🔺 #{id} #{text}/}
+          end
+        end)
+      _ ->
+        case Regex.match?(~r/^[F\d+[A-Z]*\.(#{@region_regex}|#{@country_regex})/, line) do
+          :true ->
+            Enum.reduce_while(efs, line, fn ef, acc ->
+              #[F9514AB.SContravention of emergency measures
+              case Regex.run(~r/^\[F#{ef}[ ]?(\d+[A-Z]*)\.([A-Z].*)/, line) do
+                nil -> {:cont, acc}
+                [_, id, text] -> {:halt, ~s/[🔺F#{ef}🔺 #{id} #{text}/}
+              end
+            end)
+          _ ->
+            line
+        end
+    end
+  end
+
+  def tag_section_efs("F" <> line, efs) when is_binary(line) do
+    line = ~s/F#{line}/
+    # sections carry a region tag at the end, so we use this to reduce the number of lines processed
+    case Regex.match?(~r/(#{@region_regex}|#{@country_regex})$/, line) do
+      :true ->
+        Enum.reduce_while(efs, line, fn ef, acc ->
+          #F246[F245 27ZAApplication of Part 1 to England and WalesE+W
+          case Regex.run(~r/^F#{ef}[ ]?(\[?F\d*)[ ](\d+[A-Z]?[A-Z]?)[ ]?([A-Z].*)/, line) do
+            [_, ef2, id, text] ->
+              {:halt, ~s/🔺F#{ef}🔺 #{ef2} #{id} #{text}/}
+            nil ->
+              #F34633 Ministerial guidance as respects.E+W+S
+              #F37438. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .E+W+S
+              case Regex.run(~r/^F#{ef}[ ]?(\d+[A-Z]?[A-Z]?)[ ]?(.*)/, line) do
+                nil -> {:cont, acc}
+                [_, id, text] -> {:halt, ~s/🔺F#{ef}🔺 #{id} #{text}/}
+              end
+          end
+        end)
+      _ ->
+        #F674 1 E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+        #F705 1 —4.E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+        case Regex.match?(~r/F\d+[ ]?\d+[ ].*?(#{@region_regex}|#{@country_regex})/, line) do
+          :true ->
+            Enum.reduce_while(efs, line, fn ef, acc ->
+              #F674 1 E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+              #F705 1 —4.E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+              case Regex.run(~r/^F#{ef}[ ]?(\[?F?\d*)[ ](\d+[A-Z]?[A-Z]?)[ ]?(.*)/, line) do
+                [_, ef2, id, text] ->
+                  {:halt, ~s/🔺F#{ef}🔺 #{ef2} #{id} #{text}/}
+                nil ->
+                  {:cont, acc}
+              end
+            end)
+          _ ->
+            line
+        end
+    end
+  end
+
+  def tag_section_efs("🔺X" <> line, efs) when is_binary(line) do
+    line = ~s/🔺X#{line}/
+    # sections carry a region tag at the end, so we use this to reduce the number of lines processed
+    case Regex.match?(~r/(#{@region_regex}|#{@country_regex})$/, line) do
+      :true ->
+        Enum.reduce_while(efs, line, fn ef, acc ->
+          #🔺X4🔺 [F36437A Ramsar sites.E+W
+          case Regex.run(~r/^(🔺X\d+🔺)[ ]\[F#{ef}[ ]?(\d+[A-Z]*)[ ]?([A-Z].*)/, line) do
+            nil -> {:cont, acc}
+            [_, x_tag, id, text] -> {:halt, ~s/#{x_tag} [🔺F#{ef}🔺 #{id} #{text}/}
+          end
+        end)
+      _ ->
+        line
+    end
+  end
+
+  def tag_section_efs(line, _), do: line
+
+  def tag_sub_efs(binary) do
+    binary
+    #[F18(6)For
+    #[F9(3A) In
+    #[F8(3ZA)A
+    #[F2(aa)takes
+    #F416(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    |> (&Regex.replace(
+      ~r/^\[?(F\d+)(\(\d+[A-Z]*\)|\([a-z]+\))[ ]?(.*)/m,
+      &1,
+      "\[🔺\\g{1}🔺 \\g{2} \\g{3}"
+    )).()
+    #F28 [(4A)In any proceedings under subsection
+    #F60[(7)In any proceedings
+    |> (&Regex.replace(
+      ~r/^(F\d+)[ ]?\[(\(\d+[A-Z]*\)|\([a-z]+\))[ ]?(.*)/m,
+      &1,
+      "🔺\\g{1}🔺 \[ \\g{2} \\g{3}"
+    )).()
+    #F383[F384(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    #[F659[F660(6)The “list of species of special concern” means
+    |> (&Regex.replace(
+      ~r/^(\[?)(F\d+)\[(F\d+)(\(\d+[A-Z]*\)|\([a-z]+\))[ ]?(.*)/m,
+      &1,
+      "\\g{1}🔺\\g{2}🔺 \[🔺\\g{3}🔺 \\g{4} \\g{5}"
+    )).()
+  end
+
+  def tag_schedule_efs(binary) do
+    binary
+    #F560SCHEDULE 5E+W Animals which are Protected
+    #F682 SCHEDULE 12E+W+S Procedure in Connection With Orders Under Section 36
+    #[F535SCHEDULE ZA1E+WBirds which re-use their nests
+    |> (&Regex.replace(
+      ~r/^(\[?)(F\d+)[ ]?(SCHEDULE)[ ]([A-Z]*\d+)(.*)/m,
+      &1,
+      "\\g{1}🔺\\g{2}🔺 \\g{3} \\g{4} \\g{5}"
+    )).()
+  end
+
+  @doc """
+  Works with a single capture e.g. 🔻F(\d+)🔻
+  """
+  def collect_tags(regex, binary) do
+    Regex.scan(~r/#{regex}/, binary)
+    |> Enum.map(fn [_match, capture] -> String.to_integer(capture) end)
+    |> Enum.sort()
+    |> Enum.map(&Integer.to_string(&1))
+    |> Enum.reverse()
+    #|> IO.inspect(label: "collect_tags")
+  end
+
+  def space_efs(binary) do
+    Regex.replace(
+      ~r/(\[?F\d{1,3})([A-Z])/m,
+      binary,
+      "\\g{1} \\g{2}"
+    )
+  end
+
+  def list_spare_efs(binary) do
+    Regex.scan(~r/^F\d+.*/m, binary)
+    |> IO.inspect(label: "efs", limit: :infinity)
+    Regex.scan(~r/^\[F\d+.*/m, binary)
+    |> IO.inspect(label: "bracketed efs", limit: :infinity)
+    binary
+  end
+
 end
