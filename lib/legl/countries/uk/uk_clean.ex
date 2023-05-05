@@ -3,12 +3,12 @@ defmodule Legl.Countries.Uk.UkClean do
   @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
   @country_regex "N\\.I\\.|S|W|E"
 
-  def clean_original("CLEANED\n" <> binary, _type) do
+  def clean_original("CLEANED\n" <> binary, _opts) do
     binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
     binary
   end
 
-  def clean_original(binary, :act) do
+  def clean_original(binary, %{type: :act} = opts) do
     binary =
       binary
       |> (&Kernel.<>("CLEANED\n", &1)).()
@@ -32,16 +32,17 @@ defmodule Legl.Countries.Uk.UkClean do
       |> closing_quotes()
       |> tag_section_efs()
       |> space_efs()
-      |> list_spare_efs()
+      |> list_spare_efs(opts)
+      |> list_headings(opts)
 
     Legl.txt("clean")
     |> Path.absname()
     |> File.write(binary)
 
-    clean_original(binary, :act)
+    clean_original(binary, opts)
   end
 
-  def clean_original(binary, type) do
+  def clean_original(binary, opts) do
     binary =
       binary
       |> (&Kernel.<>("CLEANED\n", &1)).()
@@ -64,7 +65,7 @@ defmodule Legl.Countries.Uk.UkClean do
     |> Path.absname()
     |> File.write(binary)
 
-    clean_original(binary, type)
+    clean_original(binary, opts)
   end
 
   @spec separate_part(binary) :: binary
@@ -299,7 +300,7 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   def closing_quotes(binary) do
-    Regex.replace(~r/(.)\"(\.| )/m, binary, "\\g{1}”\\g{2}")
+    Regex.replace(~r/(.)\"(\.| |\))/m, binary, "\\g{1}”\\g{2}")
   end
 
   def rm_marginal_citations(binary) do
@@ -364,13 +365,16 @@ defmodule Legl.Countries.Uk.UkClean do
       :true ->
         Enum.reduce_while(efs, line, fn ef, acc ->
           #F246[F245 27ZAApplication of Part 1 to England and WalesE+W
-          case Regex.run(~r/^F#{ef}[ ]?(\[?F\d*)[ ](\d+[A-Z]?[A-Z]?)[ ]?([A-Z].*)/, line) do
+          #F42847[F427Grants to the Countryside Council for Wales]E+W
+          #F786[F787(3). . . . . . . (SUB-SECTION)
+          case Regex.run(~r/^F#{ef}(\[F\d*)[ ](\d+[A-Z]?[A-Z]?)[ ]?([A-Z].*)/, line) do
             [_, ef2, id, text] ->
               {:halt, ~s/🔺F#{ef}🔺 #{ef2} #{id} #{text}/}
             nil ->
+              #F356[F357Nature reserves, ... and Ramsar sitesE+W+S (A HEADING!)
               #F34633 Ministerial guidance as respects.E+W+S
               #F37438. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .E+W+S
-              case Regex.run(~r/^F#{ef}[ ]?(\d+[A-Z]?[A-Z]?)[ ]?(.*)/, line) do
+              case Regex.run(~r/^F#{ef}[ ]?(\d+[A-Z]?[A-Z]?)[ ]?([^\[].*)/, line) do
                 nil -> {:cont, acc}
                 [_, id, text] -> {:halt, ~s/🔺F#{ef}🔺 #{id} #{text}/}
               end
@@ -403,8 +407,10 @@ defmodule Legl.Countries.Uk.UkClean do
     case Regex.match?(~r/(#{@region_regex}|#{@country_regex})$/, line) do
       :true ->
         Enum.reduce_while(efs, line, fn ef, acc ->
+          #🔺X2🔺 [F247 Sites of special scientific interest and limestone pavements ] E+W+S (A HEADING!)
+          # Presume any section with an [F carries an post alphabetic code
           #🔺X4🔺 [F36437A Ramsar sites.E+W
-          case Regex.run(~r/^(🔺X\d+🔺)[ ]\[F#{ef}[ ]?(\d+[A-Z]*)[ ]?([A-Z].*)/, line) do
+          case Regex.run(~r/^(🔺X\d+🔺)[ ]\[F#{ef}[ ]?(\d+[A-Z]+)[ ]?([A-Z].*)/, line) do
             nil -> {:cont, acc}
             [_, x_tag, id, text] -> {:halt, ~s/#{x_tag} [🔺F#{ef}🔺 #{id} #{text}/}
           end
@@ -449,8 +455,10 @@ defmodule Legl.Countries.Uk.UkClean do
     #F560SCHEDULE 5E+W Animals which are Protected
     #F682 SCHEDULE 12E+W+S Procedure in Connection With Orders Under Section 36
     #[F535SCHEDULE ZA1E+WBirds which re-use their nests
+    #[F656SCHEDULE 9AE+WSpecies control agreements
+    #F683 SCHEDULE 13 E+W
     |> (&Regex.replace(
-      ~r/^(\[?)(F\d+)[ ]?(SCHEDULE)[ ]([A-Z]*\d+)(.*)/m,
+      ~r/^(\[?)(F\d+)[ ]?(SCHEDULE)[ ]([A-Z]*\d+[A-Z]?)[ ]?([A-Z].*)/m,
       &1,
       "\\g{1}🔺\\g{2}🔺 \\g{3} \\g{4} \\g{5}"
     )).()
@@ -470,18 +478,39 @@ defmodule Legl.Countries.Uk.UkClean do
 
   def space_efs(binary) do
     Regex.replace(
-      ~r/(\[?F\d{1,3})([A-Z])/m,
+      ~r/(\[?F\d{1,3})([A-Za-z])/m,
       binary,
       "\\g{1} \\g{2}"
     )
   end
 
-  def list_spare_efs(binary) do
-    Regex.scan(~r/^F\d+.*/m, binary)
-    |> IO.inspect(label: "efs", limit: :infinity)
-    Regex.scan(~r/^\[F\d+.*/m, binary)
-    |> IO.inspect(label: "bracketed efs", limit: :infinity)
+  def list_spare_efs(binary, opts) do
+    if opts.list_efs, do:
+      Regex.scan(~r/^F\d+.*/m, binary)
+      |> IO.inspect(label: "efs", limit: :infinity)
+    if opts.list_bracketed_efs, do:
+      Regex.scan(~r/^\[F\d+.*/m, binary)
+      |> IO.inspect(label: "bracketed efs", limit: :infinity)
     binary
+  end
+
+  def list_headings(binary, opts) do
+    case opts.list_headings do
+      true ->
+        lines = String.split(binary, "\n")
+        Enum.reduce(lines, [], fn line, acc ->
+          cond do
+            Regex.match?(~r/^[A-Z].*(#{@region_regex}|#{@country_regex})$/, line) -> [line | acc]
+            true -> acc
+          end
+        end)
+        |> Enum.reverse()
+        |> Enum.join("\n")
+        |> IO.puts()
+        binary
+      _ ->
+        binary
+    end
   end
 
 end

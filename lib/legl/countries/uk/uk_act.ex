@@ -18,6 +18,7 @@ defmodule UK.Act do
     :max_modifications,
     :max_commencements,
     :max_extents,
+    :max_editorials,
     :changes
   ]
   @number_fields [
@@ -43,6 +44,7 @@ defmodule UK.Act do
         :max_modifications -> {:max_modifications, 0}
         :max_commencements -> {:max_commencements, 0}
         :max_extents -> {:max_extents, 0}
+        :max_editorials -> {:max_editorials, 0}
         :changes -> {:changes, []}
         k -> {k, ""}
       end)

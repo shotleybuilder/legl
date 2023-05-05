@@ -70,7 +70,11 @@ defmodule UK do
   @parse_default_opts %{
     type: :regulation,
     clean: true,
-    parse: true
+    parse: true,
+    list_efs: false,
+    list_bracketed_efs: false,
+    list_headings: false,
+    qa_sections: true
   }
 
   @doc """
@@ -115,7 +119,10 @@ defmodule UK do
     binary =
       case opts.clean do
         true ->
-          clean(opts.type)
+          Legl.txt("original")
+          |> Path.absname()
+          |> File.read!()
+          |> Legl.Countries.Uk.UkClean.clean_original(opts)
 
         _ ->
           Legl.txt("clean")
@@ -128,21 +135,13 @@ defmodule UK do
       true ->
         Legl.txt("annotated")
         |> Path.absname()
-        |> File.write("#{UK.Parser.parser(binary, opts.type)}")
+        |> File.write("#{UK.Parser.parser(binary, opts)}")
         :ok
       _ ->
         :ok
     end
   end
 
-  @doc false
-  @spec clean(:atom) :: String.t()
-  def clean(type) do
-    Legl.txt("original")
-    |> Path.absname()
-    |> File.read!()
-    |> Legl.Countries.Uk.UkClean.clean_original(type)
-  end
 
   @airtable_default_opts %{
     type: :regulation,

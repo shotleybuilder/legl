@@ -104,6 +104,10 @@ defmodule Types.AirtableSchema do
             extent_heading: ~s/.*/,
             extent_name: "extent",
 
+            editorial: ~s/^([A-Z])(\\d+)(.*)/,
+            editorial_heading: ~s/.*/,
+            editorial_name: "editorial",
+
             amending_sub_article_name: "",
             form: "",
             form_name: "form",
