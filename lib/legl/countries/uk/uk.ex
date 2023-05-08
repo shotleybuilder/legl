@@ -22,7 +22,8 @@ defmodule UK do
   # @impl true
   def schema(type) do
     case type do
-      :act -> %AirtableSchema{
+      :act ->
+        %AirtableSchema{
           country: :UK,
           fields: UK.Act.fields(),
           number_fields: UK.Act.number_fields(),
@@ -34,6 +35,7 @@ defmodule UK do
           modification: ~s/^(C)(\\d+)(.*)/,
           annex: ~s/(\\d*[A-Z]?)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
         }
+
       :regulation ->
         %AirtableSchema{
           country: :UK,
@@ -42,27 +44,19 @@ defmodule UK do
           part: ~s/^(\\d+|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
           chapter_name: "chapter",
           chapter: ~s/^(\\d+)[ ](.*)/,
-
           heading: ~s/^(\\d+[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
           heading_name: "heading",
-
           article: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           article_name: "article",
-
           sub_article: ~s/^(\\d+)[ ](.*)/,
           sub_article_name: "sub-article",
-
           para: ~s/^(\\d+)[ ](.*)/,
           para_name: "sub-article",
-
           signed_name: "signed",
-
           annex: ~s/^(\\d*[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
           annex_name: "schedule",
-
           footnote_name: "footnote",
-
-          amendment: ~s/^([A-Z])(\\d+)(.*)/,
+          amendment: ~s/^([A-Z])(\\d+)(.*)/
         }
     end
   end
@@ -111,7 +105,6 @@ defmodule UK do
   `iex(4)>UK.parse(:annex)`
   """
   def parse(opts \\ []) do
-
     opts = Enum.into(opts, @parse_default_opts)
 
     IO.inspect(opts, label: "Options: ")
@@ -136,17 +129,20 @@ defmodule UK do
         Legl.txt("annotated")
         |> Path.absname()
         |> File.write("#{UK.Parser.parser(binary, opts)}")
+
         :ok
+
       _ ->
         :ok
     end
   end
 
-
   @airtable_default_opts %{
+    country: :uk,
     type: :regulation,
     csv: true,
-    tdl: false, #tab delimited list
+    # tab delimited list
+    tdl: false,
     chunk: 200
   }
 
@@ -193,10 +189,8 @@ defmodule UK do
 
   """
   def airtable(opts \\ []) do
-
-    opts =
-      Enum.into(opts, @airtable_default_opts)
-      #|> Map.put(:name, name)
+    opts = Enum.into(opts, @airtable_default_opts)
+    # |> Map.put(:name, name)
 
     IO.inspect(opts, label: "Options: ")
 
@@ -204,16 +198,15 @@ defmodule UK do
     # [:flow, :type, :part, :chapter, :heading, :section, :sub_section, :article, :para, :text, :region]
     fields =
       case opts.type do
-        :act -> UK.Act.fields
-        :regulation -> UK.Regulation.fields
+        :act -> UK.Act.fields()
+        :regulation -> UK.Regulation.fields()
       end
 
     Legl.airtable(
       schema(opts.type),
-      Keyword.merge(Map.to_list(opts), [fields: fields])
+      Keyword.merge(Map.to_list(opts), fields: fields)
     )
 
     :ok
   end
-
 end

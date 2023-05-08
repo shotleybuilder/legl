@@ -27,18 +27,23 @@ defmodule Legl.Airtable.Schema do
 
   def open_file(:act) do
     {:ok, csv} = "lib/#{@act_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
+
     IO.puts(
       csv,
       at_cols()
     )
+
     csv
   end
+
   def open_file(:regulation) do
     {:ok, csv} = "lib/#{@regulation_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
+
     IO.puts(
       csv,
       at_cols()
     )
+
     csv
   end
 
@@ -48,7 +53,7 @@ defmodule Legl.Airtable.Schema do
 
   @default_schema_opts %{
     records: Types.Component.components_as_list(),
-    dedupe: :true
+    dedupe: true
   }
 
   # alias __MODULE__
@@ -62,7 +67,6 @@ defmodule Legl.Airtable.Schema do
   Creates a tab-delimited binary suitable for copying into Airtable.
   """
   def schema(binary, regex, opts \\ []) do
-
     opts = Enum.into(opts, @default_schema_opts)
 
     file = open_file(opts.type)
@@ -70,85 +74,66 @@ defmodule Legl.Airtable.Schema do
     records =
       records(binary, regex, opts)
       |> Enum.reduce([], fn record, acc ->
-        record =
-          Map.put(record, :name, opts.name)
-          |> add_id_to_record()
-          #|> convert_region_code()
+        record = Map.put(record, :name, opts.name) |> add_id_to_record(opts)
         [record | acc]
       end)
 
-    #Find any dupes
+    # Find any dupes
     dupes =
-      Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&([&1 | acc])).() end)
+      Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&[&1 | acc]).() end)
       |> Legl.Utility.duplicate_records()
       |> IO.inspect(label: "Duplicates", limit: :infinity)
 
-    #Duplicates are most often caused by identical provision numbers for different countries / regions
-    #Dedupe by assigning a country / region code to the ID (key field)
+    # Dedupe the records if there are duplicate IDs
     records =
       case opts.dedupe do
-        :true ->
+        true ->
           case Enum.count(dupes) do
             0 -> records
-            _ -> dedupe_with_regions(dupes, records)
+            _ -> make_record_duplicates_uniq(dupes, records, opts)
           end
-        _ -> records
+
+        _ ->
+          records
       end
 
-    dupes =
-      Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&([&1 | acc])).() end)
-      |> Legl.Utility.duplicate_records()
-      |> IO.inspect(label: "\nDuplicates after Regionisation", limit: :infinity)
-
-    #Dedupe the records if there are duplicate IDs
-    records =
-      case opts.dedupe do
-        :true ->
-          case Enum.count(dupes) do
-            0 -> records
-            _ -> make_record_duplicates_uniq(dupes, records)
-          end
-        _ -> records
-      end
-
-    if opts.dedupe, do:
-      #Check the deduping worked
-      Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&([&1 | acc])).() end)
-      |> Legl.Utility.duplicate_records()
-      |> IO.inspect(label: "\nDuplicates after Codification", limit: :infinity)
+    if opts.dedupe,
+      # Check the deduping worked
+      do:
+        Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&[&1 | acc]).() end)
+        |> Legl.Utility.duplicate_records()
+        |> IO.inspect(label: "\nDuplicates after Codification", limit: :infinity)
 
     records = Enum.map(records, &convert_region_code(&1))
 
-    #'Changes' field holds list of changes (amendments, mods) applying to that record
+    # 'Changes' field holds list of changes (amendments, mods) applying to that record
     r = List.last(records)
 
-    change_stats =
-      [
-        amendments: {r.max_amendments, "F"},
-        modifications: {r.max_modifications, "C"},
-        commencements: {r.max_commencements, "I"},
-        extents: {r.max_extents, "E"}
-      ]
+    change_stats = [
+      amendments: {r.max_amendments, "F"},
+      modifications: {r.max_modifications, "C"},
+      commencements: {r.max_commencements, "I"},
+      extents: {r.max_extents, "E"}
+    ]
 
-    #Print change stats to the console
+    # Print change stats to the console
     Enum.each(change_stats, fn {k, {total, code}} -> IO.puts("#{k} #{total} code: #{code}") end)
 
-
-    #rng = List.last(records).max_amendments |> IO.inspect(label: "Amendments (Fs)")
+    # rng = List.last(records).max_amendments |> IO.inspect(label: "Amendments (Fs)")
     records =
       Enum.map(records, fn record ->
-        Enum.reduce(change_stats, record,
-          fn {_k, {total, code}}, acc ->
-            case total == 0 do
-              :true -> acc
-              _ ->
-                find_change_in_record(code, total, acc)
-            end
-          end)
+        Enum.reduce(change_stats, record, fn {_k, {total, code}}, acc ->
+          case total == 0 do
+            true ->
+              acc
+
+            _ ->
+              find_change_in_record(code, total, acc)
+          end
+        end)
       end)
 
-    Enum.count(records)
-    |> IO.inspect(label: "number of records = ")
+    Enum.count(records) |> (&IO.puts("number of records = #{&1}")).()
 
     Enum.each(records, fn record ->
       copy_to_csv(file, record)
@@ -156,38 +141,48 @@ defmodule Legl.Airtable.Schema do
 
     File.close(file)
 
-    Enum.map(records, fn x -> conv_map_to_record_string(x, opts.fields) end)
-    #|> Enum.reverse()
+    # A proxy of the Airtable table useful for debugging 'at_tabulated.txt'
+    Legl.Countries.Uk.AirtableArticle.UkArticlePrint.make_tabular_txtfile(records, opts)
+    |> IO.puts()
+
+    Enum.map(records, fn x -> conv_map_to_record_string(x, opts) end)
+    # |> Enum.reverse()
     |> Enum.join("\n")
   end
 
   @doc """
   Search for the change markers in the provision texts only
   """
-  def find_change_in_record(code, rng, %{type: "section"} = record), do: find_change_in_record({code, rng, record})
-  def find_change_in_record(code, rng, %{type: "sub-section"} = record), do: find_change_in_record({code, rng, record})
-  def find_change_in_record(code, rng, %{type: "article"} = record), do: find_change_in_record({code, rng, record})
-  def find_change_in_record(code, rng, %{type: "sub-article"} = record), do: find_change_in_record({code, rng, record})
+  def find_change_in_record(code, rng, %{type: "section"} = record),
+    do: find_change_in_record({code, rng, record})
+
+  def find_change_in_record(code, rng, %{type: "sub-section"} = record),
+    do: find_change_in_record({code, rng, record})
+
+  def find_change_in_record(code, rng, %{type: "article"} = record),
+    do: find_change_in_record({code, rng, record})
+
+  def find_change_in_record(code, rng, %{type: "sub-article"} = record),
+    do: find_change_in_record({code, rng, record})
+
   def find_change_in_record(_code, _rng, record), do: record
 
   def find_change_in_record({code, rng, record}) do
     Enum.reduce(1..rng, record, fn n, acc ->
       case String.contains?(record.text, ~s/#{code}#{n} /) do
-        :true ->
+        true ->
           changes = [~s/#{code}#{n}/ | acc.changes]
           %{acc | changes: changes}
 
-        :false ->
+        false ->
           acc
       end
     end)
   end
 
   def records(binary, regex, opts) do
-
-    #Regex OR structure "title|content|part|chapter|section|sub_section..."
-    record_types =
-      opts.records |> Enum.join("|")
+    # Regex OR structure "title|content|part|chapter|section|sub_section..."
+    record_types = opts.records |> Enum.join("|")
 
     # First line is always the title
     [head | tail] = String.split(binary, "\n", trim: true)
@@ -205,8 +200,8 @@ defmodule Legl.Airtable.Schema do
     # _records_ is a `t:list/0` of the set of records
     tail
     |> Enum.reduce(collector, fn str, acc ->
-
-      last_record = hd(acc) #|> reset_region()
+      # |> reset_region()
+      last_record = hd(acc)
 
       case Regex.match?(~r/^\[::(#{record_types})::\]/, str) do
         true ->
@@ -214,7 +209,8 @@ defmodule Legl.Airtable.Schema do
 
           case Regex.run(~r/^\[::([a-z_]+)::\]$/, tag) do
             [_m, tag] ->
-              this_record = Kernel.apply(__MODULE__, String.to_atom(tag), [regex, str, last_record, opts.type])
+              this_record =
+                Kernel.apply(__MODULE__, String.to_atom(tag), [regex, str, last_record, opts.type])
 
               [this_record | acc]
 
@@ -229,16 +225,16 @@ defmodule Legl.Airtable.Schema do
   end
 
   @spec conv_map_to_record_string(map, any) :: binary
-  def conv_map_to_record_string(%_{} = record, opts) do
+  def conv_map_to_record_string(%_{} = record, %{fields: fields} = _opts) do
     Map.from_struct(record)
-    |> conv_map_to_record_string(opts)
+    |> conv_map_to_record_string(fields)
   end
 
-  def conv_map_to_record_string(%{sub: 0} = record, opts) when is_map(record),
-    do: conv_map_to_record_string(%{record | sub: ""}, opts)
+  def conv_map_to_record_string(%{sub: 0} = record, fields) when is_map(record),
+    do: conv_map_to_record_string(%{record | sub: ""}, fields)
 
-  def conv_map_to_record_string(record, opts) when is_map(record) do
-    opts
+  def conv_map_to_record_string(record, fields) when is_map(record) do
+    fields
     |> Enum.reduce([], fn x, acc -> [Map.get(record, x) | acc] end)
     |> Enum.reduce(
       [],
@@ -250,29 +246,32 @@ defmodule Legl.Airtable.Schema do
     |> Enum.join("\t")
   end
 
-  def copy_to_csv(file,
-  %{
-    id: id,
-    name: name,
-    flow: flow,
-    type: record_type,
-    part: part,
-    chapter: chapter,
-    heading: heading,
-    section: section,
-    sub_section: sub_section,
-    para: para,
-    sub_para: sub_para,
-    amendment: amendment,
-    region: region,
-    text: text,
-    changes: changes
-  } = _record) do
+  def copy_to_csv(
+        file,
+        %{
+          id: id,
+          name: name,
+          flow: flow,
+          type: record_type,
+          part: part,
+          chapter: chapter,
+          heading: heading,
+          section: section,
+          sub_section: sub_section,
+          para: para,
+          sub_para: sub_para,
+          amendment: amendment,
+          region: region,
+          text: text,
+          changes: changes
+        } = _record
+      ) do
     changes =
       changes
       |> Enum.reverse()
       |> Enum.join(",")
       |> Legl.Utility.csv_quote_enclosure()
+
     [
       id,
       name,
@@ -290,58 +289,64 @@ defmodule Legl.Airtable.Schema do
       region,
       changes
     ]
-    #|> IO.inspect()
+    # |> IO.inspect()
     |> Enum.join(",")
-    |> (&(IO.puts(file, &1))).()
+    |> (&IO.puts(file, &1)).()
   end
 
   @doc """
 
   """
-  def add_id_to_record(record) do
-    id =
-      make_id(record)
-      |> amending?(record)
-      |> String.trim_trailing("_")
-    Map.put(record, :id, id)
+  def add_id_to_record(record, %{country: :uk} = _opts) do
+    Legl.Countries.Uk.AirtableArticle.UkArticleId.make_id(record)
   end
 
-  def make_id(%{flow: "pre", name: name} = r), do:
-    ~s/#{name}#{make_numeric_id(r)}/
+  def make_record_duplicates_uniq(dupes, records, %{country: :uk} = _opts) do
+    Legl.Countries.Uk.AirtableArticle.UkArticleId.make_record_duplicates_uniq(dupes, records)
+  end
 
-  def make_id(%{flow: ""} = r), do:
-    make_id(%{r | flow: "main"})
+  @doc """
 
-  def make_id(%{flow: "main", name: name} = r), do:
-    ~s/#{name}_#{make_numeric_id(r)}/
+  """
 
-  def make_id(%{flow: "post", name: name} = r), do:
-    ~s/#{name}-#{make_numeric_id(r)}/
+  def convert_region_code(%{region: ""} = record), do: record
 
-  def make_id(%{flow: "signed", name: name} = _r), do: name
+  def convert_region_code(%{region: "U.K."} = record) do
+    region = Legl.Utility.csv_quote_enclosure("UK,England,Wales,Scotland,Northern Ireland")
+    %{record | region: region}
+  end
 
-  def make_id(%{flow: flow, name: name} = r), do:
-  ~s/#{name}-#{flow}_#{make_numeric_id(r)}/
-  #|> String.trim_trailing("_")
+  def convert_region_code(%{region: "E+W+S"} = record) do
+    region = Legl.Utility.csv_quote_enclosure("GB,England,Wales,Scotland,Northern Ireland")
+    %{record | region: region}
+  end
 
-  def make_numeric_id(r), do:
-    ~s/#{r.part}_#{r.chapter}_#{r.heading}_#{r.section}_#{r.sub_section}_#{r.para}/
+  def convert_region_code(%{region: "E"} = record), do: %{record | region: "England"}
 
-  def amending?(id, %{type: ~s/"amendment,heading"/} = _record), do: id <> "_aa"
-  def amending?(id, %{type: ~s/"amendment,textual"/, amendment: a} = _record), do: id <> "_aa_" <> a
+  def convert_region_code(%{region: "S"} = record), do: %{record | region: "Scotland"}
 
-  def amending?(id, %{type: ~s/"extent,heading"/} = _record), do: id <> "_ae"
-  def amending?(id, %{type: "extent,content", amendment: e} = _record), do: id <> "_ae_" <> e
+  def convert_region_code(%{region: "W"} = record), do: %{record | region: "Wales"}
 
-  def amending?(id, %{type: ~s/"modification,heading"/} = _record), do: id <> "_am"
-  def amending?(id, %{type: "modification,content", amendment: m} = _record), do: id <> "_am_" <> m
+  def convert_region_code(%{region: "N.I."} = record), do: %{record | region: "Northern Ireland"}
 
-  def amending?(id, %{type: ~s/"commencement,heading"/} = _record), do: id <> "_c"
-  def amending?(id, %{type: "commencement,content", amendment: c} = _record), do: id <> "_c_" <> c
+  def convert_region_code(%{region: region} = record) when region in ["E+W", "E+W+N.I."] do
+    region =
+      String.split(region, "+")
+      |> Enum.reduce([], fn x, acc ->
+        cond do
+          x == "E" -> ["England" | acc]
+          x == "W" -> ["Wales" | acc]
+          x == "N.I." -> ["Nothern Ireland" | acc]
+          x == "S" -> ["Scotland" | acc]
+          true -> IO.inspect(x, label: "convert_region_code/1")
+        end
+      end)
+      |> Enum.reverse()
+      |> Enum.join(",")
+      |> Legl.Utility.csv_quote_enclosure()
 
-  def amending?(id, _), do: id
-
-
+    %{record | region: region}
+  end
 
   def title(regex, "[::title::]" <> str, last_record) do
     %{
@@ -353,7 +358,6 @@ defmodule Legl.Airtable.Schema do
   end
 
   def part(regex, "[::part::]" <> str, last_record, type \\ :regulation) do
-
     article_type =
       case last_record.flow do
         "post" -> "#{regex.annex_name}, #{regex.part_name}"
@@ -362,7 +366,6 @@ defmodule Legl.Airtable.Schema do
 
     record =
       case Regex.run(~r/#{regex.part}/, str) do
-
         [_, value, text, region] ->
           case type do
             :act ->
@@ -445,102 +448,94 @@ defmodule Legl.Airtable.Schema do
   end
 
   def heading(regex, "[::heading::]" <> str, last_record, _type) do
+    case Regex.run(~r/#{regex.heading}/, str) do
+      [_, value, text, region] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: "#{regex.heading_name}",
+            heading: value,
+            text: text,
+            region: region
+        }
+        |> fields_reset(:heading, regex)
 
-      case Regex.run(~r/#{regex.heading}/, str) do
-        [_, value, text, region] ->
-          %{
-            last_record
-            | flow: flow(last_record),
-              type: "#{regex.heading_name}",
-              heading: value,
-              text: text,
-              region: region
-          }
-          |> fields_reset(:heading, regex)
+      [_, value, str] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: "#{regex.heading_name}",
+            heading: value,
+            text: str
+        }
+        |> fields_reset(:heading, regex)
 
-        [_, value, str] ->
-            %{
-              last_record
-              | flow: flow(last_record),
-                type: "#{regex.heading_name}",
-                heading: value,
-                text: str
-            }
-            |> fields_reset(:heading, regex)
-
-        nil ->
-          IO.inspect("ERROR heading/4 #{regex.heading} #{str}")
-      end
-
+      nil ->
+        IO.inspect("ERROR heading/4 #{regex.heading} #{str}")
+    end
   end
 
   def section(regex, "[::section::]" <> str, last_record, _type) do
-
-      case Regex.run(~r/#{regex.section}/m, str) do
-
-        [_, section_number, "", text, region] ->
-          %{
-            last_record
-            | flow: flow(last_record),
-              type: regex.section_name,
-              section: section_number,
-              text: text,
-              region: region
-          }
+    case Regex.run(~r/#{regex.section}/m, str) do
+      [_, section_number, "", text, region] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: regex.section_name,
+            section: section_number,
+            text: text,
+            region: region
+        }
         |> fields_reset(:section, regex)
 
-        [_, section_number, sub_section_number, text, region] ->
-          %{
-            last_record
-            | flow: flow(last_record),
-              type: regex.section_name,
-              section: section_number,
-              sub_section: sub_section_number,
-              text: text,
-              region: region
-          }
-          |> fields_reset(:sub_section, regex)
+      [_, section_number, sub_section_number, text, region] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: regex.section_name,
+            section: section_number,
+            sub_section: sub_section_number,
+            text: text,
+            region: region
+        }
+        |> fields_reset(:sub_section, regex)
 
-        [_, section_number, text, region] ->
-          %{
-            last_record
-            | flow: flow(last_record),
-              type: regex.section_name,
-              section: section_number,
-              text: text,
-              region: region
-          }
-          |> fields_reset(:section, regex)
+      [_, section_number, text, region] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: regex.section_name,
+            section: section_number,
+            text: text,
+            region: region
+        }
+        |> fields_reset(:section, regex)
 
-        [_, section_number, text] ->
-          %{
-            last_record
-            | flow: flow(last_record),
-              type: regex.section_name,
-              section: section_number,
-              text: text
-          }
-          |> fields_reset(:section, regex)
+      [_, section_number, text] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: regex.section_name,
+            section: section_number,
+            text: text
+        }
+        |> fields_reset(:section, regex)
 
-        [_, text] ->
-          %{
-            last_record
-            | type: regex.section_name,
-              section: increment(last_record.section),
-              text: text
-          }
-          |> fields_reset(:section, regex)
+      [_, text] ->
+        %{
+          last_record
+          | type: regex.section_name,
+            section: increment(last_record.section),
+            text: text
+        }
+        |> fields_reset(:section, regex)
 
-        nil ->
-          IO.inspect("#{str}", label: "ERROR: section/4")
-
-      end
-
-
+      nil ->
+        IO.inspect("#{str}", label: "ERROR: section/4")
+    end
   end
 
   def sub_section(regex, "[::sub_section::]" <> str, last_record, _type) do
-
     fields_reset(last_record, :sub_section, regex)
 
     record =
@@ -572,6 +567,7 @@ defmodule Legl.Airtable.Schema do
     case Regex.run(~r/#{regex.article}/, str) do
       nil ->
         IO.inspect("ERROR article #{regex.article} #{str}")
+
         case last_record.flow do
           "post" ->
             [_, value] = Regex.run(~r/^(\d+)\./, str)
@@ -590,7 +586,7 @@ defmodule Legl.Airtable.Schema do
             section: article,
             text: text,
             region: region
-          }
+        }
         |> fields_reset(:section, regex)
 
       [_, article, sub_article, text, region] ->
@@ -613,7 +609,6 @@ defmodule Legl.Airtable.Schema do
             text: text
         }
         |> fields_reset(:sub_section, regex)
-
     end
   end
 
@@ -621,7 +616,6 @@ defmodule Legl.Airtable.Schema do
 
   """
   def sub_article(%{country: :UK} = regex, "[::sub_article::]" <> str, last_record, _type) do
-
     fields_reset(last_record, :sub_section, regex)
 
     record =
@@ -687,60 +681,54 @@ defmodule Legl.Airtable.Schema do
 
   """
   def annex(regex, "[::annex::]" <> str, last_record, _type) do
+    case Regex.run(~r/#{regex.annex}/, str) do
+      [_, annex_num, annex, annex_name, region] ->
+        annex_num =
+          cond do
+            annex_num != "" -> annex_num
+            annex_name == "SCHEDULE" -> "1"
+            true -> "post"
+          end
 
-      case Regex.run(~r/#{regex.annex}/, str) do
+        %{
+          last_record
+          | type: regex.annex_name,
+            text: annex,
+            flow: annex_num,
+            region: region
+        }
+        |> fields_reset(:all, regex)
 
-        [_, annex_num, annex, annex_name, region] ->
+      [_, annex_num, annex, region] ->
+        annex_num =
+          cond do
+            annex_num != "" -> annex_num
+            true -> "post"
+          end
 
-          annex_num =
-            cond do
-              annex_num != "" -> annex_num
-              annex_name == "SCHEDULE" -> "1"
-              true -> "post"
-            end
+        %{
+          last_record
+          | type: regex.annex_name,
+            text: annex,
+            flow: annex_num,
+            region: region
+        }
+        |> fields_reset(:all, regex)
 
-          %{
-            last_record
-            | type: regex.annex_name,
-              text: annex,
-              flow: annex_num,
-              region: region
-          }
-          |> fields_reset(:all, regex)
+      [_, annex_num, annex] ->
+        annex_num = if annex_num != "", do: annex_num, else: "post"
 
-          [_, annex_num, annex, region] ->
+        %{
+          last_record
+          | type: regex.annex_name,
+            text: annex,
+            flow: annex_num
+        }
+        |> fields_reset(:all, regex)
 
-            annex_num =
-              cond do
-                annex_num != "" -> annex_num
-                true -> "post"
-              end
-
-            %{
-              last_record
-              | type: regex.annex_name,
-                text: annex,
-                flow: annex_num,
-                region: region
-            }
-            |> fields_reset(:all, regex)
-
-        [_, annex_num, annex] ->
-
-          annex_num = if annex_num != "", do: annex_num, else: "post"
-
-          %{
-            last_record
-            | type: regex.annex_name,
-              text: annex,
-              flow: annex_num
-          }
-          |> fields_reset(:all, regex)
-
-        nil ->
-          IO.inspect("ERROR #{regex.annex} #{str}")
-
-      end
+      nil ->
+        IO.inspect("ERROR #{regex.annex} #{str}")
+    end
   end
 
   def form(regex, "[::form::]" <> str, last_record, _type) do
@@ -755,24 +743,27 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:part, regex)
   end
 
-  def amendment_heading(%{country: :UK} = regex,  "[::amendment_heading::]" <> str, last_record, _type) do
+  def amendment_heading(
+        %{country: :UK} = regex,
+        "[::amendment_heading::]" <> str,
+        last_record,
+        _type
+      ) do
     case Regex.run(~r/#{regex.amendment_heading}/, str) do
       [amd_hd] ->
         %{
           last_record
-          | type: Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},#{regex.heading_name}"),
+          | type:
+              Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},#{regex.heading_name}"),
             text: amd_hd
         }
-      |> fields_reset(:section, regex)
+        |> fields_reset(:section, regex)
     end
   end
 
-  def amendment(%{country: :UK} = regex,  "[::amendment::]" <> str, last_record, _type) do
-
+  def amendment(%{country: :UK} = regex, "[::amendment::]" <> str, last_record, _type) do
     case Regex.run(~r/#{regex.amendment}/, str) do
-
       [_, amd_code, amd_num, str] ->
-
         last_record =
           if last_record.max_amendments < String.to_integer(amd_num),
             do: %{last_record | max_amendments: String.to_integer(amd_num)},
@@ -781,7 +772,7 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type: Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},textual"),
-            text: amd_code<>amd_num<>str,
+            text: amd_code <> amd_num <> str,
             amendment: amd_num,
             sub_section: ""
         }
@@ -793,8 +784,6 @@ defmodule Legl.Airtable.Schema do
 
   def amendment(regex, "[::amendment::]" <> str, last_record, _type) do
     case Regex.run(~r/#{regex.amendment}/, str) do
-
-
       [_, art_num, para_num, str] ->
         cond do
           regex.country == :tur ->
@@ -835,24 +824,27 @@ defmodule Legl.Airtable.Schema do
     end
   end
 
-  def modification_heading(%{country: :UK} = regex,  "[::modification_heading::]" <> str, last_record, _type) do
+  def modification_heading(
+        %{country: :UK} = regex,
+        "[::modification_heading::]" <> str,
+        last_record,
+        _type
+      ) do
     case Regex.run(~r/#{regex.modification_heading}/, str) do
       [md_hd] ->
         %{
           last_record
-          | type: Legl.Utility.csv_quote_enclosure("#{regex.modification_name},#{regex.heading_name}"),
+          | type:
+              Legl.Utility.csv_quote_enclosure("#{regex.modification_name},#{regex.heading_name}"),
             text: md_hd
         }
-      |> fields_reset(:section, regex)
+        |> fields_reset(:section, regex)
     end
   end
 
-  def modification(%{country: :UK} = regex,  "[::modification::]" <> str, last_record, _type) do
-
+  def modification(%{country: :UK} = regex, "[::modification::]" <> str, last_record, _type) do
     case Regex.run(~r/#{regex.modification}/, str) do
-
       [_, code, num, str] ->
-
         last_record =
           if last_record.max_modifications < String.to_integer(num),
             do: %{last_record | max_modifications: String.to_integer(num)},
@@ -861,7 +853,7 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type: Legl.Utility.csv_quote_enclosure("#{regex.modification_name},content"),
-            text: code<>num<>str,
+            text: code <> num <> str,
             amendment: num,
             sub_section: ""
         }
@@ -871,22 +863,27 @@ defmodule Legl.Airtable.Schema do
     end
   end
 
-  def commencement_heading(%{country: :UK} = regex,  "[::commencement_heading::]" <> str, last_record, _type) do
+  def commencement_heading(
+        %{country: :UK} = regex,
+        "[::commencement_heading::]" <> str,
+        last_record,
+        _type
+      ) do
     case Regex.run(~r/#{regex.commencement_heading}/, str) do
       [cmc_hd] ->
         %{
           last_record
-          | type: Legl.Utility.csv_quote_enclosure("#{regex.commencement_name},#{regex.heading_name}"),
+          | type:
+              Legl.Utility.csv_quote_enclosure("#{regex.commencement_name},#{regex.heading_name}"),
             text: cmc_hd
         }
-      |> fields_reset(:section, regex)
+        |> fields_reset(:section, regex)
     end
   end
 
-  def commencement(%{country: :UK} = regex,  "[::commencement::]" <> str, last_record, _type) do
+  def commencement(%{country: :UK} = regex, "[::commencement::]" <> str, last_record, _type) do
     case Regex.run(~r/#{regex.commencement}/, str) do
       [_, code, num, str] ->
-
         last_record =
           if last_record.max_commencements < String.to_integer(num),
             do: %{last_record | max_commencements: String.to_integer(num)},
@@ -895,14 +892,14 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type: Legl.Utility.csv_quote_enclosure("#{regex.commencement_name},content"),
-            text: code<>num<>str,
+            text: code <> num <> str,
             amendment: num,
             sub_section: ""
         }
     end
   end
 
-  def extent_heading(%{country: :UK} = regex,  "[::extent_heading::]" <> str, last_record, _type) do
+  def extent_heading(%{country: :UK} = regex, "[::extent_heading::]" <> str, last_record, _type) do
     case Regex.run(~r/#{regex.extent_heading}/, str) do
       [cmc_hd] ->
         %{
@@ -910,14 +907,13 @@ defmodule Legl.Airtable.Schema do
           | type: Legl.Utility.csv_quote_enclosure("#{regex.extent_name},#{regex.heading_name}"),
             text: cmc_hd
         }
-      |> fields_reset(:section, regex)
+        |> fields_reset(:section, regex)
     end
   end
 
-  def extent(%{country: :UK} = regex,  "[::extent::]" <> str, last_record, _type) do
+  def extent(%{country: :UK} = regex, "[::extent::]" <> str, last_record, _type) do
     case Regex.run(~r/#{regex.extent}/, str) do
       [_, code, num, str] ->
-
         last_record =
           if last_record.max_extents < String.to_integer(num),
             do: %{last_record | max_extents: String.to_integer(num)},
@@ -926,29 +922,34 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type: Legl.Utility.csv_quote_enclosure("#{regex.extent_name},content"),
-            text: code<>num<>str,
+            text: code <> num <> str,
             amendment: num,
             sub_section: ""
         }
     end
   end
 
-  def editorial_heading(%{country: :UK} = regex,  "[::editorial_heading::]" <> str, last_record, _type) do
+  def editorial_heading(
+        %{country: :UK} = regex,
+        "[::editorial_heading::]" <> str,
+        last_record,
+        _type
+      ) do
     case Regex.run(~r/#{regex.editorial_heading}/, str) do
       [hd] ->
         %{
           last_record
-          | type: Legl.Utility.csv_quote_enclosure("#{regex.heading_name},#{regex.editorial_name}"),
+          | type:
+              Legl.Utility.csv_quote_enclosure("#{regex.heading_name},#{regex.editorial_name}"),
             text: hd
         }
-      |> fields_reset(:section, regex)
+        |> fields_reset(:section, regex)
     end
   end
 
-  def editorial(%{country: :UK} = regex,  "[::editorial::]" <> str, last_record, _type) do
+  def editorial(%{country: :UK} = regex, "[::editorial::]" <> str, last_record, _type) do
     case Regex.run(~r/#{regex.editorial}/, str) do
       [_, code, num, str] ->
-
         last_record =
           if last_record.max_extents < String.to_integer(num),
             do: %{last_record | max_editorials: String.to_integer(num)},
@@ -957,7 +958,7 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type: Legl.Utility.csv_quote_enclosure("#{regex.editorial_name}"),
-            text: code<>num<>str,
+            text: code <> num <> str,
             amendment: num,
             sub_section: ""
         }
@@ -985,10 +986,9 @@ defmodule Legl.Airtable.Schema do
   end
 
   def table(regex, "[::table::]" <> str, last_record, _type) do
-
     [_, table_num, table] = Regex.run(~r/#{regex.table}/, str)
 
-    #IO.puts("___T___\ntype: #{last_record.type}\nsection: #{last_record.section}\nsub_section: #{last_record.sub_section}\npara: #{last_record.para}")
+    # IO.puts("___T___\ntype: #{last_record.type}\nsection: #{last_record.section}\nsub_section: #{last_record.sub_section}\npara: #{last_record.para}")
 
     field =
       cond do
@@ -998,21 +998,17 @@ defmodule Legl.Airtable.Schema do
         true -> :para
       end
 
-    Map.merge(last_record,
-      %{type: regex.table_name,
-        text: table,
-        "#{field}": table_num
-      }
+    Map.merge(
+      last_record,
+      %{type: regex.table_name, text: table, "#{field}": table_num}
     )
     |> fields_reset(field, regex)
-
   end
 
   def sub_table(regex, "[::sub_table::]" <> str, last_record, _type) do
-
     [_, table_num, text] = Regex.run(~r/#{regex.table}/, str)
 
-    #IO.puts("___ST___\ntype: #{last_record.type}\nsection: #{last_record.section}\nsub_section: #{last_record.sub_section}\npara: #{last_record.para}")
+    # IO.puts("___ST___\ntype: #{last_record.type}\nsection: #{last_record.section}\nsub_section: #{last_record.sub_section}\npara: #{last_record.para}")
 
     field =
       cond do
@@ -1021,15 +1017,12 @@ defmodule Legl.Airtable.Schema do
         true -> :para
       end
 
-    Map.merge(last_record,
-      %{type: regex.sub_table_name,
-        text: text,
-        "#{field}": table_num
-      }
+    Map.merge(
+      last_record,
+      %{type: regex.sub_table_name, text: text, "#{field}": table_num}
     )
     |> IO.inspect()
     |> fields_reset(field, regex)
-
   end
 
   def note(regex, "[::note::]" <> str, last_record, _type) do
@@ -1062,6 +1055,7 @@ defmodule Legl.Airtable.Schema do
       _ -> str
     end
   end
+
   @doc """
   Resets all numeric fields to "" in the hierarchy below the field
   If the optional step is set to 0 then the given field is also set to ""
@@ -1100,110 +1094,4 @@ defmodule Legl.Airtable.Schema do
       _ -> flow
     end
   end
-
-  def convert_region_code(%{region: ""} = record), do: record
-
-  def convert_region_code(%{region: "U.K."} = record) do
-    region = Legl.Utility.csv_quote_enclosure("UK,England,Wales,Scotland,Northern Ireland")
-    %{record | region: region}
-  end
-
-  def convert_region_code(%{region: "E+W+S"} = record) do
-    region = Legl.Utility.csv_quote_enclosure("GB,England,Wales,Scotland,Northern Ireland")
-    %{record | region: region}
-  end
-
-  def convert_region_code(%{region: "E"} = record), do: %{record | region: "England"}
-
-  def convert_region_code(%{region: "S"} = record), do: %{record | region: "Scotland"}
-
-  def convert_region_code(%{region: "W"} = record), do: %{record | region: "Wales"}
-
-  def convert_region_code(%{region: "N.I."} = record), do: %{record | region: "Northern Ireland"}
-
-  def convert_region_code(%{region: region} = record) when region in ["E+W", "E+W+N.I."] do
-    region =
-      String.split(region, "+")
-      |> Enum.reduce([], fn x, acc ->
-        cond do
-          x == "E" -> ["England" | acc]
-          x == "W" -> ["Wales" | acc]
-          x == "N.I." -> ["Nothern Ireland" | acc]
-          x == "S" -> ["Scotland" | acc]
-          true -> IO.inspect(x, label: "convert_region_code/1")
-        end
-      end)
-      |> Enum.reverse()
-      |> Enum.join(",")
-      |> Legl.Utility.csv_quote_enclosure()
-    %{record | region: region}
-  end
-
-  def dedupe_with_regions(dupes, records) do
-    Enum.reduce(dupes, records, fn dupe, acc ->
-      refactor_id_with_region(dupe, acc)
-    end)
-  end
-
-  def refactor_id_with_region(dupe, records) do
-      Enum.map(records, fn record ->
-        case dupe == record.id do
-          :true ->
-            if record.region != "",
-            do: %{record | id: region_code(record)},
-            else: record
-          _ ->
-            record
-        end
-      end)
-  end
-
-  def region_code(%{id: id, region: "U.K."} = _record), do: id <> "_UK"
-  def region_code(%{id: id, region: "E+W+S"} = _record), do: id <> "_GB"
-  def region_code(%{id: id, region: "E+W"} = _record), do: id <> "_EW"
-  def region_code(%{id: id, region: "E"} = _record), do: id <> "_E"
-  def region_code(%{id: id, region: "W"} = _record), do: id <> "_W"
-  def region_code(%{id: id, region: "S"} = _record), do: id <> "_S"
-  def region_code(%{id: id, region: "N.I."} = _record), do: id <> "_NI"
-  def region_code(%{id: id} = _record) do
-    IO.puts("ERROR! No matching region_code/1")
-    id
-  end
-
-  @doc """
-  dupes is the list of duplicate IDs (as strings)
-  """
-  def make_record_duplicates_uniq(dupes, records) when is_list(records) do
-    Enum.reduce(dupes, records, fn dupe, acc ->
-      refactor_id(dupe, acc)
-    end)
-  end
-  @doc """
-  Enumerate the record IDs until a match is made with the duplicate ID
-  With each match the accumulator (fm_acc) increments by 1
-  This is assigned to the equivalent letter and put in the sub_para field
-  The ID is regenerated and assigned to the record
-  """
-  def refactor_id(dupe, records) when is_list(records) do
-    {acc, _} =
-      Enum.flat_map_reduce(records, 1, fn record, fm_acc ->
-        case dupe == record.id do
-          :true ->
-            n = letter_from_number(fm_acc)
-            id = record.id <> "_#{n}"
-            record = %{record | sub_para: n, id: id}
-            {[record], fm_acc + 1}
-          _ ->
-            {[record], fm_acc}
-        end
-      end)
-    acc
-  end
-
-  def letter_from_number(number) do
-    alpha = Legl.Utility.alphabet_map()
-    alpha[:"#{number}"]
-  end
-
-
 end
