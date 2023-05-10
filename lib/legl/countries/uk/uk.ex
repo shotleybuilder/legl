@@ -19,6 +19,12 @@ defmodule UK do
   """
   @type uk_law_type :: atom
 
+  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
+  @country_regex "N\\.I\\.|S|W|E"
+
+  def region(), do: @region_regex
+  def country(), do: @country_regex
+
   # @impl true
   def schema(type) do
     case type do
@@ -65,8 +71,9 @@ defmodule UK do
     type: :regulation,
     clean: true,
     parse: true,
-    list_efs: false,
-    list_bracketed_efs: false,
+    qa_list_efs: false,
+    list_section_efs: false,
+    qa_list_bracketed_efs: false,
     list_headings: false,
     qa_sections: true
   }

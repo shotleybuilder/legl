@@ -25,7 +25,7 @@ defmodule Legl.Utility do
 
   def todays_date() do
     DateTime.utc_now()
-    |> (&("#{&1.day}/#{&1.month}/#{&1.year}")).()
+    |> (&"#{&1.day}/#{&1.month}/#{&1.year}").()
   end
 
   def csv_header_row(fields, at_csv) do
@@ -50,6 +50,7 @@ defmodule Legl.Utility do
       "lib/#{filename}.csv"
       |> Path.absname()
       |> File.open([:utf8, :append])
+
     IO.puts(file, binary)
     File.close(file)
     :ok
@@ -60,6 +61,7 @@ defmodule Legl.Utility do
       "lib/#{filename}.csv"
       |> Path.absname()
       |> File.open([:utf8, :write])
+
     IO.puts(file, binary)
     File.close(file)
     :ok
@@ -70,6 +72,7 @@ defmodule Legl.Utility do
       "lib/airtable.txt"
       |> Path.absname()
       |> File.open([:utf8, :write])
+
     IO.puts(file, inspect(records, limit: :infinity))
     File.close(file)
     :ok
@@ -77,10 +80,11 @@ defmodule Legl.Utility do
 
   def count_csv_rows(filename) do
     binary =
-      "lib/"<>filename<>".csv"
+      ("lib/" <> filename <> ".csv")
       |> Path.absname()
       |> File.read!()
-    binary |> String.graphemes |> Enum.count(& &1 == "\n")
+
+    binary |> String.graphemes() |> Enum.count(&(&1 == "\n"))
   end
 
   def resource_path(url) do
@@ -98,12 +102,15 @@ defmodule Legl.Utility do
     case Regex.run(~r/_([a-z]*?)_(\d{4})_(.*?)_/, name) do
       [_, type, year, number] ->
         {type, year, number}
+
       _ ->
-        #UK_ukpga_1960_Eliz2/8-9/34_RSA
+        # UK_ukpga_1960_Eliz2/8-9/34_RSA
         case Regex.run(~r/_([a-z]*?)_\d{4}_(.*?)_/, name) do
           [_, type, number] ->
             {type, number}
-          nil -> {:error, ~s/no match for #{name}/}
+
+          nil ->
+            {:error, ~s/no match for #{name}/}
         end
     end
   end
@@ -115,13 +122,17 @@ defmodule Legl.Utility do
 
   def duplicate_records(list) do
     list
-    |> Enum.group_by(&(&1))
-    #|> IO.inspect()
-    |> Enum.filter(fn {_, [_,_|_]} -> true; _ -> false end)
-    #|> IO.inspect()
+    |> Enum.group_by(& &1)
+    # |> IO.inspect()
+    |> Enum.filter(fn
+      {_, [_, _ | _]} -> true
+      _ -> false
+    end)
+    # |> IO.inspect()
     |> Enum.map(fn {x, _} -> x end)
     |> Enum.sort()
   end
+
   @doc """
   Removes duped spaces in a line as captured by the marker
   e.g. "\\[::annex::\\]"
@@ -135,12 +146,25 @@ defmodule Legl.Utility do
     )
   end
 
+  @doc """
+  %{"1": "A", "2": "B", ...}
+  """
   def alphabet_map() do
     Enum.reduce(
       Enum.zip(1..24, String.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "", trim: true)),
       %{},
-      fn {x, y}, acc -> Map.put(acc, :"#{x}", y)
-    end)
+      fn {x, y}, acc -> Map.put(acc, :"#{x}", y) end
+    )
   end
 
+  @doc """
+  %{"A" => 97, "B" => 98, ...}
+  """
+  def alphabet_to_numeric_map() do
+    Enum.reduce(
+      Enum.zip(String.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "", trim: true), 97..(97 + 25)),
+      %{},
+      fn {x, y}, acc -> Map.put(acc, "#{x}", y) end
+    )
+  end
 end

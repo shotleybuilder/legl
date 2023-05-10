@@ -336,7 +336,7 @@ defmodule Legl.Airtable.Schema do
         cond do
           x == "E" -> ["England" | acc]
           x == "W" -> ["Wales" | acc]
-          x == "N.I." -> ["Nothern Ireland" | acc]
+          x == "N.I." -> ["Northern Ireland" | acc]
           x == "S" -> ["Scotland" | acc]
           true -> IO.inspect(x, label: "convert_region_code/1")
         end
@@ -548,6 +548,9 @@ defmodule Legl.Airtable.Schema do
               sub_section: n,
               text: t
           }
+
+        nil ->
+          IO.puts("ERROR: sub_section/4 => regex: #{regex.sub_section} str: #{str}")
       end
 
     fields_reset(record, :sub_section, regex)
@@ -940,7 +943,7 @@ defmodule Legl.Airtable.Schema do
         %{
           last_record
           | type:
-              Legl.Utility.csv_quote_enclosure("#{regex.heading_name},#{regex.editorial_name}"),
+              Legl.Utility.csv_quote_enclosure("#{regex.editorial_name},#{regex.heading_name}"),
             text: hd
         }
         |> fields_reset(:section, regex)
@@ -957,7 +960,7 @@ defmodule Legl.Airtable.Schema do
 
         %{
           last_record
-          | type: Legl.Utility.csv_quote_enclosure("#{regex.editorial_name}"),
+          | type: Legl.Utility.csv_quote_enclosure("#{regex.editorial_name},content"),
             text: code <> num <> str,
             amendment: num,
             sub_section: ""

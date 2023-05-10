@@ -47,6 +47,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleId do
   defp annotation_code(%{type: ~s/"commencement,content"/, amendment: c} = _record),
     do: "_cx_" <> c
 
+  defp annotation_code(%{type: ~s/"editorial,heading"/} = _record), do: "_x"
+
+  defp annotation_code(%{type: ~s/"editorial,content"/, amendment: x} = _record),
+    do: "_xx_" <> x
+
   defp annotation_code(_), do: ""
 
   @doc """
