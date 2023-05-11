@@ -131,6 +131,8 @@ defmodule UK do
           |> (&Kernel.binary_part(&1, 8, String.length(&1))).()
       end
 
+    binary = Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
+
     case opts.parse do
       true ->
         Legl.txt("annotated")
