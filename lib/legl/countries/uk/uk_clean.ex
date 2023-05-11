@@ -2,8 +2,6 @@ defmodule Legl.Countries.Uk.UkClean do
   @region_regex UK.region()
   @country_regex UK.country()
 
-  alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
-
   def clean_original("CLEANED\n" <> binary, _opts) do
     binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
     binary

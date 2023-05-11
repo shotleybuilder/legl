@@ -137,15 +137,28 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
   with an emoji
   """
   def qa_list_spare_efs(binary, opts) do
-    if opts.qa_list_efs,
-      do:
-        Regex.scan(~r/^F\d+.*/m, binary)
-        |> IO.inspect(label: "efs", limit: :infinity)
+    if opts.qa_list_efs || opts.qa_list_bracketed_efs,
+      do: IO.puts("qa_list_spare_efs/2\nSpare Efs:")
 
-    if opts.qa_list_bracketed_efs,
-      do:
+    cond do
+      opts.qa_list_efs ->
         Regex.scan(~r/^\[F\d+.*/m, binary)
-        |> IO.inspect(label: "bracketed efs", limit: :infinity)
+        |> Enum.each(&IO.puts("#{&1}"))
+
+        Regex.scan(~r/^F\d+.*/m, binary)
+        |> Enum.each(&IO.puts("#{&1}"))
+
+      opts.qa_list_bracketed_efs ->
+        Regex.scan(~r/^\[F\d+.*/m, binary)
+        |> Enum.each(&IO.puts("#{&1}"))
+
+      opts.qa_list_clean_efs ->
+        Regex.scan(~r/^F\d+.*/m, binary)
+        |> Enum.each(&IO.puts("#{&1}"))
+
+      true ->
+        nil
+    end
 
     binary
   end

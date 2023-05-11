@@ -71,9 +71,10 @@ defmodule UK do
     type: :regulation,
     clean: true,
     parse: true,
-    qa_list_efs: false,
     list_section_efs: false,
+    qa_list_efs: true,
     qa_list_bracketed_efs: false,
+    qa_list_clean_efs: false,
     list_headings: false,
     qa_sections: true
   }
@@ -132,6 +133,8 @@ defmodule UK do
       end
 
     binary = Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
+
+    Legl.txt("tagged") |> Path.absname() |> File.write(binary)
 
     case opts.parse do
       true ->
