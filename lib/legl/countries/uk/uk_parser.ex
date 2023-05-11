@@ -35,6 +35,8 @@ defmodule UK.Parser do
   def parser(binary, %{type: :act} = opts) do
     binary
     |> get_title()
+    |> get_A_part(:act)
+    |> get_A_chapter(:act)
     |> get_part_chapter(:part)
     |> get_part_chapter(:chapter)
     # |> get_modifications(:act)
@@ -95,52 +97,56 @@ defmodule UK.Parser do
   end
 
   @doc """
-  Separate parser for Schedules since there is no easy way to differentiate schedule articles from the main law
+  Function returns the numeric value of Roman Part and Chapter numbers if used
   """
-  def parse_annex() do
-    {:ok, binary} = File.read(Path.absname(Legl.original_annex()))
+  def get_A_part(binary, :act) do
+    # [::part::][F508 Part 2A Regulation of provision of infrastructure [::region::]U.K.
+    # [::part::]F902 [PART IIIA Promotion of the Efficient Use of Water [::region::]E+W
+    # [::part::][F1472 Part 7A Further provision about regulation [::region::]U.K.
+    regex =
+      ~s/^#{@regex_components.part}(.*?)[ ](?:\\[?PART|\\[?Part)[ ](.*?)[ ](.*?)\\[::region::\\](.*)$/
+
+    scan_and_print(binary, regex, "part")
 
     binary
-    |> rm_leading_tabs_spaces()
-    |> rm_header_annex()
-    |> Legl.Parser.rm_empty_lines()
-    |> get_annex()
-    |> Legl.Parser.join()
-    |> Legl.Parser.rm_tabs()
+    |> (&Regex.replace(
+          ~r/#{regex}/m,
+          &1,
+          fn _, ef, num, txt, region ->
+            conv_num = conv_roman(num)
+
+            "#{@components.part}#{conv_num} #{ef} PART #{num} #{txt} [::region::]#{region}"
+          end
+        )).()
   end
 
-  def rm_leading_tabs_spaces(binary), do: Regex.replace(~r/^[\s\t]+/m, binary, "")
+  def get_A_chapter(binary, :act) do
+    # [::chapter::][F141 CHAPTER 1A [F142 Water supply licences and sewerage licences] [::region::]E+W
+    # [::chapter::][F690 CHAPTER 2A [F691 Supply duties etc: water supply licensees] [::region::]E+W
+    # [::chapter::][F1126 Chapter 2A Duties relating to sewerage services: sewerage licensees [::region::]E+W
+    # [::chapter::][F1188 CHAPTER 4 Storm overflows [::region::]E+W
+    regex =
+      ~s/^#{@regex_components.chapter}(.*?)[ ](?:\\[?CHAPTER|\\[?Chapter)[ ](.*?)[ ](.*?)\\[::region::\\](.*)$/
 
-  @doc """
-  Remove https://legislation.gov.uk header content
-  """
-  def rm_header(binary) do
+    scan_and_print(binary, regex, "chapter")
+
     binary
-    |> (&Regex.replace(~r/^[[:space:][:print:]]+PreviousNext\n+/, &1, "")).()
-    # just the law w/o the schedules view
-    |> (&Regex.replace(~r/^Previous: IntroductionNext: Schedule/m, &1, "")).()
-    |> (&Regex.replace(~r/^[[:space:][:print:]]+Back to full view\n+/, &1, "")).()
+    |> (&Regex.replace(
+          ~r/#{regex}/m,
+          &1,
+          fn _, ef, num, txt, region ->
+            conv_num = conv_roman(num)
+
+            "#{@components.chapter}#{conv_num} #{ef} CHAPTER #{num} #{txt} [::region::]#{region}"
+          end
+        )).()
   end
-
-  def rm_header_annex(binary),
-    do:
-      Regex.replace(
-        ~r/^[[:space:][:print:]]+Previous\: SignatureNext\: Explanatory Note\n+/,
-        binary,
-        ""
-      )
-
-  def rm_explanatory_note(binary),
-    do:
-      Regex.replace(
-        ~r/^Explanatory Note[\s\S]+|EXPLANATORY NOTE[\s\S]+/m,
-        binary,
-        ""
-      )
 
   @doc """
   PART and Roman Part Number concatenate when copied e.g. PART IINFORMATION
 
+  Amended Part and Chapter are parsed in Annotation Module and are fully formed
+  in the binary and do not need parsing here
   """
   def get_part_chapter(binary, type) do
     [type_regex, component] =
@@ -155,11 +161,20 @@ defmodule UK.Parser do
 
     scheme =
       cond do
-        Regex.match?(~r/^\[?🔺F?\d*🔺?[ ]?(#{type_regex})[ ]+\d+/m, binary) &&
-            Regex.match?(~r/^(#{type_regex})[ ]+I/m, binary) ->
+        Regex.match?(
+          ~r/^(#{type_regex})[ ]+\d+/m,
+          binary
+        ) and
+            Regex.match?(
+              ~r/^(#{type_regex})[ ]+I/m,
+              binary
+            ) ->
           :roman_numeric
 
-        Regex.match?(~r/^\[?🔺F?\d*🔺?[ ]?(#{type_regex})[ ]+\d+/m, binary) ->
+        Regex.match?(
+          ~r/^(#{type_regex})[ ]+\d+/m,
+          binary
+        ) ->
           :numeric
 
         Regex.match?(~r/^(#{type_regex})[ ]+A/m, binary) ->
@@ -171,6 +186,8 @@ defmodule UK.Parser do
         true ->
           false
       end
+
+    IO.puts("SCHEME #{type_regex} #{scheme}")
 
     case scheme do
       false ->
@@ -203,23 +220,14 @@ defmodule UK.Parser do
       binary,
       "#{component}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}"
     )
-    # 🔺F226🔺PART 7U.K.Transitional provisions
-    # [🔺F141🔺 CHAPTER 1A E+W [F142 Water supply licences and sewerage licences]
-    |> (&Regex.replace(
-          ~r/^(\[?🔺F\d+🔺)[ ]?(#{type_regex})[ ](\d+[A-Z]?)[ ]?(#{@region_regex})(.*)/m,
-          &1,
-          "#{component}\\g{3} \\g{1} \\g{2} \\g{3} \\g{5} [::region::]\\g{4}"
-        )).()
   end
 
   def part_chapter_roman(binary, [type_regex, component]) do
-    # 🔺F1🔺Part IE+W The National Parks Commission
-    # 🔺F902🔺 [PART IIIAE+W Promotion of the Efficient Use of Water
     # Part IU.K. Wildlife
     Regex.replace(
-      ~r/^(\[?🔺?F?\d*🔺?)[ ]?(\[?#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([A-Z]?)[ ]?(#{@region_regex})(.+)/m,
+      ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([A-Z]?)[ ]?(#{@region_regex})(.+)/m,
       binary,
-      fn _, amd_code, part_chapter, tens, units, alpha, region, text ->
+      fn _, part_chapter, tens, units, alpha, region, text ->
         numeral = tens <> units
 
         {remaining_numeral, last_numeral} = String.split_at(numeral, -1)
@@ -233,27 +241,16 @@ defmodule UK.Parser do
           true ->
             value = Legl.conv_roman_numeral(remaining_numeral)
 
-            "#{component}#{value}#{alpha} #{part_chapter} #{remaining_numeral} #{last_numeral}#{alpha} #{amd_code}#{text} [::region::]#{region}"
+            "#{component}#{value}#{alpha} #{part_chapter} #{remaining_numeral} #{last_numeral}#{alpha} #{text} [::region::]#{region}"
 
           false ->
             value = Legl.conv_roman_numeral(numeral)
 
-            "#{component}#{value}#{alpha} #{part_chapter} #{numeral}#{alpha} #{amd_code}#{text} [::region::]#{region}"
+            "#{component}#{value}#{alpha} #{part_chapter} #{numeral}#{alpha} #{text} [::region::]#{region}"
         end
       end
     )
   end
-
-  @doc """
-
-  """
-  def get_chapter(binary),
-    do:
-      Regex.replace(
-        ~r/^(Chapter|CHAPTER)[ ](\d+)/m,
-        binary,
-        "#{@components.chapter}\\g{2} \\0"
-      )
 
   @heading_children ~s/[#{@regex_components.section}|#{@regex_components.amendment}]/
   @doc """
@@ -265,13 +262,6 @@ defmodule UK.Parser do
   def get_heading(binary, :act),
     do:
       binary
-      # Revised cross-heading
-      # [❌F87❌ Modification of appointment conditions: EnglandE+W
-      |> (&Regex.replace(
-            ~r/^(\[❌F\d+❌[ ].*?)(#{@region_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-?\d*[ ])/m,
-            &1,
-            "#{@components.heading}\\g{4} \\g{1} [::region::]\\g{2}\\g{3}\\g{4}\\g{5}"
-          )).()
       # U.K. REPTILES
       # Small number of headings have the Region first
       |> (&Regex.replace(
@@ -305,19 +295,19 @@ defmodule UK.Parser do
             "#{@components.heading}\\g{3} \\g{1} \\g{2}\\g{3}"
           )).()
 
-  def get_A_heading(binary, :act),
-    do:
-      Regex.replace(
-        ~r/^(\[?🔺F\d+🔺)([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+?#{@regex_components.section})(.*?[ ])/m,
-        binary,
-        "#{@components.heading}\\g{6}\\g{1} \\g{2}\\g{3} [::region::]\\g{4}\\g{5}\\g{6}"
-      )
-      # 🔺F2🔺...S  Desc: a revoked heading
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\.*?)(#{@region_regex})$([\s\S]+?#{@regex_components.section})(.*?[ ])/m,
-            &1,
-            "#{@components.heading}\\g{5}\\g{1} \\g{2} [::region::]\\g{3}\\g{4}\\g{5}"
-          )).()
+  def get_A_heading(binary, :act) do
+    regex =
+      ~s/^#{@regex_components.heading}(.*?)[ ](.*?)\\[::region::\\](.*)$([\\s\\S]+?#{@regex_components.section})(.*?[ ])/
+
+    scan_and_print(binary, regex, "heading")
+
+    binary
+    |> (&Regex.replace(
+          ~r/#{regex}/m,
+          &1,
+          "#{@components.heading}\\g{5} \\g{1} \\g{2} [::region::]\\g{3}\\g{4}\\g{5}"
+        )).()
+  end
 
   def get_A_heading(binary, :regulation),
     do:
@@ -397,14 +387,18 @@ defmodule UK.Parser do
   Formats:
 
   """
-  def get_A_section(binary, :act),
-    do:
-      binary
-      |> (&Regex.replace(
-            ~r/^#{@regex_components.section}(\[?F\d+)[ ](.*)[ ](.*?)(#{@region_regex})$/,
-            &1,
-            "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
-          )).()
+  def get_A_section(binary, :act) do
+    regex = ~s/^#{@regex_components.section}(.*?)[ ](.*?)[ ](.*?)(#{@region_regex})$/
+
+    scan_and_print(binary, regex, "section")
+
+    binary
+    |> (&Regex.replace(
+          ~r/#{regex}/m,
+          &1,
+          "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
+        )).()
+  end
 
   @doc """
   Parse sub-sections of Acts.
@@ -891,4 +885,89 @@ defmodule UK.Parser do
     end)
     |> Legl.Utility.rm_dupe_spaces(@components_dedupe)
   end
+
+  defp scan_and_print(binary, regex, name) do
+    IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
+
+    results =
+      binary
+      |> (&Regex.scan(
+            ~r/#{regex}/m,
+            &1
+          )).()
+
+    count = Enum.count(results)
+
+    # Limit print to console to 20 records
+    Enum.take(results, 20)
+    |> Enum.each(&IO.inspect(&1))
+
+    IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
+  end
+
+  def conv_roman(term) do
+    cond do
+      # numeric with opt postfix 1A
+      Regex.match?(~r/\d+[A-Z]*/, term) ->
+        term
+
+      # roman with postfix eg 1A
+      Regex.match?(~r/([IVX]+)([A-Z]+)/, term) ->
+        # Split terms like IIIA
+        [_, roman, amend] = Regex.run(~r/(.*)([A-Z]+)/, term)
+        # Legl.conv_roman_numeral/1 returns Integer value
+        "#{Legl.conv_roman_numeral(roman)}#{amend}"
+
+      # roman
+      Regex.match?(~r/([IVX]+)/, term) ->
+        Legl.conv_roman_numeral(term)
+
+      true ->
+        IO.puts("ERROR: conv_roman/2 #{term}")
+    end
+  end
+
+  @doc """
+  Separate parser for Schedules since there is no easy way to differentiate schedule articles from the main law
+  """
+  def parse_annex() do
+    {:ok, binary} = File.read(Path.absname(Legl.original_annex()))
+
+    binary
+    |> rm_leading_tabs_spaces()
+    |> rm_header_annex()
+    |> Legl.Parser.rm_empty_lines()
+    |> get_annex()
+    |> Legl.Parser.join()
+    |> Legl.Parser.rm_tabs()
+  end
+
+  def rm_leading_tabs_spaces(binary), do: Regex.replace(~r/^[\s\t]+/m, binary, "")
+
+  @doc """
+  Remove https://legislation.gov.uk header content
+  """
+  def rm_header(binary) do
+    binary
+    |> (&Regex.replace(~r/^[[:space:][:print:]]+PreviousNext\n+/, &1, "")).()
+    # just the law w/o the schedules view
+    |> (&Regex.replace(~r/^Previous: IntroductionNext: Schedule/m, &1, "")).()
+    |> (&Regex.replace(~r/^[[:space:][:print:]]+Back to full view\n+/, &1, "")).()
+  end
+
+  def rm_header_annex(binary),
+    do:
+      Regex.replace(
+        ~r/^[[:space:][:print:]]+Previous\: SignatureNext\: Explanatory Note\n+/,
+        binary,
+        ""
+      )
+
+  def rm_explanatory_note(binary),
+    do:
+      Regex.replace(
+        ~r/^Explanatory Note[\s\S]+|EXPLANATORY NOTE[\s\S]+/m,
+        binary,
+        ""
+      )
 end

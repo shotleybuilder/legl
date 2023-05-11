@@ -72,6 +72,9 @@ defmodule UK do
     clean: true,
     parse: true,
     list_section_efs: false,
+    # overarching switch for the QA functions
+    qa: false,
+    # finer control of QA functions
     qa_list_efs: true,
     qa_list_bracketed_efs: false,
     qa_list_clean_efs: false,
@@ -115,11 +118,13 @@ defmodule UK do
   def parse(opts \\ []) do
     opts = Enum.into(opts, @parse_default_opts)
 
-    IO.inspect(opts, label: "Options: ")
+    IO.inspect(opts, label: "\nOptions: ")
 
     binary =
       case opts.clean do
         true ->
+          IO.puts("\n\n***********CLEAN***********\n")
+
           Legl.txt("original")
           |> Path.absname()
           |> File.read!()
@@ -132,12 +137,15 @@ defmodule UK do
           |> (&Kernel.binary_part(&1, 8, String.length(&1))).()
       end
 
+    IO.puts("\n\n***********ANNOTATION***********\n")
     binary = Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
 
     Legl.txt("tagged") |> Path.absname() |> File.write(binary)
 
     case opts.parse do
       true ->
+        IO.puts("\n\n***********PARSER***********\n")
+
         Legl.txt("annotated")
         |> Path.absname()
         |> File.write("#{UK.Parser.parser(binary, opts)}")

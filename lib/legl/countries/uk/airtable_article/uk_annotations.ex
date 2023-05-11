@@ -30,12 +30,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_commencing_ies()
       |> tag_extent_ees()
       |> tag_editorial_xes()
-      # |> QA.qa_list_spare_efs(opts)
       |> tag_heading_efs()
       |> tag_txt_amend_efs_wash_up()
       |> space_efs()
-      |> QA.qa_list_spare_efs(opts)
-      |> QA.list_headings(opts)
+
+    if opts.qa == true, do: binary |> QA.qa_list_spare_efs(opts) |> QA.list_headings(opts)
 
     # Confirmation msg to console
     binary |> (&IO.puts("annotated: #{String.slice(&1, 0, 100)}...")).()
