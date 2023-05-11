@@ -335,11 +335,12 @@ defmodule UK.Parser do
   """
   def get_section(binary, :act),
     do:
-      Regex.replace(
-        ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*)(#{@region_regex})/m,
-        binary,
-        "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
-      )
+      binary
+      |> (&Regex.replace(
+            ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*)(#{@region_regex})/m,
+            &1,
+            "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
+          )).()
       # 6B.(1)Section 2(1) does not entitle
       |> (&Regex.replace(
             ~r/^(\d{1,3}[A-Z]?)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
@@ -399,137 +400,10 @@ defmodule UK.Parser do
   def get_A_section(binary, :act),
     do:
       binary
-
-      # [🔺F4🔺2AModification of the interim targetsE+W
-      # [🔺F46🔺 15 Meaning of “nature reserve.”E+W
-      # [🔺F161🔺 19XA Constables' powers in connection with samplesE+W
-      # [🔺F428🔺 47 [F427Grants to the Countryside Council for Wales]E+W
       |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)[ ]?(\d+[A-Z]?[A-Z]?)[\. ]?([A-Z\[].*)(#{@region_regex})$/m,
+            ~r/^#{@regex_components.section}(\[?F\d+)[ ](.*)[ ](.*?)(#{@region_regex})$/,
             &1,
-            "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
-          )).()
-      # [🔺F246🔺 [F245 27ZA Application of Part 1 to England and WalesE+W
-      # 🔺F1🔺 F1 1 The Countryside Council for Wales.E+W
-      # 🔺F1🔺 F1 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . E+W
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)[ ](\[?F\d+)[ ](\d+[A-Z]?[A-Z]?)[\. ]?([A-Z]?.*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{3} \\g{1} \\g{2} \\g{3} \\g{4} [::region::]\\g{5}"
-          )).()
-      # [🔺F56🔺25A.Salt marshes and flatsE
-      # [🔺F165🔺 19ZC Wildlife inspectors: ScotlandS
-      # 🔺F731🔺 3 Areas of special protection.S
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)[ ]?(\d+[A-Z]?[A-Z]?)[\. ]?([A-Z].*)(#{@country_regex})$/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
-          )).()
-      # [🔺F298🔺3AE+WAn order designating a National Park
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?(#{@region_regex})([A-Z].*)/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{4} [::region::]\\g{3}"
-          )).()
-      # [🔺F135🔺13A.ELand which is coastal margin and
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])[\. ]?(#{@country_regex})([A-Z].*)$/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{4} [::region::]\\g{3}"
-          )).()
-      # 🔺F2🔺1The 2050 targetS
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\d+)(.*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
-          )).()
-      # 🔺F157🔺5E+W. . . . . .
-      # 🔺F613🔺  8 E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)[ ]*(\d+[A-Z]?)[ ]?(#{@region_regex})(\.[ ][\. ]*)/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1} \\g{2}\\g{4} [::region::]\\g{3}"
-          )).()
-      # [🔺F374🔺 38 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .E+W+S
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)[ ]?(\d+[A-Z]?)([\. ]*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1} \\g{2}\\g{3} [::region::]\\g{4}"
-          )).()
-      # 🔺F36🔺11. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)[ ]?(\d+[A-Z]?)(\.?[ ][\. ]*)/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1}\\g{2}\\g{3}"
-          )).()
-      # [🔺F505🔺 🔺X5🔺 61 Ploughing of public rights of way.E+W
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)[ ](\[?🔺X\d+🔺)[ ](\d+[A-Z]?)[ ]([A-Z].*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{3} \\g{1}\\g{2}\\g{3} \\g{4} [::region::]\\g{5}"
-          )).()
-      # 🔺X14🔺 7 (1) In subsection (1)(c)
-      |> (&Regex.replace(
-            ~r/^^(\[?🔺X\d+🔺)[ ](\d{1,3}[A-Z]?)[ ]?\((\d{1,3})\)[ ]?(.*)(#{@region_regex})/m,
-            &1,
-            "#{@components.section}\\g{2}-\\g{3} \\g{1} \\g{2}(\\g{3}) \\g{4} [::region::]\\g{5}"
-          )).()
-      # 🔺X3🔺 35 National nature reserves.E+W+S
-      |> (&Regex.replace(
-            ~r/^(\[?🔺X\d+🔺)[ ](\d+[A-Z]?)[ ]([A-Z].*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
-          )).()
-      # 🔺X2🔺 [🔺F438🔺 29  Consumer complaintsU.K.
-      # 🔺X4🔺 [🔺F364🔺 37A Ramsar sites.E+W
-      |> (&Regex.replace(
-            ~r/^(\[?🔺X\d+🔺)[ ](\[🔺F\d+🔺)[ ](\d+[A-Z]?)[ ]*([A-Z].*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{3} \\g{1}\\g{2}\\g{3} \\g{4} [::region::]\\g{5}"
-          )).()
-      # 5[F39(1)]Text...
-      |> (&Regex.replace(
-            ~r/^(\d+[A-Z]?)(\[F\d{1,4})\((\d+)\)(.*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{2} \\g{1}-\\g{3} \\g{1}\\g{2}(\\g{3})\\g{4} [::region::]\\g{5}"
-          )).()
-      # F21The 2050 targetS
-      |> (&Regex.replace(
-            ~r/^(F\d{1,4})([A-Z].*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
-          )).()
-      # [F364A(1)The paragraph text...
-      |> (&Regex.replace(
-            ~r/^(\[F\d{1,4}[A-Z])\((\d{1,3})\)(.*)/m,
-            &1,
-            "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
-          )).()
-      # [F332AE+W+N.I.The regulations ...
-      |> (&Regex.replace(
-            ~r/^(\[F\d{1,4}[A-Z]?)(#{@region_regex})(.*)/m,
-            &1,
-            "#{@components.section}\\g{1} \\g{1}(\\g{3}) [::region::]\\g{2}"
-          )).()
-      # F68Text    Missing the opening square bracket
-      |> (&Regex.replace(
-            ~r/^(F\d{1,4})[ ]?(.*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}[\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
-          )).()
-      # [F35(5)For the purposes...
-      # [F48(2A)Regulations
-      # [F42(2) In this
-      |> (&Regex.replace(
-            ~r/^(\[F\d{1,4})\((\d{1,3}[A-Z]?)\)[ ]?(.*)/m,
-            &1,
-            "#{@components.sub_section}\\g{1} \\g{2} \\g{1}(\\g{2}) \\g{3}"
-          )).()
-      # F5(1). . . . . . Missing the opening square bracket
-      |> (&Regex.replace(
-            ~r/^(\F\d{1,4})\((\d{1,3}[A-Z]?)\)[ ]?(.*)/m,
-            &1,
-            "#{@components.sub_section}[\\g{1} \\g{2} \\g{1}(\\g{2}) \\g{3}"
+            "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
           )).()
 
   @doc """

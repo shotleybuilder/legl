@@ -16,6 +16,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     binary =
       binary
       |> rm_marginal_citations()
+      |> floating_efs()
       |> tag_txt_amend_efs()
       |> part_efs()
       |> chapter_efs()
@@ -29,16 +30,32 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_commencing_ies()
       |> tag_extent_ees()
       |> tag_editorial_xes()
-      |> QA.qa_list_spare_efs(opts)
+      # |> QA.qa_list_spare_efs(opts)
       |> tag_heading_efs()
       |> tag_txt_amend_efs_wash_up()
       |> space_efs()
+      |> QA.qa_list_spare_efs(opts)
       |> QA.list_headings(opts)
 
     # Confirmation msg to console
     binary |> (&IO.puts("annotated: #{String.slice(&1, 0, 100)}...")).()
 
     binary
+  end
+
+  @doc """
+  Function to remove floating efs
+  Fxxx\nfoobar becomes Fxxx foobar
+  """
+  def floating_efs(binary) do
+    regex = ~s/^(\\[?F\\d+)(?:\\r\\n|\\n)/
+    scan_and_print(binary, regex, "float")
+
+    Regex.replace(
+      ~r/#{regex}/m,
+      binary,
+      "\\g{1}"
+    )
   end
 
   @doc """
@@ -129,7 +146,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # [F535SCHEDULE ZA1E+WBirds which re-use their nests
     # [F656SCHEDULE 9AE+WSpecies control agreements
     # F683 SCHEDULE 13 E+W
-    regex = ~s/^(\\[?F\\d+)[ ]?(SCHEDULE)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@region_regex})([A-Z].*)/
+    # F1546F1546SCHEDULE 1E+W
+    # regex = ~s/^(\\[?F\\d+)(\\[F\\d+)?[ ]?(SCHEDULE)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@region_regex})([A-Z].*)/
+    regex =
+      ~s/^(\\[?F\\d+)(\\[?F\\d+)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@region_regex})[ ]?([A-Z]?.*)/
 
     scan_and_print(binary, regex, "SCHEDULE")
 
@@ -137,7 +157,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> (&Regex.replace(
           ~r/#{regex}/m,
           &1,
-          "#{@components.annex}\\g{1} \\g{2} \\g{3} \\g{5} [::region::]\\g{4}"
+          "#{@components.annex}\\g{4} \\g{1}\\g{2} \\g{3} \\g{4} \\g{6} [::region::]\\g{5}"
         )).()
     |> Legl.Utility.rm_dupe_spaces(@regex_components.annex)
   end
@@ -164,21 +184,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             "#{@components.heading}\\g{1}#{ef} \\g{2} [::region::]\\g{3}"
           )).()
     end)
-  end
-
-  defp scan_and_print(binary, regex, name) do
-    IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
-
-    results =
-      binary
-      |> (&Regex.scan(
-            ~r/#{regex}/m,
-            &1
-          )).()
-
-    count = Enum.count(results)
-    if count < 20, do: Enum.each(results, &IO.inspect(&1))
-    IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
   end
 
   @doc """
@@ -364,7 +369,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
                   accum =
                     Enum.reduce(ia..ib, [], fn x, accum ->
                       [
-                        {match, ef_code, String.upcase(<<x::utf8>>),
+                        {match, ef_code, num <> String.upcase(<<x::utf8>>),
                          ef_code <> num <> String.upcase(<<x::utf8>>)}
                         | accum
                       ]
@@ -393,6 +398,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             &1,
             "#{@components.section}\\g{1}#{ef} #{section_number} \\g{2}"
           )).()
+      |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
     end)
   end
 
@@ -431,31 +437,28 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_sub_section_efs(binary) do
-    binary
     # [F18(6)For
     # [F9(3A) In
     # [F8(3ZA)A
     # [F2(aa)takes
+    # F1126  (1)No person may
     # F416(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # F34( 2 ). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    |> (&Regex.replace(
-          ~r/^\[?(F\d+)(\([ ]?\d+[A-Z]*[ ]?\)|\([a-z]+\))[ ]?(.*)/m,
-          &1,
-          "#{@components.sub_section}\[\\g{1} \\g{2} \\g{3}"
-        )).()
     # F28 [(4A)In any proceedings under subsection
     # F60[(7)In any proceedings
-    |> (&Regex.replace(
-          ~r/^(F\d+)[ ]?\[(\(\d+[A-Z]*\)|\([a-z]+\))[ ]?(.*)/m,
-          &1,
-          "#{@components.sub_section}\\g{1} \[ \\g{2} \\g{3}"
-        )).()
     # F383[F384(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # [F659[F660(6)The “list of species of special concern” means
+    # [F89(A1)This section and sections 14 to 16B app
+    regex =
+      "^(\\[?F\\d+)(\\[?F\\d+)?[ ]*(\\[)?(\\([ ]*[A-Z]*\\d+[A-Z]*[ ]?\\)|\\([a-z]+\\))[ ]?(.*)"
+
+    scan_and_print(binary, regex, "sub-section")
+
+    binary
     |> (&Regex.replace(
-          ~r/^(\[?)(F\d+)\[(F\d+)(\(\d+[A-Z]*\)|\([a-z]+\))[ ]?(.*)/m,
+          ~r/#{regex}/m,
           &1,
-          "#{@components.sub_section}\\g{1}\\g{2} \[🔺\\g{3}🔺 \\g{4} \\g{5}"
+          "#{@components.sub_section}\\g{1}\\g{2} \\g{3}\\g{4} \\g{5}"
         )).()
   end
 
@@ -491,7 +494,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         "#{@components.editorial_heading}\\g{1}\n#{@components.editorial}\\g{2} \\g{3}"
       )
 
-    IO.puts(Regex.escape("#{@components.editorial}"))
     xes = collect_tags("#{Regex.escape(@components.editorial)}X(\\d+)", binary)
 
     IO.puts("xes: #{List.first(xes)}")
@@ -539,22 +541,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   Examine the list of spare_efs in the console to ensure the sense of this
   """
   def tag_heading_efs(binary) do
-    regex = ~s/^(\\[?)(F\\d+)[ ]?(.*?#{@region_regex})/
+    # F1122[ComplaintsE+W
+    # F1631 Operation of pre-1985 schemesE+W
+    regex = ~s/^(\\[?F\\d+)[ ]?(.*?)(#{@region_regex})/
 
-    binary
-    |> (&Regex.scan(
-          ~r/#{regex}/m,
-          &1
-        )).()
-    |> IO.inspect(label: "tag_heading_efs/1\nEFs that have been processed:\n")
-    |> Enum.count()
-    |> (&IO.puts("tag_heading_efs/1\nCount of processed efs: #{&1}\n\n")).()
+    scan_and_print(binary, regex, "heading")
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex}/,
+          ~r/#{regex}/m,
           &1,
-          "\\g{1}\\g{2} \\g{3}"
+          "#{@components.heading}\\g{1} \\g{2} [::region::]\\g{3}"
         )).()
   end
 
@@ -562,18 +559,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   Function to tag any remaining Textual Amendment clauses
   """
   def tag_txt_amend_efs_wash_up(binary) do
-    binary
-    |> (&Regex.scan(
-          ~r/^(F\d+)([^\.\[0-9].*)$/m,
-          &1
-        )).()
-    |> IO.inspect(label: "tag_txt_amend_efs_wash_up/1\nEFs that have been processed:\n")
-    |> Enum.count()
-    |> (&IO.puts("tag_txt_amend_efs_wash_up/1\nCount of spaced efs: #{&1}")).()
+    regex = ~s/^(F\\d+)([^\\.\\[0-9].*)$/
+
+    scan_and_print(binary, regex, "amendment")
 
     binary
     |> (&Regex.replace(
-          ~r/^(F\d+)([^\.\[0-9].*)/m,
+          ~r/#{regex}/m,
           &1,
           "🔻\\g{1}🔻 \\g{2}"
         )).()
@@ -611,5 +603,20 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> Enum.reverse()
 
     # |> IO.inspect(label: "collect_tags")
+  end
+
+  defp scan_and_print(binary, regex, name) do
+    IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
+
+    results =
+      binary
+      |> (&Regex.scan(
+            ~r/#{regex}/m,
+            &1
+          )).()
+
+    count = Enum.count(results)
+    if count < 20, do: Enum.each(results, &IO.inspect(&1))
+    IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
   end
 end
