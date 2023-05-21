@@ -70,16 +70,24 @@ defmodule UK do
   @parse_default_opts %{
     type: :regulation,
     clean: true,
+    annotation: true,
     parse: true,
     list_section_efs: false,
     # overarching switch for the QA functions
-    qa: false,
+    qa: true,
     # finer control of QA functions
     qa_list_efs: true,
     qa_list_bracketed_efs: false,
     qa_list_clean_efs: false,
     list_headings: false,
-    qa_sections: true
+    qa_sections: true,
+    # PARSER QA
+    # List Clause Numbers
+    qa_lcn_part: true,
+    qa_lcn_chapter: true,
+    qa_lcn_annex: true,
+    qa_lcn_section: true,
+    qa_lcn_sub_section: true
   }
 
   @doc """
@@ -137,10 +145,19 @@ defmodule UK do
           |> (&Kernel.binary_part(&1, 8, String.length(&1))).()
       end
 
-    IO.puts("\n\n***********ANNOTATION***********\n")
-    binary = Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
+    binary =
+      case opts.annotation do
+        true ->
+          IO.puts("\n\n***********ANNOTATION***********\n")
+          Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
 
-    Legl.txt("tagged") |> Path.absname() |> File.write(binary)
+        _ ->
+          Legl.txt("tagged")
+          |> Path.absname()
+          |> File.read!()
+      end
+
+    if opts.annotation, do: Legl.txt("tagged") |> Path.absname() |> File.write(binary)
 
     case opts.parse do
       true ->

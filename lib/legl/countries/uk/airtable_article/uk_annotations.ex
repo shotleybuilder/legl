@@ -23,9 +23,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_schedule_efs()
       |> cross_heading_efs()
       |> section_efs()
-      |> section_subs_efs()
+      |> section_ss_efs()
       |> schedule_section_efs()
       |> tag_sub_section_efs()
+      |> tag_sub_sub_section_efs()
       |> tag_mods_cees()
       |> tag_commencing_ies()
       |> tag_extent_ees()
@@ -48,7 +49,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   """
   def floating_efs(binary) do
     regex = ~s/^(\\[?F\\d+)(?:\\r\\n|\\n)/
-    scan_and_print(binary, regex, "float")
+    QA.scan_and_print(binary, regex, "float")
 
     Regex.replace(
       ~r/#{regex}/m,
@@ -110,7 +111,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # [F1472Part 7AU.K.Further provision about regulation
     regex = ~s/^(\\[?F\\d+)(\\[?(?:PART|Part))(.*)(#{@region_regex})(.*)/
 
-    scan_and_print(binary, regex, "PART")
+    QA.scan_and_print(binary, regex, "PART")
 
     binary
     |> (&Regex.replace(
@@ -128,7 +129,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # [F1188CHAPTER 4E+WStorm overflows
     regex = ~s/^(\\[?F\\d+)(CHAPTER|Chapter)(.*)(#{@region_regex})(.*)/
 
-    scan_and_print(binary, regex, "CHAPTER")
+    QA.scan_and_print(binary, regex, "CHAPTER")
 
     binary
     |> (&Regex.replace(
@@ -150,7 +151,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     regex =
       ~s/^(\\[?F\\d+)(\\[?F\\d+)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@region_regex})[ ]?([A-Z]?.*)/
 
-    scan_and_print(binary, regex, "SCHEDULE")
+    QA.scan_and_print(binary, regex, "SCHEDULE")
 
     binary
     |> (&Regex.replace(
@@ -169,7 +170,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def cross_heading_efs(binary) do
     regex = ~s/^🔻(F\d+)🔻.*?(?:C|c)ross(?:-|[ ])heading.*(?:inserted|substituted)/
 
-    scan_and_print(binary, regex, "cross heading")
+    QA.scan_and_print(binary, regex, "cross heading")
 
     Regex.scan(~r/^🔻(F\d+)🔻.*?(?:C|c)ross(?:-|[ ])heading.*(?:inserted|substituted)/m, binary)
     |> Enum.map(fn [_, ef_code] -> ef_code end)
@@ -205,12 +206,18 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         |> (&Regex.replace(
               ~r/^(\[?)#{ef}#{x}/m,
               &1,
-              "#{@components.section}\\g{1}#{ef} #{x} "
+              "#{@components.section}#{x} \\g{1}#{ef} #{x} "
             )).()
         |> (&Regex.replace(
               ~r/^#{x}#{ef}/m,
               &1,
               "#{@components.section}#{x} #{ef} "
+            )).()
+        # X2[F43829 Consumer complaintsU.K.
+        |> (&Regex.replace(
+              ~r/^(X\d+)[ ]?(\[?)#{ef}#{x}/m,
+              &1,
+              "#{@components.section}#{x} \\g{1} \\g{2}#{ef} #{x}"
             )).()
       end)
 
@@ -227,18 +234,18 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> (&Regex.replace(
             ~r/^(\[?)#{ef}#{x}([^0-9])/m,
             &1,
-            "#{@components.section}\\g{1}#{ef} #{x} \\g{2}"
+            "#{@components.section}#{x} \\g{1}#{ef} #{x} \\g{2}"
           )).()
       # 🔻F1542🔻 S. 221 substituted -> [221F1542Crown application.E+W
       |> (&Regex.replace(
             ~r/^(\[?)#{x}#{ef}/m,
             &1,
-            "#{@components.section}\\g{1}#{ef} #{x}  "
+            "#{@components.section}#{x} \\g{1}#{ef} #{x} "
           )).()
       |> (&Regex.replace(
-            ~r/^(X\d+)\[#{ef}#{x}/m,
+            ~r/^(X\d+)[ ]?(\[?)#{ef}#{x}/m,
             &1,
-            "#{@components.section}\\g{1} [#{ef} #{x} "
+            "#{@components.section}#{x} \\g{1} \\g{2}#{ef} #{x} "
           )).()
     end)
   end
@@ -249,7 +256,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   concatenated with Ss. number
   These Fxxx codes are then searched ofr and marked up as sections
   """
-  def section_subs_efs(binary) do
+  def section_ss_efs(binary) do
     # CSV when there are 2x insertions / substitutions
     # 🔻F124🔻 Ss. 16A, 16B inserted
     # 🔻F188🔻 Ss. 17FA, 17FB inserted
@@ -395,7 +402,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> (&Regex.replace(
             ~r/^(\[?)#{tag}([^0-9])/m,
             &1,
-            "#{@components.section}\\g{1}#{ef} #{section_number} \\g{2}"
+            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}"
           )).()
       |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
     end)
@@ -427,10 +434,16 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     Enum.reduce(ef_tags, binary, fn {_match, ef, section_number, tag}, acc ->
       acc
+      # [F16068(1)A care home or independent hospital.E+W
+      |> (&Regex.replace(
+            ~r/^(\[?)#{tag}(\((\d+)\))/m,
+            &1,
+            "#{@components.section}#{section_number}-\\g{3} \\g{1}#{ef} #{section_number}\\g{2}"
+          )).()
       |> (&Regex.replace(
             ~r/^(\[?)#{tag}([^0-9])/m,
             &1,
-            "#{@components.section}\\g{1}#{ef} #{section_number} \\g{2}"
+            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}"
           )).()
     end)
   end
@@ -448,16 +461,26 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # F383[F384(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # [F659[F660(6)The “list of species of special concern” means
     # [F89(A1)This section and sections 14 to 16B app
-    regex =
-      "^(\\[?F\\d+)(\\[?F\\d+)?[ ]*(\\[)?(\\([ ]*[A-Z]*\\d+[A-Z]*[ ]?\\)|\\([a-z]+\\))[ ]?(.*)"
+    regex = "^(\\[?F\\d+)(\\[?F?\\d*)?[ ]*(\\[)?\\([ ]*([A-Z]*\\d+[A-Z]*)[ ]?\\)[ ]?(.*)"
 
-    scan_and_print(binary, regex, "sub-section")
+    QA.scan_and_print(binary, regex, "sub-section")
 
     binary
     |> (&Regex.replace(
           ~r/#{regex}/m,
           &1,
-          "#{@components.sub_section}\\g{1}\\g{2} \\g{3}\\g{4} \\g{5}"
+          "#{@components.sub_section}\\g{4} \\g{1}\\g{2} \\g{3}(\\g{4}) \\g{5}"
+        )).()
+  end
+
+  def tag_sub_sub_section_efs(binary) do
+    regex = "^(\\[?F\\d+)(\\[?F?\\d*)?[ ]*(\\[)?\\([ ]*([a-z]*)[ ]?\\)[ ]?(.*)"
+
+    binary
+    |> (&Regex.replace(
+          ~r/#{regex}/m,
+          &1,
+          "📌\\g{1}\\g{2} \\g{3}(\\g{4}) \\g{5}"
         )).()
   end
 
@@ -544,7 +567,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # F1631 Operation of pre-1985 schemesE+W
     regex = ~s/^(\\[?F\\d+)[ ]?(.*?)(#{@region_regex})/
 
-    scan_and_print(binary, regex, "heading")
+    QA.scan_and_print(binary, regex, "heading")
 
     binary
     |> (&Regex.replace(
@@ -560,7 +583,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def tag_txt_amend_efs_wash_up(binary) do
     regex = ~s/^(F\\d+)([^\\.\\[0-9].*)$/
 
-    scan_and_print(binary, regex, "amendment")
+    QA.scan_and_print(binary, regex, "amendment")
 
     binary
     |> (&Regex.replace(
@@ -602,20 +625,5 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> Enum.reverse()
 
     # |> IO.inspect(label: "collect_tags")
-  end
-
-  defp scan_and_print(binary, regex, name) do
-    IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
-
-    results =
-      binary
-      |> (&Regex.scan(
-            ~r/#{regex}/m,
-            &1
-          )).()
-
-    count = Enum.count(results)
-    if count < 20, do: Enum.each(results, &IO.inspect(&1))
-    IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
   end
 end

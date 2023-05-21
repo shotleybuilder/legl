@@ -5,6 +5,21 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
   @components %Types.Component{}
   @regex_components Types.Component.mapped_components_for_regex()
 
+  def scan_and_print(binary, regex, name) do
+    IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
+
+    results =
+      binary
+      |> (&Regex.scan(
+            ~r/#{regex}/m,
+            &1
+          )).()
+
+    count = Enum.count(results)
+    if count < 20, do: Enum.each(results, &IO.inspect(&1))
+    IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
+  end
+
   @doc """
 
   """
@@ -31,67 +46,65 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
     end
   end
 
+  def qa(binary, %{qa: false} = _opts), do: binary
+
+  def qa(binary, opts) do
+    if opts.qa_sections do
+      qa_sections(binary)
+    end
+
+    if opts.qa_lcn_part do
+      qa_list_clause_numbers(binary, @regex_components.part)
+    end
+
+    if opts.qa_lcn_chapter do
+      qa_list_clause_numbers(binary, @regex_components.chapter)
+    end
+
+    if opts.qa_lcn_annex do
+      qa_list_clause_numbers(binary, @regex_components.annex)
+    end
+
+    if opts.qa_lcn_section do
+      qa_list_clause_numbers(binary, @regex_components.section)
+    end
+
+    if opts.qa_lcn_sub_section do
+      qa_list_clause_numbers(binary, @regex_components.sub_section)
+    end
+
+    binary
+  end
+
   @doc """
   Function to sense check the sections.  Run as default.  Use [qa_sections:
   :false] in the options to switch-off
 
-  Function does an automatic fix for section numbers muddled with FXXX numbers
   """
-  def qa_sections(binary, opts, counter \\ 0) do
-    counter = counter + 1
+  def qa_sections(binary) do
+    lines = String.split(binary, "\n")
 
-    case opts.qa_sections do
-      true ->
-        lines = String.split(binary, "\n")
+    {_, {_, records}} =
+      Enum.reduce(lines, {false, {[0], []}}, fn line, {schedule?, {values, records}} ->
+        case Regex.match?(~r/^#{@regex_components.annex}/, line) do
+          true ->
+            qa_sections_schedule(line, {true, {values, records}})
 
-        {_, {status, values, records}} =
-          Enum.reduce(lines, {false, {:ok, [0], []}}, fn line,
-                                                         {schedule?, {status, values, records}} ->
-            case Regex.match?(~r/^#{@regex_components.annex}/, line) do
-              true ->
-                qa_sections_schedule(line, {true, {status, values, records}})
-
-              _ ->
-                qa_sections_schedule(line, {schedule?, {status, values, records}})
-            end
-          end)
-
-        case status do
-          :error ->
-            values
-            |> Enum.reverse()
-            |> Enum.join(", ")
-            |> (&IO.puts("\nSequential Section Numbers:\n#{&1}")).()
-
-            case counter do
-              2 ->
-                records
-                |> Enum.reverse()
-                |> Enum.join("\n")
-
-              _ ->
-                records
-                |> Enum.reverse()
-                |> Enum.join("\n")
-                |> qa_sections(opts, counter)
-            end
-
-          :ok ->
-            records
-            |> Enum.reverse()
-            |> Enum.join("\n")
+          _ ->
+            qa_sections_schedule(line, {schedule?, {values, records}})
         end
+      end)
 
-      _ ->
-        binary
-    end
+    records
+    |> Enum.reverse()
+    |> Enum.join("\n")
   end
 
-  def qa_sections_schedule(line, {true, {status, values, records}}) do
-    {true, {status, values, [line | records]}}
+  def qa_sections_schedule(line, {true, {values, records}}) do
+    {true, {values, [line | records]}}
   end
 
-  def qa_sections_schedule(line, {schedule?, {status, values, records}}) do
+  def qa_sections_schedule(line, {schedule?, {values, records}}) do
     case Regex.run(~r/^#{@regex_components.section}(\d+)(.*?[ ])/, line) do
       [_match, num, _code] ->
         last = List.first(values)
@@ -99,36 +112,21 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
 
         cond do
           num == last ->
-            {schedule?, {status, [num | values], [line | records]}}
+            {schedule?, {[num | values], [line | records]}}
 
           num == last + 1 ->
-            {schedule?, {status, [num | values], [line | records]}}
+            {schedule?, {[num | values], [line | records]}}
 
           num > last + 1 ->
             IO.puts("MISSED S.? last: #{last}, this: #{num}, line: #{line}")
-            {schedule?, {status, [num | values], [line | records]}}
+            {schedule?, {[num | values], [line | records]}}
 
-          num < last ->
-            # [::section::]0A [F501 0A Protection of wild hares etc. [::region::]S
-            # [::section::]1A [F641 1A Snares: train
-            # The required value has 'bled' into the F code
-            line =
-              Regex.replace(
-                ~r/^#{@regex_components.section}(\d+)([A-Z]*)[ ]+(\[F\d+)(\d)[ ]+(.*)/,
-                line,
-                "#{@components.section}\\g{4}\\g{1}\\g{2} \\g{3} \\g{4}\\g{5}"
-              )
-
-            [_match, new_num, _code] =
-              Regex.run(~r/^#{@regex_components.section}(\d+)(.*?[ ])/, line)
-
-            IO.puts("last: #{last}, this: #{num}, new: #{new_num} line: #{line}")
-
-            {schedule?, {:error, [String.to_integer(new_num) | values], [line | records]}}
+          true ->
+            {schedule?, {[num | values], [line | records]}}
         end
 
       nil ->
-        {schedule?, {status, values, [line | records]}}
+        {schedule?, {values, [line | records]}}
     end
   end
 
@@ -159,6 +157,79 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
       true ->
         nil
     end
+
+    binary
+  end
+
+  def qa_list_clause_numbers(binary, "\\[::sub_section::\\]" = component) do
+    IO.puts("\n\nSUB_SECTION")
+
+    regex = ~s/(?:#{component}|\\[::section::\\]|\\[::annex::\\])(\\d+[A-Z]*-?\\d*)/
+
+    results = Regex.scan(~r/#{regex}/, binary)
+
+    Enum.reduce(results, {0, []}, fn [match, id], {i, acc} ->
+      [_, id, suffix, ss] = Regex.run(~r/([0-9]+)([A-Z]*)(-?\d*)/, id)
+
+      iid =
+        if ss != "" do
+          1
+        else
+          String.to_integer(id)
+        end
+
+      str =
+        cond do
+          ss != "" -> "\nSECTION #{id}#{suffix}#{ss}\n1"
+          String.match?(match, ~r/\[::section/) -> "\nSECTION #{id}#{suffix}"
+          String.match?(match, ~r/\[::annex/) -> "\nANNEX #{iid}#{suffix}"
+          iid == i -> "#{iid}#{suffix}"
+          iid == i + 1 -> "#{iid}#{suffix}"
+          iid > i + 1 -> "#{iid} ERROR. Missed #{i + 1}"
+          iid < i and iid == 1 -> "\n#{iid}"
+          iid < i and iid != 1 -> "\nREBASED and MISSED #{iid}"
+        end
+
+      {iid, [str | acc]}
+    end)
+    |> elem(1)
+    |> Enum.reverse()
+    |> Enum.join(", ")
+    |> IO.write()
+
+    # |> IO.inspect(limit: :infinity)
+
+    binary
+  end
+
+  def qa_list_clause_numbers(binary, component) do
+    [_, cname] = Regex.run(~r/[^a-z]+([a-z_]*)/m, component)
+    # "\\[::" <> cname = component
+    IO.puts("\n\n#{String.upcase(cname)}")
+
+    Regex.scan(~r/#{component}(\d+[A-Z]*)/, binary)
+    # |> IO.inspect(limit: :infinity)
+    |> Enum.reduce({0, []}, fn [_, id], {i, acc} ->
+      [_, id, suffix] = Regex.run(~r/([0-9]+)([A-Z]*)/, id)
+      id = String.to_integer(id)
+
+      str =
+        cond do
+          id == i -> "#{id}#{suffix}"
+          id == i + 1 -> "#{id}#{suffix}"
+          id > i + 1 -> "#{id} ERROR. Missed #{i + 1}"
+          id < i and id == 1 -> "\nREBASED #{id}"
+          id < i and id != 1 -> "\nREBASED and MISSED #{id}"
+        end
+
+      {id, [str | acc]}
+    end)
+    |> elem(1)
+    |> Enum.reverse()
+    |> Enum.join(", ")
+    |> IO.write()
+
+    # |> IO.inspect(limit: :infinity)
 
     binary
   end

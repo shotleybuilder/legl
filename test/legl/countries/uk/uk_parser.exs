@@ -1,5 +1,4 @@
-defmodule UKTest do
-
+defmodule UKParser do
   # mix test test/legl/countries/uk/uk_test.exs:10
 
   use ExUnit.Case
@@ -60,6 +59,7 @@ defmodule UKTest do
       s = UK.Parser.join_empty_numbered(binary)
       assert s == "(a) Foo\n(b) Bar\n(i) Foo\n(ii) Bar"
     end
+
     test "removes \n in text" do
       binary = ~s/(a)\nthe Secretary of State;\n(b)\nthe Agency;\n(c)\nSEPA; or/
       s = UK.Parser.join_empty_numbered(binary)
@@ -118,8 +118,18 @@ defmodule UKTest do
   describe "get_section/2" do
     test "section with no region" do
       binary = ~s/6(1)Section 103 of the Utilities Act 2000/
+
       assert UK.Parser.get_section(binary, :act) ==
-        ~s/[::section::]6 6(1) Section 103 of the Utilities Act 2000/
+               ~s/[::section::]6 6(1) Section 103 of the Utilities Act 2000/
+    end
+  end
+
+  describe "get_sub_section/2" do
+    test "acts" do
+      binary = ~s/[(1)]Schedule 2 to this Act shall have effect for enabling provision\n/
+
+      assert UK.Parser.get_sub_section(binary, :act) ==
+               ~s/[::section::]6 6(1) Section 103 of the Utilities Act 2000/
     end
   end
 
@@ -128,26 +138,35 @@ defmodule UKTest do
     test "SCHEDULES" do
       binary = ~s/SCHEDULES U.K.\nSchedules E+W+S\nSCHEDULESU.K.\nSCHEDULES\nSchedules\n/
       s = UK.Parser.get_annex(binary)
-      assert s == ~s/[::annex::] SCHEDULES [::region::]U.K.\n[::annex::] Schedules [::region::]E+W+S\n[::annex::] SCHEDULES [::region::]U.K.\n[::annex::] SCHEDULES\n[::annex::] Schedules\n/
+
+      assert s ==
+               ~s/[::annex::] SCHEDULES [::region::]U.K.\n[::annex::] Schedules [::region::]E+W+S\n[::annex::] SCHEDULES [::region::]U.K.\n[::annex::] SCHEDULES\n[::annex::] Schedules\n/
     end
 
     test "SCHEDULE 1" do
       binary = ~s/SCHEDULE 1 U.K.Name\nSCHEDULE 1Name\nSCHEDULE2Name\nSchedule3 Name\n/
       s = UK.Parser.get_annex(binary)
-      assert s == ~s/[::annex::]1 SCHEDULE 1 Name [::region::]U.K.\n[::annex::]1 SCHEDULE 1 Name\n[::annex::]2 SCHEDULE 2 Name\n[::annex::]3 Schedule 3 Name\n/
+
+      assert s ==
+               ~s/[::annex::]1 SCHEDULE 1 Name [::region::]U.K.\n[::annex::]1 SCHEDULE 1 Name\n[::annex::]2 SCHEDULE 2 Name\n[::annex::]3 Schedule 3 Name\n/
     end
 
     test "[F1SCHEDULE 1" do
       binary = ~s/[F1SCHEDULE 1U.K.Name\n[F2Schedule 2AE+WName\n/
       s = UK.Parser.get_annex(binary)
-      assert s == ~s/[::annex::]1 [F1 SCHEDULE 1 Name [::region::]U.K.\n[::annex::]2A [F2 Schedule 2A Name [::region::]E+W\n/
+
+      assert s ==
+               ~s/[::annex::]1 [F1 SCHEDULE 1 Name [::region::]U.K.\n[::annex::]2A [F2 Schedule 2A Name [::region::]E+W\n/
     end
 
     test "Schedules" do
-      binary = ~s/SCHEDULE 1 U.K.The Committee on Climate Change\nSCHEDULE 2 U.K.Trading schemes\nSCHEDULE 3 U.K.Trading schemes regulations: further provisions\nSCHEDULE 4 U.K.Trading schemes: powers to require information\nF31SCHEDULE 5E+WWaste reduction schemes\nSCHEDULE 6 E+W+N.I.Charges for [F11single use carrier bags][F11carrier bags]\nSCHEDULE 7 U.K.Renewable transport fuel obligations\nSCHEDULE 8 E+W+SCarbon emissions reduction targets/
+      binary =
+        ~s/SCHEDULE 1 U.K.The Committee on Climate Change\nSCHEDULE 2 U.K.Trading schemes\nSCHEDULE 3 U.K.Trading schemes regulations: further provisions\nSCHEDULE 4 U.K.Trading schemes: powers to require information\nF31SCHEDULE 5E+WWaste reduction schemes\nSCHEDULE 6 E+W+N.I.Charges for [F11single use carrier bags][F11carrier bags]\nSCHEDULE 7 U.K.Renewable transport fuel obligations\nSCHEDULE 8 E+W+SCarbon emissions reduction targets/
 
       s = UK.Parser.get_annex(binary)
-      assert s == "[::annex::]1 SCHEDULE 1 The Committee on Climate Change [::region::]U.K.\n[::annex::]2 SCHEDULE 2 Trading schemes [::region::]U.K.\n[::annex::]3 SCHEDULE 3 Trading schemes regulations: further provisions [::region::]U.K.\n[::annex::]4 SCHEDULE 4 Trading schemes: powers to require information [::region::]U.K.\n[::annex::]5 F31SCHEDULE 5 Waste reduction schemes [::region::]E+W\n[::annex::]6 SCHEDULE 6 Charges for [F11single use carrier bags][F11carrier bags] [::region::]E+W+N.I.\n[::annex::]7 SCHEDULE 7 Renewable transport fuel obligations [::region::]U.K.\n[::annex::]8 SCHEDULE 8 Carbon emissions reduction targets [::region::]E+W+S"
+
+      assert s ==
+               "[::annex::]1 SCHEDULE 1 The Committee on Climate Change [::region::]U.K.\n[::annex::]2 SCHEDULE 2 Trading schemes [::region::]U.K.\n[::annex::]3 SCHEDULE 3 Trading schemes regulations: further provisions [::region::]U.K.\n[::annex::]4 SCHEDULE 4 Trading schemes: powers to require information [::region::]U.K.\n[::annex::]5 F31SCHEDULE 5 Waste reduction schemes [::region::]E+W\n[::annex::]6 SCHEDULE 6 Charges for [F11single use carrier bags][F11carrier bags] [::region::]E+W+N.I.\n[::annex::]7 SCHEDULE 7 Renewable transport fuel obligations [::region::]U.K.\n[::annex::]8 SCHEDULE 8 Carbon emissions reduction targets [::region::]E+W+S"
     end
   end
 

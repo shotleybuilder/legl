@@ -1,5 +1,7 @@
 defmodule UK.Parser do
   @moduledoc false
+
+  alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
   alias Types.Component
   @components %Component{}
 
@@ -60,8 +62,7 @@ defmodule UK.Parser do
     |> move_region_to_end(:act)
     |> add_missing_region()
     |> rm_emoji(["🇨", "🇪", "🇲", "🇽", "🔺", "🔻", "❌"])
-    # |> rm_amendment(:act)
-    |> Legl.Countries.Uk.AirtableArticle.UkArticleQa.qa_sections(opts)
+    |> QA.qa(opts)
   end
 
   def parser(binary, %{type: :regulation} = _opts) do
@@ -106,8 +107,6 @@ defmodule UK.Parser do
     regex =
       ~s/^#{@regex_components.part}(.*?)[ ](?:\\[?PART|\\[?Part)[ ](.*?)[ ](.*?)\\[::region::\\](.*)$/
 
-    scan_and_print(binary, regex, "part")
-
     binary
     |> (&Regex.replace(
           ~r/#{regex}/m,
@@ -127,8 +126,6 @@ defmodule UK.Parser do
     # [::chapter::][F1188 CHAPTER 4 Storm overflows [::region::]E+W
     regex =
       ~s/^#{@regex_components.chapter}(.*?)[ ](?:\\[?CHAPTER|\\[?Chapter)[ ](.*?)[ ](.*?)\\[::region::\\](.*)$/
-
-    scan_and_print(binary, regex, "chapter")
 
     binary
     |> (&Regex.replace(
@@ -156,7 +153,7 @@ defmodule UK.Parser do
           ["PART|Part", "#{@components.part}"]
 
         :chapter ->
-          ["CHAPTER|Chapter", "#{@components.chapter}"]
+          ["CHAPTER|Chapter|chapter", "#{@components.chapter}"]
       end
 
     scheme =
@@ -228,6 +225,23 @@ defmodule UK.Parser do
       ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([A-Z]?)[ ]?(#{@region_regex})(.+)/m,
       binary,
       fn _, part_chapter, tens, units, alpha, region, text ->
+        # Initial or full caps for part / chapter
+        part_chapter =
+          cond do
+            # text is captialised
+            Regex.match?(~r/[A-Z]{2,}/, text) ->
+              Regex.replace(~r/chapter/, part_chapter, "CHAPTER")
+              |> (&Regex.replace(~r/part/, &1, "PART")).()
+
+            # text is snake case
+            Regex.match?(~r/[A-Z][a-z]+/, text) ->
+              Regex.replace(~r/chapter/, part_chapter, "Chapter")
+              |> (&Regex.replace(~r/part/, &1, "Part")).()
+
+            true ->
+              part_chapter
+          end
+
         numeral = tens <> units
 
         {remaining_numeral, last_numeral} = String.split_at(numeral, -1)
@@ -299,8 +313,6 @@ defmodule UK.Parser do
     regex =
       ~s/^#{@regex_components.heading}(.*?)[ ](.*?)\\[::region::\\](.*)$([\\s\\S]+?#{@regex_components.section})(.*?[ ])/
 
-    scan_and_print(binary, regex, "heading")
-
     binary
     |> (&Regex.replace(
           ~r/#{regex}/m,
@@ -346,8 +358,9 @@ defmodule UK.Parser do
       # 8ANitrogen balance sheetS
       # 18D Group 2 offences and licences etc. : power to enter premises E+W
       # 19XBOffences in connection with enforcement powersE+W
+      # 16B [F129 CMA's] power of veto following report: supplementaryE+W
       |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z][A-Z]?)[ ]?([A-Z].*)(#{@region_regex})$/m,
+            ~r/^(\d{1,3}[A-Z][A-Z]?)[ ]?([A-Z\[].*)(#{@region_regex})$/m,
             &1,
             "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
@@ -380,23 +393,27 @@ defmodule UK.Parser do
             &1,
             "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
           )).()
+      # 🔺X1🔺 28 Customer service committees.U.K.
+      |> (&Regex.replace(
+            ~r/^🔺(X\d+)🔺[ ]?(\d{1,3})[ ]?(.+?)(#{@region_regex})$/m,
+            &1,
+            "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
+          )).()
       |> Legl.Utility.rm_dupe_spaces("\\[::section::\\]")
 
   @doc """
   Parse amended sections of Acts.
   Formats:
-
+  [::section::]X2 [F438 29 Consumer complaintsU.K.
   """
   def get_A_section(binary, :act) do
-    regex = ~s/^#{@regex_components.section}(.*?)[ ](.*?)[ ](.*?)(#{@region_regex})$/
-
-    scan_and_print(binary, regex, "section")
+    regex = ~s/^#{@regex_components.section}(.*?)(#{@region_regex})$/
 
     binary
     |> (&Regex.replace(
           ~r/#{regex}/m,
           &1,
-          "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
+          "#{@components.section}\\g{1} [::region::]\\g{2}"
         )).()
   end
 
@@ -406,37 +423,13 @@ defmodule UK.Parser do
   (1)Text
   """
   def get_sub_section(binary, :act),
-    # (1)[F60 [F61 The [F62 Natural Resources Body
+    # [(1)]Schedule 2 to this Act shall have effect for enabling provision
     do:
       Regex.replace(
-        ~r/^(\[?F?\d*[A-Z]?\((\d+[A-Z]?)\))[ ]?([,\[“A-Z])/m,
+        ~r/^(\[?\((\d+[A-Z]?[A-Z]?)\)\]?)[ ]?([,\[“A-Z])/m,
         binary,
         "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
       )
-      # [🔺F5🔺(1)The provisions
-      # [🔺F50🔺(1)] In this Part of this Act
-      # [🔺F250🔺 (1) ]In relation to land in Wales
-      # [🔺F252🔺 (2) Subsection (3) applies where—
-      # [🔺F416🔺 (1) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-      # [🔺F34🔺 ( 2 ) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-      # 🔺X9🔺 (1)The enactments mentioned
-      |> (&Regex.replace(
-            ~r/^(\[?🔺[FX]\d+[A-Z]?🔺)[ ]?\([ ]?(\d+[A-Z]?)[ ]?\)([\] ]*)(.*)/m,
-            &1,
-            "#{@components.sub_section}\\g{2} \\g{1} (\\g{2}) \\g{3} \\g{4}"
-          )).()
-      # 🔺F28🔺 [ (4A) In any proceedings
-      |> (&Regex.replace(
-            ~r/^(🔺F\d+🔺[ ]\[[ ]?\((\d+[A-Z]?)\))(.*)/m,
-            &1,
-            "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
-          )).()
-      # 🔺F383🔺 [🔺F384🔺 (1) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-      |> (&Regex.replace(
-            ~r/^(🔺F\d+🔺[ ]\[🔺F\d+[A-Z]?🔺[ ]?\((\d+[A-Z]?)\))(.*)/m,
-            &1,
-            "#{@components.sub_section}\\g{2} \\g{1} \\g{3}"
-          )).()
 
   def get_sub_section(binary, :regulation),
     do:
@@ -463,23 +456,11 @@ defmodule UK.Parser do
             &1,
             "#{@components.article}\\g{1} \\g{1}\\g{2} [::region::]\\g{3}"
           )).()
-      # 3.—[🔺F4🔺(1) These Regulations apply to energy-related products.]
-      |> (&Regex.replace(
-            ~r/^(\d+[A-Z]?)\.(?:#{<<226, 128, 148>>}|\-)(\[?🔺F\d+🔺)\((\d+)\)/m,
-            &1,
-            "#{@components.article}\\g{1}-\\g{3} \\0"
-          )).()
       #
       |> (&Regex.replace(
             ~r/^(\d+)\.[ ]+/m,
             &1,
             "#{@components.article}\\g{1} \\0"
-          )).()
-      # [🔺F21🔺8E.—(1) The Scottish
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\d+[A-Z])\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
-            &1,
-            "#{@components.article}\\g{2}-\\g{3} \\0"
           )).()
       # 12A.—(1) This regulation
       |> (&Regex.replace(
@@ -492,19 +473,6 @@ defmodule UK.Parser do
             ~r/^(\d+[A-Z])(\.[ ]+)/m,
             &1,
             "#{@components.article}\\g{1} \\0"
-          )).()
-      # [🔺F21🔺8.—(1) The Scottish
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\d+)\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
-            &1,
-            "#{@components.article}\\g{2}-\\g{3} \\0"
-          )).()
-      # 🔺F226🔺25.  . . .
-      # 🔺F80🔺4A.  . .
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\d+[A-Z]?)(\.[ ]+[\. ]*)/m,
-            &1,
-            "#{@components.article}\\g{2} \\g{1} \\g{2}\\g{3}"
           )).()
       |> (&Regex.replace(
             ~r/^(\d+)\.(?:#{<<226, 128, 148>>}|\-)\((\d+)\)/m,
@@ -520,17 +488,6 @@ defmodule UK.Parser do
         binary,
         "#{@components.sub_article}\\g{1} \\0"
       )
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\((\d+)\)[ ][A-Z])/m,
-            &1,
-            "#{@components.sub_article}\\g{3} \\g{1} \\g{2}"
-          )).()
-      # 🔺F187🔺(10) . .   Desc: a revoked sub_article
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F\d+🔺)(\((\d+)\)[\. ]*)/m,
-            &1,
-            "#{@components.sub_article}\\g{3} \\g{1} \\g{2}"
-          )).()
 
   @doc """
   Mark-up Schedules
@@ -541,33 +498,10 @@ defmodule UK.Parser do
   def get_annex(binary),
     do:
       binary
-      # [🔺F535🔺 SCHEDULE ZA1 E+WBirds which re-use their nests
-      |> (&Regex.replace(
-            ~r/^(\[?🔺F?\d*🔺)[ ]?(SCHEDULES?|Schedules?)[ ]?([A-Z]*\d*[A-Z]?)[ ]?(#{@region_regex})([^.]*?)(?:\n)/m,
-            &1,
-            "#{@components.annex}\\g{3} \\g{1} \\g{2} \\g{3} \\g{5} [::region::]\\g{4}\n"
-          )).()
-      # [🔺F227🔺SCHEDULE [🔺F228🔺1] U.K.SUSTAINABILITY CRITERIA
-      |> (&Regex.replace(
-            ~r/^(\[?🔺?F?\d*🔺?)(SCHEDULES?|Schedules?)[ ]?(\[?🔺F?\d*🔺)(\d*[A-Z]?)(\]?)[ ]?(#{@region_regex})([^.]*?)(?:\n)/m,
-            &1,
-            "#{@components.annex}\\g{4} \\g{1} \\g{2} \\g{3} \\g{4}\\g{5} \\g{7} [::region::]\\g{6}\n"
-          )).()
-      # SCHEDULE E+W+S . . . 🔺F14🔺
-      |> (&Regex.replace(
-            ~r/^(SCHEDULE|Schedule)[ ]?(#{@region_regex})(.*?🔺F\d+🔺)(?:\n)/m,
-            &1,
-            "#{@components.annex}1 \\g{1} \\g{3} [::region::]\\g{2}\n"
-          )).()
-      # [🔺F661🔺 SCHEDULE 9B SInvasive alien species: defences and licences
-      |> (&Regex.replace(
-            ~r/^(\[?🔺?F?\d*🔺?)[ ](SCHEDULES?|Schedules?)[ ]?(\d*[A-Z]?)[ ]?(#{@country_regex})([^.]*?)(?:\n)/m,
-            &1,
-            "#{@components.annex}\\g{3} \\g{1} \\g{2} \\g{3} \\g{5} [::region::]\\g{4}\n"
-          )).()
       # SCHEDULE 4 U.K. Animals the Sale etc. of Which is Restricted
+      # SCHEDULE 10E+W PROCEDURE RELATING TO BYELAWS UNDER SECTION 157
       |> (&Regex.replace(
-            ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]*(#{@region_regex})[ ]?(.*[^.])(?:\n)/m,
+            ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]*(#{@region_regex})[ ]?(.*([etc\.]|[^\.]))(?:\n)/m,
             &1,
             "#{@components.annex}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}\n"
           )).()
@@ -884,25 +818,6 @@ defmodule UK.Parser do
       Regex.replace(~r/#{emoji}([A-Z]\d+)#{emoji}/m, acc, "\\g{1} ")
     end)
     |> Legl.Utility.rm_dupe_spaces(@components_dedupe)
-  end
-
-  defp scan_and_print(binary, regex, name) do
-    IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
-
-    results =
-      binary
-      |> (&Regex.scan(
-            ~r/#{regex}/m,
-            &1
-          )).()
-
-    count = Enum.count(results)
-
-    # Limit print to console to 20 records
-    Enum.take(results, 20)
-    |> Enum.each(&IO.inspect(&1))
-
-    IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
   end
 
   def conv_roman(term) do
