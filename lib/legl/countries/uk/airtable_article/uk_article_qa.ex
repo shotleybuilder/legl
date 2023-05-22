@@ -16,8 +16,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
           )).()
 
     count = Enum.count(results)
-    if count < 20, do: Enum.each(results, &IO.inspect(&1))
+    {_, cols} = :io.columns()
+    if count < 20, do: Enum.each(results, &IO.inspect(&1, width: cols))
     IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
+    count
   end
 
   @doc """

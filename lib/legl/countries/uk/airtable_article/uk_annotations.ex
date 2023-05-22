@@ -24,7 +24,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> cross_heading_efs()
       |> section_efs()
       |> section_ss_efs()
-      |> schedule_section_efs()
+      |> tag_schedule_section_efs()
       |> tag_sub_section_efs()
       |> tag_sub_sub_section_efs()
       |> tag_mods_cees()
@@ -81,23 +81,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   """
   def tag_txt_amend_efs(binary) do
     binary
-    # F578 By S. I.
+    # See uk_annotations.exs for examples and test
     |> (&Regex.replace(
           ~r/S\.[ ]I\./,
           &1,
           "S.I."
         )).()
-    # F438Definition substituted by Agriculture Act 1986
-    # F535 Sch. ZA1 inserted
-    # F537Entry in Sch
-    # F903Para reference (a)
-    # F54In s. 1(7) the definition of "local authority"
     |> (&Regex.replace(
           ~r/^(F\d+)[ ]?(Ss?c?h?\.[ ]|s[ ]?\.|W[O|o]rds?|In[ ]s.[ ]|The[ ]words[ ]repealed|Definition[ ]|Entry?i?e?s?|By.*?S\.I\.|Para\.?[ ]|Pt.[ ]|Part[ ]|Cross[ ]heading)/m,
           &1,
           "🔻\\g{1}🔻 \\g{2}"
         )).()
-    # F121964 c. 29.
     |> (&Regex.replace(
           ~r/^(F\d+?)(\d{4} c\. \d+)/m,
           &1,
@@ -106,9 +100,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def part_efs(binary) do
-    # [F508Part 2AU.K.Regulation of provision of infrastructure
-    # F902[PART IIIAE+W Promotion of the Efficient Use of Water
-    # [F1472Part 7AU.K.Further provision about regulation
+    # See uk_annotations.exs for examples and test
     regex = ~s/^(\\[?F\\d+)(\\[?(?:PART|Part))(.*)(#{@region_regex})(.*)/
 
     QA.scan_and_print(binary, regex, "PART")
@@ -123,10 +115,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def chapter_efs(binary) do
-    # [F141CHAPTER 1AE+W [F142Water supply licences and sewerage licences]
-    # [F690CHAPTER 2AE+W[F691Supply duties etc: water supply licensees]
-    # [F1126Chapter 2AE+WDuties relating to sewerage services: sewerage licensees
-    # [F1188CHAPTER 4E+WStorm overflows
+    # See uk_annotations.exs for examples and test
     regex = ~s/^(\\[?F\\d+)(CHAPTER|Chapter)(.*)(#{@region_regex})(.*)/
 
     QA.scan_and_print(binary, regex, "CHAPTER")
@@ -141,13 +130,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_schedule_efs(binary) do
-    # F560SCHEDULE 5E+W Animals which are Protected
-    # F682 SCHEDULE 12E+W+S Procedure in Connection With Orders Under Section 36
-    # [F535SCHEDULE ZA1E+WBirds which re-use their nests
-    # [F656SCHEDULE 9AE+WSpecies control agreements
-    # F683 SCHEDULE 13 E+W
-    # F1546F1546SCHEDULE 1E+W
-    # regex = ~s/^(\\[?F\\d+)(\\[F\\d+)?[ ]?(SCHEDULE)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@region_regex})([A-Z].*)/
+    # See uk_annotations.exs for examples and test
     regex =
       ~s/^(\\[?F\\d+)(\\[?F\\d+)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@region_regex})[ ]?([A-Z]?.*)/
 
@@ -168,22 +151,33 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   These Fxxx codes are then searched for and marked up as headings
   """
   def cross_heading_efs(binary) do
-    regex = ~s/^🔻(F\d+)🔻.*?(?:C|c)ross(?:-|[ ])heading.*(?:inserted|substituted)/
+    # See uk_annotations.exs for examples and test
+    regex = ~s/^🔻(F\\d+)🔻.*?(?:C|c)ross(?:-|[ ])heading.*(?:inserted|substituted)/
 
-    QA.scan_and_print(binary, regex, "cross heading")
+    count = QA.scan_and_print(binary, regex, "cross heading")
 
-    Regex.scan(~r/^🔻(F\d+)🔻.*?(?:C|c)ross(?:-|[ ])heading.*(?:inserted|substituted)/m, binary)
-    |> Enum.map(fn [_, ef_code] -> ef_code end)
-    |> Enum.reduce(binary, fn ef, acc ->
-      # Regex.scan(~r/^(\[?)#{ef}([^0-9])/m, acc) |> Enum.each(&IO.inspect(&1))
+    case count do
+      0 ->
+        binary
 
-      acc
-      |> (&Regex.replace(
-            ~r/^(\[?)#{ef}([^0-9].*?)(#{@region_regex})/m,
-            &1,
-            "#{@components.heading}\\g{1}#{ef} \\g{2} [::region::]\\g{3}"
-          )).()
-    end)
+      _ ->
+        x_hdgs =
+          Regex.scan(
+            ~r/#{regex}/m,
+            binary
+          )
+
+        x_hdgs
+        |> Enum.map(fn [_, ef_code] -> ef_code end)
+        |> Enum.reduce(binary, fn ef, acc ->
+          acc
+          |> (&Regex.replace(
+                ~r/^(\[?)#{ef}([^0-9].*?)(#{@region_regex})/m,
+                &1,
+                "#{@components.heading}\\g{1}#{ef} \\g{2} [::region::]\\g{3}"
+              )).()
+        end)
+    end
   end
 
   @doc """
@@ -411,7 +405,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   @doc """
   #TODO
   """
-  def schedule_section_efs(binary) do
+  def tag_schedule_section_efs(binary) do
+    # See uk_annotations.exs for examples and test
     para =
       Regex.scan(~r/^🔻(F\d+)🔻[ ]Sch\.[ ]\d+[A-Z]*[ ]para\.[ ](\d+[A-Z]*)[ ]/m, binary)
       |> Enum.reduce([], fn [match, ef_code, x], acc ->
@@ -449,18 +444,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_sub_section_efs(binary) do
-    # [F18(6)For
-    # [F9(3A) In
-    # [F8(3ZA)A
-    # [F2(aa)takes
-    # F1126  (1)No person may
-    # F416(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    # F34( 2 ). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    # F28 [(4A)In any proceedings under subsection
-    # F60[(7)In any proceedings
-    # F383[F384(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    # [F659[F660(6)The “list of species of special concern” means
-    # [F89(A1)This section and sections 14 to 16B app
+    # See uk_annotations.exs for examples and test
     regex = "^(\\[?F\\d+)(\\[?F?\\d*)?[ ]*(\\[)?\\([ ]*([A-Z]*\\d+[A-Z]*)[ ]?\\)[ ]?(.*)"
 
     QA.scan_and_print(binary, regex, "sub-section")
@@ -474,6 +458,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_sub_sub_section_efs(binary) do
+    # See uk_annotations.exs for examples and test
     regex = "^(\\[?F\\d+)(\\[?F?\\d*)?[ ]*(\\[)?\\([ ]*([a-z]*)[ ]?\\)[ ]?(.*)"
 
     binary
@@ -485,40 +470,60 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_mods_cees(binary) do
+    # See uk_annotations.exs for examples and test
+    regex = ~s/^(C\\d+)(.*)/
+
+    QA.scan_and_print(binary, regex, "MODIFICATIONS")
+
     Regex.replace(
-      ~r/^(C\d+)(.*)/m,
+      ~r/#{regex}/m,
       binary,
       "#{@components.modification}\\g{1} \\g{2}"
     )
   end
 
   def tag_commencing_ies(binary) do
+    # See uk_annotations.exs for examples and test
+    regex = ~s/^(Commencement Information)\\n(I\\d+)(.*)/
+
+    QA.scan_and_print(binary, regex, "COMMENCEMENTS")
+
     Regex.replace(
-      ~r/^(Commencement Information)\n(I\d+)(.*)/m,
+      ~r/#{regex}/m,
       binary,
       "#{@components.commencement_heading}\\g{1}\n#{@components.commencement}\\g{2} \\g{3}"
     )
   end
 
   def tag_extent_ees(binary) do
+    # See uk_annotations.exs for examples and test
+    regex = ~s/^(Extent Information)\\n^(E\\d+)(.*)/
+
+    QA.scan_and_print(binary, regex, "EXTENTS")
+
     Regex.replace(
-      ~r/^(Extent Information)\n^(E\d+)(.*)/m,
+      ~r/#{regex}/m,
       binary,
       "#{@components.extent_heading}\\g{1}\n#{@components.extent}\\g{2} \\g{3}"
     )
   end
 
   def tag_editorial_xes(binary) do
+    regex = ~s/^(Editorial[ ]Information)\n^(X\d+)(.*)/
+
+    # QA.scan_and_print(binary, regex, "EDITORIAL INFORMATION")
+
     binary =
       Regex.replace(
-        ~r/^(Editorial[ ]Information)\n^(X\d+)(.*)/m,
+        ~r/#{regex}/m,
         binary,
         "#{@components.editorial_heading}\\g{1}\n#{@components.editorial}\\g{2} \\g{3}"
       )
 
     xes = collect_tags("#{Regex.escape(@components.editorial)}X(\\d+)", binary)
-
-    IO.puts("xes: #{List.first(xes)}")
+    IO.puts("EDITORIAL INFORMATION")
+    Enum.reverse(xes) |> Enum.each(fn x -> IO.write("X#{x}, ") end)
+    IO.puts("\nCount of Editorial Information xes: #{Enum.count(xes)}\n")
 
     Enum.reduce(xes, binary, fn x, acc ->
       acc
@@ -602,9 +607,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           ~r/(\[?F\d{1,4})([A-Za-z])/,
           &1
         )).()
-    # |> IO.inspect(label: "space_efs/1\nEFs that have been spaced:\n")
     |> Enum.count()
-    |> (&IO.puts("Count of spaced efs: #{&1}")).()
+    |> (&IO.puts("Count of spacing efs: #{&1}\n")).()
 
     binary
     |> (&Regex.replace(
