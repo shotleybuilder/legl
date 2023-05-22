@@ -22,11 +22,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> chapter_efs()
       |> tag_schedule_efs()
       |> cross_heading_efs()
+      |> tag_sub_section_efs()
+      |> tag_sub_sub_section_efs()
       |> section_efs()
       |> section_ss_efs()
       |> tag_schedule_section_efs()
-      |> tag_sub_section_efs()
-      |> tag_sub_sub_section_efs()
       |> tag_mods_cees()
       |> tag_commencing_ies()
       |> tag_extent_ees()
@@ -34,6 +34,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_heading_efs()
       |> tag_txt_amend_efs_wash_up()
       |> space_efs()
+      |> rm_emoji("🔸")
 
     if opts.qa == true, do: binary |> QA.qa_list_spare_efs(opts) |> QA.list_headings(opts)
 
@@ -80,6 +81,24 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   🔻 is used to tag Textual Amendments separately to other amendment tags
   """
   def tag_txt_amend_efs(binary) do
+    regex =
+      [
+        ~s/Ss?c?h?\\.[ ]/,
+        ~s/Ss[ ]/,
+        ~s/s[ ]?\\./,
+        ~s/W[O|o]rds?/,
+        ~s/In[ ]s.[ ]/,
+        ~s/The[ ]words[ ]repealed/,
+        ~s/Definition[ ]|Entry?i?e?s?/,
+        ~s/By.*?S\\.I\\./,
+        ~s/Para\\.?[ ]/,
+        ~s/Pt.[ ]/,
+        ~s/Part[ ]/,
+        ~s/Cross[ ]heading/,
+        ~s/Chapter.*?\\(ss\\.[ ].*?\\)[ ]inserted/
+      ]
+      |> Enum.join("|")
+
     binary
     # See uk_annotations.exs for examples and test
     |> (&Regex.replace(
@@ -88,7 +107,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           "S.I."
         )).()
     |> (&Regex.replace(
-          ~r/^(F\d+)[ ]?(Ss?c?h?\.[ ]|s[ ]?\.|W[O|o]rds?|In[ ]s.[ ]|The[ ]words[ ]repealed|Definition[ ]|Entry?i?e?s?|By.*?S\.I\.|Para\.?[ ]|Pt.[ ]|Part[ ]|Cross[ ]heading)/m,
+          ~r/^(F\d+)[ ]?(#{regex})/m,
           &1,
           "🔻\\g{1}🔻 \\g{2}"
         )).()
@@ -184,7 +203,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   Function reads amendment clauses looking for S. insertions and substitutions
   When matched the assoociated Fxxx code is read and stored in a list
   concatenated with Ss. number
-  These Fxxx codes are then searched ofr and marked up as sections
+  These Fxxx codes are then searched for and marked up as sections
   """
   def section_efs(binary) do
     # 🔻F2🔻 S. 1A inserted -> [F21AWater Services
@@ -193,14 +212,18 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # 🔻F685🔻 S. 63A inserted
 
     # Pattern: [[line, ef, section_number], [line, ef, section_number] ...]
+    regex = ~s/^🔻(F\\d+)🔻[ ]S\\.[ ](\\d+[A-Z]+)[^\\(].*/
+
+    QA.scan_and_print(binary, regex, "S. SECTIONS", true)
+
     binary =
-      Regex.scan(~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+[A-Z]+)[^\()].*/m, binary)
+      Regex.scan(~r/#{regex}/m, binary)
       |> Enum.reduce(binary, fn [_line, ef, x], acc ->
         acc
         |> (&Regex.replace(
-              ~r/^(\[?)#{ef}#{x}/m,
+              ~r/^(\[?)#{ef}#{x}([ A-Z])/m,
               &1,
-              "#{@components.section}#{x} \\g{1}#{ef} #{x} "
+              "#{@components.section}#{x} \\g{1}#{ef} #{x} \\g{2}"
             )).()
         |> (&Regex.replace(
               ~r/^#{x}#{ef}/m,
@@ -219,8 +242,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # 🔻F1205🔻 S. 145 and ... repealed -> F1205145. . . . . .
     #
 
+    regex = ~s/^🔻(F\\d+)🔻[ ]S\\.[ ](\\d+)[ ].*?(?:repealed|substituted).*/
+
+    QA.scan_and_print(binary, regex, "S. SECTIONS", true)
+
     # Pattern: [[line, ef, section_number], [line, ef, section_number] ...]
-    Regex.scan(~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+)[ ](?:.*?repealed|substituted).*/m, binary)
+    Regex.scan(~r/#{regex}/m, binary)
     # |> IO.inspect(label: "section_efs/1")
     |> Enum.reverse()
     |> Enum.reduce(binary, fn [_line, ef, x], acc ->
@@ -241,6 +268,18 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             &1,
             "#{@components.section}#{x} \\g{1} \\g{2}#{ef} #{x} "
           )).()
+      # F530[F529195 Maps of waterworks.E+W
+      |> (&Regex.replace(
+            ~r/^(\[?)#{ef}(\[F\d+?)#{x}([^0-9][A-Z\. ].*)(#{@region_regex})/m,
+            &1,
+            "#{@components.section}#{x} \\g{1}#{ef} \\g{2} #{x} \\g{3}\\g{4}"
+          )).()
+      # F685[224Application to the Isles of Scilly.E+W
+      |> (&Regex.replace(
+            ~r/^(\[?)#{ef}(\[)#{x}([^0-9].*)(#{@region_regex})/m,
+            &1,
+            "#{@components.section}#{x} \\g{1}#{ef} \\g{2} #{x} \\g{3}\\g{4}"
+          )).()
     end)
   end
 
@@ -259,6 +298,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # 🔻F426🔻 Ss. 27H-27K inserted
     # 🔻F143🔻 Ss. 17A, 17AA substituted
     # 🔻F490🔻 Ss. 32-35 substituted
+    # 🔻F366🔻 Ss. 150-153 repealed (1.4.1996)
+    # 🔻F229🔻 Chapter IIA (ss. 91A-91B)
 
     # ef_codes has this shape
     # [
@@ -268,11 +309,20 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # {"F1200", ["144ZE, 144ZF", "144ZE", "144ZF"]},
     # {"F1199", ["144ZA-144ZD", "144ZA", "144ZD"]}, ...
     # ]
+
+    regex =
+      ~s/^🔻(F\\d+)🔻(?:[ ].*?[ ]\\(ss\\.[ ].*?\\)[ ]|[ ]Ss\\.[ ].*?)(?:repealed|inserted|substituted)/
+
+    QA.scan_and_print(binary, regex, "Ss. SECTIONS", true)
+
     ef_codes =
-      Regex.scan(~r/^🔻(F\d+)🔻[ ]Ss\.[ ].*/m, binary)
+      Regex.scan(
+        ~r/#{regex}/m,
+        binary
+      )
       |> Enum.reduce([], fn [line, ef_code], acc ->
         acc =
-          case Regex.run(~r/Ss\.[ ](\d+[A-Z]*),[ ](\d+[A-Z]*)/m, line) do
+          case Regex.run(~r/(\d+[A-Z]*),[ ](\d+[A-Z]*)/, line) do
             nil ->
               acc
 
@@ -284,8 +334,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         |> (&[{ef_code, &1} | acc]).()
       end)
       |> Enum.uniq()
-
-    # |> IO.inspect(limit: :infinity)
 
     ef_tags =
       Enum.reduce(ef_codes, [], fn
@@ -394,9 +442,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     Enum.reduce(ef_tags, binary, fn {_match, ef, section_number, tag}, acc ->
       acc
       |> (&Regex.replace(
-            ~r/^(\[?)#{tag}([^0-9])/m,
+            ~r/^(\[?)#{tag}([^0-9][A-Z\. ].*)(#{@region_regex})/m,
             &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}"
+            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}\\g{3}"
           )).()
       |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
     end)
@@ -465,7 +513,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> (&Regex.replace(
           ~r/#{regex}/m,
           &1,
-          "📌\\g{1}\\g{2} \\g{3}(\\g{4}) \\g{5}"
+          "🔸\\g{1}\\g{2} \\g{3}(\\g{4}) \\g{5}"
         )).()
   end
 
@@ -509,7 +557,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_editorial_xes(binary) do
-    regex = ~s/^(Editorial[ ]Information)\n^(X\d+)(.*)/
+    regex = ~s/^(Editorial[ ]Information)\\n^(X\\d+)(.*)/
 
     # QA.scan_and_print(binary, regex, "EDITORIAL INFORMATION")
 
@@ -629,5 +677,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> Enum.reverse()
 
     # |> IO.inspect(label: "collect_tags")
+  end
+
+  def rm_emoji(binary, emoji) do
+    Regex.replace(~r/#{emoji}/, binary, "")
   end
 end

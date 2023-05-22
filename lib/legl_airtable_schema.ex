@@ -397,6 +397,9 @@ defmodule Legl.Airtable.Schema do
               part: value,
               text: str
           }
+
+        nil ->
+          IO.inspect("ERROR part/4 #{regex.part} #{str}")
       end
 
     fields_reset(record, :part, regex)
@@ -442,6 +445,9 @@ defmodule Legl.Airtable.Schema do
               chapter: chap_num,
               text: str
           }
+
+        nil ->
+          IO.inspect("ERROR chapter/4 #{regex.chapter} #{str}")
       end
 
     fields_reset(record, :chapter, regex)

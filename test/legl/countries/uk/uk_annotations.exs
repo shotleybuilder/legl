@@ -130,7 +130,8 @@ defmodule UKAnnotations do
           "F60[(7)In any proceedings",
           "F383[F384(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
           "[F659[F660(6)The “list of species of special concern” means",
-          "[F89(A1)This section and sections 14 to 16B app"
+          "[F89(A1)This section and sections 14 to 16B app",
+          "[F39(za)if those waters are in Wales"
         ]
         |> Enum.join("\n")
 
@@ -149,7 +150,8 @@ defmodule UKAnnotations do
           "[::sub_section::]7 F60[ (7) In any proceedings",
           "[::sub_section::]1 F383[F384 (1) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
           "[::sub_section::]6 [F659[F660 (6) The “list of species of special concern” means",
-          "[::sub_section::]A1 [F89 (A1) This section and sections 14 to 16B app"
+          "[::sub_section::]A1 [F89 (A1) This section and sections 14 to 16B app",
+          "[F39(za)if those waters are in Wales"
         ]
         |> Enum.join("\n")
 

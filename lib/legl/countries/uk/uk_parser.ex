@@ -311,13 +311,13 @@ defmodule UK.Parser do
 
   def get_A_heading(binary, :act) do
     regex =
-      ~s/^#{@regex_components.heading}(.*?)[ ](.*?)\\[::region::\\](.*)$([\\s\\S]+?#{@regex_components.section})(.*?[ ])/
+      ~s/^#{@regex_components.heading}(.*?)[ ](.*?)\\[::region::\\](.*)$([\\s\\S]+?#{@regex_components.section})(\\d+[A-Z]*)(-?\\d*[ ])/
 
     binary
     |> (&Regex.replace(
           ~r/#{regex}/m,
           &1,
-          "#{@components.heading}\\g{5} \\g{1} \\g{2} [::region::]\\g{3}\\g{4}\\g{5}"
+          "#{@components.heading}\\g{5} \\g{1} \\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
         )).()
   end
 
@@ -345,9 +345,15 @@ defmodule UK.Parser do
           )).()
       # 6B.(1)Section 2(1) does not entitle
       |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]?)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
+            ~r/^(\d{1,3}[A-Z]*)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
             &1,
             "#{@components.section}\\g{1}-\\g{2} \\g{1}.(\\g{2}) \\g{3} [::region::]\\g{4}"
+          )).()
+      # 161A.Notices requiring persons to carry out works and operationsE+W
+      |> (&Regex.replace(
+            ~r/^(\d{1,3}[A-Z]*)\.[ ]?(.*)(#{@region_regex})$/m,
+            &1,
+            "#{@components.section}\\g{1} \\g{1} (\\g{2}) [::region::]\\g{3}"
           )).()
       # A1The net-zero emissions targetS
       |> (&Regex.replace(
@@ -392,6 +398,12 @@ defmodule UK.Parser do
             ~r/^(\d{1,3})\((\d{1,3})\)[ ]?(.*)/m,
             &1,
             "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
+          )).()
+      # 144. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+      |> (&Regex.replace(
+            ~r/^(\d{1,3})([\. ]+)/m,
+            &1,
+            "#{@components.section}\\g{1} \\g{1}\\g{2}"
           )).()
       # 🔺X1🔺 28 Customer service committees.U.K.
       |> (&Regex.replace(

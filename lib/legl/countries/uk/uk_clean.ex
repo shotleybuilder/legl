@@ -20,6 +20,7 @@ defmodule Legl.Countries.Uk.UkClean do
       |> join_empty_numbered()
       |> opening_quotes()
       |> closing_quotes()
+      |> chapter_style()
 
     Legl.txt("clean")
     |> Path.absname()
@@ -345,4 +346,16 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   def tag_section_efs(line, _), do: line
+
+  def chapter_style(binary) do
+    # Chapter is sometimes lowercased.  Change to uppercase
+    Regex.replace(~r/^chapter/m, binary, "Chapter")
+
+    # Chapter can sometimes have lowercased roman numerals.  Change to uppercase
+    |> (&Regex.replace(
+          ~r/^(CHAPTER|Chapter)[ ]?(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})/m,
+          &1,
+          fn _, c, g1, g2 -> "#{c} #{String.upcase(g1)}#{String.upcase(g2)}" end
+        )).()
+  end
 end

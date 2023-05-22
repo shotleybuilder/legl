@@ -33,10 +33,10 @@ defmodule UK do
           country: :UK,
           fields: UK.Act.fields(),
           number_fields: UK.Act.number_fields(),
-          part: ~s/^(\\d+|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
-          heading: ~s/^([A-Z]?\\d+[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
+          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)[ ]\\[::region::\\](.*)/,
           section: ~s/^([A-Z]?\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
-          sub_section: ~s/^(\\d+[A-Z]?)[ ](.*)/,
+          sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
           annex: ~s/(\\d*[A-Z]?)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
@@ -175,6 +175,7 @@ defmodule UK do
   end
 
   @airtable_default_opts %{
+    name: "default",
     country: :uk,
     type: :regulation,
     csv: true,

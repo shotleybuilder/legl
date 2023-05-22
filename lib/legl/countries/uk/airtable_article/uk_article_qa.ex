@@ -5,7 +5,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
   @components %Types.Component{}
   @regex_components Types.Component.mapped_components_for_regex()
 
-  def scan_and_print(binary, regex, name) do
+  def scan_and_print(binary, regex, name, all? \\ false) do
     IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
 
     results =
@@ -17,7 +17,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
 
     count = Enum.count(results)
     {_, cols} = :io.columns()
-    if count < 20, do: Enum.each(results, &IO.inspect(&1, width: cols))
+
+    cond do
+      all? -> Enum.each(results, &IO.inspect(&1, width: cols))
+      count < 20 -> Enum.each(results, &IO.inspect(&1, width: cols))
+      true -> nil
+    end
+
     IO.puts("Count of processed #{String.upcase(name)}s: #{count}\n\n")
     count
   end
