@@ -6,6 +6,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   # UK.region()
   @region_regex UK.region()
   @country_regex UK.country()
+  @geo_regex @region_regex <> "|" <> @country_regex
 
   @components %Types.Component{}
   @regex_components Types.Component.mapped_components_for_regex()
@@ -39,7 +40,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     if opts.qa == true, do: binary |> QA.qa_list_spare_efs(opts) |> QA.list_headings(opts)
 
     # Confirmation msg to console
-    binary |> (&IO.puts("annotated: #{String.slice(&1, 0, 100)}...")).()
+    binary |> (&IO.puts("\n\nannotated: #{String.slice(&1, 0, 100)}...")).()
 
     binary
   end
@@ -83,7 +84,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def tag_txt_amend_efs(binary) do
     regex =
       [
-        ~s/Ss?c?h?\\.[ ]/,
+        ~s/Ss?c?h?\\.[ ][^\\.]/,
         ~s/Ss[ ]/,
         ~s/s[ ]?\\./,
         ~s/W[O|o]rds?/,
@@ -151,7 +152,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def tag_schedule_efs(binary) do
     # See uk_annotations.exs for examples and test
     regex =
-      ~s/^(\\[?F\\d+)(\\[?F\\d+)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@region_regex})[ ]?([A-Z]?.*)/
+      ~s/^(\\[?F\\d+)(\\[?F\\d+)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@geo_regex})[ ]?([A-Z]?.*)/
 
     QA.scan_and_print(binary, regex, "SCHEDULE")
 
@@ -242,7 +243,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # 🔻F1205🔻 S. 145 and ... repealed -> F1205145. . . . . .
     #
 
-    regex = ~s/^🔻(F\\d+)🔻[ ]S\\.[ ](\\d+)[ ].*?(?:repealed|substituted).*/
+    regex = ~s/^🔻(F\\d+)🔻[ ]S\\.[ ](\\d+)[ ].*?(?:repealed|substituted|omitted).*/
 
     QA.scan_and_print(binary, regex, "S. SECTIONS", true)
 
@@ -300,6 +301,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # 🔻F490🔻 Ss. 32-35 substituted
     # 🔻F366🔻 Ss. 150-153 repealed (1.4.1996)
     # 🔻F229🔻 Chapter IIA (ss. 91A-91B)
+    # 🔻F62🔻 Ss 27, 27A substituted
 
     # ef_codes has this shape
     # [
@@ -310,8 +312,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # {"F1199", ["144ZA-144ZD", "144ZA", "144ZD"]}, ...
     # ]
 
+    # Ensure Ss is Ss.
+    # 🔻F62🔻 Ss 27, 27A substituted
+    binary = Regex.replace(~r/🔻[ ]Ss[ ]/, binary, "🔻 Ss. ")
+
     regex =
-      ~s/^🔻(F\\d+)🔻(?:[ ].*?[ ]\\(ss\\.[ ].*?\\)[ ]|[ ]Ss\\.[ ].*?)(?:repealed|inserted|substituted)/
+      ~s/^🔻(F\\d+)🔻(?:[ ].*?[ ]\\(ss\\.[ ].*?\\)[ ]|[ ]Ss\\.[ ].*?)(repealed|inserted|substituted)/
 
     QA.scan_and_print(binary, regex, "Ss. SECTIONS", true)
 
@@ -320,32 +326,32 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         ~r/#{regex}/m,
         binary
       )
-      |> Enum.reduce([], fn [line, ef_code], acc ->
+      |> Enum.reduce([], fn [line, ef_code, amd_type], acc ->
         acc =
           case Regex.run(~r/(\d+[A-Z]*),[ ](\d+[A-Z]*)/, line) do
             nil ->
               acc
 
             match ->
-              [{ef_code, match} | acc]
+              [{ef_code, match, amd_type} | acc]
           end
 
         Regex.run(~r/(\d+[A-Z]*)-(\d+[A-Z]*)/, line)
-        |> (&[{ef_code, &1} | acc]).()
+        |> (&[{ef_code, &1, amd_type} | acc]).()
       end)
       |> Enum.uniq()
 
     ef_tags =
       Enum.reduce(ef_codes, [], fn
-        {_, nil}, acc ->
+        {_, nil, _}, acc ->
           acc
 
-        {ef_code, [match, first, last]}, acc ->
+        {ef_code, [match, first, last], amd_type}, acc ->
           cond do
             String.contains?(match, ",") ->
               [
-                {match, ef_code, last, ef_code <> last},
-                {match, ef_code, first, ef_code <> first}
+                {match, ef_code, last, ef_code <> last, amd_type},
+                {match, ef_code, first, ef_code <> first, amd_type}
                 | acc
               ]
 
@@ -355,7 +361,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
                 Regex.match?(~r/\d+-\d+[A-Z]/, match) ->
                   # IO.puts("cond do #1 #{match}")
                   [_, a, b] = Regex.run(~r/(\d+)-\d+([A-Z])/, match)
-                  acc = [{match, ef_code, a, ef_code <> a} | acc]
+                  acc = [{match, ef_code, a, ef_code <> a, amd_type} | acc]
 
                   i = Legl.Utility.alphabet_to_numeric_map()[b]
 
@@ -363,7 +369,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
                     Enum.reduce(97..i, [], fn x, accum ->
                       [
                         {match, ef_code, a <> String.upcase(<<x::utf8>>),
-                         ef_code <> a <> String.upcase(<<x::utf8>>)}
+                         ef_code <> a <> String.upcase(<<x::utf8>>), amd_type}
                         | accum
                       ]
                     end)
@@ -380,7 +386,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
                   accum =
                     Enum.reduce(ia..ib, [], fn x, accum ->
-                      [{match, ef_code, "#{x}", "#{ef_code}#{x}"} | accum]
+                      [{match, ef_code, "#{x}", "#{ef_code}#{x}", amd_type} | accum]
                     end)
                     |> Enum.reverse()
 
@@ -397,7 +403,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
                     Enum.reduce(ia..ib, [], fn x, accum ->
                       [
                         {match, ef_code, num <> String.upcase(<<x::utf8>>),
-                         ef_code <> num <> String.upcase(<<x::utf8>>)}
+                         ef_code <> num <> String.upcase(<<x::utf8>>), amd_type}
                         | accum
                       ]
                     end)
@@ -418,7 +424,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
                     Enum.reduce(ia..ib, [], fn x, accum ->
                       [
                         {match, ef_code, num <> String.upcase(<<x::utf8>>),
-                         ef_code <> num <> String.upcase(<<x::utf8>>)}
+                         ef_code <> num <> String.upcase(<<x::utf8>>), amd_type}
                         | accum
                       ]
                     end)
@@ -433,21 +439,44 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
               end
 
             true ->
-              [{match, nil, nil} | acc]
+              [{match, nil, nil, amd_type} | acc]
           end
       end)
 
     # |> IO.inspect(limit: :infinity)
 
-    Enum.reduce(ef_tags, binary, fn {_match, ef, section_number, tag}, acc ->
-      acc
-      |> (&Regex.replace(
-            ~r/^(\[?)#{tag}([^0-9][A-Z\. ].*)(#{@region_regex})/m,
-            &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}\\g{3}"
-          )).()
-      |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
-    end)
+    {acc, io} =
+      Enum.reduce(ef_tags, {binary, []}, fn {_match, ef, section_number, tag, amd_type},
+                                            {acc, io} ->
+        regex =
+          case amd_type do
+            "repealed" ->
+              ~s/^(\\[?)#{tag}((?:[ ]|\\.).*)(#{@region_regex})/
+
+            _ ->
+              ~s/^(\\[?)#{tag}([^0-9].*)(#{@region_regex})/
+          end
+
+        io =
+          case Regex.run(~r/#{regex}/m, acc) do
+            nil -> io
+            [m, _, _, _] -> [{m, ef, section_number, amd_type} | io]
+          end
+
+        acc =
+          acc
+          |> (&Regex.replace(
+                ~r/#{regex}/m,
+                &1,
+                "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}\\g{3}"
+              )).()
+          |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
+
+        {acc, io}
+      end)
+
+    QA.print_selected_sections(io)
+    acc
   end
 
   @doc """
@@ -462,7 +491,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       end)
       |> Enum.uniq()
 
-    paras =
+    paras_duo =
       Regex.scan(
         ~r/^🔻(F\d+)🔻[ ]Sch\.[ ]\d+[A-Z]*[ ]paras\.[ ](\d+[A-Z]*),[ ](\d+[A-Z]*)[^\(]/m,
         binary
@@ -472,8 +501,22 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       end)
       |> Enum.uniq()
 
+    paras_range =
+      Regex.scan(
+        ~r/^🔻(F\d+)🔻[ ]Sch\.[ ].*[ ]paras\.[ ](\d+[A-Z]*)-(\d+[A-Z]*)[^\(]/m,
+        binary
+      )
+      |> Enum.reduce([], fn [match, ef_code, r1, r2], acc ->
+        for n <- String.to_integer(r1)..String.to_integer(r2) do
+          {match, ef_code, ~s/#{n}/, ef_code <> ~s/#{n}/}
+        end
+        |> (&(&1 ++ acc)).()
+      end)
+      |> Enum.uniq()
+
     # |> IO.inspect()
-    ef_tags = para ++ paras
+
+    ef_tags = para ++ paras_duo ++ paras_range
 
     Enum.reduce(ef_tags, binary, fn {_match, ef, section_number, tag}, acc ->
       acc

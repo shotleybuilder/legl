@@ -110,17 +110,58 @@ defmodule Legl.Countries.Uk.UkClean do
 
   @spec collapse_amendment_text_between_quotes(binary) :: binary
   def collapse_amendment_text_between_quotes(binary) do
-    Regex.replace(
-      ~r/(?:inserte?d?—|substituted?—|adde?d?—|inserted the following Schedule—)(?:\r\n|\n)^[“][\s\S]*?(?:\.”\.|\.”|”\.|”;)/m,
-      binary,
-      fn x -> "#{join(x)}" end
-    )
+    binary
+    |> (&Regex.replace(
+          ~r/(inserte?d?—|substituted?—|adde?d?—|inserted the following Schedule—)(?:\r\n|\n)([\s\S]*?)^(“)/m,
+          &1,
+          "\\1\n\\2⭕\\3"
+        )).()
+    |> String.graphemes()
+    |> Enum.reduce({[], 0}, fn char, {acc, counter} ->
+      case char do
+        # heavy large circle ⭕ is 11093 as codepoint or 2B55 in Hex
+        # reset counter @ 10000
+        "\u2B55" ->
+          {[~s/\u2B55/ | acc], 10000}
 
-    # |> (&Regex.replace(
-    #  ~r/(?:inserte?d?—|substituted?—|adde?d?—|inserted the following Schedule—)📌[“][\s\S]*?(?:\.”\.)/m,
-    #  &1,
-    #  fn x -> "#{join(x)}" end
-    # )).()
+        # left double quote mark is 8220 as codepoint or 201C in Hex
+        "\u201C" ->
+          {[~s/\u201C/ | acc], counter + 1}
+
+        # right double quote mark is 8221 as codepoint or 201D in Hex
+        # if the counter is back to 1 then we've found the matching pair
+        # cross mark ❌ is 10060 as codepoint or 274C in Hex
+        "\u201D" ->
+          counter = counter - 1
+
+          if counter == 10000 do
+            {[~s/\u274C\u201D/ | acc], 0}
+          else
+            {[~s/\u201D/ | acc], counter}
+          end
+
+        _ ->
+          {[char | acc], counter}
+      end
+    end)
+    |> elem(0)
+    |> Enum.join()
+    |> (&Regex.replace(
+          ~r/(\r\n|\n)#{"\u2B55"}#{"\u201C"}[\s\S]*?#{"\u201D"}#{"\u274C"}/m,
+          &1,
+          fn x ->
+            len = String.length(x)
+
+            case len > 500 do
+              true ->
+                (String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len))
+                |> join()
+
+              _ ->
+                "#{join(x)}"
+            end
+          end
+        )).()
   end
 
   def join(binary) do

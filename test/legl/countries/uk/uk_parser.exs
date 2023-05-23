@@ -1,5 +1,5 @@
 defmodule UKParser do
-  # mix test test/legl/countries/uk/uk_test.exs:10
+  # mix test test/legl/countries/uk/uk_parser.exs:10
 
   use ExUnit.Case
   alias Types.Component
@@ -23,7 +23,7 @@ defmodule UKParser do
       Statutory Instruments
       """
 
-      s = UK.rm_header(hdr)
+      s = UK.Parser.rm_header(hdr)
       assert s == "Statutory Instruments\n"
     end
 
@@ -49,21 +49,6 @@ defmodule UKParser do
 
       s = UK.rm_explanatory_note(binary)
       assert s == ""
-    end
-  end
-
-  describe "join_empty_numbered/1" do
-    test "removes \n" do
-      binary = ~s/(a)\nFoo\n(b)\nBar\n(i)\nFoo\n(ii)\nBar/
-
-      s = UK.Parser.join_empty_numbered(binary)
-      assert s == "(a) Foo\n(b) Bar\n(i) Foo\n(ii) Bar"
-    end
-
-    test "removes \n in text" do
-      binary = ~s/(a)\nthe Secretary of State;\n(b)\nthe Agency;\n(c)\nSEPA; or/
-      s = UK.Parser.join_empty_numbered(binary)
-      assert s == ~s/(a) the Secretary of State;\n(b) the Agency;\n(c) SEPA; or/
     end
   end
 
@@ -178,59 +163,34 @@ defmodule UKParser do
     end
   end
 
-  describe "get_part/1" do
-    test "PART 1TOPIC" do
-      binary = ~s/PART 1FIRST TOPIC/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}1 PART 1 FIRST TOPIC/
-    end
-
+  describe "part_chapter_numeric/2" do
     test "PART 2 INFORMATION" do
       binary = ~s/PART 2 INFORMATION/
       s = UK.get_part(binary)
       assert s == ~s/#{Legl.part_emoji()}2 PART 2 INFORMATION/
     end
+  end
 
-    test "PART IINFORMATION" do
-      binary = ~s/PART IINFORMATION/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}1 PART I INFORMATION/
-    end
+  describe "part_chapter_roman/2" do
+    test "part" do
+      binary =
+        [
+          ~s/PART IITEST/,
+          ~s/PART IINFORMATION/,
+          ~s/PART IIINFORMATION/,
+          ~s/PART IIGENERAL/,
+          ~s/PART IVTEST/,
+          ~s/PART IVISION/,
+          ~s/Part IIS The Water Industry Commissioner for Scotland/
+        ]
+        |> Enum.join("\n")
 
-    test "PART IIINFORMATION" do
-      binary = ~s/PART IIINFORMATION/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}2 PART II INFORMATION/
-    end
+      params = ["PART|Part", @components.part]
+      result = UK.Parser.part_chapter_roman(binary, params)
 
-    test "PART IIGENERAL" do
-      binary = ~s/PART IIGENERAL/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}2 PART II GENERAL/
-    end
+      desired = ""
 
-    test "PART IITEST" do
-      binary = ~s/PART IITEST/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}2 PART II TEST/
-    end
-
-    test "PART IVTEST" do
-      binary = ~s/PART IVTEST/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}4 PART IV TEST/
-    end
-
-    test "PART IVISION" do
-      binary = ~s/PART IVISION/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}1 PART I VISION/
-    end
-
-    test "PART AGENERAL" do
-      binary = ~s/PART AGENERAL/
-      s = UK.get_part(binary)
-      assert s == ~s/#{Legl.part_emoji()}1 PART A GENERAL/
+      assert result == desired
     end
   end
 

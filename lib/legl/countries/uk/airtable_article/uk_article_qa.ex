@@ -28,6 +28,20 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
     count
   end
 
+  def print_selected_sections(sections) when is_list(sections) do
+    IO.puts("\nItems selected as Sections by Ss.")
+    {_, cols} = :io.columns()
+
+    Enum.each(sections, fn {x, _ef, _sn, _amd_type} = section ->
+      case x do
+        nil -> nil
+        _ -> IO.inspect(section, width: cols)
+      end
+    end)
+
+    IO.puts("\n")
+  end
+
   @doc """
 
   """

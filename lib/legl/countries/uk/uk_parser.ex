@@ -9,6 +9,7 @@ defmodule UK.Parser do
 
   @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
   @country_regex "N\\.I\\.|S|W|E"
+  @geo_regex @region_regex <> "|" <> @country_regex
 
   import Legl,
     only: [
@@ -61,7 +62,7 @@ defmodule UK.Parser do
     |> Legl.Parser.rm_tabs()
     |> move_region_to_end(:act)
     |> add_missing_region()
-    |> rm_emoji(["🇨", "🇪", "🇲", "🇽", "🔺", "🔻", "❌"])
+    |> rm_emoji(["🇨", "🇪", "🇲", "🇽", "🔺", "🔻", "⭕", "❌"])
     |> QA.qa(opts)
   end
 
@@ -221,10 +222,12 @@ defmodule UK.Parser do
 
   def part_chapter_roman(binary, [type_regex, component]) do
     # Part IU.K. Wildlife
+
     Regex.replace(
-      ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([A-Z]?)[ ]?(#{@region_regex})(.+)/m,
+      ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([A-Z]?)[ ]?(#{@geo_regex})(.+)/m,
       binary,
-      fn _, part_chapter, tens, units, alpha, region, text ->
+      fn match, part_chapter, tens, units, alpha, region, text ->
+        IO.inspect(match, label: "part_chapter_roman/2")
         # Initial or full caps for part / chapter
         part_chapter =
           cond do
@@ -393,23 +396,30 @@ defmodule UK.Parser do
             &1,
             "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
-      #
-      |> (&Regex.replace(
-            ~r/^(\d{1,3})\((\d{1,3})\)[ ]?(.*)/m,
-            &1,
-            "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
-          )).()
       # 144. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
       |> (&Regex.replace(
             ~r/^(\d{1,3})([\. ]+)/m,
             &1,
             "#{@components.section}\\g{1} \\g{1}\\g{2}"
           )).()
+      #
+      |> (&Regex.replace(
+            ~r/^(\d{1,3})\((\d{1,3})\)[ ]?(.*)/m,
+            &1,
+            "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
+          )).()
+
       # 🔺X1🔺 28 Customer service committees.U.K.
       |> (&Regex.replace(
             ~r/^🔺(X\d+)🔺[ ]?(\d{1,3})[ ]?(.+?)(#{@region_regex})$/m,
             &1,
             "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
+          )).()
+      # 5The Authority may, with the approval of the ... staff as it may determine.
+      |> (&Regex.replace(
+            ~r/^(\d{1,3})[ ]?([A-Z].*)/m,
+            &1,
+            "#{@components.section}\\g{1} \\g{1} \\g{2}"
           )).()
       |> Legl.Utility.rm_dupe_spaces("\\[::section::\\]")
 
@@ -827,7 +837,7 @@ defmodule UK.Parser do
   @components_dedupe "\\[::editorial_heading::\\]|\\[::editorial::\\]|\\[::amendment::\\]|\\[::commencement::\\]"
   def rm_emoji(binary, emojii) when is_list(emojii) do
     Enum.reduce(emojii, binary, fn emoji, acc ->
-      Regex.replace(~r/#{emoji}([A-Z]\d+)#{emoji}/m, acc, "\\g{1} ")
+      Regex.replace(~r/#{emoji}/m, acc, "")
     end)
     |> Legl.Utility.rm_dupe_spaces(@components_dedupe)
   end
