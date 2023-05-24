@@ -21,6 +21,7 @@ defmodule UK do
 
   @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
   @country_regex "N\\.I\\.|S|W|E"
+  # U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|N\\.I\\.|S|W|E
 
   def region(), do: @region_regex
   def country(), do: @country_regex
@@ -72,7 +73,10 @@ defmodule UK do
     clean: true,
     annotation: true,
     parse: true,
-    list_section_efs: false,
+
+    # parse Acts with numbered headings
+    numbered_headings: false,
+
     # overarching switch for the QA functions
     qa: true,
     # finer control of QA functions
@@ -81,13 +85,15 @@ defmodule UK do
     qa_list_clean_efs: false,
     list_headings: false,
     qa_sections: true,
+    list_section_efs: false,
+
     # PARSER QA
     # List Clause Numbers
     qa_lcn_part: true,
     qa_lcn_chapter: true,
     qa_lcn_annex: true,
     qa_lcn_section: true,
-    qa_lcn_sub_section: true
+    qa_lcn_sub_section: false
   }
 
   @doc """

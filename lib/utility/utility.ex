@@ -167,4 +167,12 @@ defmodule Legl.Utility do
       fn {x, y}, acc -> Map.put(acc, "#{x}", y) end
     )
   end
+
+  @doc """
+  Columns on screen
+  """
+  def cols() do
+    {_, cols} = :io.columns()
+    cols
+  end
 end

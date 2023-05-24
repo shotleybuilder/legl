@@ -35,6 +35,8 @@ defmodule UK.Parser do
     end
   end
 
+  @cols Legl.Utility.cols()
+
   def parser(binary, %{type: :act} = opts) do
     binary
     |> get_title()
@@ -46,6 +48,8 @@ defmodule UK.Parser do
     |> get_annex()
     |> provision_before_schedule()
     |> get_table()
+    |> rm_floating_regions()
+    |> get_numbered_headings(opts)
     |> get_A_section(:act)
     |> get_section(:act)
     |> get_sub_section(:act)
@@ -57,7 +61,7 @@ defmodule UK.Parser do
     |> get_signed_section()
     # |> revise_section_number(:act)
     |> get_A_heading(:act)
-    |> get_heading(:act)
+    |> get_heading(opts)
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
     |> move_region_to_end(:act)
@@ -113,7 +117,8 @@ defmodule UK.Parser do
           ~r/#{regex}/m,
           &1,
           fn _, ef, num, txt, region ->
-            conv_num = conv_roman(num)
+            [_, t, u, p] = Regex.run(~r/(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})(.*)/, num)
+            conv_num = ~s/#{Legl.conv_roman_numeral(t <> u)}/ <> p
 
             "#{@components.part}#{conv_num} #{ef} PART #{num} #{txt} [::region::]#{region}"
           end
@@ -224,7 +229,7 @@ defmodule UK.Parser do
     # Part IU.K. Wildlife
 
     Regex.replace(
-      ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([A-Z]?)[ ]?(#{@geo_regex})(.+)/m,
+      ~r/^(#{type_regex})[ ](XC|XL|L?X{0,3})(IX|IV|V?I{0,3})([A-D]?)[ ]?(#{@geo_regex})(.*)/m,
       binary,
       fn match, part_chapter, tens, units, alpha, region, text ->
         IO.inspect(match, label: "part_chapter_roman/2")
@@ -269,6 +274,26 @@ defmodule UK.Parser do
     )
   end
 
+  @doc """
+    The Flood and Water Mgt Act 2010 has numbered headings
+    1. Key concepts and definitionsE+W
+  """
+  def get_numbered_headings(binary, %{numbered_headings: false}), do: binary
+
+  def get_numbered_headings(binary, %{type: :act}) do
+    regex = ~s/^(\\d+)(\\.[ ].*)(#{@region_regex})$/
+
+    Regex.scan(~r/#{regex}/m, binary)
+    |> IO.inspect(label: "Numbered Headings", width: @cols)
+
+    binary
+    |> (&Regex.replace(
+          ~r/#{regex}/m,
+          &1,
+          "#{@components.heading}\\g{1} \\g{1}\\g{2} [::region::]\\3"
+        )).()
+  end
+
   @heading_children ~s/[#{@regex_components.section}|#{@regex_components.amendment}]/
   @doc """
   Parse Act section headings
@@ -276,26 +301,26 @@ defmodule UK.Parser do
   Heading
   There is an initial captialisation and no ending period
   """
-  def get_heading(binary, :act),
-    do:
-      binary
-      # U.K. REPTILES
-      # Small number of headings have the Region first
-      |> (&Regex.replace(
-            ~r/^(#{@region_regex})[ ]([A-Z].*?)(etc\.)?$([\s\S]+#{@regex_components.section})(\d+[A-Z]?)(-?\d*[ ])/m,
-            &1,
-            "#{@components.heading}\\g{5} \\g{2}\\g{3} [::region::]\\g{1}\\g{4}\\g{5}\\g{6}"
-          )).()
-      |> (&Regex.replace(
-            ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-?\d*[ ])/m,
-            &1,
-            "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
-          )).()
-      |> (&Regex.replace(
-            ~r/^([A-Z].*?)(etc\.)?(#{@country_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-?\d*[ ])/m,
-            &1,
-            "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
-          )).()
+  def get_heading(binary, %{type: :act}) do
+    binary
+    # U.K. REPTILES Small number of headings have the Region first
+    |> (&Regex.replace(
+          ~r/^(#{@region_regex})[ ]([A-Z].*?)(etc\.)?$([\s\S]+#{@regex_components.section})(\d+[A-Z]?)(-\d*[ ])?/m,
+          &1,
+          "#{@components.heading}\\g{5} \\g{2}\\g{3} [::region::]\\g{1}\\g{4}\\g{5}\\g{6}"
+        )).()
+    # The Local Government (Miscellaneous Provisions) Act 1953 (c. 26)E+W
+    |> (&Regex.replace(
+          ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-\d*[ ])?/m,
+          &1,
+          "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
+        )).()
+    |> (&Regex.replace(
+          ~r/^([A-Z].*?)(etc\.)?(#{@country_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-\d*[ ])?/m,
+          &1,
+          "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
+        )).()
+  end
 
   def get_heading(binary, :regulation),
     do:
@@ -314,7 +339,7 @@ defmodule UK.Parser do
 
   def get_A_heading(binary, :act) do
     regex =
-      ~s/^#{@regex_components.heading}(.*?)[ ](.*?)\\[::region::\\](.*)$([\\s\\S]+?#{@regex_components.section})(\\d+[A-Z]*)(-?\\d*[ ])/
+      ~s/^#{@regex_components.heading}([^\\d].*?)[ ](.*?)\\[::region::\\](.*)$([\\s\\S]+?#{@regex_components.section})(\\d+[A-Z]*)(-?\\d*[ ])/
 
     binary
     |> (&Regex.replace(
@@ -380,8 +405,9 @@ defmodule UK.Parser do
             &1,
             "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
+      # 19AE+WThe adoption duty does not apply to a drainage system
       |> (&Regex.replace(
-            ~r/^(\d{1,3})(#{@region_regex})(.*)/m,
+            ~r/^(\d{1,3}[A-Z]*?)(#{@region_regex})(.*)/m,
             &1,
             "#{@components.section}\\g{1} \\g{1} \\g{3} [::region::]\\g{2}"
           )).()
@@ -429,7 +455,7 @@ defmodule UK.Parser do
   [::section::]X2 [F438 29 Consumer complaintsU.K.
   """
   def get_A_section(binary, :act) do
-    regex = ~s/^#{@regex_components.section}(.*?)(#{@region_regex})$/
+    regex = ~s/^#{@regex_components.section}(.*?)(#{@geo_regex})$/
 
     binary
     |> (&Regex.replace(
@@ -899,6 +925,10 @@ defmodule UK.Parser do
         binary,
         ""
       )
+
+  def rm_floating_regions(binary) do
+    Regex.replace(~r/^(#{@region_regex})$/m, binary, "")
+  end
 
   def rm_explanatory_note(binary),
     do:

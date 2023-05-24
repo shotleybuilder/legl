@@ -110,11 +110,22 @@ defmodule Legl.Countries.Uk.UkClean do
 
   @spec collapse_amendment_text_between_quotes(binary) :: binary
   def collapse_amendment_text_between_quotes(binary) do
+    regex =
+      [
+        ~s/inserte?d?—/,
+        ~s/substituted?—/,
+        ~s/adde?d?—/,
+        ~s/inserted the following Schedule—/,
+        ~s/inserted the following Part—/,
+        ~s/substituted the following sections—/
+      ]
+      |> Enum.join("|")
+
     binary
     |> (&Regex.replace(
-          ~r/(inserte?d?—|substituted?—|adde?d?—|inserted the following Schedule—)(?:\r\n|\n)([\s\S]*?)^(“)/m,
+          ~r/(#{regex})(#{@region_regex})?(?:\r\n|\n)([\s\S]*?)^(“)/m,
           &1,
-          "\\1\n\\2⭕\\3"
+          "\\1 \\2\n⭕\\4 \\3"
         )).()
     |> String.graphemes()
     |> Enum.reduce({[], 0}, fn char, {acc, counter} ->
@@ -168,7 +179,7 @@ defmodule Legl.Countries.Uk.UkClean do
     Regex.replace(
       ~r/(\r\n|\n)/m,
       binary,
-      "#{Legl.pushpin_emoji()}"
+      " #{Legl.pushpin_emoji()}"
     )
   end
 
