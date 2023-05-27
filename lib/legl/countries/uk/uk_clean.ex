@@ -123,7 +123,7 @@ defmodule Legl.Countries.Uk.UkClean do
 
     binary
     |> (&Regex.replace(
-          ~r/(#{regex})(#{@region_regex})?(?:\r\n|\n)([\s\S]*?)^(“)/m,
+          ~r/(#{regex})(#{@region_regex})?([\s\S]*?)(“)/m,
           &1,
           "\\1 \\2\n⭕\\4 \\3"
         )).()
