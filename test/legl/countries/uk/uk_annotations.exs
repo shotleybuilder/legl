@@ -116,6 +116,36 @@ defmodule UKAnnotations do
     end
   end
 
+  describe "tag_section_range/1" do
+    test "act sub sections" do
+      binary =
+        [
+          "Part IIIU.K.",
+          "37—40.. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . F147 U.K.",
+          "Textual Amendments",
+          "🔻F147🔻 S. 37—40 repealed by Crown Estate Act 1961 (c. 55), Sch. 3 Pt. I"
+        ]
+        |> Enum.join("\n")
+
+      fresult = tag_section_range(binary)
+      # |> IO.inspect()
+
+      test =
+        [
+          "Part IIIU.K.",
+          "[::section::]37 F147 37 .. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  [::region::]U.K.",
+          "[::section::]38 F147 38 .. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  [::region::]U.K.",
+          "[::section::]39 F147 39 .. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  [::region::]U.K.",
+          "[::section::]40 F147 40 .. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  [::region::]U.K.",
+          "Textual Amendments",
+          "🔻F147🔻 S. 37—40 repealed by Crown Estate Act 1961 (c. 55), Sch. 3 Pt. I"
+        ]
+        |> Enum.join("\n")
+
+      assert test == fresult
+    end
+  end
+
   describe "tag_sub_section_efs/1" do
     test "act sub sections" do
       binary =

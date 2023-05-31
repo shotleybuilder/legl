@@ -162,10 +162,11 @@ defmodule Legl.Utility do
   """
   def alphabet_to_numeric_map() do
     Enum.reduce(
-      Enum.zip(String.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "", trim: true), 97..(97 + 25)),
+      Enum.zip(String.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "", trim: true), 65..(65 + 25)),
       %{},
       fn {x, y}, acc -> Map.put(acc, "#{x}", y) end
     )
+    |> Map.put("", 64)
   end
 
   @doc """
@@ -175,4 +176,6 @@ defmodule Legl.Utility do
     {_, cols} = :io.columns()
     cols
   end
+
+  def upcaseFirst(<<first::utf8, rest::binary>>), do: String.upcase(<<first::utf8>>) <> rest
 end

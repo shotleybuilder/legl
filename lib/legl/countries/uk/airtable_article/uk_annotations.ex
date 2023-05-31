@@ -89,8 +89,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def tag_txt_amend_efs(binary) do
     regex =
       [
-        ~s/Ss?c?h?\\.[ ][^\\.]/,
-        ~s/Ss[ ]/,
+        ~s/Ss?c?h?s?\\.[ ][^\\.]/,
+        ~s/S[Ss][\\. ]/,
         ~s/s[ ]?\\./,
         ~s/W[O|o]rds?/,
         ~s/In[ ]s.[ ]/,
@@ -100,7 +100,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         ~s/Para\\.?[ ]/,
         ~s/Pt.[ ]/,
         # ~s/Part[ ]/, can be confused with an actual Part clause
-        ~s/Cross[ ]heading/,
+        ~s/[Cc]ross[- ]heading/,
         ~s/Chapter.*?\\(ss\\.[ ].*?\\)[ ]inserted/
       ]
       |> Enum.join("|")
@@ -156,8 +156,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
   def tag_schedule_efs(binary) do
     # See uk_annotations.exs for examples and test
+    # [F37SCHEDULE 2S Election -> picks-up the 'E' as the region if [A-Z] is used
     regex =
-      ~s/^(\\[?F\\d+)(\\[?F?\\d*)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[ ]?(#{@geo_regex})[ ]?([A-Z]?.*)/
+      ~s/^(\\[?F\\d+)(\\[?F?\\d*)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[\\] ]?(#{@geo_regex})[ ]?([A-Z]?.*)/
 
     QA.scan_and_print(binary, regex, "SCHEDULE")
 
@@ -166,6 +167,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           ~r/#{regex}/m,
           &1,
           "#{@components.annex}\\g{4} \\g{1}\\g{2} \\g{3} \\g{4} \\g{6} [::region::]\\g{5}"
+        )).()
+    |> (&Regex.replace(
+          ~r/^(\[?)(F\d{1,3})[ ]?SCHEDULES/m,
+          &1,
+          "#{@components.annex} \\0"
         )).()
     |> Legl.Utility.rm_dupe_spaces(@regex_components.annex)
   end
@@ -177,9 +183,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   """
   def cross_heading_efs(binary) do
     # See uk_annotations.exs for examples and test
-    regex = ~s/^🔻(F\\d+)🔻.*?(?:C|c)ross(?:-|[ ])heading.*(?:inserted|substituted)/
+    regex = ~s/^🔻(F\\d+)🔻.*?[Cc]ross[ -]heading.*(?:inserted|substituted)/
 
-    count = QA.scan_and_print(binary, regex, "cross heading")
+    count = QA.scan_and_print(binary, regex, "cross heading", true)
 
     case count do
       0 ->
@@ -226,15 +232,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       Regex.scan(~r/#{regex}/m, binary)
       |> Enum.reduce(binary, fn [_line, ef, x], acc ->
         acc
+        # [F228[F22911A Modification of conditions of licencesE+W+S
         |> (&Regex.replace(
-              ~r/^(\[?)#{ef}[ ]?#{x}([ A-Z\[])/m,
+              ~r/^(\[?)#{ef}[ \[]?F?\d*?#{x}([ A-Z\[])?/m,
               &1,
               "#{@components.section}#{x} \\g{1}#{ef} #{x} \\g{2}"
             )).()
+        # [8AF138 Modification or removal of the 25,000 therm limits.E+W+S
         |> (&Regex.replace(
-              ~r/^#{x}#{ef}/m,
+              ~r/^(\[?)#{x}#{ef}/m,
               &1,
-              "#{@components.section}#{x} #{ef} "
+              "#{@components.section}#{x} \\g{1} #{x} #{ef} "
             )).()
         # X2[F43829 Consumer complaintsU.K.
         |> (&Regex.replace(
@@ -336,19 +344,46 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
   """
   def tag_section_range(binary) do
-    regex = ~s/^F(\\d+)(?:-|—|, )?(\\d+)?([ \\.]+)(#{@geo_regex})([\\s\\S]+?^🔻F(\\d+)🔻)/
+    regex1 = ~s/^F(\\d+)(?:-|—|, )(\\d+)?([ \\.]+)(#{@geo_regex})([\\s\\S]+?^🔻F(\\d+)🔻)/
+    # 37—40.. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . F147 U.K.
+    regex2 =
+      ~s/^(\\d+)(?:-|—|, )(\\d+)?([ \\.]+)F(\\d+)[ ]?(#{@geo_regex})([\\s\\S]+?^🔻?F(\\d+)🔻?)/
 
-    QA.scan_and_print(binary, regex, "SECTION RANGE", true)
+    QA.scan_and_print(binary, regex1, "SECTION RANGE", true)
+    QA.scan_and_print(binary, regex2, "SECTION RANGE", true)
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex}/m,
+          ~r/#{regex1}/m,
           &1,
           fn _, from, to, txt, region, amd, ef ->
             # take the F9 number from the 'from' number 914 becomes 14
             # F2 and 22 becomes 2
             from = String.replace_prefix(from, ef, "")
 
+            # account for a range of 1 (to being "")
+            to =
+              if to == "" do
+                from
+              else
+                to
+              end
+
+            f = String.to_integer(from)
+            t = String.to_integer(to)
+
+            for n <- f..t do
+              ~s/[::section::]#{n} F#{ef} #{n} #{txt} [::region::]#{region}/
+            end
+            |> Enum.join("\n")
+            |> Kernel.<>(amd)
+          end
+        )).()
+    # |> QA.qa_print_line("37—40")
+    |> (&Regex.replace(
+          ~r/#{regex2}/m,
+          &1,
+          fn _match, from, to, txt, ef, region, amd, _ef_qa ->
             # account for a range of 1 (to being "")
             to =
               if to == "" do
@@ -379,142 +414,124 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # CSV when there are 2x insertions / substitutions
     # 🔻F124🔻 Ss. 16A, 16B inserted
     # 🔻F188🔻 Ss. 17FA, 17FB inserted
+    # CSV for 3!
+    # 🔻F112🔻 Ss. 6, 6A, 6B substituted (16.5.2001
     # RANGE when there are >2x insertions / substitutions
+
+    # 🔻F366🔻 Ss. 150-153 repealed (1.4.1996)
+    # 🔻F62🔻 Ss 27, 27A substituted
+
+    binary =
+      String.split(binary, "\n")
+      |> Enum.reduce([], fn line, acc ->
+        case String.starts_with?(line, "🔻") do
+          false ->
+            [line | acc]
+
+          true ->
+            # Ensure Ss is Ss.
+            # 🔻F62🔻 Ss 27, 27A substituted
+            line
+            |> (&Regex.replace(~r/[ ]Ss[ ]/m, &1, " Ss. ")).()
+            # Ensure SS is Ss.
+            # 🔻F520🔻 SS. 30A-30F inserted
+            |> (&Regex.replace(~r/[ ]SS\./m, &1, " Ss.")).()
+            # Ensure ss is Ss.
+            # 🔻F229🔻 Chapter IIA (ss. 91A-91B)
+            # 🔻F561🔻 Cross heading, ss. 33A and 33B inserted
+            |> (&Regex.replace(~r/[ ]ss\./m, &1, " Ss.")).()
+            # 🔻F561🔻 Cross heading, ss. 33A and 33B inserted
+            # Make 'and' a ','
+            |> (&Regex.replace(~r/([ ]Ss\.[ ]\d+[A-Z]*)[ ]and/m, &1, "\\g{1},")).()
+            |> (&[&1 | acc]).()
+        end
+      end)
+      |> Enum.reverse()
+      |> Enum.join("\n")
+
+    # 🔻F749🔻 S. 41EA, 41EB inserted
+    # 🔻F143🔻 Ss. 17A, 17AA substituted
+    # 🔻F276🔻 Ss. 16, 16A, 17 and cross-heading substituted
     # 🔻F494🔻 Ss. 33A-33C inserted
     # 🔻F426🔻 Ss. 27H-27K inserted
-    # 🔻F143🔻 Ss. 17A, 17AA substituted
     # 🔻F490🔻 Ss. 32-35 substituted
-    # 🔻F366🔻 Ss. 150-153 repealed (1.4.1996)
-    # 🔻F229🔻 Chapter IIA (ss. 91A-91B)
-    # 🔻F62🔻 Ss 27, 27A substituted
-
-    # ef_codes has this shape
-    # [
-    # {"F1359", nil},
-    # [{"F1359", ["192A, 192B", "192A", "192B"]},
-    # {"F1200", nil},
-    # {"F1200", ["144ZE, 144ZF", "144ZE", "144ZF"]},
-    # {"F1199", ["144ZA-144ZD", "144ZA", "144ZD"]}, ...
-    # ]
-
-    # Ensure Ss is Ss.
-    # 🔻F62🔻 Ss 27, 27A substituted
-    binary = Regex.replace(~r/🔻[ ]Ss[ ]/, binary, "🔻 Ss. ")
-
-    regex =
-      ~s/^🔻(F\\d+)🔻(?:[ ].*?[ ]\\(ss\\.[ ].*?\\)[ ]|[ ]Ss\\.[ ].*?)(repealed|inserted|substituted|omitted)/
+    regex = ~s/^🔻(F\\d+)🔻(?:.*?[ ]Ss?\\.[ ](.*?))[ ]+(repealed|inserted|substituted|omitted)/
 
     QA.scan_and_print(binary, regex, "Ss. SECTIONS", true)
 
     ef_codes =
-      Regex.scan(
-        ~r/#{regex}/m,
-        binary
-      )
-      |> Enum.reduce([], fn [line, ef_code, amd_type], acc ->
+      Regex.scan(~r/#{regex}/m, binary)
+      |> Enum.reduce([], fn [_line, ef_code, s_code, amd_type], acc ->
         # sometimes the en dash (codepoint 8211) \u2013 is used for ranges
-        line = Regex.replace(~r/–/, line, "-")
+        s_code =
+          Regex.replace(~r/–/m, s_code, "-")
+          |> (&Regex.replace(~r/ and cross[- ]heading/m, &1, "")).()
+          |> (&Regex.replace(~r/[ ]/m, &1, "")).()
 
-        acc =
-          case Regex.run(~r/(\d+[A-Z]*),[ ](\d+[A-Z]*)/, line) do
-            nil ->
-              acc
-
-            match ->
-              [{ef_code, match, amd_type} | acc]
-          end
-
-        Regex.run(~r/(\d+[A-Z]*)-(\d+[A-Z]*)/, line)
-        |> (&[{ef_code, &1, amd_type} | acc]).()
+        [{ef_code, s_code, amd_type} | acc]
       end)
       |> Enum.uniq()
+      |> IO.inspect()
 
     ef_tags =
       Enum.reduce(ef_codes, [], fn
         {_, nil, _}, acc ->
           acc
 
-        {ef_code, [match, first, last], amd_type}, acc ->
+        {ef_code, s_code, amd_type}, acc ->
           cond do
-            String.contains?(match, ",") ->
-              [
-                {match, ef_code, last, ef_code <> last, amd_type},
-                {match, ef_code, first, ef_code <> first, amd_type}
-                | acc
-              ]
+            String.contains?(s_code, ",") ->
+              accum =
+                String.split(s_code, ",")
+                |> Enum.reduce([], fn x, accum ->
+                  [{s_code, ef_code, x, ef_code <> x, amd_type} | accum]
+                end)
 
-            String.contains?(match, "-") ->
+              accum ++ acc
+
+            String.contains?(s_code, "-") ->
               cond do
                 # RANGE with this pattern 87-87C
-                Regex.match?(~r/\d+-\d+[A-Z]/, match) ->
-                  # IO.puts("cond do #1 #{match}")
-                  [_, a, b] = Regex.run(~r/(\d+)-\d+([A-Z])/, match)
-                  acc = [{match, ef_code, a, ef_code <> a, amd_type} | acc]
-
-                  i = Legl.Utility.alphabet_to_numeric_map()[b]
-
-                  accum =
-                    Enum.reduce(97..i, [], fn x, accum ->
-                      [
-                        {match, ef_code, a <> String.upcase(<<x::utf8>>),
-                         ef_code <> a <> String.upcase(<<x::utf8>>), amd_type}
-                        | accum
-                      ]
-                    end)
-                    |> Enum.reverse()
-
-                  accum ++ acc
-
                 # RANGE with this pattern 32-35
-                Regex.match?(~r/\d+-\d+/, match) ->
-                  # IO.puts("cond do #2 #{match}")
-                  [_, a, b] = Regex.run(~r/(\d+)-(\d+)/, match)
-                  ia = String.to_integer(a)
-                  ib = String.to_integer(b)
+                # RANGE with this pattern 27H-27K
+                Regex.match?(~r/\d+[A-Z]?-\d+[A-Z]?/, s_code) ->
+                  # IO.puts("cond do #1 #{match}")
+                  [_, a, b, c, d] = Regex.run(~r/(\d+)([A-Z]?)-(\d+)([A-Z]?)/, s_code)
+
+                  range =
+                    case a == c do
+                      true ->
+                        Utility.RangeCalc.range({a, b, d})
+
+                      false ->
+                        b =
+                          if b == "" do
+                            "A"
+                          else
+                            b
+                          end
+
+                        Utility.RangeCalc.range({a, b, c, d})
+                    end
 
                   accum =
-                    Enum.reduce(ia..ib, [], fn x, accum ->
-                      [{match, ef_code, "#{x}", "#{ef_code}#{x}", amd_type} | accum]
+                    Enum.reduce(range, [], fn x, accum ->
+                      [{s_code, ef_code, x, ef_code <> x, amd_type} | accum]
                     end)
                     |> Enum.reverse()
 
                   accum ++ acc
 
                 # RANGE with this pattern 105ZA-105ZI
-                Regex.match?(~r/\d+[A-Z][A-Z]-\d+[A-Z][A-Z]/, match) ->
+                Regex.match?(~r/\d+[A-Z][A-Z]-\d+[A-Z][A-Z]/, s_code) ->
                   # IO.puts("cond do #3 #{match}")
-                  [_, num, a, b] = Regex.run(~r/(\d+[A-Z])([A-Z])-\d+[A-Z]([A-Z])/, match)
-                  ia = Legl.Utility.alphabet_to_numeric_map()[a]
-                  ib = Legl.Utility.alphabet_to_numeric_map()[b]
+                  [_, num, a, b] = Regex.run(~r/(\d+[A-Z])([A-Z])-\d+[A-Z]([A-Z])/, s_code)
+
+                  range = Utility.RangeCalc.range({num, a, b})
 
                   accum =
-                    Enum.reduce(ia..ib, [], fn x, accum ->
-                      [
-                        {match, ef_code, num <> String.upcase(<<x::utf8>>),
-                         ef_code <> num <> String.upcase(<<x::utf8>>), amd_type}
-                        | accum
-                      ]
-                    end)
-                    |> Enum.reverse()
-
-                  # |> IO.inspect()
-
-                  accum ++ acc
-
-                # RANGE with this pattern 27H-27K
-                Regex.match?(~r/\d+[A-Z]-\d+[A-Z]/, match) ->
-                  # IO.puts("cond do #4 #{match}")
-                  [_, num, a, b] = Regex.run(~r/(\d+)([A-Z])-\d+([A-Z])/, match)
-                  ia = Legl.Utility.alphabet_to_numeric_map()[a]
-                  ib = Legl.Utility.alphabet_to_numeric_map()[b]
-
-                  accum =
-                    Enum.reduce(ia..ib, [], fn x, accum ->
-                      [
-                        {match, ef_code, num <> String.upcase(<<x::utf8>>),
-                         ef_code <> num <> String.upcase(<<x::utf8>>), amd_type}
-                        | accum
-                      ]
+                    Enum.reduce(range, [], fn x, accum ->
+                      [{s_code, ef_code, x, ef_code <> x, amd_type} | accum]
                     end)
                     |> Enum.reverse()
 
@@ -527,21 +544,23 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
               end
 
             true ->
-              [{match, nil, nil, amd_type} | acc]
+              acc
+              # [{s_code, ef_code, nil, nil, amd_type} | acc]
           end
       end)
+      |> Enum.uniq()
       |> IO.inspect(limit: :infinity)
 
     {acc, io} =
-      Enum.reduce(ef_tags, {binary, []}, fn {_match, ef, section_number, tag, amd_type},
+      Enum.reduce(ef_tags, {binary, []}, fn {_match, ef, section_number, _tag, amd_type},
                                             {acc, io} ->
         regex =
           case amd_type do
             "repealed" ->
-              ~s/^(\\[?)#{tag}((?:[ ]|\\.).*)(#{@geo_regex})/
+              ~s/^(\\[)?#{ef}(\\[)?#{section_number}([ \\.].*)/
 
             _ ->
-              ~s/^(\\[?)#{tag}([^0-9].*)(#{@geo_regex})/
+              ~s/^(\\[)?#{ef}(\\[)?#{section_number}([^0-9].*)/
           end
 
         io =
@@ -555,7 +574,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           |> (&Regex.replace(
                 ~r/#{regex}/m,
                 &1,
-                "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}\\g{3}"
+                "#{@components.section}#{section_number} \\g{1}#{ef}\\g{2} #{section_number} \\g{3}"
               )).()
           |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
 
@@ -571,16 +590,18 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   """
   def tag_schedule_section_efs(binary) do
     # See uk_annotations.exs for examples and test
+    # 🔻F80🔻 Sch. 4 Pt. I para. 9 repealed
     para =
-      Regex.scan(~r/^🔻(F\d+)🔻[ ]Sch\.[ ]\d+[A-Z]*[ ]para\.[ ](\d+[A-Z]*)[ ]/m, binary)
+      Regex.scan(~r/^🔻(F\d+)🔻[ ]Sch\.[ ]\d+[A-Z]*[ ].*?para\.[ ]?(\d+[A-Z]*)[ ]/m, binary)
       |> Enum.reduce([], fn [match, ef_code, x], acc ->
         [{match, ef_code, x, ef_code <> x} | acc]
       end)
       |> Enum.uniq()
 
+    # 🔻F79🔻 Sch. 4 Pt. I paras. 7, 8 repealed
     paras_duo =
       Regex.scan(
-        ~r/^🔻(F\d+)🔻[ ]Schs?\.[ ]\d+[A-Z]*[ ]paras\.[ ](\d+[A-Z]*),[ ](\d+[A-Z]*)[^\(]/m,
+        ~r/^🔻(F\d+)🔻[ ]Schs?\.[ ]\d+[A-Z]*[ ].*?paras\.[ ](\d+[A-Z]*),[ ](\d+[A-Z]*)[^\(]/m,
         binary
       )
       |> Enum.reduce([], fn [match, ef_code, x1, x2], acc ->
@@ -590,20 +611,54 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     paras_range =
       Regex.scan(
-        ~r/^🔻(F\d+)🔻[ ]Sch\.[ ].*[ ]paras\.[ ](\d+[A-Z]*)-(\d+[A-Z]*)[^\(]/m,
+        ~r/^🔻(F\d+)🔻[ ]Sch\.[ ].*[ ]paras\.[ ](\d+)-(\d+)[^\(]/m,
         binary
       )
-      |> Enum.reduce([], fn [match, ef_code, r1, r2], acc ->
-        for n <- String.to_integer(r1)..String.to_integer(r2) do
+      |> Enum.reduce([], fn [match, ef_code, from, to], acc ->
+        for n <- String.to_integer(from)..String.to_integer(to) do
           {match, ef_code, ~s/#{n}/, ef_code <> ~s/#{n}/}
         end
         |> (&(&1 ++ acc)).()
       end)
       |> Enum.uniq()
 
-    # |> IO.inspect()
+    # ranges such as 🔻F227🔻 Sch. 4 paras. 33-33C
+    # 33-33C -> 33, 33A, 33B, 33C
+    paras_range_ =
+      Regex.scan(
+        ~r/^🔻(F\d+)🔻[ ]Sch\.[ ].*[ ]paras\.[ ](\d+)([A-Z]?)-\d+([A-Z])[^\(]/m,
+        binary
+      )
+      |> Enum.reduce([], fn [match, ef_code, r, a, b], acc ->
+        ia =
+          if a == "" do
+            # codepoint for "A"
+            65
+          else
+            Legl.Utility.alphabet_to_numeric_map()[a]
+          end
 
-    ef_tags = para ++ paras_duo ++ paras_range
+        ib = Legl.Utility.alphabet_to_numeric_map()[b]
+
+        # {match, F227, "33A", "F22733A"}
+        acc =
+          for n <- ia..ib do
+            {match, ef_code, ~s/#{r}#{<<n::utf8>>}/, ef_code <> ~s/#{r}#{<<n::utf8>>}/}
+          end
+          |> (&(&1 ++ acc)).()
+
+        if a == "" do
+          # {match, F227, "33", "F22733"}
+          [{match, ef_code, ~s/#{r}/, ef_code <> ~s/#{r}/} | acc]
+        else
+          acc
+        end
+      end)
+      |> Enum.uniq()
+
+    ef_tags =
+      (para ++ paras_duo ++ paras_range ++ paras_range_)
+      |> IO.inspect(label: ">>>>>>>>>>>>>>>>>>>")
 
     Enum.reduce(ef_tags, binary, fn {_match, ef, section_number, tag}, acc ->
       acc

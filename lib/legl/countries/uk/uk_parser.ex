@@ -44,13 +44,14 @@ defmodule UK.Parser do
     |> get_A_chapter(:act)
     |> get_part_chapter(:part)
     |> get_part_chapter(:chapter)
-    # |> get_modifications(:act)
+    |> get_modifications(:act)
     |> get_annex()
     |> provision_before_schedule()
     |> get_table()
     |> rm_floating_regions()
     |> get_numbered_headings(opts)
     |> get_A_section(:act)
+    |> get_section_with_period(opts)
     |> get_section(:act)
     |> get_sub_section(:act)
     |> get_amendments(:act)
@@ -219,7 +220,7 @@ defmodule UK.Parser do
 
   def part_chapter_numeric(binary, [type_regex, component]) do
     Regex.replace(
-      ~r/^(#{type_regex})[ ](\d+)[ ]?(#{@region_regex})(.*)/m,
+      ~r/^(#{type_regex})[ ](\d+)[ ]?(#{@geo_regex})(.*)/m,
       binary,
       "#{component}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}"
     )
@@ -366,23 +367,19 @@ defmodule UK.Parser do
   def get_section(binary, :act),
     do:
       binary
+      # 32Z1Certificate purchase orders: procedureE+W+S
+      |> (&Regex.replace(
+            ~r/^(\d{1,3}[A-Z]\d)[ ]?(.*)(#{@region_regex})/m,
+            &1,
+            "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
+          )).()
+      #
       |> (&Regex.replace(
             ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*)(#{@region_regex})/m,
             &1,
             "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
           )).()
-      # 6B.(1)Section 2(1) does not entitle
-      |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]*)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{1}-\\g{2} \\g{1}.(\\g{2}) \\g{3} [::region::]\\g{4}"
-          )).()
-      # 161A.Notices requiring persons to carry out works and operationsE+W
-      |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]*)\.[ ]?(.*)(#{@region_regex})$/m,
-            &1,
-            "#{@components.section}\\g{1} \\g{1} (\\g{2}) [::region::]\\g{3}"
-          )).()
+
       # A1The net-zero emissions targetS
       |> (&Regex.replace(
             ~r/^([A-Z]\d{1,3})([A-Z].*)(#{@region_regex})$/m,
@@ -405,17 +402,21 @@ defmodule UK.Parser do
             &1,
             "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
-      # 19AE+WThe adoption duty does not apply to a drainage system
+      # 53ExtentU.K.
+      # Has to come before the next to avoid 'E' of Extent a proxy for England
       |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]*?)(#{@region_regex})(.*)/m,
-            &1,
-            "#{@components.section}\\g{1} \\g{1} \\g{3} [::region::]\\g{2}"
-          )).()
-      |> (&Regex.replace(
-            ~r/^(\d{1,3})[ ]?(.*?)(#{@region_regex})$/m,
+            ~r/^(\d{1,3})[ ]?(.*?)(#{@geo_regex})$/m,
             &1,
             "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
+      # 19AE+WThe adoption duty does not apply to a drainage system
+      # 1SBefore making an order the Minister shall prepare
+      |> (&Regex.replace(
+            ~r/^(\d{1,3}[A-Z]*?)(#{@geo_regex})(.*)/m,
+            &1,
+            "#{@components.section}\\g{1} \\g{1} \\g{3} [::region::]\\g{2}"
+          )).()
+
       # 1 Protection of wild birds, their nests and eggs.S
       |> (&Regex.replace(
             ~r/^(\d{1,3})[ ]?(.*?)(#{@country_regex})$/m,
@@ -423,12 +424,14 @@ defmodule UK.Parser do
             "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
       # 144. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+      # Excludes
+      # 6.  To scuttle any vessel or floating container anywhere at sea
       |> (&Regex.replace(
-            ~r/^(\d{1,3})([\. ]+)/m,
+            ~r/^(\d{1,3})(( \. \.|\. \. )[\. ]+)/m,
             &1,
-            "#{@components.section}\\g{1} \\g{1}\\g{2}"
+            "#{@components.section}\\g{1} \\g{1}\\g{3}\\g{2}"
           )).()
-      #
+      # 1(1) Foobar
       |> (&Regex.replace(
             ~r/^(\d{1,3})\((\d{1,3})\)[ ]?(.*)/m,
             &1,
@@ -449,20 +452,83 @@ defmodule UK.Parser do
           )).()
       |> Legl.Utility.rm_dupe_spaces("\\[::section::\\]")
 
+  def get_section_with_period(binary, %{"s_.": false} = _opts), do: binary
+
+  def get_section_with_period(binary, %{"s_.": true} = _opts) do
+    binary
+    # 6B.(1)Section 2(1) does not entitle
+    |> (&Regex.replace(
+          ~r/^(\d{1,3}[A-Z]*)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
+          &1,
+          "#{@components.section}\\g{1}-\\g{2} \\g{1}.(\\g{2}) \\g{3} [::region::]\\g{4}"
+        )).()
+    # 161A.Notices requiring persons to carry out works and operationsE+W
+    # 33A.U.K.Bartley Water, above the toll bridge at Eling.
+    |> (&Regex.replace(
+          ~r/^(\d{1,3}[A-Z]*)\.[ ]?(.*?)(#{@region_regex})(.*)/m,
+          &1,
+          "#{@components.section}\\g{1} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}"
+        )).()
+    # 2.The following are relevant provisions in relation to all holders of a licence under section 7—
+    |> (&Regex.replace(
+          ~r/^(\d{1,3}[A-Z]*)\.[ ]?(.*)/m,
+          &1,
+          "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]"
+        )).()
+  end
+
   @doc """
   Parse amended sections of Acts.
   Formats:
   [::section::]X2 [F438 29 Consumer complaintsU.K.
+  [::section::]41E [F739 41E References to [F740 CMA] .E+W+S
   """
   def get_A_section(binary, :act) do
-    regex = ~s/^#{@regex_components.section}(.*?)(#{@geo_regex})$/
-
     binary
-    |> (&Regex.replace(
-          ~r/#{regex}/m,
-          &1,
-          "#{@components.section}\\g{1} [::region::]\\g{2}"
-        )).()
+    |> String.split("\n")
+    |> Enum.reduce([], fn line, acc ->
+      case String.starts_with?(line, "[::section::]") do
+        true ->
+          case Regex.match?(~r/#{@geo_regex}$/, line) do
+            true ->
+              regex = ~s/^#{@regex_components.section}(.*?)(#{@geo_regex})$/
+
+              line
+              |> (&Regex.replace(
+                    ~r/#{regex}/,
+                    &1,
+                    fn _match, txt, region ->
+                      "#{@components.section}#{txt} [::region::]#{region}"
+                    end
+                  )).()
+              |> (&[&1 | acc]).()
+
+            false ->
+              regex = ~s/^#{@regex_components.section}(\\d+[A-Z]+.*?)(#{@geo_regex})(.*)/
+
+              line
+              |> (&Regex.replace(
+                    ~r/#{regex}/,
+                    &1,
+                    fn _match, n, region, txt ->
+                      case txt do
+                        "" ->
+                          "#{@components.section}#{n} [::region::]#{region}"
+
+                        _ ->
+                          "#{@components.section}#{n} #{txt} [::region::]#{region}"
+                      end
+                    end
+                  )).()
+              |> (&[&1 | acc]).()
+          end
+
+        false ->
+          [line | acc]
+      end
+    end)
+    |> Enum.reverse()
+    |> Enum.join("\n")
   end
 
   @doc """
@@ -548,8 +614,9 @@ defmodule UK.Parser do
       binary
       # SCHEDULE 4 U.K. Animals the Sale etc. of Which is Restricted
       # SCHEDULE 10E+W PROCEDURE RELATING TO BYELAWS UNDER SECTION 157
+      # SCHEDULE 2ABU.K.Duties of supply exemption holders
       |> (&Regex.replace(
-            ~r/^(SCHEDULE|Schedule)[ ]?(\d+)[ ]*(#{@region_regex})[ ]?(.*([etc\.]|[^\.]))(?:\n)/m,
+            ~r/^(SCHEDULE|Schedule)[ ]?(\d+[A-Z]*?)[ ]*(#{@region_regex})[ ]?(.*([etc\.]|[^\.]))(?:\n)/m,
             &1,
             "#{@components.annex}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}\n"
           )).()

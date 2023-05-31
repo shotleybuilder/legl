@@ -255,4 +255,14 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
 
     binary
   end
+
+  def qa_print_line(binary, line_start) do
+    regex = ~s/^#{line_start}.*/
+
+    Regex.scan(~r/#{regex}/m, binary)
+    |> IO.inspect(label: "PRINT LINE ----------------------")
+
+    IO.puts(regex <> "\n\n")
+    binary
+  end
 end

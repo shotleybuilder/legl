@@ -22,6 +22,7 @@ defmodule UK do
   @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
   @country_regex "N\\.I\\.|S|W|E"
   # U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|N\\.I\\.|S|W|E
+  # U\.K\.|E\+W\+N\.I\.|E\+W\+S|E\+W|N\.I\.|S|W|E
 
   def region(), do: @region_regex
   def country(), do: @country_regex
@@ -40,7 +41,7 @@ defmodule UK do
           sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
-          annex: ~s/(\\d*[A-Z]?)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
+          annex: ~s/(\\d*[A-Z]*)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
         }
 
       :regulation ->
@@ -74,8 +75,17 @@ defmodule UK do
     annotation: true,
     parse: true,
 
+    # switch for Acts with period after number
+    "s_.": false,
+
     # parse Acts with numbered headings
     numbered_headings: false,
+
+    # parse Acts with Ordinal schedules eg First Schedule
+    numericalise_schedules: false,
+
+    # Sections with rare acronyms as text rather than amendment suffix
+    split_acronymed_sections: false,
 
     # overarching switch for the QA functions
     qa: true,
