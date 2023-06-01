@@ -69,7 +69,7 @@ defmodule Types.AirtableSchema do
             title_name: "title",
             part: ~s/^(\\d+|[A-Z])[ ](.*)/,
             part_name: "part",
-            chapter: ~s/^(\\d+)[ ](.*)/,
+            chapter: ~s/^(\\d+[A-Z]?)[ ](.*)/,
             chapter_name: "chapter",
             section: ~s/^(\\d+[a-zA-Z]*)[ ](.*)/,
             section_name: "section",
@@ -87,27 +87,21 @@ defmodule Types.AirtableSchema do
             sub_name: "article, paragraph, sub-paragraph",
             annex: ~s/(\\d*)[ ](.*)/,
             annex_name: "annex",
-
             amendment: "",
             amendment_heading: ~s/.*/,
             amendment_name: "amendment",
-
             modification: ~s/^([A-Z])(\\d+)(.*)/,
             modification_heading: ~s/.*/,
             modification_name: "modification",
-
             commencement: ~s/^([A-Z])(\\d+)(.*)/,
             commencement_heading: ~s/.*/,
             commencement_name: "commencement",
-
             extent: ~s/^([A-Z])(\\d+)(.*)/,
             extent_heading: ~s/.*/,
             extent_name: "extent",
-
             editorial: ~s/^([A-Z])(\\d+)(.*)/,
             editorial_heading: ~s/.*/,
             editorial_name: "editorial",
-
             amending_sub_article_name: "",
             form: "",
             form_name: "form",

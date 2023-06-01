@@ -21,8 +21,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_txt_amend_efs()
       |> part_efs()
       |> chapter_efs()
-      |> tag_schedule_efs()
       |> cross_heading_efs()
+      |> tag_schedule_efs()
+      |> tag_schedule_section_efs()
       |> tag_sub_section_range()
       |> tag_sub_section_efs()
       |> tag_sub_sub_section_efs()
@@ -30,7 +31,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_section_end_efs()
       |> section_efs()
       |> section_ss_efs()
-      |> tag_schedule_section_efs()
       |> tag_schedule_range()
       |> tag_mods_cees()
       |> tag_commencing_ies()
@@ -100,7 +100,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         ~s/Para\\.?[ ]/,
         ~s/Pt.[ ]/,
         # ~s/Part[ ]/, can be confused with an actual Part clause
-        ~s/[Cc]ross[- ]heading/,
+        ~s/[Cc]ross[- ]?heading/,
         ~s/Chapter.*?\\(ss\\.[ ].*?\\)[ ]inserted/
       ]
       |> Enum.join("|")
@@ -183,7 +183,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   """
   def cross_heading_efs(binary) do
     # See uk_annotations.exs for examples and test
-    regex = ~s/^🔻(F\\d+)🔻.*?[Cc]ross[ -]heading.*(?:inserted|substituted)/
+    regex = ~s/^🔻(F\\d+)🔻.*?[Cc]ross[ -]?heading.*(?:inserted|substituted)/
 
     count = QA.scan_and_print(binary, regex, "cross heading", true)
 
@@ -192,18 +192,15 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         binary
 
       _ ->
-        x_hdgs =
-          Regex.scan(
-            ~r/#{regex}/m,
-            binary
-          )
-
-        x_hdgs
+        Regex.scan(~r/#{regex}/m, binary)
         |> Enum.map(fn [_, ef_code] -> ef_code end)
         |> Enum.reduce(binary, fn ef, acc ->
+          regex = ~s/^(\\[?)#{ef}[ ]?([^0-9].*?)(#{@geo_regex})$/
+          QA.scan_and_print(acc, regex, "cross headings found", true)
+
           acc
           |> (&Regex.replace(
-                ~r/^(\[?)#{ef}([^0-9].*?)(#{@region_regex})/m,
+                ~r/#{regex}/m,
                 &1,
                 "#{@components.heading}\\g{1}#{ef} \\g{2} [::region::]\\g{3}"
               )).()
@@ -238,6 +235,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
               &1,
               "#{@components.section}#{x} \\g{1}#{ef} #{x} \\g{2}"
             )).()
+        # F131F13230C Water quality objectives.S
+        |> (&Regex.replace(
+              ~r/^(\[?F\d+)#{ef}#{x}([ A-Z\[])?/m,
+              &1,
+              "#{@components.section}#{x} \\g{1}#{ef} #{x} \\g{2}"
+            )).()
         # [8AF138 Modification or removal of the 25,000 therm limits.E+W+S
         |> (&Regex.replace(
               ~r/^(\[?)#{x}#{ef}/m,
@@ -256,7 +259,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # 🔻F1205🔻 S. 145 and ... repealed -> F1205145. . . . . .
     #
 
-    regex = ~s/^🔻(F\\d+)🔻[ ]S\\.[ ](\\d+)[ ].*?(?:repealed|substituted|omitted).*/
+    regex = ~s/^🔻(F\\d+)🔻[ ]S\\.[ ](\\d+).*?(?:repealed|substituted|omitted).*/
 
     QA.scan_and_print(binary, regex, "S. SECTIONS II", true)
 
@@ -443,35 +446,59 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             # 🔻F561🔻 Cross heading, ss. 33A and 33B inserted
             # Make 'and' a ','
             |> (&Regex.replace(~r/([ ]Ss\.[ ]\d+[A-Z]*)[ ]and/m, &1, "\\g{1},")).()
+            # sometimes the en dash (codepoint 8211) \u2013 is used for ranges
+            |> (&Regex.replace(~r/–/m, &1, "-")).()
             |> (&[&1 | acc]).()
         end
       end)
       |> Enum.reverse()
       |> Enum.join("\n")
 
-    # 🔻F749🔻 S. 41EA, 41EB inserted
-    # 🔻F143🔻 Ss. 17A, 17AA substituted
-    # 🔻F276🔻 Ss. 16, 16A, 17 and cross-heading substituted
-    # 🔻F494🔻 Ss. 33A-33C inserted
-    # 🔻F426🔻 Ss. 27H-27K inserted
-    # 🔻F490🔻 Ss. 32-35 substituted
-    regex = ~s/^🔻(F\\d+)🔻(?:.*?[ ]Ss?\\.[ ](.*?))[ ]+(repealed|inserted|substituted|omitted)/
+    # section_number_pattern
+    snp = ~s/\\d+[A-Z]{0,2}/
+
+    patterns =
+      [
+        # 🔻F494🔻 Ss. 33A-33C inserted
+        # 🔻F426🔻 Ss. 27H-27K inserted
+        # 🔻F490🔻 Ss. 32-35 substituted
+        ~s/#{snp}-#{snp}/,
+        # 🔻F126🔻 Ss. 31, 32 and 34-42 repealed (E.W.)
+        ~s/(?:#{snp},[ ])+#{snp}[ ]and[ ]#{snp}-#{snp}/,
+        # 🔻F749🔻 S. 41EA, 41EB inserted
+        # 🔻F143🔻 Ss. 17A, 17AA substituted
+        # 🔻F276🔻 Ss. 16, 16A, 17 and cross-heading substituted
+        ~s/(?:#{snp},[ ])+#{snp}/
+      ]
+      |> Enum.join("|")
+
+    regex =
+      ~s/^🔻(F\\d+)🔻(?:.*?[ ]Ss?\\.[ ])(#{patterns}).*?(repealed|inserted|substituted|omitted)/
+
+    IO.puts(regex)
 
     QA.scan_and_print(binary, regex, "Ss. SECTIONS", true)
 
     ef_codes =
       Regex.scan(~r/#{regex}/m, binary)
       |> Enum.reduce([], fn [_line, ef_code, s_code, amd_type], acc ->
-        # sometimes the en dash (codepoint 8211) \u2013 is used for ranges
         s_code =
-          Regex.replace(~r/–/m, s_code, "-")
+          s_code
           |> (&Regex.replace(~r/ and cross[- ]heading/m, &1, "")).()
           |> (&Regex.replace(~r/[ ]/m, &1, "")).()
 
-        [{ef_code, s_code, amd_type} | acc]
+        # "31,32and34-42"
+        case Regex.match?(~r/and/, s_code) do
+          true ->
+            [_, a, b] = Regex.run(~r/(.*)and(.*)/, s_code)
+            [{ef_code, a, amd_type}, {ef_code, b, amd_type} | acc]
+
+          false ->
+            [{ef_code, s_code, amd_type} | acc]
+        end
       end)
       |> Enum.uniq()
-      |> IO.inspect()
+      |> IO.inspect(label: "Ss. SECTIONS Deduped")
 
     ef_tags =
       Enum.reduce(ef_codes, [], fn
@@ -549,7 +576,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           end
       end)
       |> Enum.uniq()
-      |> IO.inspect(limit: :infinity)
+
+    # |> IO.inspect(limit: :infinity)
 
     {acc, io} =
       Enum.reduce(ef_tags, {binary, []}, fn {_match, ef, section_number, _tag, amd_type},
@@ -591,8 +619,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def tag_schedule_section_efs(binary) do
     # See uk_annotations.exs for examples and test
     # 🔻F80🔻 Sch. 4 Pt. I para. 9 repealed
+    # 🔻F958🔻 Sch. 4 para. 5(1) repealed (1.1.1993) by New Roads
     para =
-      Regex.scan(~r/^🔻(F\d+)🔻[ ]Sch\.[ ]\d+[A-Z]*[ ].*?para\.[ ]?(\d+[A-Z]*)[ ]/m, binary)
+      Regex.scan(~r/^🔻(F\d+)🔻[ ]Sch\.[ ]\d+[A-Z]*[ ].*?para\.[ ]?(\d+[A-Z]*)[ \(]/m, binary)
       |> Enum.reduce([], fn [match, ef_code, x], acc ->
         [{match, ef_code, x, ef_code <> x} | acc]
       end)

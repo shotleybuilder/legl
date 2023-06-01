@@ -373,13 +373,21 @@ defmodule UK.Parser do
             &1,
             "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
-      #
+      # 1(1) Foobar U.K.
       |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*)(#{@region_regex})/m,
+            ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*?)(#{@region_regex})$/m,
             &1,
             "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
           )).()
-
+      # 1(1) Foobar S
+      # 1(1) Foobar
+      # regex - the end of line marker pulls the non-greedy to the end when region not present
+      # cannot use for region because it would match every clause
+      |> (&Regex.replace(
+            ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*?)(#{@country_regex})?$/m,
+            &1,
+            "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
+          )).()
       # A1The net-zero emissions targetS
       |> (&Regex.replace(
             ~r/^([A-Z]\d{1,3})([A-Z].*)(#{@region_regex})$/m,
@@ -430,12 +438,6 @@ defmodule UK.Parser do
             ~r/^(\d{1,3})(( \. \.|\. \. )[\. ]+)/m,
             &1,
             "#{@components.section}\\g{1} \\g{1}\\g{3}\\g{2}"
-          )).()
-      # 1(1) Foobar
-      |> (&Regex.replace(
-            ~r/^(\d{1,3})\((\d{1,3})\)[ ]?(.*)/m,
-            &1,
-            "#{@components.section}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3}"
           )).()
 
       # 🔺X1🔺 28 Customer service committees.U.K.

@@ -1,22 +1,23 @@
 defmodule Legl.Countries.Uk.UkClean do
   @region_regex UK.region()
   @country_regex UK.country()
+  alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
 
-  def clean_original("CLEANED\n" <> binary, _opts) do
-    binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
-    binary
-  end
+  # def clean_original("CLEANED\n" <> binary, _opts) do
+  #  binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
+  #  binary
+  # end
 
   def clean_original(binary, %{type: :act} = opts) do
     binary =
       binary
-      |> (&Kernel.<>("CLEANED\n", &1)).()
+      # |> (&Kernel.<>("CLEANED\n", &1)).()
       |> Legl.Parser.rm_empty_lines()
       |> collapse_amendment_text_between_quotes()
       |> separate_part()
-      # |> separate_chapter()
-      # |> separate_schedule()
-      # |> Legl.Parser.rm_leading_tabs()
+      ## |> separate_chapter()
+      ## |> separate_schedule()
+      ## |> Legl.Parser.rm_leading_tabs()
       |> join_empty_numbered()
       |> opening_quotes()
       |> closing_quotes()
@@ -29,7 +30,8 @@ defmodule Legl.Countries.Uk.UkClean do
     |> Path.absname()
     |> File.write(binary)
 
-    clean_original(binary, opts)
+    binary |> (&IO.puts("\n\ncleaned: #{String.slice(&1, 0, 100)}...")).()
+    # clean_original(binary, opts)
   end
 
   def clean_original(binary, opts) do
@@ -52,7 +54,7 @@ defmodule Legl.Countries.Uk.UkClean do
     |> Path.absname()
     |> File.write(binary)
 
-    clean_original(binary, opts)
+    # clean_original(binary, opts)
   end
 
   @spec separate_part(binary) :: binary
@@ -123,7 +125,8 @@ defmodule Legl.Countries.Uk.UkClean do
         ~s/inserted the following section—/,
         ~s/inserted the following Schedule—/,
         ~s/inserted the following Part—/,
-        ~s/substituted the following sections—/
+        ~s/substituted the following sections—/,
+        ~s/the following provisions shall be inserted after .*?—/
       ]
       |> Enum.join("|")
 
@@ -162,9 +165,10 @@ defmodule Legl.Countries.Uk.UkClean do
       end
     end)
     |> elem(0)
+    |> Enum.reverse()
     |> Enum.join()
     |> (&Regex.replace(
-          ~r/(\r\n|\n)#{"\u2B55"}#{"\u201C"}[\s\S]*?#{"\u201D"}#{"\u274C"}/m,
+          ~r/(\r\n|\n)#{"\u2B55"}#{"\u201C"}[\s\S]*?#{"\u274C"}#{"\u201D"}/m,
           &1,
           fn x ->
             len = String.length(x)
@@ -197,12 +201,35 @@ defmodule Legl.Countries.Uk.UkClean do
         "\\g{1} "
       )
 
-  def opening_quotes(binary) do
-    Regex.replace(~r/([ \()])\"(\w)/m, binary, "g\\{1} “\\g{2}")
+  defp opening_quotes(binary) do
+    regex = ~s/([ \\(]|F\\d+)\\"(\\w)/
+    QA.scan_and_print(binary, regex, "Opening Quotes", true)
+
+    Regex.replace(
+      ~r/#{regex}/m,
+      binary,
+      fn _, prefix, suffix ->
+        ~s/#{prefix}\u201C#{suffix}/
+      end
+    )
   end
 
-  def closing_quotes(binary) do
-    Regex.replace(~r/(.)\"(\.| |\))/m, binary, "\\g{1}”\\g{2}")
+  defp closing_quotes(binary) do
+    regex = ~s/(.)\\"([\\. \\)])/
+    QA.scan_and_print(binary, regex, "Closing Quotes", true)
+
+    Regex.replace(
+      ~r/#{regex}/m,
+      binary,
+      fn _, prefix, suffix ->
+        ~s/#{prefix}\u201D#{suffix}/
+      end
+    )
+  end
+
+  defp rem_quotes(binary) do
+    IO.inspect(Regex.scan(~r/^.*?\"/m, binary), label: "Remaining Quotes")
+    binary
   end
 
   def chapter_style(binary) do
@@ -260,10 +287,5 @@ defmodule Legl.Countries.Uk.UkClean do
         end
       )
     end)
-  end
-
-  def rem_quotes(binary) do
-    IO.inspect(Regex.scan(~r/.*\"/m, binary))
-    binary
   end
 end

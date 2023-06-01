@@ -317,7 +317,7 @@ defmodule Legl.Airtable.Schema do
   end
 
   def convert_region_code(%{region: "E+W+S"} = record) do
-    region = Legl.Utility.csv_quote_enclosure("GB,England,Wales,Scotland,Northern Ireland")
+    region = Legl.Utility.csv_quote_enclosure("GB,England,Wales,Scotland")
     %{record | region: region}
   end
 
@@ -419,13 +419,14 @@ defmodule Legl.Airtable.Schema do
   def chapter(regex, "[::chapter::]" <> str, last_record, _type) do
     record =
       case Regex.run(~r/#{regex.chapter}/m, str) do
-        [_, chap_num, txt] ->
+        [_, chap_num, txt, region] ->
           %{
             last_record
             | flow: flow(last_record),
               type: regex.chapter_name,
               chapter: chap_num,
-              text: txt
+              text: txt,
+              region: region
           }
 
         [_, chap_num] ->

@@ -272,6 +272,7 @@ defmodule UKAnnotations do
           "🔻F691🔻 S. 66A-66C and cross-heading substituted",
           "🔻F1023🔻 Cross heading and s. 101A inserted",
           "🔻F1569🔻 Sch. 2 para. 4A and preceding cross-heading inserted",
+          "🔻F136🔻 Crossheading inserted",
           # cross-headings
           "[F87Modification of appointment conditions: EnglandE+W",
           "[F88Modification of appointment conditions: Wales]E+W",
@@ -285,7 +286,8 @@ defmodule UKAnnotations do
           "[F677Supply by [F678water supply licensee] etcE+W",
           "[F691Duties of undertakers to supply water supply licensees etc]E+W",
           "F1023[Provision of public sewers otherwise than by requisitionE+W",
-          "[F1569Exclusion of transfer of licenceU.K."
+          "[F1569Exclusion of transfer of licenceU.K.",
+          "[F136 Control of entry of polluting matter and effluents into water]S"
         ]
         |> Enum.join("\n")
 
@@ -307,6 +309,7 @@ defmodule UKAnnotations do
           "🔻F691🔻 S. 66A-66C and cross-heading substituted",
           "🔻F1023🔻 Cross heading and s. 101A inserted",
           "🔻F1569🔻 Sch. 2 para. 4A and preceding cross-heading inserted",
+          "🔻F136🔻 Crossheading inserted",
           "[::heading::][F87 Modification of appointment conditions: England [::region::]E+W",
           "[::heading::][F88 Modification of appointment conditions: Wales] [::region::]E+W",
           "[::heading::][F136 Modification of appointment conditions: England and Wales] [::region::]E+W",
@@ -319,7 +322,8 @@ defmodule UKAnnotations do
           "[::heading::][F677 Supply by [F678water supply licensee] etc [::region::]E+W",
           "[::heading::][F691 Duties of undertakers to supply water supply licensees etc] [::region::]E+W",
           "[::heading::]F1023 [Provision of public sewers otherwise than by requisition [::region::]E+W",
-          "[::heading::][F1569 Exclusion of transfer of licence [::region::]U.K."
+          "[::heading::][F1569 Exclusion of transfer of licence [::region::]U.K.",
+          "[::heading::][F136 Control of entry of polluting matter and effluents into water] [::region::]S"
         ]
         |> Enum.join("\n")
 

@@ -36,8 +36,9 @@ defmodule UK do
           fields: UK.Act.fields(),
           number_fields: UK.Act.number_fields(),
           part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
           heading: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)[ ]\\[::region::\\](.*)/,
-          section: ~s/^([A-Z]?\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          section: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
@@ -71,7 +72,7 @@ defmodule UK do
 
   @parse_default_opts %{
     type: :regulation,
-    clean: true,
+    clean: false,
     annotation: true,
     parse: true,
 
@@ -80,12 +81,6 @@ defmodule UK do
 
     # parse Acts with numbered headings
     numbered_headings: false,
-
-    # parse Acts with Ordinal schedules eg First Schedule
-    numericalise_schedules: false,
-
-    # Sections with rare acronyms as text rather than amendment suffix
-    split_acronymed_sections: false,
 
     # overarching switch for the QA functions
     qa: true,
@@ -147,12 +142,7 @@ defmodule UK do
     binary =
       case opts.clean do
         true ->
-          IO.puts("\n\n***********CLEAN***********\n")
-
-          Legl.txt("original")
-          |> Path.absname()
-          |> File.read!()
-          |> Legl.Countries.Uk.UkClean.clean_original(opts)
+          clean(opts)
 
         _ ->
           Legl.txt("clean")
@@ -188,6 +178,25 @@ defmodule UK do
       _ ->
         :ok
     end
+  end
+
+  @clean_default_opts %{
+    type: :regulation,
+    # parse Acts with Ordinal schedules eg First Schedule
+    numericalise_schedules: false,
+
+    # Sections with rare acronyms as text rather than amendment suffix
+    split_acronymed_sections: false
+  }
+
+  def clean(opts \\ []) do
+    opts = Enum.into(opts, @clean_default_opts)
+    IO.puts("\n***********CLEAN***********\n")
+
+    Legl.txt("original")
+    |> Path.absname()
+    |> File.read!()
+    |> Legl.Countries.Uk.UkClean.clean_original(opts)
   end
 
   @airtable_default_opts %{
