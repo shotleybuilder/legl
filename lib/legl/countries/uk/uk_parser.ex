@@ -58,7 +58,7 @@ defmodule UK.Parser do
     |> get_modifications(:act)
     |> get_commencements(:act)
     |> get_extents(:act)
-    |> get_editorial(:act)
+    # |> get_editorial(:act)
     |> get_signed_section()
     # |> revise_section_number(:act)
     |> get_A_heading(:act)
@@ -441,10 +441,16 @@ defmodule UK.Parser do
           )).()
 
       # 🔺X1🔺 28 Customer service committees.U.K.
+      # 🔺X4🔺 7E+W+SSections 79 and 80 of that Act
       |> (&Regex.replace(
             ~r/^🔺(X\d+)🔺[ ]?(\d{1,3})[ ]?(.+?)(#{@region_regex})$/m,
             &1,
             "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{3} [::region::]\\g{4}"
+          )).()
+      |> (&Regex.replace(
+            ~r/^🔺(X\d+)🔺[ ]?(\d{1,3})[ ]?(#{@region_regex})(.*)/m,
+            &1,
+            "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}"
           )).()
       # 5The Authority may, with the approval of the ... staff as it may determine.
       |> (&Regex.replace(
@@ -491,38 +497,33 @@ defmodule UK.Parser do
     |> Enum.reduce([], fn line, acc ->
       case String.starts_with?(line, "[::section::]") do
         true ->
-          case Regex.match?(~r/#{@geo_regex}$/, line) do
+          case Regex.match?(~r/\[::region::\]/, line) do
+            # region can be set by uk_annotation.ex
             true ->
-              regex = ~s/^#{@regex_components.section}(.*?)(#{@geo_regex})$/
-
-              line
-              |> (&Regex.replace(
-                    ~r/#{regex}/,
-                    &1,
-                    fn _match, txt, region ->
-                      "#{@components.section}#{txt} [::region::]#{region}"
-                    end
-                  )).()
-              |> (&[&1 | acc]).()
+              [line | acc]
 
             false ->
-              regex = ~s/^#{@regex_components.section}(\\d+[A-Z]+.*?)(#{@geo_regex})(.*)/
+              regex = ~s/^#{@regex_components.section}(.*?)(#{@geo_regex})$/
+              QA.scan_and_print(line, regex, "A-Section-1")
 
-              line
-              |> (&Regex.replace(
-                    ~r/#{regex}/,
-                    &1,
-                    fn _match, n, region, txt ->
-                      case txt do
-                        "" ->
-                          "#{@components.section}#{n} [::region::]#{region}"
+              case Regex.run(~r/#{regex}/, line) do
+                [_, txt, region] ->
+                  "#{@components.section}#{txt} [::region::]#{region}"
+                  |> (&[&1 | acc]).()
 
-                        _ ->
-                          "#{@components.section}#{n} #{txt} [::region::]#{region}"
-                      end
-                    end
-                  )).()
-              |> (&[&1 | acc]).()
+                nil ->
+                  regex = ~s/^#{@regex_components.section}(\\d+[A-Z]*.*?)(#{@geo_regex})(.*)/
+                  QA.scan_and_print(line, regex, "A-Section-2")
+
+                  case Regex.run(~r/#{regex}/, line) do
+                    [_, n, region, txt] ->
+                      "#{@components.section}#{n} #{txt} [::region::]#{region}"
+                      |> (&[&1 | acc]).()
+
+                    nil ->
+                      [line | acc]
+                  end
+              end
           end
 
         false ->

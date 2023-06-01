@@ -115,6 +115,10 @@ defmodule Legl.Countries.Uk.UkClean do
 
   @spec collapse_amendment_text_between_quotes(binary) :: binary
   def collapse_amendment_text_between_quotes(binary) do
+    # Clean up :— to —
+    # there shall be substituted the following subsection:—
+    binary = Regex.replace(~r/:—/, binary, "—")
+
     regex =
       [
         ~s/inserte?d?—/,

@@ -107,11 +107,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     binary
     # See uk_annotations.exs for examples and test
-    |> (&Regex.replace(
-          ~r/S\.[ ]I\./,
-          &1,
-          "S.I."
-        )).()
+
+    # Missing period on Sch
+    # 🔻F296🔻 Sch 2 para. 6 repealed (E.W.) (1.12.1991) by Water
+    # Regex uses the + lookahead which doesn't capture
+    |> (&Regex.replace(~r/Sch(?=[ ])/m, &1, "Sch.")).()
+    |> (&Regex.replace(~r/S\.[ ]I\./, &1, "S.I.")).()
     |> (&Regex.replace(
           ~r/^(F\d+)[ ]?(#{regex})/m,
           &1,
@@ -287,10 +288,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             "#{@components.section}#{x} \\g{1} \\g{2}#{ef} #{x} "
           )).()
       # F530[F529195 Maps of waterworks.E+W
+      # F153S. 47 repealed (E.W.) (1.9.1989) => F153F152F15447 Duty with waste from vessels etc.S
       |> (&Regex.replace(
-            ~r/^(\[?)#{ef}(\[F\d+?)#{x}([^0-9][A-Z\. ].*)(#{@region_regex})/m,
+            ~r/^(\[?)#{ef}((?:\[?F\d+)+)#{x}([^0-9][A-Z\. ].*)(#{@geo_regex})$/m,
             &1,
-            "#{@components.section}#{x} \\g{1}#{ef} \\g{2} #{x} \\g{3}\\g{4}"
+            "#{@components.section}#{x} \\g{1}#{ef} \\g{2} #{x} \\g{3} [::region::]\\g{4}"
+          )).()
+      # F143S. 41 repealed (30.6.2014) => F133F14341 Registers. S
+      |> (&Regex.replace(
+            ~r/^(\[?F\d+)#{ef}#{x}([^0-9].*)(#{@geo_regex})$/m,
+            &1,
+            "#{@components.section}#{x} \\g{1}#{ef} #{x} \\g{2} [::region::]\\g{3}"
           )).()
       # F685[224Application to the Isles of Scilly.E+W
       |> (&Regex.replace(
@@ -697,16 +705,28 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             &1,
             "#{@components.section}#{section_number}-\\g{3} \\g{1}#{ef} #{section_number}\\g{2}"
           )).()
+      # F32116E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
       |> (&Regex.replace(
-            ~r/^(\[?)#{tag}([^0-9])/m,
+            ~r/^(\[?)#{tag}(#{@geo_regex})([. ]+)/m,
             &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}"
+            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{3} [::region::]\\g{2}"
+          )).()
+      |> (&Regex.replace(
+            ~r/^(\[?)#{tag}(?=[^0-9])/m,
+            &1,
+            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number}"
           )).()
       # F129F1303E+W+S. .
       |> (&Regex.replace(
-            ~r/^(\[?F\d+)#{tag}([^0-9])/m,
+            ~r/^(\[?F\d+)#{tag}(?=[^0-9])/m,
             &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{2}"
+            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number}"
+          )).()
+      # X3[F3136E+W+SIn section 3(1)(b)
+      |> (&Regex.replace(
+            ~r/^(X\d+\[?)#{tag}(#{@region_regex})(.*)/m,
+            &1,
+            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{3} [::region::]\\g{2}"
           )).()
     end)
   end
