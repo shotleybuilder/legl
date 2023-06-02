@@ -148,7 +148,6 @@ defmodule UK do
           Legl.txt("clean")
           |> Path.absname()
           |> File.read!()
-          |> (&Kernel.binary_part(&1, 8, String.length(&1))).()
       end
 
     binary =

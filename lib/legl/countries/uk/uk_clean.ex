@@ -13,6 +13,7 @@ defmodule Legl.Countries.Uk.UkClean do
       binary
       # |> (&Kernel.<>("CLEANED\n", &1)).()
       |> Legl.Parser.rm_empty_lines()
+      |> rm_marginal_citations()
       |> collapse_amendment_text_between_quotes()
       |> separate_part()
       ## |> separate_chapter()
@@ -55,6 +56,20 @@ defmodule Legl.Countries.Uk.UkClean do
     |> File.write(binary)
 
     # clean_original(binary, opts)
+  end
+
+  def rm_marginal_citations(binary) do
+    binary
+    |> (&Regex.replace(
+          ~r/^Marginal[ ]Citations\n/m,
+          &1,
+          ""
+        )).()
+    |> (&Regex.replace(
+          ~r/^M\d+([ ]|\.).*\n/m,
+          &1,
+          ""
+        )).()
   end
 
   @spec separate_part(binary) :: binary

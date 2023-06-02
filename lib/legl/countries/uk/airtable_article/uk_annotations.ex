@@ -16,7 +16,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def annotations(binary, %{type: :act} = opts) do
     binary =
       binary
-      |> rm_marginal_citations()
       |> floating_efs()
       |> tag_txt_amend_efs()
       |> part_efs()
@@ -40,7 +39,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_heading_efs()
       |> tag_txt_amend_efs_wash_up()
       |> space_efs()
-      |> rm_emoji("🔸")
+
+    # |> rm_emoji("🔸")
 
     if opts.qa == true, do: binary |> QA.qa_list_spare_efs(opts) |> QA.list_headings(opts)
 
@@ -158,8 +158,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def tag_schedule_efs(binary) do
     # See uk_annotations.exs for examples and test
     # [F37SCHEDULE 2S Election -> picks-up the 'E' as the region if [A-Z] is used
+    # X18 SCHEDULE 4E+W+S Repeals
     regex =
-      ~s/^(\\[?F\\d+)(\\[?F?\\d*)?[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[\\] ]?(#{@geo_regex})[ ]?([A-Z]?.*)/
+      ~s/^(\\[?[XF]\\d+)?(\\[?F?\\d*)[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[\\] ]?(#{@geo_regex})[ ]?([A-Z]?.*)/
 
     QA.scan_and_print(binary, regex, "SCHEDULE")
 
@@ -888,20 +889,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     end)
 
     # |> IO.inspect(limit: :infinity)
-  end
-
-  def rm_marginal_citations(binary) do
-    binary
-    |> (&Regex.replace(
-          ~r/^Marginal[ ]Citations\n/m,
-          &1,
-          ""
-        )).()
-    |> (&Regex.replace(
-          ~r/^M\d+([ ]|\.).*\n/m,
-          &1,
-          ""
-        )).()
   end
 
   @doc """
