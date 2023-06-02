@@ -698,36 +698,38 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       (para ++ paras_duo ++ paras_range ++ paras_range_)
       |> IO.inspect(label: ">>>>>>>>>>>>>>>>>>>")
 
-    Enum.reduce(ef_tags, binary, fn {_match, ef, section_number, tag}, acc ->
+    # sn - section number
+    Enum.reduce(ef_tags, binary, fn {_match, ef, sn, tag}, acc ->
       acc
       # [F16068(1)A care home or independent hospital.E+W
       |> (&Regex.replace(
-            ~r/^(\[?)#{tag}(\((\d+)\))/m,
+            ~r/^(\[?)#{tag}(\((\d+)\))(.*?)(#{@geo_regex})$/m,
             &1,
-            "#{@components.section}#{section_number}-\\g{3} \\g{1}#{ef} #{section_number}\\g{2}"
+            "#{@components.section}#{sn}-\\g{3} \\g{1}#{ef} #{sn}\\g{2} \\g{4} [::region::]\\g{5}"
           )).()
+      # [F2966E+W+S In section 19(3) of the Public Health Act 1936
       # F32116E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
       |> (&Regex.replace(
-            ~r/^(\[?)#{tag}(#{@geo_regex})([. ]+)/m,
+            ~r/^(\[?)#{tag}\.?(#{@geo_regex})[ ]?(.*)/m,
             &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{3} [::region::]\\g{2}"
+            "#{@components.section}#{sn} \\g{1}#{ef} #{sn} \\g{3} [::region::]\\g{2}"
           )).()
       |> (&Regex.replace(
             ~r/^(\[?)#{tag}(?=[^0-9])/m,
             &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number}"
+            "#{@components.section}#{sn} \\g{1}#{ef} #{sn}"
           )).()
       # F129F1303E+W+S. .
       |> (&Regex.replace(
             ~r/^(\[?F\d+)#{tag}(?=[^0-9])/m,
             &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number}"
+            "#{@components.section}#{sn} \\g{1}#{ef} #{sn}"
           )).()
       # X3[F3136E+W+SIn section 3(1)(b)
       |> (&Regex.replace(
             ~r/^(X\d+\[?)#{tag}(#{@region_regex})(.*)/m,
             &1,
-            "#{@components.section}#{section_number} \\g{1}#{ef} #{section_number} \\g{3} [::region::]\\g{2}"
+            "#{@components.section}#{sn} \\g{1}#{ef} #{sn} \\g{3} [::region::]\\g{2}"
           )).()
     end)
   end

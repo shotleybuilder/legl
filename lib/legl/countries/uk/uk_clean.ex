@@ -1,6 +1,8 @@
 defmodule Legl.Countries.Uk.UkClean do
   @region_regex UK.region()
   @country_regex UK.country()
+  @geo_regex @region_regex <> "|" <> @country_regex
+  @components %Types.Component{}
   alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
 
   # def clean_original("CLEANED\n" <> binary, _opts) do
@@ -26,16 +28,25 @@ defmodule Legl.Countries.Uk.UkClean do
       |> split_acronymed_sections(opts)
       |> numericalise_schedules(opts)
       |> rem_quotes()
+      |> join_repeals()
+      |> join_derivations()
 
     Legl.txt("clean")
     |> Path.absname()
     |> File.write(binary)
 
     binary |> (&IO.puts("\n\ncleaned: #{String.slice(&1, 0, 100)}...")).()
+
+    if opts.clean == true do
+      binary
+    else
+      :ok
+    end
+
     # clean_original(binary, opts)
   end
 
-  def clean_original(binary, opts) do
+  def clean_original(binary, _opts) do
     binary =
       binary
       |> (&Kernel.<>("CLEANED\n", &1)).()
@@ -260,6 +271,70 @@ defmodule Legl.Countries.Uk.UkClean do
           ~r/^(CHAPTER|Chapter)[ ]?(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})/m,
           &1,
           fn _, c, g1, g2 -> "#{c} #{String.upcase(g1)}#{String.upcase(g2)}" end
+        )).()
+  end
+
+  def join_repeals(binary) do
+    regex =
+      case Regex.match?(
+             ~r/^Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?(?=\n^[^\t\d\[])/m,
+             binary
+           ) do
+        true ->
+          ~r/^Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?(?=^[^\t\d\[])/m
+
+        false ->
+          ~r/Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?$/
+      end
+
+    IO.inspect(regex)
+    # QA.scan_and_print(binary, regex, "Repeal", true)
+
+    binary
+    |> (&Regex.replace(
+          regex,
+          &1,
+          fn x ->
+            len = String.length(x)
+
+            case len > 500 do
+              true ->
+                x = String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len)
+
+                join("#{@components.section}1 " <> x) <> " [::region::]"
+
+              _ ->
+                join("#{@components.section}1 " <> x) <> " [::region::]"
+            end
+          end
+        )).()
+  end
+
+  def join_derivations(binary) do
+    regex = ~r/(#{@geo_regex})(TABLE OF DERIVATIONS)\n([\s\S]*?)$/
+
+    binary
+    |> (&Regex.replace(
+          regex,
+          &1,
+          fn _match, region, heading, txt ->
+            len = String.length(txt)
+
+            txt =
+              case len > 500 do
+                true ->
+                  String.slice(txt, 0..199) <> "📌...📌" <> String.slice(txt, (len - 199)..len)
+
+                _ ->
+                  txt
+              end
+
+            [
+              ~s/#{@components.heading}1 #{heading} [::region::]#{region}/,
+              ~s/#{join(@components.section <> "1 " <> txt)}/
+            ]
+            |> Enum.join("\n")
+          end
         )).()
   end
 

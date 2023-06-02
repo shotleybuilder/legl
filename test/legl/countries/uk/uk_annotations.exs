@@ -230,7 +230,7 @@ defmodule UKAnnotations do
           #
           "[F1569Exclusion of transfer of licenceU.K.",
           "[F15932A.U.K.Where a reference is made to the chair of the CMA",
-          "[F16034E+WA hospital as defined by section 275 of the National Health Service Act 2006",
+          "[F16034E+WA hospital as defined by section 275",
           "[F16068(1)A care home or independent hospital.E+W",
           "[F2966E+W+S In section 19(3) of the Public Health Act 1936",
           "X3[F3136E+W+SIn section 3(1)(b)"
@@ -249,11 +249,11 @@ defmodule UKAnnotations do
           "🔻F296🔻 Sch. 2 para. 6 ",
           "🔻F313🔻 Sch. 3 para. 6 repealed",
           "[F1569Exclusion of transfer of licenceU.K.",
-          "[::section::]2A [F1593 2A .U.K.Where a reference is made to the chair of the CMA",
-          "[::section::]4 [F1603 4 E+WA hospital as defined by section 275 of the National Health Service Act 2006",
-          "[::section::]8-1 [F1606 8(1)A care home or independent hospital.E+W",
-          "[::section::]6 [F296 6 E+W+S In section 19(3) of the Public Health Act 1936",
-          "[::section::]6 X3[F313 6E+W+SIn section 3(1)(b)"
+          "[::section::]2A [F1593 2A Where a reference is made to the chair of the CMA [::region::]U.K.",
+          "[::section::]4 [F1603 4 A hospital as defined by section 275 [::region::]E+W",
+          "[::section::]8-1 [F1606 8(1) A care home or independent hospital. [::region::]E+W",
+          "[::section::]6 [F296 6 In section 19(3) of the Public Health Act 1936 [::region::]E+W+S",
+          "[::section::]6 X3[F313 6 In section 3(1)(b) [::region::]E+W+S"
         ]
         |> Enum.join("\n")
 

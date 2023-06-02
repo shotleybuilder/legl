@@ -64,7 +64,7 @@ defmodule UK.Parser do
     |> get_A_heading(:act)
     |> get_heading(opts)
     |> Legl.Parser.join()
-    |> Legl.Parser.rm_tabs()
+    # |> Legl.Parser.rm_tabs()
     |> move_region_to_end(:act)
     |> add_missing_region()
     |> rm_emoji(["🇨", "🇪", "🇲", "🇽", "🔺", "🔻", "⭕", "❌"])
@@ -638,8 +638,9 @@ defmodule UK.Parser do
             "#{@components.annex}\\g{2} \\g{1} \\g{2} \\g{3}\n"
           )).()
       # SCHEDULE U.K.List of the elements referred to in regulation 18(5)
+      # SCHEDULEU.K. Enactments Repealed
       |> (&Regex.replace(
-            ~r/^(SCHEDULES?|Schedules?)[ ]?(#{@region_regex})([A-Z][^.]*?)(?:\n)/m,
+            ~r/^(SCHEDULES?|Schedules?)[ ]?(#{@region_regex})[ ]?([A-Z][^.]*?)(?:\n)/m,
             &1,
             "#{@components.annex}1 \\g{1} \\g{3} [::region::]\\g{2}\n"
           )).()
@@ -683,11 +684,11 @@ defmodule UK.Parser do
             &1,
             "#{@components.table}\\g{1} \\0"
           )).()
-      |> (&Regex.replace(
-            ~r/.+?\t.*/m,
-            &1,
-            "#{@components.table_row}\\0"
-          )).()
+      # |> (&Regex.replace(
+      #     ~r/^(?<!#{Component.components_for_regex_or()}).+?\t.*/mu,
+      #    &1,
+      #   "#{@components.table_row}\\0"
+      # )).()
       |> (&Regex.replace(
             ~r/^(?:[\dA-Z\(]).+?\t.+?\t.*/m,
             &1,
