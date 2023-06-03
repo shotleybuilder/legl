@@ -504,7 +504,7 @@ defmodule UK.Parser do
 
             false ->
               regex = ~s/^#{@regex_components.section}(.*?)(#{@geo_regex})$/
-              QA.scan_and_print(line, regex, "A-Section-1")
+              # QA.scan_and_print(line, regex, "A-Section-1")
 
               case Regex.run(~r/#{regex}/, line) do
                 [_, txt, region] ->
@@ -513,7 +513,7 @@ defmodule UK.Parser do
 
                 nil ->
                   regex = ~s/^#{@regex_components.section}(\\d+[A-Z]*.*?)(#{@geo_regex})(.*)/
-                  QA.scan_and_print(line, regex, "A-Section-2")
+                  # QA.scan_and_print(line, regex, "A-Section-2")
 
                   case Regex.run(~r/#{regex}/, line) do
                     [_, n, region, txt] ->

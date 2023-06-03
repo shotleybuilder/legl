@@ -39,7 +39,8 @@ defmodule Legl.MixProject do
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
       {:erlsom, git: "https://github.com/willemdj/erlsom.git"},
-      {:floki, "~> 0.34.0"}
+      {:floki, "~> 0.34.0"},
+      {:natural_order, "~> 0.2.0"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]

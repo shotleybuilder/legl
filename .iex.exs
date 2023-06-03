@@ -13,6 +13,6 @@ IEx.configure(
     doc_code: :green,
     doc_inline_code: :magenta,
     doc_headings: [:cyan, :underline],
-    doc_title: [:cyan, :bright, :underline],
-  ],
+    doc_title: [:cyan, :bright, :underline]
+  ]
 )

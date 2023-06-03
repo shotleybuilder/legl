@@ -12,6 +12,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   @regex_components Types.Component.mapped_components_for_regex()
 
   alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
+  alias Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation, as: Optimiser
 
   def annotations(binary, %{type: :act} = opts) do
     binary =
@@ -484,7 +485,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     regex =
       ~s/^🔻(F\\d+)🔻(?:.*?[ ]Ss?\\.[ ])(#{patterns}).*?(repealed|inserted|substituted|omitted)/
 
-    IO.puts(regex)
+    # IO.puts(regex)
 
     QA.scan_and_print(binary, regex, "Ss. SECTIONS", true)
 
@@ -500,27 +501,33 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         case Regex.match?(~r/and/, s_code) do
           true ->
             [_, a, b] = Regex.run(~r/(.*)and(.*)/, s_code)
-            [{ef_code, a, amd_type}, {ef_code, b, amd_type} | acc]
+
+            [
+              {:"#{ef_code}", {ef_code, a, amd_type}},
+              {:"#{ef_code}", {ef_code, b, amd_type}} | acc
+            ]
 
           false ->
-            [{ef_code, s_code, amd_type} | acc]
+            [{:"#{ef_code}", {ef_code, s_code, amd_type}} | acc]
         end
       end)
       |> Enum.uniq()
       |> IO.inspect(label: "Ss. SECTIONS Deduped")
+
+    ef_codes = Optimiser.optimise_ef_codes(ef_codes)
 
     ef_tags =
       Enum.reduce(ef_codes, [], fn
         {_, nil, _}, acc ->
           acc
 
-        {ef_code, s_code, amd_type}, acc ->
+        {_k, {ef_code, s_code, amd_type}}, acc ->
           cond do
             String.contains?(s_code, ",") ->
               accum =
                 String.split(s_code, ",")
-                |> Enum.reduce([], fn x, accum ->
-                  [{s_code, ef_code, x, ef_code <> x, amd_type} | accum]
+                |> Enum.reduce([], fn sn, accum ->
+                  [{ef_code, sn, amd_type, ef_code <> sn} | accum]
                 end)
 
               accum ++ acc
@@ -552,7 +559,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
                   accum =
                     Enum.reduce(range, [], fn x, accum ->
-                      [{s_code, ef_code, x, ef_code <> x, amd_type} | accum]
+                      [{ef_code, x, amd_type, ef_code <> x} | accum]
                     end)
                     |> Enum.reverse()
 
@@ -581,29 +588,30 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
             true ->
               acc
-              # [{s_code, ef_code, nil, nil, amd_type} | acc]
           end
+
+        # ef_codes passed in by the Optimiser have the right pattern set
+        {_k, {ef_code, sn, amd, tag}}, acc ->
+          [{ef_code, sn, amd, tag} | acc]
       end)
       |> Enum.uniq()
-
-    # |> IO.inspect(limit: :infinity)
+      |> IO.inspect(label: "EF_TAGS", limit: :infinity)
 
     {acc, io} =
-      Enum.reduce(ef_tags, {binary, []}, fn {_match, ef, section_number, _tag, amd_type},
-                                            {acc, io} ->
+      Enum.reduce(ef_tags, {binary, []}, fn {ef, sn, amd_type, _tag}, {acc, io} ->
         regex =
           case amd_type do
             "repealed" ->
-              ~s/^(\\[)?#{ef}(\\[)?#{section_number}([ \\.].*)/
+              ~s/^(\\[)?#{ef}(\\[)?#{sn}([ \\.].*)/
 
             _ ->
-              ~s/^(\\[)?#{ef}(\\[)?#{section_number}([^0-9].*)/
+              ~s/^(\\[)?#{ef}(\\[)?#{sn}([^0-9].*)/
           end
 
         io =
           case Regex.run(~r/#{regex}/m, acc) do
             nil -> io
-            [m, _, _, _] -> [{m, ef, section_number, amd_type} | io]
+            [m, _, _, _] -> [{m, ef, sn, amd_type} | io]
           end
 
         acc =
@@ -611,7 +619,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           |> (&Regex.replace(
                 ~r/#{regex}/m,
                 &1,
-                "#{@components.section}#{section_number} \\g{1}#{ef}\\g{2} #{section_number} \\g{3}"
+                "#{@components.section}#{sn} \\g{1}#{ef}\\g{2} #{sn} \\g{3}"
               )).()
           |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
 
