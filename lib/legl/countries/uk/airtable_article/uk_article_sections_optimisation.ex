@@ -114,7 +114,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkEfCodes do
             end
 
           true ->
-            acc
+            [{ef_code, s_code, amd_type, ef_code <> s_code} | acc]
         end
 
       # ef_codes passed in by the Optimiser have the right pattern set

@@ -556,7 +556,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     ef_tags = EfCodes.ef_tags(ef_codes)
 
     # sn - section number
-    Enum.reduce(ef_tags, binary, fn {_match, ef, sn, tag}, acc ->
+    Enum.reduce(ef_tags, binary, fn {ef, sn, _, tag}, acc ->
       acc
       # [F16068(1)A care home or independent hospital.E+W
       |> (&Regex.replace(
