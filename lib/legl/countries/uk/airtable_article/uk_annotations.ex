@@ -12,6 +12,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   @regex_components Types.Component.mapped_components_for_regex()
 
   alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
+  alias Legl.Countries.Uk.AirtableArticle.UkEfCodes, as: EfCodes
   alias Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation, as: Optimiser
 
   def annotations(binary, %{type: :act} = opts) do
@@ -485,117 +486,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     regex =
       ~s/^🔻(F\\d+)🔻(?:.*?[ ]Ss?\\.[ ])(#{patterns}).*?(repealed|inserted|substituted|omitted)/
 
-    # IO.puts(regex)
+    ef_codes = EfCodes.ef_codes(binary, regex, "SS.")
 
-    QA.scan_and_print(binary, regex, "Ss. SECTIONS", true)
+    ef_codes = Optimiser.optimise_ef_codes(ef_codes, "SECTIONS")
 
-    ef_codes =
-      Regex.scan(~r/#{regex}/m, binary)
-      |> Enum.reduce([], fn [_line, ef_code, s_code, amd_type], acc ->
-        s_code =
-          s_code
-          |> (&Regex.replace(~r/ and cross[- ]heading/m, &1, "")).()
-          |> (&Regex.replace(~r/[ ]/m, &1, "")).()
-
-        # "31,32and34-42"
-        case Regex.match?(~r/and/, s_code) do
-          true ->
-            [_, a, b] = Regex.run(~r/(.*)and(.*)/, s_code)
-
-            [
-              {:"#{ef_code}", {ef_code, a, amd_type}},
-              {:"#{ef_code}", {ef_code, b, amd_type}} | acc
-            ]
-
-          false ->
-            [{:"#{ef_code}", {ef_code, s_code, amd_type}} | acc]
-        end
-      end)
-      |> Enum.uniq()
-      |> IO.inspect(label: "Ss. SECTIONS Deduped")
-
-    ef_codes = Optimiser.optimise_ef_codes(ef_codes)
-
-    ef_tags =
-      Enum.reduce(ef_codes, [], fn
-        {_, nil, _}, acc ->
-          acc
-
-        {_k, {ef_code, s_code, amd_type}}, acc ->
-          cond do
-            String.contains?(s_code, ",") ->
-              accum =
-                String.split(s_code, ",")
-                |> Enum.reduce([], fn sn, accum ->
-                  [{ef_code, sn, amd_type, ef_code <> sn} | accum]
-                end)
-
-              accum ++ acc
-
-            String.contains?(s_code, "-") ->
-              cond do
-                # RANGE with this pattern 87-87C
-                # RANGE with this pattern 32-35
-                # RANGE with this pattern 27H-27K
-                Regex.match?(~r/\d+[A-Z]?-\d+[A-Z]?/, s_code) ->
-                  # IO.puts("cond do #1 #{match}")
-                  [_, a, b, c, d] = Regex.run(~r/(\d+)([A-Z]?)-(\d+)([A-Z]?)/, s_code)
-
-                  range =
-                    case a == c do
-                      true ->
-                        Utility.RangeCalc.range({a, b, d})
-
-                      false ->
-                        b =
-                          if b == "" do
-                            "A"
-                          else
-                            b
-                          end
-
-                        Utility.RangeCalc.range({a, b, c, d})
-                    end
-
-                  accum =
-                    Enum.reduce(range, [], fn x, accum ->
-                      [{ef_code, x, amd_type, ef_code <> x} | accum]
-                    end)
-                    |> Enum.reverse()
-
-                  accum ++ acc
-
-                # RANGE with this pattern 105ZA-105ZI
-                Regex.match?(~r/\d+[A-Z][A-Z]-\d+[A-Z][A-Z]/, s_code) ->
-                  # IO.puts("cond do #3 #{match}")
-                  [_, num, a, b] = Regex.run(~r/(\d+[A-Z])([A-Z])-\d+[A-Z]([A-Z])/, s_code)
-
-                  range = Utility.RangeCalc.range({num, a, b})
-
-                  accum =
-                    Enum.reduce(range, [], fn x, accum ->
-                      [{s_code, ef_code, x, ef_code <> x, amd_type} | accum]
-                    end)
-                    |> Enum.reverse()
-
-                  # |> IO.inspect()
-
-                  accum ++ acc
-
-                true ->
-                  acc
-              end
-
-            true ->
-              acc
-          end
-
-        # ef_codes passed in by the Optimiser have the right pattern set
-        {_k, {ef_code, sn, amd, tag}}, acc ->
-          [{ef_code, sn, amd, tag} | acc]
-      end)
-      |> Enum.uniq()
-      |> IO.inspect(label: "EF_TAGS", limit: :infinity)
+    ef_tags = EfCodes.ef_tags(ef_codes)
 
     {acc, io} =
       Enum.reduce(ef_tags, {binary, []}, fn {ef, sn, amd_type, _tag}, {acc, io} ->
@@ -635,76 +530,30 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   """
   def tag_schedule_section_efs(binary) do
     # See uk_annotations.exs for examples and test
-    # 🔻F80🔻 Sch. 4 Pt. I para. 9 repealed
-    # 🔻F958🔻 Sch. 4 para. 5(1) repealed (1.1.1993) by New Roads
-    para =
-      Regex.scan(~r/^🔻(F\d+)🔻[ ]Sch\.[ ]\d+[A-Z]*[ ].*?para\.[ ]?(\d+[A-Z]*)[ \(]/m, binary)
-      |> Enum.reduce([], fn [match, ef_code, x], acc ->
-        [{match, ef_code, x, ef_code <> x} | acc]
-      end)
-      |> Enum.uniq()
+    # section_number_pattern
+    snp = ~s/\\d+[A-Z]{0,2}/
 
-    # 🔻F79🔻 Sch. 4 Pt. I paras. 7, 8 repealed
-    paras_duo =
-      Regex.scan(
-        ~r/^🔻(F\d+)🔻[ ]Schs?\.[ ]\d+[A-Z]*[ ].*?paras\.[ ](\d+[A-Z]*),[ ](\d+[A-Z]*)[^\(]/m,
-        binary
-      )
-      |> Enum.reduce([], fn [match, ef_code, x1, x2], acc ->
-        [{match, ef_code, x2, ef_code <> x2}, {match, ef_code, x1, ef_code <> x1} | acc]
-      end)
-      |> Enum.uniq()
+    patterns =
+      [
+        # ranges such as 🔻F227🔻 Sch. 4 paras. 33-33C
+        # 33-33C -> 33, 33A, 33B, 33C
+        ~s/#{snp}-#{snp}/,
+        ~s/(?:#{snp},[ ])+#{snp}[ ]and[ ]#{snp}-#{snp}/,
+        # 🔻F79🔻 Sch. 4 Pt. I paras. 7, 8 repealed
+        ~s/(?:#{snp},[ ])+#{snp}/,
+        # 🔻F80🔻 Sch. 4 Pt. I para. 9 repealed
+        # 🔻F958🔻 Sch. 4 para. 5(1) repealed (1.1.1993) by New Roads
+        snp
+      ]
+      |> Enum.join("|")
 
-    paras_range =
-      Regex.scan(
-        ~r/^🔻(F\d+)🔻[ ]Sch\.[ ].*[ ]paras\.[ ](\d+)-(\d+)[^\(]/m,
-        binary
-      )
-      |> Enum.reduce([], fn [match, ef_code, from, to], acc ->
-        for n <- String.to_integer(from)..String.to_integer(to) do
-          {match, ef_code, ~s/#{n}/, ef_code <> ~s/#{n}/}
-        end
-        |> (&(&1 ++ acc)).()
-      end)
-      |> Enum.uniq()
+    regex = ~s/^🔻(F\\d+)🔻[ ]Schs?\\.[ ]\\d*[A-Z]*[ ].*?paras?\\.[ ]?(#{patterns})[^\\(]/
 
-    # ranges such as 🔻F227🔻 Sch. 4 paras. 33-33C
-    # 33-33C -> 33, 33A, 33B, 33C
-    paras_range_ =
-      Regex.scan(
-        ~r/^🔻(F\d+)🔻[ ]Sch\.[ ].*[ ]paras\.[ ](\d+)([A-Z]?)-\d+([A-Z])[^\(]/m,
-        binary
-      )
-      |> Enum.reduce([], fn [match, ef_code, r, a, b], acc ->
-        ia =
-          if a == "" do
-            # codepoint for "A"
-            65
-          else
-            Legl.Utility.alphabet_to_numeric_map()[a]
-          end
+    ef_codes = EfCodes.ef_codes(binary, regex, "SCHEDULE SS.")
 
-        ib = Legl.Utility.alphabet_to_numeric_map()[b]
+    ef_codes = Optimiser.optimise_ef_codes(ef_codes, "SCHEDULES")
 
-        # {match, F227, "33A", "F22733A"}
-        acc =
-          for n <- ia..ib do
-            {match, ef_code, ~s/#{r}#{<<n::utf8>>}/, ef_code <> ~s/#{r}#{<<n::utf8>>}/}
-          end
-          |> (&(&1 ++ acc)).()
-
-        if a == "" do
-          # {match, F227, "33", "F22733"}
-          [{match, ef_code, ~s/#{r}/, ef_code <> ~s/#{r}/} | acc]
-        else
-          acc
-        end
-      end)
-      |> Enum.uniq()
-
-    ef_tags =
-      (para ++ paras_duo ++ paras_range ++ paras_range_)
-      |> IO.inspect(label: ">>>>>>>>>>>>>>>>>>>")
+    ef_tags = EfCodes.ef_tags(ef_codes)
 
     # sn - section number
     Enum.reduce(ef_tags, binary, fn {_match, ef, sn, tag}, acc ->
