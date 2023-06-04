@@ -1,53 +1,39 @@
 defmodule Legl.Countries.Uk.AirtableArticle.UkEfCodes do
   alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
 
-  def ef_codes(binary, regex, label) do
+  def ef_codes(binary, regex, label) when is_binary(regex),
+    do: ef_codes(binary, ~r/#{regex}/m, label)
+
+  def ef_codes(binary, regex, label) when is_struct(regex) do
     QA.scan_and_print(binary, regex, label, true)
 
-    Regex.scan(~r/#{regex}/m, binary)
+    Regex.scan(regex, binary)
     |> Enum.reduce([], fn scan_list, acc ->
       # regex return different sized lists
-      ef_codes = ef_code_tuple(scan_list)
-
-      case ef_codes do
-        [t1, t2] -> [t1, t2 | acc]
-        [t] -> [t | acc]
-      end
+      ef_code_tuple(scan_list) ++ acc
     end)
     |> Enum.uniq()
     |> IO.inspect(label: "#{label} PRE-PROCESSED")
   end
 
+  @doc """
+  SCHEDULES
+  """
   def ef_code_tuple([match, ef_code, s_code]) do
     ef_code_tuple([match, ef_code, s_code, ""])
   end
 
   def ef_code_tuple([_, ef_code, s_code, amd_type]) do
-    s_code =
-      s_code
-      |> (&Regex.replace(~r/ and cross[- ]heading/m, &1, "")).()
-      |> (&Regex.replace(~r/[ ]/m, &1, "")).()
-
-    # "31,32and34-42"
-    case Regex.match?(~r/and/, s_code) do
-      true ->
-        [_, a, b] = Regex.run(~r/(.*)and(.*)/, s_code)
-
-        [
-          {:"#{ef_code}", {ef_code, a, amd_type}},
-          {:"#{ef_code}", {ef_code, b, amd_type}}
-        ]
-
-      false ->
-        [{:"#{ef_code}", {ef_code, s_code, amd_type}}]
-    end
+    String.split(s_code, ",")
+    |> Enum.reduce([], fn x, acc ->
+      String.split(x, "and") ++ acc
+    end)
+    |> Enum.map(&String.trim(&1))
+    |> Enum.map(&{:"#{ef_code}", {ef_code, &1, amd_type}})
   end
 
   def ef_tags(ef_codes) do
     Enum.reduce(ef_codes, [], fn
-      {_, nil, _}, acc ->
-        acc
-
       {_k, {ef_code, s_code, amd_type}}, acc ->
         cond do
           String.contains?(s_code, ",") ->
@@ -61,8 +47,21 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkEfCodes do
 
           String.contains?(s_code, "-") ->
             cond do
-              # RANGE with this pattern 87-87C
               # RANGE with this pattern 32-35
+              Regex.match?(~r/\d+-\d+/, s_code) ->
+                [from, to] = String.split(s_code, "-")
+
+                accum =
+                  Enum.map(String.to_integer(from)..String.to_integer(to), & &1)
+                  |> Enum.reduce([], fn x, accum ->
+                    [{ef_code, "#{x}", amd_type, ef_code <> "#{x}"} | accum]
+                  end)
+
+                # |> Enum.reverse()
+
+                accum ++ acc
+
+              # RANGE with this pattern 87-87C
               # RANGE with this pattern 27H-27K
               Regex.match?(~r/\d+[A-Z]?-\d+[A-Z]?/, s_code) ->
                 # IO.puts("cond do #1 #{match}")
@@ -88,7 +87,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkEfCodes do
                   Enum.reduce(range, [], fn x, accum ->
                     [{ef_code, x, amd_type, ef_code <> x} | accum]
                   end)
-                  |> Enum.reverse()
+
+                # |> Enum.reverse()
 
                 accum ++ acc
 
@@ -103,7 +103,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkEfCodes do
                   Enum.reduce(range, [], fn x, accum ->
                     [{s_code, ef_code, x, ef_code <> x, amd_type} | accum]
                   end)
-                  |> Enum.reverse()
+
+                # |> Enum.reverse()
 
                 # |> IO.inspect()
 
@@ -122,8 +123,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkEfCodes do
         [{ef_code, sn, amd, tag} | acc]
     end)
     |> Enum.uniq()
-    |> Enum.reverse()
-    |> IO.inspect(label: "EF_TAGS", limit: :infinity)
+    |> Enum.sort_by(&elem(&1, 3), {:desc, NaturalOrder})
+
+    # |> IO.inspect(label: "EF_TAGS", limit: :infinity)
   end
 end
 
@@ -160,17 +162,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation do
       # Do we have a range?
       case String.contains?(k, "-") do
         true ->
-          [_, from, to] = Regex.run(~r/(\d+)-(\d+)/, k)
+          result = Regex.run(~r/(\d+)([A-Z]?)-(\d+)([A-Z]?)/, k)
+
+          rng_size = rng(result)
+
           # IO.puts("from #{from} to #{to}")
-          rng = String.to_integer(to) - String.to_integer(from) + 1
+
           # IO.puts("rng #{rng} count #{Enum.count(v)}")
           # Does the size of the range equal the number of F codes?
-          case rng == Enum.count(v) do
+          case rng_size == Enum.count(v) do
             true ->
-              s_codes =
-                Enum.map(String.to_integer(from)..String.to_integer(to), &Integer.to_string(&1))
-                |> Enum.reverse()
-
+              s_codes = s_codes(result)
               efs = Enum.map(v, &elem(&1, 0))
               amd_types = Enum.map(v, &elem(&1, 2))
 
@@ -185,6 +187,26 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation do
       end
     end)
     |> IO.inspect(label: "#{label} OPTIMISED")
+  end
+
+  def rng([_, a, "", c, ""]) do
+    String.to_integer(c) - String.to_integer(a) + 1
+  end
+
+  def rng([_, a, b, a, d]) do
+    # Section number is the same
+    # 1A-1C
+    Legl.Utility.alphabet_to_numeric_map()[d] - Legl.Utility.alphabet_to_numeric_map()[b] + 1
+  end
+
+  def s_codes([_, a, "", c, ""]) do
+    Enum.map(String.to_integer(a)..String.to_integer(c), &Integer.to_string(&1))
+    |> Enum.reverse()
+  end
+
+  def s_codes([_, a, b, a, d]) do
+    Utility.RangeCalc.range({a, b, d})
+    |> Enum.reverse()
   end
 
   def mapper(optimised, label) when is_list(optimised) do

@@ -24,9 +24,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> chapter_efs()
       |> cross_heading_efs()
       |> tag_schedule_efs()
+      |> tag_sub_section_efs()
       |> tag_schedule_section_efs()
       |> tag_sub_section_range()
-      |> tag_sub_section_efs()
       |> tag_sub_sub_section_efs()
       |> tag_section_range()
       |> tag_section_end_efs()
@@ -246,8 +246,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
               "#{@components.section}#{x} \\g{1}#{ef} #{x} \\g{2}"
             )).()
         # [8AF138 Modification or removal of the 25,000 therm limits.E+W+S
+        # 🔻F110🔻 S. 44A inserted -> [ 44A F110 Injunctions. E+W
         |> (&Regex.replace(
-              ~r/^(\[?)#{x}#{ef}/m,
+              ~r/^(\[?)[ ]?#{x}[ ]?#{ef}[ ]?/m,
               &1,
               "#{@components.section}#{x} \\g{1} #{x} #{ef} "
             )).()
@@ -273,15 +274,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> Enum.reverse()
     |> Enum.reduce(binary, fn [_line, ef, x], acc ->
       acc
-      # F1[1 General duties
-      |> (&Regex.replace(
-            ~r/^(\[?)#{ef}(\[?)#{x}([^0-9])/m,
-            &1,
-            "#{@components.section}#{x} \\g{1}#{ef} \\g{2}#{x} \\g{3}"
-          )).()
       # 🔻F1542🔻 S. 221 substituted -> [221F1542Crown application.E+W
+      # 🔻F108🔻 S. 43 substituted -> [ 43 F108 Offence where listed
       |> (&Regex.replace(
-            ~r/^(\[?)#{x}#{ef}/m,
+            ~r/^(\[?)[ ]?#{x}[ ]?#{ef}/m,
             &1,
             "#{@components.section}#{x} \\g{1}#{ef} #{x} "
           )).()
@@ -297,6 +293,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             &1,
             "#{@components.section}#{x} \\g{1}#{ef} \\g{2} #{x} \\g{3} [::region::]\\g{4}"
           )).()
+      # F5[F103 Meaning of “mobile radioactive apparatus”.U.K.
+      |> (&Regex.replace(
+            ~r/^(\[?F\d+)(\[?)#{ef}#{x}([^0-9][A-Z\. ].*)(#{@geo_regex})$/m,
+            &1,
+            "#{@components.section}#{x} \\g{1}\\g{2}#{ef} #{x} \\g{3} [::region::]\\g{4}"
+          )).()
       # F143S. 41 repealed (30.6.2014) => F133F14341 Registers. S
       |> (&Regex.replace(
             ~r/^(\[?F\d+)#{ef}#{x}([^0-9].*)(#{@geo_regex})$/m,
@@ -308,6 +310,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             ~r/^(\[?)#{ef}(\[)#{x}([^0-9].*)(#{@region_regex})/m,
             &1,
             "#{@components.section}#{x} \\g{1}#{ef} \\g{2} #{x} \\g{3}\\g{4}"
+          )).()
+      # F1[1 General duties
+      |> (&Regex.replace(
+            ~r/^(\[?)#{ef}[ ]?(\[?)[ ]?#{x}([^0-9])/m,
+            &1,
+            "#{@components.section}#{x} \\g{1}#{ef} \\g{2}#{x} \\g{3}"
           )).()
     end)
   end
@@ -497,10 +505,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         regex =
           case amd_type do
             "repealed" ->
-              ~s/^(\\[)?#{ef}(\\[)?#{sn}([ \\.].*)/
+              ~s/^(\\[)?#{ef}(\\[)?[ ]?#{sn}[ ]?([ \\.].*)/
 
             _ ->
-              ~s/^(\\[)?#{ef}(\\[)?#{sn}([^0-9].*)/
+              ~s/^(\\[F?\\d*\\[?)?#{ef}(\\[)?[ ]?#{sn}[ ]?([^0-9].*)/
           end
 
         io =
@@ -525,19 +533,16 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     acc
   end
 
-  @doc """
-  #TODO
-  """
-  def tag_schedule_section_efs(binary) do
-    # See uk_annotations.exs for examples and test
-    # section_number_pattern
-    snp = ~s/\\d+[A-Z]{0,2}/
+  def build_schedule_regex() do
+    # 2, 5-9, 11
+    sn = ~s/\\d+[A-Z]{0,3}/
+    snp = ~s/(?:#{sn}-#{sn}|#{sn})/
 
     patterns =
       [
         # ranges such as 🔻F227🔻 Sch. 4 paras. 33-33C
         # 33-33C -> 33, 33A, 33B, 33C
-        ~s/#{snp}-#{snp}/,
+        # ~s/#{snp}-#{snp}/,
         ~s/(?:#{snp},[ ])+#{snp}[ ]and[ ]#{snp}-#{snp}/,
         # 🔻F79🔻 Sch. 4 Pt. I paras. 7, 8 repealed
         ~s/(?:#{snp},[ ])+#{snp}/,
@@ -547,7 +552,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       ]
       |> Enum.join("|")
 
-    regex = ~s/^🔻(F\\d+)🔻[ ]Schs?\\.[ ]\\d*[A-Z]*[ ]?.*?paras?\\.[ ]?(#{patterns})[^\\(]/
+    ~r/^🔻(F\d+)🔻.*Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{patterns}).*?by/m
+  end
+
+  @doc """
+
+  """
+  def tag_schedule_section_efs(binary) do
+    # See uk_annotations.exs for examples and test
+    # section_number_pattern
+
+    regex = build_schedule_regex()
 
     ef_codes = EfCodes.ef_codes(binary, regex, "SCHEDULE SS.")
 
@@ -558,18 +573,32 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # sn - section number
     Enum.reduce(ef_tags, binary, fn {ef, sn, _, tag}, acc ->
       acc
+      # Pattern: [FxxxNN(n)Text
       # [F16068(1)A care home or independent hospital.E+W
       |> (&Regex.replace(
             ~r/^(\[?)#{tag}(\((\d+)\))(.*?)(#{@geo_regex})$/m,
             &1,
             "#{@components.section}#{sn}-\\g{3} \\g{1}#{ef} #{sn}\\g{2} \\g{4} [::region::]\\g{5}"
           )).()
-      # [F2966E+W+S In section 19(3) of the Public Health Act 1936
-      # F32116E+W+S. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+      # Pattern: [ NNFxxx(n). . .Region
+      # 8F42(1). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .E+W
       |> (&Regex.replace(
-            ~r/^(\[?)#{tag}\.?(#{@geo_regex})[ ]?(.*)/m,
+            ~r/^(\[?)#{sn}#{ef}(\(1\))(.*?)(#{@geo_regex})/m,
             &1,
-            "#{@components.section}#{sn} \\g{1}#{ef} #{sn} \\g{3} [::region::]\\g{2}"
+            "#{@components.section}#{sn} #{sn}\\g{2} \\g{1}#{ef} \\g{3} [::region::]\\g{4}"
+          )).()
+      # Pattern [ Fxxx [ NN Region Text
+      # F330 [ 3 E+WWhere an application for listed building
+      |> (&Regex.replace(
+            ~r/^(\[?)[ ]?#{ef}[ ]?(\[?)[ ]?#{sn}[\. ]?(#{@geo_regex})[ ]?([A-Z].*)/m,
+            &1,
+            "#{@components.section}#{sn} \\g{1}#{ef}\\g{2} #{sn} \\g{4} [::region::]\\g{3}"
+          )).()
+      # Pattern [ Fxxx [ FxxxNN Text Region
+      |> (&Regex.replace(
+            ~r/^(\[?F\d+)(\[?)#{ef}[ \.]?#{sn}[ ]?(.*?)(#{@geo_regex})$/m,
+            &1,
+            "#{@components.section}#{sn} \\g{1}\\g{2}#{ef} #{sn} \\g{3} [::region::]\\g{4}"
           )).()
       |> (&Regex.replace(
             ~r/^(\[?)#{tag}(?=[^0-9])/m,

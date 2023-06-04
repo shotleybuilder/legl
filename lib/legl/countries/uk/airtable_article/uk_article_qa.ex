@@ -8,10 +8,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
   def scan_and_print(binary, regex, name, all? \\ false) do
     IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
 
+    regex =
+      if is_binary(regex) do
+        ~r/#{regex}/m
+      else
+        regex
+      end
+
     results =
       binary
       |> (&Regex.scan(
-            ~r/#{regex}/m,
+            regex,
             &1
           )).()
 

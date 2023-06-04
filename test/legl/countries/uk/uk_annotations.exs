@@ -3,6 +3,7 @@ defmodule UKAnnotations do
 
   use ExUnit.Case
   import Legl.Countries.Uk.AirtableArticle.UkAnnotations
+  import Legl.Countries.Uk.AirtableArticle.UkEfCodes
 
   describe "tag_txt_amend_efs/1" do
     test "act txt amend efs" do
@@ -216,48 +217,93 @@ defmodule UKAnnotations do
     end
   end
 
-  describe "tag_schedule_section_efs/1" do
-    test "act schedule section efs" do
-      binary =
-        [
-          # these are the amendment clauses used to id the amended schedule sections
-          "🔻F1569🔻 Sch. 2 para. 4A ",
-          "🔻F1593🔻 Sch. 4ZA para. 2A ",
-          "🔻F1603🔻 Sch. 4A para. 4 ",
-          "🔻F1606🔻 Sch. 4A paras. 8, 9 ",
-          "🔻F296🔻 Sch. 2 para. 6 ",
-          "🔻F313🔻 Sch. 3 para. 6 repealed",
-          #
-          "[F1569Exclusion of transfer of licenceU.K.",
-          "[F15932A.U.K.Where a reference is made to the chair of the CMA",
-          "[F16034E+WA hospital as defined by section 275",
-          "[F16068(1)A care home or independent hospital.E+W",
-          "[F2966E+W+S In section 19(3) of the Public Health Act 1936",
-          "X3[F3136E+W+SIn section 3(1)(b)"
-        ]
-        |> Enum.join("\n")
+  @schedules [
+               # these are the amendment clauses used to id the amended schedule sections
+               "🔻F1569🔻 Sch. 2 para. 4A by",
+               "🔻F1593🔻 Sch. 4ZA para. 2A by",
+               "🔻F1603🔻 Sch. 4A para. 4 by",
+               "🔻F1606🔻 Sch. 4A paras. 8, 9 by",
+               "🔻F296🔻 Sch. 2 para. 6 by",
+               "🔻F313🔻 Sch. 3 para. 6 repealed by",
+               "🔻F1🔻 Act repealed (except for ss. 49(1) for specified purposes and s. 51, Sch. 4 paras. 2, 5-9, 11) by",
+               #
+               "[F1569Exclusion of transfer of licenceU.K.",
+               "[F15932A.U.K.Where a reference is made to the chair of the CMA",
+               "[F16034E+WA hospital as defined by section 275",
+               "[F16068(1)A care home or independent hospital.E+W",
+               "[F2966E+W+S In section 19(3) of the Public Health Act 1936",
+               "X3[F3136E+W+SIn section 3(1)(b)",
+               "F5[F18 Exemptions from registration under s. 7.U.K."
+             ]
+             |> Enum.join("\n")
 
-      fresult = tag_schedule_section_efs(binary)
+  @ef_codes [
+    {:F1, {"F1", "11", ""}},
+    {:F1, {"F1", "5-9", ""}},
+    {:F1, {"F1", "2", ""}},
+    {:F313, {"F313", "6", ""}},
+    {:F296, {"F296", "6", ""}},
+    {:F1606, {"F1606", "9", ""}},
+    {:F1606, {"F1606", "8", ""}},
+    {:F1603, {"F1603", "4", ""}},
+    {:F1593, {"F1593", "2A", ""}},
+    {:F1569, {"F1569", "4A", ""}}
+  ]
+
+  describe "tag_schedule_section_efs/1" do
+    test "ef_codes/3 schedules" do
+      regex = build_schedule_regex()
+      result = ef_codes(@schedules, regex, "SCHEDULE")
+      assert @ef_codes == result
+    end
+
+    test "ef_tags/1 schedules" do
+      result = ef_tags(@ef_codes)
+
+      assert [
+               {"F1606", "9", "", "F16069"},
+               {"F1606", "8", "", "F16068"},
+               {"F1603", "4", "", "F16034"},
+               {"F1593", "2A", "", "F15932A"},
+               {"F1569", "4A", "", "F15694A"},
+               {"F313", "6", "", "F3136"},
+               {"F296", "6", "", "F2966"},
+               {"F1", "11", "", "F111"},
+               {"F1", "9", "", "F19"},
+               {"F1", "8", "", "F18"},
+               {"F1", "7", "", "F17"},
+               {"F1", "6", "", "F16"},
+               {"F1", "5", "", "F15"},
+               {"F1", "2", "", "F12"}
+             ] ==
+               result
+    end
+
+    test "act schedule section efs" do
+      result = tag_schedule_section_efs(@schedules)
       # |> IO.inspect()
 
       test =
         [
-          "🔻F1569🔻 Sch. 2 para. 4A ",
-          "🔻F1593🔻 Sch. 4ZA para. 2A ",
-          "🔻F1603🔻 Sch. 4A para. 4 ",
-          "🔻F1606🔻 Sch. 4A paras. 8, 9 ",
-          "🔻F296🔻 Sch. 2 para. 6 ",
-          "🔻F313🔻 Sch. 3 para. 6 repealed",
+          "🔻F1569🔻 Sch. 2 para. 4A by",
+          "🔻F1593🔻 Sch. 4ZA para. 2A by",
+          "🔻F1603🔻 Sch. 4A para. 4 by",
+          "🔻F1606🔻 Sch. 4A paras. 8, 9 by",
+          "🔻F296🔻 Sch. 2 para. 6 by",
+          "🔻F313🔻 Sch. 3 para. 6 repealed by",
+          "🔻F1🔻 Act repealed (except for ss. 49(1) for specified purposes and s. 51, Sch. 4 paras. 2, 5-9, 11) by",
+          #
           "[F1569Exclusion of transfer of licenceU.K.",
           "[::section::]2A [F1593 2A Where a reference is made to the chair of the CMA [::region::]U.K.",
           "[::section::]4 [F1603 4 A hospital as defined by section 275 [::region::]E+W",
           "[::section::]8-1 [F1606 8(1) A care home or independent hospital. [::region::]E+W",
           "[::section::]6 [F296 6 In section 19(3) of the Public Health Act 1936 [::region::]E+W+S",
-          "[::section::]6 X3[F313 6 In section 3(1)(b) [::region::]E+W+S"
+          "[::section::]6 X3[F313 6 In section 3(1)(b) [::region::]E+W+S",
+          "[::section::]8 F5[F1 8 Exemptions from registration under s. 7. [::region::]U.K."
         ]
         |> Enum.join("\n")
 
-      assert test == fresult
+      assert test == result
     end
   end
 

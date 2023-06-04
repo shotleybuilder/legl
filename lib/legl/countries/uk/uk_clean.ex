@@ -15,6 +15,7 @@ defmodule Legl.Countries.Uk.UkClean do
       binary
       # |> (&Kernel.<>("CLEANED\n", &1)).()
       |> Legl.Parser.rm_empty_lines()
+      |> close_parentheses()
       |> rm_marginal_citations()
       |> collapse_amendment_text_between_quotes()
       |> separate_part()
@@ -30,6 +31,8 @@ defmodule Legl.Countries.Uk.UkClean do
       |> rem_quotes()
       |> join_repeals()
       |> join_derivations()
+      |> collapse_table_text()
+      |> rm_multi_space()
 
     Legl.txt("clean")
     |> Path.absname()
@@ -147,7 +150,7 @@ defmodule Legl.Countries.Uk.UkClean do
 
     regex =
       [
-        ~s/inserte?d?—/,
+        ~s/insert—/,
         ~s/substituted?—/,
         ~s/adde?d?—/,
         ~s/substituted the following subsections?—/,
@@ -233,7 +236,9 @@ defmodule Legl.Countries.Uk.UkClean do
       )
 
   defp opening_quotes(binary) do
-    regex = ~s/([ \\(]|F\\d+)\\"(\\w)/
+    # [F44(5)"Welsh zone”
+    # (3C)“"Devolved Welsh generating station””
+    regex = ~s/([ \\(“]|F\\d+\\(?\\d*\\)?)\\"(\\w)/
     QA.scan_and_print(binary, regex, "Opening Quotes", true)
 
     Regex.replace(
@@ -314,7 +319,9 @@ defmodule Legl.Countries.Uk.UkClean do
   def join_derivations(binary) do
     regex1 = ~r/(#{@geo_regex})(TABLE OF DERIVATIONS)\n([\s\S]*?)$/
 
-    regex2 = ~r/Table of Derivations(#{@geo_regex})\n([\s\S]*)$/
+    regex2 = ~r/^Table of Derivations(#{@geo_regex})?\n([\s\S]*)(?=\nTextual Amendments)/m
+
+    regex3 = ~r/Table of Derivations(#{@geo_regex})\n([\s\S]*)$/
 
     binary
     |> (&Regex.replace(
@@ -324,6 +331,11 @@ defmodule Legl.Countries.Uk.UkClean do
         )).()
     |> (&Regex.replace(
           regex2,
+          &1,
+          fn _, region, txt -> derivation_text([region, txt]) end
+        )).()
+    |> (&Regex.replace(
+          regex3,
           &1,
           fn _, region, txt -> derivation_text([region, txt]) end
         )).()
@@ -344,11 +356,44 @@ defmodule Legl.Countries.Uk.UkClean do
           txt
       end
 
+    region =
+      if region != "" do
+        " [::region::]#{region}"
+      else
+        region
+      end
+
     [
-      ~s/#{@components.table_heading}#{heading} [::region::]#{region}/,
+      ~s/#{@components.table_heading}#{heading}#{region}/,
       ~s/#{join(@components.table <> txt)}/
     ]
     |> Enum.join("\n")
+  end
+
+  def collapse_table_text(binary) do
+    regex = ~r/^TABLE\n([\s\S]*?)(?=\n^[\d\(])/m
+
+    binary
+    |> (&Regex.replace(
+          regex,
+          &1,
+          fn _, txt ->
+            [
+              ~s/#{@components.table_heading}TABLE/,
+              ~s/#{join(@components.table <> txt)}/
+            ]
+            |> Enum.join("\n")
+          end
+        )).()
+  end
+
+  def rm_multi_space(binary) do
+    Regex.replace(~r/[ ]{2,}/m, binary, " ")
+  end
+
+  # ( 1 )The Secretary of State
+  def close_parentheses(binary) do
+    Regex.replace(~r/^\([ ](\d+[A-Z]*)[ ]\)/m, binary, "(\\g{1})")
   end
 
   @doc """
