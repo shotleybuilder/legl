@@ -42,7 +42,8 @@ defmodule UK do
           sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
-          annex: ~s/(\\d*[A-Z]*)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
+          annex: ~s/(\\d*[A-Z]*)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/,
+          table_heading: ~s/(.*)[ ]\\[::region::\\](.*)/
         }
 
       :regulation ->

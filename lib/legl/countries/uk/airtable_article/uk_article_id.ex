@@ -12,7 +12,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleId do
     do: %{r | id: ~s/#{name}_#{make_numeric_id(r)}#{region_code(r)}#{annotation_code(r)}/}
 
   def make_id(%{flow: "post", name: name} = r),
-    do: %{r | id: ~s/#{name}-#{make_numeric_id(r)}#{region_code(r)}/}
+    do: %{r | id: ~s/#{name}-#{make_numeric_id(r)}#{region_code(r)}#{annotation_code(r)}/}
 
   def make_id(%{flow: "signed"} = r), do: r
 
@@ -51,6 +51,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleId do
 
   defp annotation_code(%{type: ~s/"editorial,content"/, amendment: x} = _record),
     do: "_xx_" <> x
+
+  defp annotation_code(%{type: ~s/"table,heading"/} = _record), do: "_tbl"
+  defp annotation_code(%{type: "table", amendment: t} = _record), do: "_tbl_" <> "#{t}"
+  defp annotation_code(%{type: ~s/note/} = _record), do: "_nt"
 
   defp annotation_code(_), do: ""
 

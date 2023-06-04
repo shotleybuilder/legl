@@ -156,7 +156,8 @@ defmodule Legl.Countries.Uk.UkClean do
         ~s/inserted the following Schedule—/,
         ~s/inserted the following Part—/,
         ~s/substituted the following sections—/,
-        ~s/the following provisions shall be inserted after .*?—/
+        ~s/the following provisions shall be inserted after .*?—/,
+        ~s/substituted in each case—/
       ]
       |> Enum.join("|")
 
@@ -281,13 +282,13 @@ defmodule Legl.Countries.Uk.UkClean do
              binary
            ) do
         true ->
-          ~r/^Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?(?=^[^\t\d\[])/m
+          ~r/^Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?(?=\n^[^\t\d\[])/m
 
         false ->
           ~r/Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?$/
       end
 
-    IO.inspect(regex)
+    # IO.inspect(regex)
     # QA.scan_and_print(binary, regex, "Repeal", true)
 
     binary
@@ -311,31 +312,43 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   def join_derivations(binary) do
-    regex = ~r/(#{@geo_regex})(TABLE OF DERIVATIONS)\n([\s\S]*?)$/
+    regex1 = ~r/(#{@geo_regex})(TABLE OF DERIVATIONS)\n([\s\S]*?)$/
+
+    regex2 = ~r/Table of Derivations(#{@geo_regex})\n([\s\S]*)$/
 
     binary
     |> (&Regex.replace(
-          regex,
+          regex1,
           &1,
-          fn _match, region, heading, txt ->
-            len = String.length(txt)
-
-            txt =
-              case len > 500 do
-                true ->
-                  String.slice(txt, 0..199) <> "📌...📌" <> String.slice(txt, (len - 199)..len)
-
-                _ ->
-                  txt
-              end
-
-            [
-              ~s/#{@components.heading}1 #{heading} [::region::]#{region}/,
-              ~s/#{join(@components.section <> "1 " <> txt)}/
-            ]
-            |> Enum.join("\n")
-          end
+          fn _, region, heading, txt -> derivation_text([region, heading, txt]) end
         )).()
+    |> (&Regex.replace(
+          regex2,
+          &1,
+          fn _, region, txt -> derivation_text([region, txt]) end
+        )).()
+  end
+
+  def derivation_text([region, txt]),
+    do: derivation_text([region, "Table of Derivations", txt])
+
+  def derivation_text([region, heading, txt]) do
+    len = String.length(txt)
+
+    txt =
+      case len > 500 do
+        true ->
+          String.slice(txt, 0..199) <> "📌...📌" <> String.slice(txt, (len - 199)..len)
+
+        _ ->
+          txt
+      end
+
+    [
+      ~s/#{@components.table_heading}#{heading} [::region::]#{region}/,
+      ~s/#{join(@components.table <> txt)}/
+    ]
+    |> Enum.join("\n")
   end
 
   @doc """

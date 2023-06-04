@@ -438,6 +438,9 @@ defmodule Legl.Airtable.Schema do
               text: str
           }
 
+        nil ->
+          IO.inspect("ERROR chapter/4 #{regex.chapter} #{str}")
+
         chap_num ->
           %{
             last_record
@@ -446,9 +449,6 @@ defmodule Legl.Airtable.Schema do
               chapter: chap_num,
               text: str
           }
-
-        nil ->
-          IO.inspect("ERROR chapter/4 #{regex.chapter} #{str}")
       end
 
     fields_reset(record, :chapter, regex)
@@ -995,24 +995,44 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:all, regex)
   end
 
+  # takes the section number of the preceding section
+  def table_heading(
+        %{country: :UK} = regex,
+        "[::table_heading::]" <> str,
+        last_record,
+        _type
+      ) do
+    case Regex.run(~r/#{regex.table_heading}/, str) do
+      [_, txt, region] ->
+        %{
+          last_record
+          | type: Legl.Utility.csv_quote_enclosure("#{regex.table_name},#{regex.heading_name}"),
+            text: txt,
+            region: region
+        }
+        |> fields_reset(:section, regex)
+    end
+  end
+
+  @doc """
+  Uses a counter to increment table number
+  """
   def table(regex, "[::table::]" <> str, last_record, _type) do
-    [_, table_num, table] = Regex.run(~r/#{regex.table}/, str)
+    case Regex.run(~r/#{regex.table}/, str) do
+      [txt] ->
+        table_num = last_record.table_counter + 1
 
-    # IO.puts("___T___\ntype: #{last_record.type}\nsection: #{last_record.section}\nsub_section: #{last_record.sub_section}\npara: #{last_record.para}")
+        %{
+          last_record
+          | type: regex.table_name,
+            text: txt,
+            amendment: table_num,
+            table_counter: table_num,
+            sub_section: ""
+        }
 
-    field =
-      cond do
-        last_record.type == regex.sub_table_name && last_record.para != "" -> :sub_section
-        last_record.section == "" -> :section
-        last_record.sub_section == "" -> :sub_section
-        true -> :para
-      end
-
-    Map.merge(
-      last_record,
-      %{type: regex.table_name, text: table, "#{field}": table_num}
-    )
-    |> fields_reset(field, regex)
+        # |> IO.inspect()
+    end
   end
 
   def sub_table(regex, "[::sub_table::]" <> str, last_record, _type) do
@@ -1041,8 +1061,7 @@ defmodule Legl.Airtable.Schema do
     %{
       last_record
       | type: regex.note_name,
-        text: note,
-        flow: "post"
+        text: note
     }
     |> fields_reset(:all, regex)
   end

@@ -547,7 +547,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       ]
       |> Enum.join("|")
 
-    regex = ~s/^🔻(F\\d+)🔻[ ]Schs?\\.[ ]\\d*[A-Z]*[ ].*?paras?\\.[ ]?(#{patterns})[^\\(]/
+    regex = ~s/^🔻(F\\d+)🔻[ ]Schs?\\.[ ]\\d*[A-Z]*[ ]?.*?paras?\\.[ ]?(#{patterns})[^\\(]/
 
     ef_codes = EfCodes.ef_codes(binary, regex, "SCHEDULE SS.")
 
