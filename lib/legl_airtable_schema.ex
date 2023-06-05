@@ -329,7 +329,8 @@ defmodule Legl.Airtable.Schema do
 
   def convert_region_code(%{region: "N.I."} = record), do: %{record | region: "Northern Ireland"}
 
-  def convert_region_code(%{region: region} = record) when region in ["E+W", "E+W+N.I."] do
+  def convert_region_code(%{region: region} = record)
+      when region in ["E+W", "E+W+N.I.", "S+N.I."] do
     region =
       String.split(region, "+")
       |> Enum.reduce([], fn x, acc ->
@@ -767,7 +768,8 @@ defmodule Legl.Airtable.Schema do
               Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},#{regex.heading_name}"),
             text: amd_hd
         }
-        |> fields_reset(:section, regex)
+
+        # |> fields_reset(:section, regex)
     end
   end
 
@@ -995,33 +997,6 @@ defmodule Legl.Airtable.Schema do
     |> fields_reset(:all, regex)
   end
 
-  # takes the section number of the preceding section
-  def table_heading(
-        %{country: :UK} = regex,
-        "[::table_heading::]" <> str,
-        last_record,
-        _type
-      ) do
-    case Regex.run(~r/#{regex.table_heading}/, str) do
-      [_, txt, _, region] ->
-        %{
-          last_record
-          | type: Legl.Utility.csv_quote_enclosure("#{regex.table_name},#{regex.heading_name}"),
-            text: txt,
-            region: region
-        }
-        |> fields_reset(:section, regex)
-
-      [_, txt] ->
-        %{
-          last_record
-          | type: Legl.Utility.csv_quote_enclosure("#{regex.table_name},#{regex.heading_name}"),
-            text: txt
-        }
-        |> fields_reset(:section, regex)
-    end
-  end
-
   @doc """
   Uses a counter to increment table number
   """
@@ -1034,9 +1009,8 @@ defmodule Legl.Airtable.Schema do
           last_record
           | type: regex.table_name,
             text: txt,
-            amendment: table_num,
-            table_counter: table_num,
-            sub_section: ""
+            para: table_num,
+            table_counter: table_num
         }
 
         # |> IO.inspect()

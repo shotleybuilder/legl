@@ -684,11 +684,6 @@ defmodule UK.Parser do
             &1,
             "#{@components.table}\\g{1} \\0"
           )).()
-      # |> (&Regex.replace(
-      #     ~r/^(?<!#{Component.components_for_regex_or()}).+?\t.*/mu,
-      #    &1,
-      #   "#{@components.table_row}\\0"
-      # )).()
       |> (&Regex.replace(
             ~r/^(?:[\dA-Z\(]).+?\t.+?\t.*/m,
             &1,

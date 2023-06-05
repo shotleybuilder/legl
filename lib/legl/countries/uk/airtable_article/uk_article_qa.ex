@@ -4,16 +4,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
   """
   @components %Types.Component{}
   @regex_components Types.Component.mapped_components_for_regex()
+  def scan_and_print(binary, regex, name, all? \\ false)
 
-  def scan_and_print(binary, regex, name, all? \\ false) do
+  def scan_and_print(binary, regex, name, all?) when is_binary(regex),
+    do: scan_and_print(binary, ~r/#{regex}/, name, all?)
+
+  def scan_and_print(binary, regex, name, all?) do
     IO.puts("tag_#{name}_efs/1\n#{String.upcase(name)}s")
-
-    regex =
-      if is_binary(regex) do
-        ~r/#{regex}/m
-      else
-        regex
-      end
 
     results =
       binary

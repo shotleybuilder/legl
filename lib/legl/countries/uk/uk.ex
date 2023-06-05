@@ -19,7 +19,7 @@ defmodule UK do
   """
   @type uk_law_type :: atom
 
-  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
+  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|S\\+N\\.I\\."
   @country_regex "N\\.I\\.|S|W|E"
   # U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|N\\.I\\.|S|W|E
   # U\.K\.|E\+W\+N\.I\.|E\+W\+S|E\+W|N\.I\.|S|W|E
@@ -42,8 +42,7 @@ defmodule UK do
           sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
-          annex: ~s/(\\d*[A-Z]*)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/,
-          table_heading: ~s/(.*)[ ]?(\\[::region::\\](.*))?/
+          annex: ~s/(\\d*[A-Z]*)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
         }
 
       :regulation ->

@@ -107,7 +107,6 @@ defmodule Types.AirtableSchema do
             form_name: "form",
             approval_name: "approval",
             table: ~s/.*/,
-            table_heading: ~s/.*/,
             sub_table: ~s/^(\\d+)[ ](.*)/,
             table_name: "table",
             sub_table_name: "sub-table",

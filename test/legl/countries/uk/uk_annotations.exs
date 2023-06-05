@@ -117,6 +117,211 @@ defmodule UKAnnotations do
     end
   end
 
+  describe "tag_table_efs/1" do
+    tables =
+      [
+        "[F162 Table 2",
+        "🔻F162🔻 Sch. 1A Table 2 substituted (N.I.) (1.6.2018) by",
+        "[F163 Table 3",
+        "🔻F163🔻 Sch. 1A Table 3 substituted (N.I.) (1.6.2018) by"
+      ]
+      |> Enum.join("\n")
+
+    result = tag_table_efs(tables)
+
+    model =
+      [
+        "[::table::][F162 Table 2",
+        "🔻F162🔻 Sch. 1A Table 2 substituted (N.I.) (1.6.2018) by",
+        "[::table::][F163 Table 3",
+        "🔻F163🔻 Sch. 1A Table 3 substituted (N.I.) (1.6.2018) by"
+      ]
+      |> Enum.join("\n")
+
+    assert result == model
+  end
+
+  @section_i [
+               # Amendment clauses
+               # EF -> SN
+               "🔻F2🔻 S. 1A inserted",
+               "🔻F169🔻 S. 17DA inserted",
+               "🔻F37🔻 S. 16A repealed (E.W.) (6.4.2010) by",
+               "🔻F229🔻 S. 11A inserted",
+               "🔻F132🔻 S. 30C inserted",
+               "🔻F26🔻 S. 14A inserted (N.I.) (1.6.2018) by",
+               # SN -> EF
+               "🔻F144🔻 S. 17B title substituted",
+               "🔻F138🔻 S. 8A substituted",
+               "🔻F110🔻 S. 44A inserted",
+               # X
+               "🔻F438🔻 S. 29C inserted",
+               # EF -> SN
+               # B-EF-SN-Txt
+               "[F21AWater Services",
+               # B-EF-SN-Txt
+               "[F16917DAGuidance",
+               # ef-B-ef-B-EF-SN-Txt
+               "F5[F36[F3716ATransfer of authorisationsU.K.",
+               # B-ef-B-EF-SN-sp-Txt
+               "[F228[F22911A Modification of conditions of licencesE+W+S",
+               # ef-EF-SN-sp-Txt
+               "F131F13230C Water quality objectives.S",
+               # b-EF-period-Txt
+               "[F2614A.Radioactive waste: requirementsN.I.",
+               # SN -> EF
+               # SN-B-EF-Txt
+               "17B[F144Meaning of supply",
+               # B-SN-EF-sp-Txt
+               "[8AF138 Modification or removal of limits.E+W+S",
+               "[ 44A F110 Injunctions. E+W",
+               # X
+               # X-B-EF-SN-sp-Txt
+               "X2[F43829C Consumer complaintsU.K."
+             ]
+             |> Enum.join("\n")
+
+  @section_i_model [
+                     # Amendment clauses
+                     # EF -> SN
+                     "🔻F2🔻 S. 1A inserted",
+                     "🔻F169🔻 S. 17DA inserted",
+                     "🔻F37🔻 S. 16A repealed (E.W.) (6.4.2010) by",
+                     "🔻F229🔻 S. 11A inserted",
+                     "🔻F132🔻 S. 30C inserted",
+                     "🔻F26🔻 S. 14A inserted (N.I.) (1.6.2018) by",
+                     # SN -> EF
+                     "🔻F144🔻 S. 17B title substituted",
+                     "🔻F138🔻 S. 8A substituted",
+                     "🔻F110🔻 S. 44A inserted",
+                     # X
+                     "🔻F438🔻 S. 29C inserted",
+                     #
+                     "[::section::]1A [F2 1A Water Services",
+                     "[::section::]17DA [F169 17DA Guidance",
+                     "[::section::]16A F5[F36[F37 16A Transfer of authorisationsU.K.",
+                     "[::section::]11A [F228[F229 11A Modification of conditions of licencesE+W+S",
+                     "[::section::]30C F131F132 30C Water quality objectives.S",
+                     "[::section::]14A [F26 14A Radioactive waste: requirementsN.I.",
+                     "[::section::]17B 17B [F144 Meaning of supply",
+                     "[::section::]8A [8A F138 Modification or removal of limits.E+W+S",
+                     "[::section::]44A [44A F110 Injunctions. E+W",
+                     "[::section::]29C X2 [F438 29C Consumer complaintsU.K."
+                   ]
+                   |> Enum.join("\n")
+
+  describe "tag_section_efs_i/1" do
+    test "S. amendments" do
+      result = tag_section_efs_i(@section_i)
+      assert @section_i_model == result
+    end
+  end
+
+  @section_ii [
+                # Amendment clauses
+                # EF -> SN
+                "🔻F529🔻 S. 195 substituted",
+                "🔻F153🔻 S. 47 repealed (E.W.) (1.9.1989)",
+                "🔻F10🔻 S. 3 substituted",
+                "🔻F143🔻 S. 41 repealed (30.6.2014)",
+                "🔻F685🔻 S. 224 repealed (30.6.2014)",
+                "🔻F886🔻 S. 91 substituted",
+                "🔻F1205🔻 S. 145 and ... repealed",
+                # SN -> EF
+                "🔻F1542🔻 S. 221 substituted",
+                "🔻F108🔻 S. 43 substituted",
+                # X
+                "",
+                # EF -> SN
+                # B-EF-SN-Txt
+                "F530[F529195 Maps of waterworks.E+W",
+                # EF-ef-ef-SN-sp-Txt
+                "F153F152F15447 Duty with waste from vessels etc.S",
+                # ef-B-EF-SN-sp-Txt
+                "F5[F103 Meaning of “mobile radioactive apparatus”.U.K.",
+                # ef-EF-SN-sp-Txt
+                "F133F14341 Registers. S",
+                # EF-B-SN-Txt
+                "F685[224Application to the Isles of Scilly.E+W",
+                # EF-SN-sp-Txt
+                "[F88691 [F887 Old Welsh",
+                # EF-SN-Txt
+                "F1205145. . . . . .",
+                # SN -> EF
+                # B-SN-EF-Txt
+                "[221F1542Crown application.E+W",
+                # B-sp-SN-sp-EF-sp-Txt
+                "[ 43 F108 Offence where listed",
+                # X
+                # X-B-EF-SN-sp-Txt
+                ""
+              ]
+              |> Enum.join("\n")
+
+  @section_ii_model [
+                      # Amendment clauses
+                      # EF -> SN
+                      "🔻F529🔻 S. 195 substituted",
+                      "🔻F153🔻 S. 47 repealed (E.W.) (1.9.1989)",
+                      "🔻F10🔻 S. 3 substituted",
+                      "🔻F143🔻 S. 41 repealed (30.6.2014)",
+                      "🔻F685🔻 S. 224 repealed (30.6.2014)",
+                      "🔻F886🔻 S. 91 substituted",
+                      "🔻F1205🔻 S. 145 and ... repealed",
+                      # SN -> EF
+                      "🔻F1542🔻 S. 221 substituted",
+                      "🔻F108🔻 S. 43 substituted",
+                      # X
+                      "",
+                      #
+                      "[::section::]195 F530[F529 195 Maps of waterworks.E+W",
+                      "[::section::]47 F153F152F154 47 Duty with waste from vessels etc.S",
+                      "[::section::]3 F5[F10 3 Meaning of “mobile radioactive apparatus”.U.K.",
+                      "[::section::]41 F133F143 41 Registers. S",
+                      "[::section::]224 F685 [224 Application to the Isles of Scilly.E+W",
+                      "[::section::]91 [F886 91 [F887 Old Welsh",
+                      "[::section::]145 F1205 145  . . . . .",
+                      "[::section::]221 [221 F1542 Crown application.E+W",
+                      "[::section::]43 [43 F108 Offence where listed",
+                      ""
+                    ]
+                    |> Enum.join("\n")
+
+  describe "tag_section_efs_ii/1" do
+    test "S. amendments" do
+      result = tag_section_efs_ii(@section_ii)
+      assert @section_ii_model == result
+    end
+  end
+
+  @ss [
+        "🔻F4🔻 Ss. 1A-1H, 1J (with a reference to the “Scottish Ministers” in s. 1J) substituted for Ss. 1, 2 (S.) (1.10.2011) by",
+        "🔻F5🔻 Ss. 1-24 repealed (S.) (1.9.2018) by ",
+        "[F4[F51AMeaning of “radioactive material” and “radioactive waste”U.K.",
+        "[F51BNORM industrial activitiesU.K.",
+        "[F51DRadionuclides not of natural terrestrial or cosmic originU.K.",
+        "[F4[F51ERadionuclides with a short half-lifeU.K.",
+        "F5[F115 Further exemptions from ss. 13 and 14.E+W"
+      ]
+      |> Enum.join("\n")
+
+  @ss_model [
+              "🔻F4🔻 Ss. 1A-1H, 1J (with a reference to the “Scottish Ministers” in s. 1J) substituted for Ss. 1, 2 (S.) (1.10.2011) by",
+              "🔻F5🔻 Ss. 1-24 repealed (S.) (1.9.2018) by ",
+              "[::section::]1A [F4[F5 1A Meaning of “radioactive material” and “radioactive waste”U.K.",
+              "[::section::]1B [F5 1B NORM industrial activitiesU.K.",
+              "[::section::]1D [F5 1D Radionuclides not of natural terrestrial or cosmic originU.K.",
+              "[::section::]1E [F4[F5 1E Radionuclides with a short half-lifeU.K.",
+              "[::section::]15 F5[F1 15 Further exemptions from ss. 13 and 14.E+W"
+            ]
+            |> Enum.join("\n")
+  describe "section_ss_efs/1" do
+    test "section_ss_efs/1 sections" do
+      result = section_ss_efs(@ss)
+      assert result == @ss_model
+    end
+  end
+
   describe "tag_section_range/1" do
     test "act sub sections" do
       binary =

@@ -317,7 +317,7 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   def join_derivations(binary) do
-    regex1 = ~r/(#{@geo_regex})(TABLE OF DERIVATIONS)\n([\s\S]*?)$/
+    regex1 = ~r/(#{@geo_regex})[ ]?(TABLE OF DERIVATIONS)\n([\s\S]*?)$/
 
     regex2 = ~r/^Table of Derivations(#{@geo_regex})?\n([\s\S]*)(?=\nTextual Amendments)/m
 
@@ -363,11 +363,9 @@ defmodule Legl.Countries.Uk.UkClean do
         region
       end
 
-    [
-      ~s/#{@components.table_heading}#{heading}#{region}/,
-      ~s/#{join(@components.table <> txt)}/
-    ]
-    |> Enum.join("\n")
+    txt = "#{@components.table}#{heading}#{region}\n#{txt}"
+
+    join(txt)
   end
 
   def collapse_table_text(binary) do
@@ -378,11 +376,7 @@ defmodule Legl.Countries.Uk.UkClean do
           regex,
           &1,
           fn _, txt ->
-            [
-              ~s/#{@components.table_heading}TABLE/,
-              ~s/#{join(@components.table <> txt)}/
-            ]
-            |> Enum.join("\n")
+            ~s/#{join(@components.table <> "TABLE\n" <> txt)}/
           end
         )).()
   end

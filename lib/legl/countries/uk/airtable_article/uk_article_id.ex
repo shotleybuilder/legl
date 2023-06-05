@@ -27,6 +27,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleId do
   defp region_code(%{region: "E+W+S"} = _record), do: "_GB"
   defp region_code(%{region: "E+W+N.I."} = _record), do: "_EWNI"
   defp region_code(%{region: "E+W"} = _record), do: "_EW"
+  defp region_code(%{region: "S+N.I."} = _record), do: "_SNI"
   defp region_code(%{region: "E"} = _record), do: "_E"
   defp region_code(%{region: "W"} = _record), do: "_W"
   defp region_code(%{region: "S"} = _record), do: "_S"
@@ -52,8 +53,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleId do
   defp annotation_code(%{type: ~s/"editorial,content"/, amendment: x} = _record),
     do: "_xx_" <> x
 
-  defp annotation_code(%{type: ~s/"table,heading"/} = _record), do: "_tbl"
-  defp annotation_code(%{type: "table", amendment: t} = _record), do: "_tbl_" <> "#{t}"
+  defp annotation_code(%{type: "table"} = _record), do: "_tbl"
   defp annotation_code(%{type: ~s/note/} = _record), do: "_nt"
 
   defp annotation_code(_), do: ""
