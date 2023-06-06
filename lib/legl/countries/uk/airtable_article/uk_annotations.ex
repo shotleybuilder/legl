@@ -24,6 +24,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> chapter_efs()
       # x heading was here
       |> tag_table_efs()
+      |> tag_schedule_range()
       |> tag_schedule_efs(opts)
       # ss efs was here
       |> tag_schedule_section_efs()
@@ -36,7 +37,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> section_ss_efs()
       |> tag_sub_section_efs()
       |> cross_heading_efs()
-      |> tag_schedule_range()
+      # schedule range was here
       |> tag_mods_cees()
       |> tag_commencing_ies()
       |> tag_extent_ees()
@@ -162,12 +163,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> Legl.Utility.rm_dupe_spaces(@regex_components.chapter)
   end
 
-  def tag_schedule_efs(binary, opts) do
+  def tag_schedule_efs(binary, opts \\ %{qa_sched_s?: false, qa_sched_s_limit?: false}) do
     # See uk_annotations.exs for examples and test
     # [F37SCHEDULE 2S Election -> picks-up the 'E' as the region if [A-Z] is used
     # X18 SCHEDULE 4E+W+S Repeals
     regex =
-      ~s/^(\\[?[XF]\\d+)?(\\[?F?\\d*)[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[\\] ]?(#{@geo_regex})[ ]?([A-Z]?.*)/
+      ~r/^(\[?[XF]\d+)?(\[?F?\d*)[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\d+[A-Z]*)[\] \.]?(#{@geo_regex})[ ]?([A-Z]?.*)/m
 
     if opts.qa_sched_s? == true do
       QA.scan_and_print(binary, regex, "SCHEDULE", opts.qa_sched_s_limit?)
@@ -175,7 +176,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex}/m,
+          regex,
           &1,
           "#{@components.annex}\\g{4} \\g{1}\\g{2} \\g{3} \\g{4} \\g{6} [::region::]\\g{5}"
         )).()
@@ -250,7 +251,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   These Fxxx codes are then searched for and marked up as sections
   PATTERN.  AMENDED SECTIONS 1A, 6B, 10ZA etc.
   """
-  def tag_section_efs_i(binary, opts) do
+  def tag_section_efs_i(binary, opts \\ %{qa_si?: false, qa_si_limit?: false}) do
     regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+[A-Z]+)[^\(].*/m
 
     if opts.qa_si? == true do
@@ -263,7 +264,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   @doc """
   PATTERN.  NORMAL SECTIONS 1, 6, 10 etc.
   """
-  def tag_section_efs_ii(binary, opts) do
+  def tag_section_efs_ii(binary, opts \\ %{qa_sii?: false, qa_sii_limit?: false}) do
     regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+).*?(?:repealed|substituted|omitted).*/m
 
     if opts.qa_sii? == true do
@@ -389,65 +390,97 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
   """
   def tag_section_range(binary) do
-    regex1 = ~s/^F(\\d+)(?:-|—|, )(\\d+)?([ \\.]+)(#{@geo_regex})([\\s\\S]+?^🔻F(\\d+)🔻)/
+    regex1 = ~r/^F(\d+)(?:-|—|, )(\d+)?([ \.]+)(#{@geo_regex})([\s\S]+?^🔻F(\d+)🔻)/m
     # 37—40.. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . F147 U.K.
-    regex2 =
-      ~s/^(\\d+)(?:-|—|, )(\\d+)?([ \\.]+)F(\\d+)[ ]?(#{@geo_regex})([\\s\\S]+?^🔻?F(\\d+)🔻?)/
+    # 45,46. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .F16 U.K.
+    regex2 = ~r/^(\d+)(?:-|—|,[ ]?)(\d+)?([ \.]+)F(\d+)[ ]?(#{@geo_regex})([\s\S]+?^🔻?F(\d+)🔻?)/m
 
-    QA.scan_and_print(binary, regex1, "SECTION RANGE", true)
-    QA.scan_and_print(binary, regex2, "SECTION RANGE", true)
+    QA.scan_and_print(binary, regex1, "Leading Ef SECTION RANGE", true)
+    QA.scan_and_print(binary, regex2, "Trailing Ef SECTION RANGE", true)
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex1}/m,
+          regex1,
           &1,
           fn _, from, to, txt, region, amd, ef ->
-            # take the F9 number from the 'from' number 914 becomes 14
-            # F2 and 22 becomes 2
-            from = String.replace_prefix(from, ef, "")
-
-            # account for a range of 1 (to being "")
-            to =
-              if to == "" do
-                from
-              else
-                to
-              end
-
-            f = String.to_integer(from)
-            t = String.to_integer(to)
-
-            for n <- f..t do
-              ~s/[::section::]#{n} F#{ef} #{n} #{txt} [::region::]#{region}/
-            end
-            |> Enum.join("\n")
-            |> Kernel.<>(amd)
+            replacement_range_string(ef, amd, from, to, txt, region)
           end
         )).()
     # |> QA.qa_print_line("37—40")
     |> (&Regex.replace(
-          ~r/#{regex2}/m,
+          regex2,
           &1,
           fn _match, from, to, txt, ef, region, amd, _ef_qa ->
             # account for a range of 1 (to being "")
-            to =
-              if to == "" do
-                from
-              else
-                to
-              end
+            replacement_range_string(ef, amd, from, to, txt, region)
+          end
+        )).()
+  end
 
+  def replacement_range_string(ef, amd, from, to, txt, region) do
+    {from, to} = from_to(String.to_integer(from), String.to_integer(to))
+
+    txt = String.slice(txt, 0..10)
+
+    for n <- from..to do
+      ~s/[::section::]#{n} F#{ef} #{n} #{txt} [::region::]#{region}/
+    end
+    |> Enum.join("\n")
+    |> Kernel.<>(amd)
+  end
+
+  @doc """
+  takes F125SCHEDULES 9—14E+W. .
+  and makes
+  [::annex::]9 F125 SCHEDULE 9 . .  [::region::]E+W
+  [::annex::]10 F125 SCHEDULE 10 .  [::region::]E+W
+  [::annex::]11 F125 SCHEDULE 11 .  [::region::]E+W
+  [::annex::]12 F125 SCHEDULE 12 .  [::region::]E+W
+  [::annex::]13 F125 SCHEDULE 13 .  [::region::]E+W
+  [::annex::]14 F125 SCHEDULE 14 .  [::region::]E+W
+  """
+  def tag_schedule_range(binary) do
+    binary
+    |> (&Regex.replace(
+          ~r/^(F\d+)SCHEDULES[ ](\d+)(?:-|—|,[ ]?)(\d+)[\.]?(#{@geo_regex})(.*)/m,
+          &1,
+          fn _, ef, from, to, region, txt ->
             f = String.to_integer(from)
             t = String.to_integer(to)
 
             for n <- f..t do
-              ~s/[::section::]#{n} F#{ef} #{n} #{txt} [::region::]#{region}/
+              ~s/[::annex::]#{n} #{ef} SCHEDULE #{n} #{txt} [::region::]#{region}/
             end
             |> Enum.join("\n")
-            |> Kernel.<>(amd)
+          end
+        )).()
+    # Trailing Ef with region before the text
+    |> (&Regex.replace(
+          ~r/^SCHEDULES[ ](\d+)(?:-|—|,[ ]?|[ ]AND[ ])(\d+)[\.]?(#{@geo_regex})(.*?)(F\d+)([\s\S]+?^🔻?(F\d+)🔻?)/m,
+          &1,
+          fn m, from, to, region, txt, ef, amd, ef_qa ->
+            schedule_replacement_range_string(m, from, to, region, txt, ef, amd, ef_qa)
           end
         )).()
   end
+
+  def schedule_replacement_range_string(_, from, to, region, _txt, ef, amd, ef) do
+    # Only if ef == ef_qa
+    {from, to} = from_to(String.to_integer(from), String.to_integer(to))
+
+    txt = ". . . . ."
+
+    for n <- from..to do
+      ~s/[::annex::]#{n} #{ef} SCHEDULE #{n} #{txt} [::region::]#{region}/
+    end
+    |> Enum.join("\n")
+    |> Kernel.<>(amd)
+  end
+
+  def schedule_replacement_range_string(m, _from, _to, _region, _txt, _ef, _amd, _ef_qa), do: m
+
+  defp from_to(from, from), do: {from, from}
+  defp from_to(from, to), do: {from, to}
 
   @doc """
   Function reads amendment clauses looking for Ss. insertions and substitutions
@@ -601,33 +634,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     Enum.reduce(ef_tags, binary, fn {ef, sn, _amd_type, _tag}, acc ->
       tag_sections_replace(acc, ef, sn)
     end)
-  end
-
-  @doc """
-  takes F125SCHEDULES 9—14E+W. .
-  and makes
-  [::annex::]9 F125 SCHEDULE 9 . .  [::region::]E+W
-  [::annex::]10 F125 SCHEDULE 10 .  [::region::]E+W
-  [::annex::]11 F125 SCHEDULE 11 .  [::region::]E+W
-  [::annex::]12 F125 SCHEDULE 12 .  [::region::]E+W
-  [::annex::]13 F125 SCHEDULE 13 .  [::region::]E+W
-  [::annex::]14 F125 SCHEDULE 14 .  [::region::]E+W
-  """
-  def tag_schedule_range(binary) do
-    binary
-    |> (&Regex.replace(
-          ~r/^(F\d+)SCHEDULES[ ](\d+)(?:-|—)(\d+)(#{@geo_regex})(.*)/m,
-          &1,
-          fn _, ef, from, to, region, txt ->
-            f = String.to_integer(from)
-            t = String.to_integer(to)
-
-            for n <- f..t do
-              ~s/[::annex::]#{n} #{ef} SCHEDULE #{n} #{txt} [::region::]#{region}/
-            end
-            |> Enum.join("\n")
-          end
-        )).()
   end
 
   def tag_sub_section_efs(binary) do
