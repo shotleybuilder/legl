@@ -106,11 +106,11 @@ defmodule RUS do
   @impl true
   @spec airtable([]) :: :atom
   def airtable(opts \\ []) when is_list(opts) do
-    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+    {:ok, binary} = File.read(Path.absname("lib/annotated.txt"))
 
     chunk = Keyword.get(opts, :chunk, 200)
 
-    binary = Schema.schema(%RUS{}, binary, schema(), opts)
+    binary = Schema.schema(binary, schema(), opts)
 
     no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)
 

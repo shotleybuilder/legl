@@ -161,7 +161,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation do
       # Do we have a range?
       case String.contains?(k, "-") do
         true ->
-          case Regex.run(~r/(\d+)([A-Z]?)-(\d+)([A-Z]?)/, k) do
+          case Regex.run(~r/(\d+)([A-Z]?)([A-Z]?)-(\d+)([A-Z]?)([A-Z]?)/, k) do
             nil ->
               IO.puts("ERROR OPTIMISER #{k}")
               acc
@@ -193,17 +193,18 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation do
     |> IO.inspect(label: "#{label} OPTIMISED")
   end
 
-  def rng([_, a, "", c, ""]) do
+  def rng([_, a, "", "", c, "", ""]) do
+    # 1-2, 8-11 ...
     String.to_integer(c) - String.to_integer(a) + 1
   end
 
-  def rng([_, a, b, a, d]) do
+  def rng([_, a, b, "", a, d, ""]) do
     # Section number is the same
     # 1A-1C
     Legl.Utility.alphabet_to_numeric_map()[d] - Legl.Utility.alphabet_to_numeric_map()[b] + 1
   end
 
-  def rng([_, _a, "", _c, d]) do
+  def rng([_, _a, "", "", _c, d, ""]) do
     # ["172-173A", "172", "", "173", "A"]
     cond do
       # [172, 173, 173A]
@@ -217,18 +218,28 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation do
     end
   end
 
-  def s_codes([_, a, "", c, ""]) do
-    Enum.map(String.to_integer(a)..String.to_integer(c), &Integer.to_string(&1))
+  def rng([_, a, _, b, a, _, c]) do
+    # 62ZA-62ZD, 319ZA-319ZD, 61DA-61DE
+    Legl.Utility.alphabet_to_numeric_map()[c] - Legl.Utility.alphabet_to_numeric_map()[b] + 1
+  end
+
+  def s_codes([_, a, "", "", b, "", ""]) do
+    Enum.map(String.to_integer(a)..String.to_integer(b), &Integer.to_string(&1))
     |> Enum.reverse()
   end
 
-  def s_codes([_, a, b, a, d]) do
-    Utility.RangeCalc.range({a, b, d})
+  def s_codes([_, a, b, "", a, c, ""]) do
+    Utility.RangeCalc.range({a, b, c})
     |> Enum.reverse()
   end
 
-  def s_codes([_, a, b, c, d]) do
+  def s_codes([_, a, b, "", c, d, ""]) do
     Utility.RangeCalc.range({a, b, c, d})
+    |> Enum.reverse()
+  end
+
+  def s_codes([_, a, b, c, d, e, f]) do
+    Utility.RangeCalc.range({a <> b, c, d <> e, f})
     |> Enum.reverse()
   end
 

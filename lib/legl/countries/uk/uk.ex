@@ -85,6 +85,12 @@ defmodule UK do
     # overarching switch for the QA functions
     qa: true,
     # finer control of QA functions
+    qa_sched_s_limit?: true,
+    qa_sched_s?: true,
+    qa_si?: true,
+    qa_si_limit?: true,
+    qa_sii?: true,
+    qa_sii_limit?: true,
     qa_list_efs: true,
     qa_list_bracketed_efs: false,
     qa_list_clean_efs: false,

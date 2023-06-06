@@ -110,6 +110,6 @@ defmodule DE do
   """
   @spec airtable([]) :: :atom
   def airtable(opts \\ [fields: @fields]) do
-    Legl.airtable(%DE{}, schema(), opts)
+    Legl.airtable(schema(), opts)
   end
 end

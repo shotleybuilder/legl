@@ -15,10 +15,10 @@ defmodule AUT do
 
     case latest? do
       true ->
-        File.write(Legl.annotated(), "#{AUT.Parser.parser_latest(binary)}")
+        File.write("lib/annotated.txt", "#{AUT.Parser.parser_latest(binary)}")
 
       false ->
-        File.write(Legl.annotated(), "#{AUT.Parser.parser(binary)}")
+        File.write("lib/annotated.txt", "#{AUT.Parser.parser_latest(binary)}")
     end
   end
 
@@ -28,7 +28,7 @@ defmodule AUT do
 
   """
   def airtable(fields \\ :all) do
-    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+    {:ok, binary} = File.read(Path.absname("lib/annotated.txt"))
 
     Schema.schema(:aut, binary, fields)
     # |> IO.inspect()

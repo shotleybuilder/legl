@@ -62,7 +62,7 @@ defmodule SWE do
   @spec parse(String.t()) :: :ok | {:error, :file.posix()}
   def parse(source) do
     {:ok, binary} = File.read(Path.absname(Legl.original()))
-    File.write(Legl.annotated(), parse(binary, source))
+    File.write("lib/annotated.txt", parse(binary, source))
   end
 
   @doc false
@@ -152,7 +152,7 @@ defmodule SWE do
 
   """
   def schemas(source \\ "") do
-    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+    {:ok, binary} = File.read(Path.absname("lib/annotated.txt"))
 
     case source do
       "rkrattsbaser" ->

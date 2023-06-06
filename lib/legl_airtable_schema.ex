@@ -105,6 +105,7 @@ defmodule Legl.Airtable.Schema do
         |> IO.inspect(label: "\nDuplicates after Codification", limit: :infinity)
 
     records = Enum.map(records, &convert_region_code(&1))
+    IO.puts("\nRegion Code Conversion Completed\n")
 
     # 'Changes' field holds list of changes (amendments, mods) applying to that record
     r = List.last(records)
@@ -119,6 +120,9 @@ defmodule Legl.Airtable.Schema do
     # Print change stats to the console
     Enum.each(change_stats, fn {k, {total, code}} -> IO.puts("#{k} #{total} code: #{code}") end)
 
+    Enum.count(records) |> (&IO.puts("\nnumber of records = #{&1}")).()
+
+    IO.puts("\nStarting Search for Change Stats")
     # rng = List.last(records).max_amendments |> IO.inspect(label: "Amendments (Fs)")
     records =
       Enum.map(records, fn record ->
@@ -132,8 +136,6 @@ defmodule Legl.Airtable.Schema do
           end
         end)
       end)
-
-    Enum.count(records) |> (&IO.puts("number of records = #{&1}")).()
 
     Enum.each(records, fn record ->
       copy_to_csv(file, record)

@@ -22,18 +22,20 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_txt_amend_efs()
       |> part_efs()
       |> chapter_efs()
-      |> cross_heading_efs()
+      # x heading was here
       |> tag_table_efs()
-      |> tag_schedule_efs()
-      |> tag_sub_section_efs()
+      |> tag_schedule_efs(opts)
+      # ss efs was here
       |> tag_schedule_section_efs()
       |> tag_sub_section_range()
       |> tag_sub_sub_section_efs()
       |> tag_section_range()
       |> tag_section_end_efs()
-      |> tag_section_efs_i()
-      |> tag_section_efs_ii()
+      |> tag_section_efs_i(opts)
+      |> tag_section_efs_ii(opts)
       |> section_ss_efs()
+      |> tag_sub_section_efs()
+      |> cross_heading_efs()
       |> tag_schedule_range()
       |> tag_mods_cees()
       |> tag_commencing_ies()
@@ -160,14 +162,16 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> Legl.Utility.rm_dupe_spaces(@regex_components.chapter)
   end
 
-  def tag_schedule_efs(binary) do
+  def tag_schedule_efs(binary, opts) do
     # See uk_annotations.exs for examples and test
     # [F37SCHEDULE 2S Election -> picks-up the 'E' as the region if [A-Z] is used
     # X18 SCHEDULE 4E+W+S Repeals
     regex =
       ~s/^(\\[?[XF]\\d+)?(\\[?F?\\d*)[ ]?(SCHEDULE|Schedule)[ ]([A-Z]*\\d+[A-Z]*)[\\] ]?(#{@geo_regex})[ ]?([A-Z]?.*)/
 
-    QA.scan_and_print(binary, regex, "SCHEDULE")
+    if opts.qa_sched_s? == true do
+      QA.scan_and_print(binary, regex, "SCHEDULE", opts.qa_sched_s_limit?)
+    end
 
     binary
     |> (&Regex.replace(
@@ -190,29 +194,37 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   """
   def cross_heading_efs(binary) do
     # See uk_annotations.exs for examples and test
-    regex = ~s/^🔻(F\\d+)🔻.*?[Cc]ross[ -]?heading.*(?:inserted|substituted)/
+    regex = ~r/^🔻(F\d+)🔻.*?[Cc]ross[ -]?heading.*(?:inserted|substituted)/m
 
     count = QA.scan_and_print(binary, regex, "cross heading", true)
 
-    case count do
-      0 ->
-        binary
+    {acc, io} =
+      case count do
+        0 ->
+          {binary, nil}
 
-      _ ->
-        Regex.scan(~r/#{regex}/m, binary)
-        |> Enum.map(fn [_, ef_code] -> ef_code end)
-        |> Enum.reduce(binary, fn ef, acc ->
-          regex = ~s/^(\\[?)#{ef}[ ]?([^0-9].*?)(#{@geo_regex})$/
-          QA.scan_and_print(acc, regex, "cross headings found", true)
+        _ ->
+          Regex.scan(regex, binary)
+          |> Enum.map(fn [_, ef_code] -> ef_code end)
+          |> Enum.reduce({binary, []}, fn ef, {acc, io} ->
+            regex_ = ~r/^(\[?)#{ef}[ ]?([^0-9].*?)(#{@geo_regex})$/m
+            result = Regex.run(regex_, acc)
+            io = [result | io]
 
-          acc
-          |> (&Regex.replace(
-                ~r/#{regex}/m,
-                &1,
-                "#{@components.heading}\\g{1}#{ef} \\g{2} [::region::]\\g{3}"
-              )).()
-        end)
-    end
+            acc =
+              acc
+              |> (&Regex.replace(
+                    regex_,
+                    &1,
+                    "#{@components.heading}\\g{1}#{ef} \\g{2} [::region::]\\g{3}"
+                  )).()
+
+            {acc, io}
+          end)
+      end
+
+    IO.inspect(io, label: "CROSS HEADINGS PROCESSED")
+    acc
   end
 
   def tag_table_efs(binary) do
@@ -238,27 +250,30 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   These Fxxx codes are then searched for and marked up as sections
   PATTERN.  AMENDED SECTIONS 1A, 6B, 10ZA etc.
   """
-  def tag_section_efs_i(binary) do
+  def tag_section_efs_i(binary, opts) do
     regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+[A-Z]+)[^\(].*/m
 
-    tag_sections(binary, regex, "S. SECTIONS I", true)
+    if opts.qa_si? == true do
+      QA.scan_and_print(binary, regex, "S. SECTIONS I", opts.qa_si_limit?)
+    end
+
+    tag_sections(binary, regex)
   end
 
   @doc """
   PATTERN.  NORMAL SECTIONS 1, 6, 10 etc.
   """
-  def tag_section_efs_ii(binary) do
-    # 🔻F1205🔻 S. 145 and ... repealed -> F1205145. . . . . .
-    #
-
+  def tag_section_efs_ii(binary, opts) do
     regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+).*?(?:repealed|substituted|omitted).*/m
 
-    tag_sections(binary, regex, "S. SECTIONS II", true)
+    if opts.qa_sii? == true do
+      QA.scan_and_print(binary, regex, "S. SECTIONS II", opts.qa_sii_limit?)
+    end
+
+    tag_sections(binary, regex)
   end
 
-  def tag_sections(binary, regex, label, opt \\ false) do
-    QA.scan_and_print(binary, regex, label, opt)
-
+  def tag_sections(binary, regex) do
     Regex.scan(regex, binary)
     |> Enum.reduce(binary, fn [_line, ef, sn], acc ->
       tag_sections_replace(acc, ef, sn)
@@ -266,28 +281,63 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_sections_replace(binary, ef, sn) do
+    # {b}
+    b = _bracket = ~s/(\\[?)/
+
+    regex = %{
+      ef_b4_sn: ~r/^((?:\[?F\d+)*?)#{b}#{ef}[ ]?#{b}[ ]?#{sn}[ \.]?([A-Z\[ ].*|\((\d+)\).*)/m,
+      sn_b4_ef: ~r/^#{b}[ ]?#{sn}[ ]?#{b}#{ef}[ ]?#{b}([A-Z].*|\((\d+)\).*)/m,
+      ef_b4_efs_b4_sn: ~r/^(\[?)#{ef}((?:\[?F\d+)*?)#{sn}[ \.]?([A-Z].*)/m,
+      x: ~r/^(X\d+)[ ]?(\[?)#{ef}#{sn}/m
+    }
+
+    if ef == "F1393" do
+      Regex.run(regex.ef_b4_sn, binary)
+      |> IO.inspect(label: "DEBUG tag_sections_replace/3")
+    end
+
     binary
     # EF before SN
     |> (&Regex.replace(
-          ~r/^((?:\[?F\d+)*?)(\[?)#{ef}(\[?)#{sn}[ \.]?([A-Z\[ ].*)/m,
+          regex.ef_b4_sn,
           &1,
-          "#{@components.section}#{sn} \\g{1}\\g{2}#{ef} \\g{3}#{sn} \\g{4}"
+          fn
+            _m, pre_efs, bkt1, bkt2, txt, "" ->
+              "#{@components.section}#{sn} #{pre_efs}#{bkt1}#{ef} #{bkt2}#{sn} #{txt}"
+
+            _m, pre_efs, bkt1, bkt2, txt, "1" ->
+              "#{@components.section}#{sn}-1 #{pre_efs}#{bkt1}#{ef} #{bkt2}#{sn} #{txt}"
+
+            # a sub-section! Let's leave alone
+            m, _pre_efs, _bkt1, _bkt2, _txt, _ ->
+              "#{m}"
+          end
         )).()
     # SN before EF
     |> (&Regex.replace(
-          ~r/^(\[?)[ ]?#{sn}[ ]?(\[?)#{ef}[ ]?([A-Z].*)/m,
+          regex.sn_b4_ef,
           &1,
-          "#{@components.section}#{sn} \\g{1}#{sn} \\g{2}#{ef} \\g{3}"
+          fn
+            _m, bkt1, bkt2, bkt3, txt, "" ->
+              "#{@components.section}#{sn} #{bkt1}#{sn} #{bkt2}#{ef} #{bkt3}#{txt}"
+
+            _m, bkt1, bkt2, bkt3, txt, "1" ->
+              "#{@components.section}#{sn}-1 #{bkt1}#{sn} #{bkt2}#{ef} #{bkt3}#{txt}"
+
+            # a sub-section! Let's leave alone
+            m, _pre_efs, _bkt1, _bkt2, _txt, _ ->
+              "#{m}"
+          end
         )).()
     # EF before efs before SN
     |> (&Regex.replace(
-          ~r/^(\[?)#{ef}((?:\[?F\d+)*?)#{sn}[ \.]?([A-Z].*)/m,
+          regex.ef_b4_efs_b4_sn,
           &1,
           "#{@components.section}#{sn} \\g{1}#{ef}\\g{2} #{sn} \\g{3}"
         )).()
     # X
     |> (&Regex.replace(
-          ~r/^(X\d+)[ ]?(\[?)#{ef}#{sn}/m,
+          regex.x,
           &1,
           "#{@components.section}#{sn} \\g{1} \\g{2}#{ef} #{sn}"
         )).()
@@ -500,25 +550,36 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def build_schedule_regex() do
-    # 2, 5-9, 11
+    # To call in .iex
+    # Legl.Countries.Uk.AirtableArticle.UkAnnotations.build_schedule_regex()
+
+    # 🔻F80🔻 Sch. 4 Pt. I para. 9 repealed
+    # 🔻F958🔻 Sch. 4 para. 5(1) repealed (1.1.1993) by New Roads
     sn = ~s/\\d+[A-Z]{0,3}/
+    # ranges such as 🔻F227🔻 Sch. 4 paras. 33-33C
+    # 33-33C -> 33, 33A, 33B, 33C
+
     snp = ~s/(?:#{sn}-#{sn}|#{sn})/
 
-    patterns =
+    and_ = ~s/(?:#{snp},[ ])+#{snp}[ ]and[ ]#{snp}-#{snp}/
+    # 🔻F79🔻 Sch. 4 Pt. I paras. 7, 8 repealed
+    csv_ = ~s/(?:#{snp},[ ])+#{snp}/
+
+    full =
       [
-        # ranges such as 🔻F227🔻 Sch. 4 paras. 33-33C
-        # 33-33C -> 33, 33A, 33B, 33C
-        # ~s/#{snp}-#{snp}/,
         ~s/(?:#{snp},[ ])+#{snp}[ ]and[ ]#{snp}-#{snp}/,
-        # 🔻F79🔻 Sch. 4 Pt. I paras. 7, 8 repealed
         ~s/(?:#{snp},[ ])+#{snp}/,
-        # 🔻F80🔻 Sch. 4 Pt. I para. 9 repealed
-        # 🔻F958🔻 Sch. 4 para. 5(1) repealed (1.1.1993) by New Roads
         snp
       ]
       |> Enum.join("|")
 
-    ~r/^🔻(F\d+)🔻.*Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{patterns}).*?by/m
+    # The regex in this map are not used in prod.  Helpful for debugging a complex regex
+    %{
+      and_: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{and_}).*?by/m,
+      csv_: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{csv_}).*?by/m,
+      snp: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{snp}).*?by/m,
+      full: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{full}).*?by/m
+    }
   end
 
   @doc """
@@ -528,7 +589,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     # See uk_annotations.exs for examples and test
     # section_number_pattern
 
-    regex = build_schedule_regex()
+    regex = build_schedule_regex().full
 
     ef_codes = EfCodes.ef_codes(binary, regex, "SCHEDULE SS.")
 
@@ -537,7 +598,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     ef_tags = EfCodes.ef_tags(ef_codes)
 
     # sn - section number
-    Enum.reduce(ef_tags, binary, fn {ef, sn, _, _tag}, acc ->
+    Enum.reduce(ef_tags, binary, fn {ef, sn, _amd_type, _tag}, acc ->
       tag_sections_replace(acc, ef, sn)
     end)
   end
@@ -725,7 +786,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   Manually adjusted in original.txt to EF-sp-SN-sp-Region
   """
   def tag_section_wash_up(binary) do
-    regex = ~r/^(F\d+)[ ](\d+[A-Z]*)[ ](#{@geo_regex})(.*)/m
+    regex = ~r/^(\[?F\d+)[ ](\d+[A-Z]*)[ \.](?:(#{@geo_regex})(.*)|(.*))/m
 
     QA.scan_and_print(binary, regex, "SECTION WASH UP", true)
 
@@ -733,7 +794,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> (&Regex.replace(
           regex,
           &1,
-          "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{4} [::region::]\\g{3}"
+          "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{4}\\g{5} [::region::]\\g{3}"
         )).()
   end
 

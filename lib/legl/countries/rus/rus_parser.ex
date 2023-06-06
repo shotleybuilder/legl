@@ -12,7 +12,7 @@ defmodule RUS.Parser do
   @components %Component{}
 
   def component_for_regex(name) when is_atom(name) do
-    Legl.mapped_components() |> Map.get(name) |> Regex.escape()
+    Component.components_for_regex()
   end
 
   @part_names ~s(ПЕРВАЯ СЕКОНД ТРЕТЬЯ ЧЕТВЕРТАЯ ФИФТХ ШЕСТАЯ)
@@ -236,7 +236,7 @@ defmodule RUS.Parser do
         match, chapter, "" ->
           "#{@components[:chapter]}#{Legl.conv_roman_numeral(chapter)} #{match}"
 
-        match, chapter, section ->
+        match, _chapter, section ->
           "#{@components[:section]}#{section} #{match}"
       end
     )
@@ -271,7 +271,7 @@ defmodule RUS.Parser do
         m, art_num, "" ->
           "#{@components[:article]}#{art_num} #{m}"
 
-        m, art_num, para_num ->
+        m, _art_num, para_num ->
           "#{@components[:para]}#{para_num} #{m}"
       end
     )

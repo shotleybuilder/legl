@@ -46,7 +46,7 @@ defmodule TUR do
   @spec parse() :: :atom
   def parse() do
     binary = clean()
-    File.write(Legl.annotated(), "#{TUR.Parser.parser(binary)}")
+    File.write("lib/annotated.txt", "#{TUR.Parser.parser(binary)}")
     :ok
   end
 
@@ -61,7 +61,7 @@ defmodule TUR do
   @impl true
   @spec airtable([]) :: :atom
   def airtable(fields \\ []) when is_list(fields) do
-    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+    {:ok, binary} = File.read(Path.absname("lib/annotated.txt"))
 
     binary =
       cond do
@@ -69,7 +69,7 @@ defmodule TUR do
           Schema.schema(%TUR{}, binary, schema())
 
         true ->
-          Schema.schema(%TUR{}, binary, schema(), fields)
+          Schema.schema(binary, schema(), fields)
       end
 
     no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)

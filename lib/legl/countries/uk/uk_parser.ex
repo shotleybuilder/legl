@@ -18,8 +18,8 @@ defmodule UK.Parser do
 
   @uk_cardinals ~s(One Two Three Four Five Six Seven Eight Nine Ten)
 
-  @regex_uk_cardinals Regex.replace(~r/\n/, @uk_cardinals, "")
-                      |> (&Regex.replace(~r/[ ]/, &1, "|")).()
+  # @regex_uk_cardinals Regex.replace(~r/\n/, @uk_cardinals, "")
+  #                    |> (&Regex.replace(~r/[ ]/, &1, "|")).()
 
   @uk_cardinal_integer String.split(@uk_cardinals)
                        |> Enum.reduce({%{}, 1}, fn x, {map, inc} ->
@@ -295,7 +295,6 @@ defmodule UK.Parser do
         )).()
   end
 
-  @heading_children ~s/[#{@regex_components.section}|#{@regex_components.amendment}]/
   @doc """
   Parse Act section headings
   Format

@@ -188,7 +188,7 @@ defmodule SWE.Pdf do
   end
 
   def schemas() do
-    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+    {:ok, binary} = File.read(Path.absname("lib/annotated.txt"))
     schema(binary)
   end
 

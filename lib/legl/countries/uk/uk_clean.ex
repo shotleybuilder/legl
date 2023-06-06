@@ -33,6 +33,7 @@ defmodule Legl.Countries.Uk.UkClean do
       |> join_derivations()
       |> collapse_table_text()
       |> rm_multi_space()
+      |> period_para()
 
     Legl.txt("clean")
     |> Path.absname()
@@ -387,7 +388,16 @@ defmodule Legl.Countries.Uk.UkClean do
 
   # ( 1 )The Secretary of State
   def close_parentheses(binary) do
-    Regex.replace(~r/^\([ ](\d+[A-Z]*)[ ]\)/m, binary, "(\\g{1})")
+    Regex.replace(~r/\([ ](\d+[A-Z]*)[ ]\)/m, binary, "(\\g{1})")
+    |> (&Regex.replace(~r/\([ ]([a-z]+)[ ]\)/m, &1, "(\\g{1})")).()
+    # space after closing )
+    |> (&Regex.replace(~r/\)([\S])/m, &1, ") \\g{1}")).()
+    # correct ) ,
+    |> (&Regex.replace(~r/\)[ ](,)/m, &1, ")\\g{1}")).()
+  end
+
+  def period_para(binary) do
+    Regex.replace(~r/para(s?)[ ]/m, binary, "para\\g{1}. ")
   end
 
   @doc """

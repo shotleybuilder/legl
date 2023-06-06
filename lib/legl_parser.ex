@@ -1,15 +1,15 @@
 defmodule Legl.Parser do
   @moduledoc false
 
-  @emojis Legl.named_emojis()
-  @x_join_emojis Legl.emojis()
+  # @emojis Legl.named_emojis()
+  # @x_join_emojis Legl.emojis()
 
   alias Types.Component
-  @components Component.components()
+  # @components Component.components()
 
-  #def components_for_regex() do
+  # def components_for_regex() do
   #  Legl.components_for_regex()
-  #end
+  # end
 
   def rm_top_line(binary),
     do: Regex.replace(~r/^[ \t]*(?:\r\n|\n)+/, binary, "")
@@ -48,10 +48,10 @@ defmodule Legl.Parser do
       " #{Legl.pushpin_emoji()} "
     )
     |> (&Regex.replace(
-      ~r/\n#{Component.mapped_components_for_regex().table_row}/,
-      &1,
-      " #{Legl.pushpin_emoji()} "
-    )).()
+          ~r/\n#{Component.mapped_components_for_regex().table_row}/,
+          &1,
+          " #{Legl.pushpin_emoji()} "
+        )).()
   end
 
   def rm_leading_tabs(binary),

@@ -98,6 +98,6 @@ defmodule DK do
   """
   @spec airtable([]) :: :atom
   def airtable(opts \\ []) do
-    Legl.airtable(%DK{}, schema(), opts)
+    Legl.airtable(schema(), opts)
   end
 end

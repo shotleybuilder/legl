@@ -48,7 +48,7 @@ defmodule NO do
     {:ok, binary} = File.read(Path.absname(Legl.original()))
 
     NO.Parser.parser(binary, english?)
-    |> (&File.write(Legl.annotated(), &1)).()
+    |> (&File.write("lib/annotated.txt", &1)).()
   end
 
   @doc """
@@ -85,7 +85,7 @@ defmodule NO do
   """
   @spec schemas(chapter, boolean, boolean) :: :ok | {:error, :file.posix()}
   def schemas(chapter \\ nil, text_only? \\ false, english? \\ false) do
-    {:ok, binary} = File.read(Path.absname(Legl.annotated()))
+    {:ok, binary} = File.read(Path.absname("lib/annotated.txt"))
     schemas(binary, chapter, text_only?, english?)
   end
 
