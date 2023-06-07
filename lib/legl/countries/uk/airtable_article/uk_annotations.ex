@@ -15,49 +15,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   alias Legl.Countries.Uk.AirtableArticle.UkEfCodes, as: EfCodes
   alias Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation, as: Optimiser
 
-  def annotations_(binary, %{type: :act} = opts) do
-    binary =
-      binary
-      |> floating_efs()
-      |> tag_txt_amend_efs()
-      |> part_efs()
-      |> chapter_efs()
-      # x heading was here
-      |> tag_table_efs()
-      |> tag_schedule_range()
-      |> tag_schedule_efs(opts)
-      # ss efs was here
-      # tag_schedule_section_efs was here
-      |> tag_sub_section_range()
-      |> tag_sub_sub_section_efs()
-      |> tag_section_range()
-      |> tag_section_end_efs()
-      |> tag_section_efs_i(opts)
-      |> tag_section_efs_ii(opts)
-      |> section_ss_efs()
-      |> tag_sub_section_efs()
-      |> tag_schedule_section_efs()
-      |> cross_heading_efs()
-      # schedule range was here
-      |> tag_mods_cees()
-      |> tag_commencing_ies()
-      |> tag_extent_ees()
-      |> tag_editorial_xes()
-      |> tag_section_wash_up()
-      |> tag_heading_efs()
-      |> tag_txt_amend_efs_wash_up()
-      |> space_efs()
-
-    # |> rm_emoji("🔸")
-
-    if opts.qa == true, do: binary |> QA.qa_list_spare_efs(opts) |> QA.list_headings(opts)
-
-    # Confirmation msg to console
-    binary |> (&IO.puts("\n\nannotated: #{String.slice(&1, 0, 100)}...")).()
-
-    binary
-  end
-
   def annotations(binary, %{type: :act} = opts) do
     binary =
       binary
@@ -81,20 +38,22 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_section_efs_i(opts)
       |> tag_section_efs_ii(opts)
       |> section_ss_efs()
+      |> tag_sub_section_range(@components.sub_section)
+      |> tag_sub_section_efs(@components.sub_section)
 
     schedules =
       schedules
       |> tag_schedule_range()
       |> tag_schedule_efs(opts)
       |> tag_schedule_section_efs()
+      |> tag_sub_section_range(@components.sub_paragraph)
+      |> tag_sub_section_efs(@components.sub_paragraph)
 
     binary = ~s/#{main}\n#{schedules}/
 
     binary =
       binary
-      |> tag_sub_section_range()
       |> tag_sub_sub_section_efs()
-      |> tag_sub_section_efs()
       |> cross_heading_efs()
       |> tag_section_wash_up()
       |> tag_heading_efs()
@@ -373,11 +332,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def tag_sections(binary, regex) do
     Regex.scan(regex, binary)
     |> Enum.reduce(binary, fn [_line, ef, sn], acc ->
-      tag_sections_replace(acc, ef, sn)
+      tag_sections_replace(acc, ef, sn, @components.section)
     end)
   end
 
-  def tag_sections_replace(binary, ef, sn) do
+  def tag_sections_replace(binary, ef, sn, component) do
     # {b}
     b = _bracket = ~s/(\\[?)/
 
@@ -400,10 +359,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           &1,
           fn
             _m, pre_efs, bkt1, bkt2, txt, "" ->
-              "#{@components.section}#{sn} #{pre_efs}#{bkt1}#{ef} #{bkt2}#{sn} #{txt}"
+              "#{component}#{sn} #{pre_efs}#{bkt1}#{ef} #{bkt2}#{sn} #{txt}"
 
             _m, pre_efs, bkt1, bkt2, txt, "1" ->
-              "#{@components.section}#{sn}-1 #{pre_efs}#{bkt1}#{ef} #{bkt2}#{sn} #{txt}"
+              "#{component}#{sn}-1 #{pre_efs}#{bkt1}#{ef} #{bkt2}#{sn} #{txt}"
 
             # a sub-section! Let's leave alone
             m, _pre_efs, _bkt1, _bkt2, _txt, _ ->
@@ -416,10 +375,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           &1,
           fn
             _m, bkt1, bkt2, bkt3, txt, "" ->
-              "#{@components.section}#{sn} #{bkt1}#{sn} #{bkt2}#{ef} #{bkt3}#{txt}"
+              "#{component}#{sn} #{bkt1}#{sn} #{bkt2}#{ef} #{bkt3}#{txt}"
 
             _m, bkt1, bkt2, bkt3, txt, "1" ->
-              "#{@components.section}#{sn}-1 #{bkt1}#{sn} #{bkt2}#{ef} #{bkt3}#{txt}"
+              "#{component}#{sn}-1 #{bkt1}#{sn} #{bkt2}#{ef} #{bkt3}#{txt}"
 
             # a sub-section! Let's leave alone
             m, _pre_efs, _bkt1, _bkt2, _txt, _ ->
@@ -430,13 +389,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> (&Regex.replace(
           regex.ef_b4_efs_b4_sn,
           &1,
-          "#{@components.section}#{sn} \\g{1}#{ef}\\g{2} #{sn} \\g{3}"
+          "#{component}#{sn} \\g{1}#{ef}\\g{2} #{sn} \\g{3}"
         )).()
     # X
     |> (&Regex.replace(
           regex.x,
           &1,
-          "#{@components.section}#{sn} \\g{1} \\g{2}#{ef} #{sn}"
+          "#{component}#{sn} \\g{1} \\g{2}#{ef} #{sn}"
         )).()
   end
 
@@ -728,11 +687,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     # sn - section number
     Enum.reduce(ef_tags, binary, fn {ef, sn, _amd_type, _tag}, acc ->
-      tag_sections_replace(acc, ef, sn)
+      tag_sections_replace(acc, ef, sn, @components.paragraph)
     end)
   end
 
-  def tag_sub_section_efs(binary) do
+  def tag_sub_section_efs(binary, component) do
     # See uk_annotations.exs for examples and test
     regex = ~r/^(\[?F\d+)[ ]?(\[?F?\d*)?[ ]*(\[)?\([ ]*([A-Z]*\d+[A-Z]*)[ ]?\)[ ]?(.*)/m
 
@@ -742,13 +701,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> (&Regex.replace(
           regex,
           &1,
-          "#{@components.sub_section}\\g{4} \\g{1}\\g{2} \\g{3}(\\g{4}) \\g{5}"
+          "#{component}\\g{4} \\g{1}\\g{2} \\g{3}(\\g{4}) \\g{5}"
         )).()
   end
 
   @doc """
   """
-  def tag_sub_section_range(binary) do
+  def tag_sub_section_range(binary, component) do
     binary
     |> (&Regex.replace(
           ~r/^(F\d+)\((\d+)\)(?:-|—)\((\d+)\)([ \.]*)/m,
@@ -758,7 +717,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             t = String.to_integer(to)
 
             for n <- f..t do
-              ~s/[::sub_section::]#{n} #{ef} (#{n}) #{txt}/
+              ~s/#{component}#{n} #{ef} (#{n}) #{txt}/
             end
             |> Enum.join("\n")
           end

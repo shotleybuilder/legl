@@ -1,39 +1,39 @@
 defmodule Types.Component do
-  @components ~s(
-    title
-    content
-    part
-    chapter
-    section
-    sub_section
-    heading
-    article
-    sub_article
-    para
-    sub
-    numbered_para
-    amendment_heading
-    amendment
-    modification_heading
-    modification
-    commencement_heading
-    commencement
-    extent_heading
-    extent
-    editorial_heading
-    editorial
-    annex
-    signed
-    footnote
-    approval
-    forms
-    form
-    table
-    table_heading
-    sub_table
-    table_row
-    note
-  )
+  @components ~s/amendment
+  amendment_heading
+  annex
+  approval
+  article
+  chapter
+  commencement
+  commencement_heading
+  content
+  editorial
+  editorial_heading
+  extent
+  extent_heading
+  footnote
+  form
+  forms
+  heading
+  modification
+  modification_heading
+  note
+  numbered_para
+  para
+  paragraph
+  part
+  section
+  signed
+  sub
+  sub_article
+  sub_paragraph
+  sub_section
+  sub_table
+  table
+  table_heading
+  table_row
+  title/
 
   def components, do: @components
 
@@ -63,34 +63,6 @@ defmodule Types.Component do
   @typedoc """
     The components of a piece of law and the tags used to
     mark-up each component when the law is parsed.
-
-    %Types.Component{
-      amendment: "[::amendment::]",
-      amendment_heading: "[::amendment_heading::]",
-      annex: "[::annex::]",
-      approval: "[::approval::]",
-      article: "[::article::]",
-      chapter: "[::chapter::]",
-      commencement: "[::commencement::]",
-      commencement_heading: "[::commencement_heading::]",
-      content: "[::content::]",
-      footnote: "[::footnote::]",
-      form: "[::form::]",
-      forms: "[::forms::]",
-      heading: "[::heading::]",
-      note: "[::note::]",
-      numbered_para: "[::numbered_para::]",
-      para: "[::para::]",
-      part: "[::part::]",
-      section: "[::section::]",
-      signed: "[::signed::]",
-      sub: "[::sub::]",
-      sub_article: "[::sub_article::]",
-      table: "[::table::]",
-      table_heading: "[::table_heading::]",
-      sub_table: "[::sub_table::]",
-      title: "[::title::]"
-    }
   """
   @type t :: %__MODULE__{
           amendment: String.t(),
@@ -109,10 +81,12 @@ defmodule Types.Component do
           note: String.t(),
           numbered_para: String.t(),
           para: String.t(),
+          paragraph: String.t(),
           part: String.t(),
           section: String.t(),
           signed: String.t(),
           sub: String.t(),
+          sub_paragraph: String.t(),
           sub_article: String.t(),
           table: String.t(),
           table_heading: String.t(),
