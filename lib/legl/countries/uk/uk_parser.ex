@@ -412,9 +412,9 @@ defmodule UK.Parser do
       # 53ExtentU.K.
       # Has to come before the next to avoid 'E' of Extent a proxy for England
       |> (&Regex.replace(
-            ~r/^(\d{1,3})[ ]?(.*?)(#{@geo_regex})$/m,
+            ~r/^(\[?)(\d{1,3})[ ]?(.*?)(#{@geo_regex})$/m,
             &1,
-            "#{@components.section}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
+            "#{@components.section}\\g{2} \\g{1}\\g{2} \\g{3} [::region::]\\g{4}"
           )).()
       # 19AE+WThe adoption duty does not apply to a drainage system
       # 1SBefore making an order the Minister shall prepare

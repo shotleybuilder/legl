@@ -151,16 +151,17 @@ defmodule Legl.Countries.Uk.UkClean do
 
     regex =
       [
-        ~s/insert—/,
+        ~s/inserte?d?—/,
         ~s/substituted?—/,
         ~s/adde?d?—/,
-        ~s/substituted the following subsections?—/,
-        ~s/inserted the following subsections?—/,
-        ~s/inserted the following section—/,
-        ~s/inserted the following Schedule—/,
-        ~s/inserted the following Part—/,
-        ~s/substituted the following sections—/,
-        ~s/the following provisions shall be inserted after .*?—/,
+        ~s/(?:substituted|inserted) the following subsections?—/,
+        ~s/(?:substituted|inserted) the following subsections?—/,
+        ~s/(?:substituted|inserted) the following sections?—/,
+        ~s/(?:substituted|inserted) the following Schedules?—/,
+        ~s/(?:substituted|inserted) the following Parts?—/,
+        ~s/(?:substituted|inserted) the following paragraphs?—/,
+        ~s/(?:substituted|inserted) the following sections—/,
+        ~s/[Tt]he following (?:provisions|sections|sub-paragraph)? ?shall be (?:substituted|inserted) (?:after|in) .*?—/,
         ~s/substituted in each case—/
       ]
       |> Enum.join("|")

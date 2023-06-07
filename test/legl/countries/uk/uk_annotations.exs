@@ -150,6 +150,7 @@ defmodule UKAnnotations do
                "🔻F229🔻 S. 11A inserted",
                "🔻F132🔻 S. 30C inserted",
                "🔻F26🔻 S. 14A inserted (N.I.) (1.6.2018) by",
+               "🔻F146🔻 S. 91A repealed",
                # SN -> EF
                "🔻F144🔻 S. 17B title substituted",
                "🔻F138🔻 S. 8A substituted",
@@ -169,6 +170,8 @@ defmodule UKAnnotations do
                "F131F13230C Water quality objectives.S",
                # b-EF-period-Txt
                "[F2614A.Radioactive waste: requirementsN.I.",
+               #
+               "F146[F14591A]Shares subject to outstanding third party obligationsU.K.",
                # SN -> EF
                # SN-B-EF-Txt
                "17B[F144Meaning of supply",
@@ -182,38 +185,42 @@ defmodule UKAnnotations do
              |> Enum.join("\n")
 
   @section_i_model [
-                     # Amendment clauses
-                     # EF -> SN
-                     "🔻F2🔻 S. 1A inserted",
-                     "🔻F169🔻 S. 17DA inserted",
-                     "🔻F37🔻 S. 16A repealed (E.W.) (6.4.2010) by",
-                     "🔻F229🔻 S. 11A inserted",
-                     "🔻F132🔻 S. 30C inserted",
-                     "🔻F26🔻 S. 14A inserted (N.I.) (1.6.2018) by",
-                     # SN -> EF
-                     "🔻F144🔻 S. 17B title substituted",
-                     "🔻F138🔻 S. 8A substituted",
-                     "🔻F110🔻 S. 44A inserted",
-                     # X
-                     "🔻F438🔻 S. 29C inserted",
-                     #
-                     "[::section::]1A [F2 1A Water Services",
-                     "[::section::]17DA [F169 17DA Guidance",
-                     "[::section::]16A F5[F36[F37 16A Transfer of authorisationsU.K.",
-                     "[::section::]11A [F228[F229 11A Modification of conditions of licencesE+W+S",
-                     "[::section::]30C F131F132 30C Water quality objectives.S",
-                     "[::section::]14A [F26 14A Radioactive waste: requirementsN.I.",
-                     "[::section::]17B 17B [F144 Meaning of supply",
-                     "[::section::]8A [8A F138 Modification or removal of limits.E+W+S",
-                     "[::section::]44A [44A F110 Injunctions. E+W",
-                     "[::section::]29C X2 [F438 29C Consumer complaintsU.K."
-                   ]
-                   |> Enum.join("\n")
+    # Amendment clauses
+    # EF -> SN
+    "🔻F2🔻 S. 1A inserted",
+    "🔻F169🔻 S. 17DA inserted",
+    "🔻F37🔻 S. 16A repealed (E.W.) (6.4.2010) by",
+    "🔻F229🔻 S. 11A inserted",
+    "🔻F132🔻 S. 30C inserted",
+    "🔻F26🔻 S. 14A inserted (N.I.) (1.6.2018) by",
+    "🔻F146🔻 S. 91A repealed",
+    # SN -> EF
+    "🔻F144🔻 S. 17B title substituted",
+    "🔻F138🔻 S. 8A substituted",
+    "🔻F110🔻 S. 44A inserted",
+
+    # X
+    "🔻F438🔻 S. 29C inserted",
+    #
+    "[::section::]1A [F2 1A Water Services",
+    "[::section::]17DA [F169 17DA Guidance",
+    "[::section::]16A F5[F36[F37 16A Transfer of authorisationsU.K.",
+    "[::section::]11A [F228[F229 11A Modification of conditions of licencesE+W+S",
+    "[::section::]30C F131F132 30C Water quality objectives.S",
+    "[::section::]14A [F26 14A Radioactive waste: requirementsN.I.",
+    "[::section::]91A F146[F145 91A ]Shares subject to outstanding third party obligationsU.K.",
+    "[::section::]17B 17B [F144 Meaning of supply",
+    "[::section::]8A [8A F138 Modification or removal of limits.E+W+S",
+    "[::section::]44A [44A F110 Injunctions. E+W",
+    "[::section::]29C X2 [F438 29C Consumer complaintsU.K."
+  ]
+
+  # |> Enum.join("\n")
 
   describe "tag_section_efs_i/1" do
     test "S. amendments" do
-      result = tag_section_efs_i(@section_i)
-      assert @section_i_model == result
+      result = tag_section_efs_i(@section_i, %{qa_si?: true, qa_si_limit?: true})
+      assert String.split(result, "\n") == @section_i_model
     end
   end
 
@@ -259,38 +266,39 @@ defmodule UKAnnotations do
               |> Enum.join("\n")
 
   @section_ii_model [
-                      # Amendment clauses
-                      # EF -> SN
-                      "🔻F529🔻 S. 195 substituted",
-                      "🔻F153🔻 S. 47 repealed (E.W.) (1.9.1989)",
-                      "🔻F10🔻 S. 3 substituted",
-                      "🔻F143🔻 S. 41 repealed (30.6.2014)",
-                      "🔻F685🔻 S. 224 repealed (30.6.2014)",
-                      "🔻F886🔻 S. 91 substituted",
-                      "🔻F1205🔻 S. 145 and ... repealed",
-                      # SN -> EF
-                      "🔻F1542🔻 S. 221 substituted",
-                      "🔻F108🔻 S. 43 substituted",
-                      # X
-                      "",
-                      #
-                      "[::section::]195 F530[F529 195 Maps of waterworks.E+W",
-                      "[::section::]47 F153F152F154 47 Duty with waste from vessels etc.S",
-                      "[::section::]3 F5[F10 3 Meaning of “mobile radioactive apparatus”.U.K.",
-                      "[::section::]41 F133F143 41 Registers. S",
-                      "[::section::]224 F685 [224 Application to the Isles of Scilly.E+W",
-                      "[::section::]91 [F886 91 [F887 Old Welsh",
-                      "[::section::]145 F1205 145  . . . . .",
-                      "[::section::]221 [221 F1542 Crown application.E+W",
-                      "[::section::]43 [43 F108 Offence where listed",
-                      ""
-                    ]
-                    |> Enum.join("\n")
+    # Amendment clauses
+    # EF -> SN
+    "🔻F529🔻 S. 195 substituted",
+    "🔻F153🔻 S. 47 repealed (E.W.) (1.9.1989)",
+    "🔻F10🔻 S. 3 substituted",
+    "🔻F143🔻 S. 41 repealed (30.6.2014)",
+    "🔻F685🔻 S. 224 repealed (30.6.2014)",
+    "🔻F886🔻 S. 91 substituted",
+    "🔻F1205🔻 S. 145 and ... repealed",
+    # SN -> EF
+    "🔻F1542🔻 S. 221 substituted",
+    "🔻F108🔻 S. 43 substituted",
+    # X
+    "",
+    #
+    "[::section::]195 F530[F529 195 Maps of waterworks.E+W",
+    "[::section::]47 F153F152F154 47 Duty with waste from vessels etc.S",
+    "[::section::]3 F5[F10 3 Meaning of “mobile radioactive apparatus”.U.K.",
+    "[::section::]41 F133F143 41 Registers. S",
+    "[::section::]224 F685 [224 Application to the Isles of Scilly.E+W",
+    "[::section::]91 [F886 91 [F887 Old Welsh",
+    "[::section::]145 F1205 145  . . . . .",
+    "[::section::]221 [221 F1542 Crown application.E+W",
+    "[::section::]43 [43 F108 Offence where listed",
+    ""
+  ]
+
+  # |> Enum.join("\n")
 
   describe "tag_section_efs_ii/1" do
     test "S. amendments" do
       result = tag_section_efs_ii(@section_ii)
-      assert @section_ii_model == result
+      assert String.split(result, "/n") == @section_ii_model
     end
   end
 

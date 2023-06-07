@@ -15,7 +15,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   alias Legl.Countries.Uk.AirtableArticle.UkEfCodes, as: EfCodes
   alias Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation, as: Optimiser
 
-  def annotations(binary, %{type: :act} = opts) do
+  def annotations_(binary, %{type: :act} = opts) do
     binary =
       binary
       |> floating_efs()
@@ -27,7 +27,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_schedule_range()
       |> tag_schedule_efs(opts)
       # ss efs was here
-      |> tag_schedule_section_efs()
+      # tag_schedule_section_efs was here
       |> tag_sub_section_range()
       |> tag_sub_sub_section_efs()
       |> tag_section_range()
@@ -36,6 +36,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_section_efs_ii(opts)
       |> section_ss_efs()
       |> tag_sub_section_efs()
+      |> tag_schedule_section_efs()
       |> cross_heading_efs()
       # schedule range was here
       |> tag_mods_cees()
@@ -55,6 +56,101 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     binary |> (&IO.puts("\n\nannotated: #{String.slice(&1, 0, 100)}...")).()
 
     binary
+  end
+
+  def annotations(binary, %{type: :act} = opts) do
+    binary =
+      binary
+      |> floating_efs()
+      |> tag_txt_amend_efs()
+      |> part_efs()
+      |> chapter_efs()
+      # x heading was here
+      |> tag_table_efs()
+      |> tag_mods_cees()
+      |> tag_commencing_ies()
+      |> tag_extent_ees()
+      |> tag_editorial_xes()
+
+    {main, schedules} = separate_main_and_schedules(binary)
+
+    main =
+      main
+      |> tag_section_range()
+      |> tag_section_end_efs()
+      |> tag_section_efs_i(opts)
+      |> tag_section_efs_ii(opts)
+      |> section_ss_efs()
+
+    schedules =
+      schedules
+      |> tag_schedule_range()
+      |> tag_schedule_efs(opts)
+      |> tag_schedule_section_efs()
+
+    binary = ~s/#{main}\n#{schedules}/
+
+    binary =
+      binary
+      |> tag_sub_section_range()
+      |> tag_sub_sub_section_efs()
+      |> tag_sub_section_efs()
+      |> cross_heading_efs()
+      |> tag_section_wash_up()
+      |> tag_heading_efs()
+      |> tag_txt_amend_efs_wash_up()
+      |> space_efs()
+
+    # |> rm_emoji("🔸")
+
+    if opts.qa == true, do: binary |> QA.qa_list_spare_efs(opts) |> QA.list_headings(opts)
+
+    # Confirmation msg to console
+    binary |> (&IO.puts("\n\nannotated: #{String.slice(&1, 0, 100)}...")).()
+
+    binary
+  end
+
+  def separate_main_and_schedules(binary) do
+    patterns = %{
+      # multiple schedules and region
+      xs_region: ~r/^(SCHEDULES|Schedules)[ ]?(#{@region_regex})/m,
+      # multiple schedules and no region
+      xs: ~r/^(SCHEDULES|Schedules)/m,
+      # one schedule and region
+      "1s_region": ~r/^((?:THE )?SCHEDULE|(?:The)?Schedule)[ ]?(#{@region_regex})/m,
+      # one schedule
+      "1s": ~r/^(?:(?:THE )?SCHEDULE|(?:The)?Schedule)/m
+    }
+
+    s_pattern =
+      cond do
+        Regex.match?(patterns.xs_region, binary) -> :xs_region
+        Regex.match?(patterns.xs, binary) -> :xs
+        Regex.match?(patterns["1s_region"], binary) -> :ls_region
+        Regex.match?(patterns["1s, binary"], binary) -> :ls
+      end
+
+    [_, main, schedules] =
+      binary
+      |> (&Regex.replace(
+            Map.get(patterns, s_pattern),
+            &1,
+            fn regex_result ->
+              separate_main_and_schedules_result(regex_result)
+            end
+          )).()
+      |> (&Regex.run(~r/^([\s\S]+)(\[::annex::\][\s\S]+)$/, &1)).()
+
+    {main, schedules}
+  end
+
+  defp separate_main_and_schedules_result([_, title, region]) do
+    "#{@components.annex}#{title} [::region::]#{region}"
+  end
+
+  defp separate_main_and_schedules_result(match) do
+    "#{@components.annex}#{match} [::region::]"
   end
 
   @doc """
@@ -265,7 +361,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   PATTERN.  NORMAL SECTIONS 1, 6, 10 etc.
   """
   def tag_section_efs_ii(binary, opts \\ %{qa_sii?: false, qa_sii_limit?: false}) do
-    regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+).*?(?:repealed|substituted|omitted).*/m
+    regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+).*?(?:repealed|substituted|omitted|ceased).*/m
 
     if opts.qa_sii? == true do
       QA.scan_and_print(binary, regex, "S. SECTIONS II", opts.qa_sii_limit?)
@@ -288,7 +384,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     regex = %{
       ef_b4_sn: ~r/^((?:\[?F\d+)*?)#{b}#{ef}[ ]?#{b}[ ]?#{sn}[ \.]?([A-Z\[ ].*|\((\d+)\).*)/m,
       sn_b4_ef: ~r/^#{b}[ ]?#{sn}[ ]?#{b}#{ef}[ ]?#{b}([A-Z].*|\((\d+)\).*)/m,
-      ef_b4_efs_b4_sn: ~r/^(\[?)#{ef}((?:\[?F\d+)*?)#{sn}[ \.]?([A-Z].*)/m,
+      ef_b4_efs_b4_sn: ~r/^(\[?)#{ef}((?:\[?F\d+)*?)#{sn}[ \.]?(\]?[A-Z].*)/m,
       x: ~r/^(X\d+)[ ]?(\[?)#{ef}#{sn}/m
     }
 
@@ -558,7 +654,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     {acc, io} =
       Enum.reduce(ef_tags, {binary, []}, fn {ef, sn, amd_type, _tag}, {acc, io} ->
-        regex = ~r/^(\[?F?\d*)?(\[?)?#{ef}((?:\[?F?\d*)*)[ ]?#{sn}[ ]?([A-Z \.][a-z \.].*)/m
+        regex = ~r/^(\[?F?\d*)?(\[?)?#{ef}((?:\[?F?\d*)*)[ ]?#{sn}[ ]?([A-Z \.][A-Za-z \.].*)/m
 
         io =
           case Regex.run(regex, acc) do
@@ -638,27 +734,19 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
   def tag_sub_section_efs(binary) do
     # See uk_annotations.exs for examples and test
-    regex = "^(\\[?F\\d+)[ ]?(\\[?F?\\d*)?[ ]*(\\[)?\\([ ]*([A-Z]*\\d+[A-Z]*)[ ]?\\)[ ]?(.*)"
+    regex = ~r/^(\[?F\d+)[ ]?(\[?F?\d*)?[ ]*(\[)?\([ ]*([A-Z]*\d+[A-Z]*)[ ]?\)[ ]?(.*)/m
 
     QA.scan_and_print(binary, regex, "sub-section")
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex}/m,
+          regex,
           &1,
           "#{@components.sub_section}\\g{4} \\g{1}\\g{2} \\g{3}(\\g{4}) \\g{5}"
         )).()
   end
 
   @doc """
-  takes F1(1)—(5). . . . .
-  and makes
-  [::annex::]9 F125 SCHEDULE 9 . .  [::region::]E+W
-  [::annex::]10 F125 SCHEDULE 10 .  [::region::]E+W
-  [::annex::]11 F125 SCHEDULE 11 .  [::region::]E+W
-  [::annex::]12 F125 SCHEDULE 12 .  [::region::]E+W
-  [::annex::]13 F125 SCHEDULE 13 .  [::region::]E+W
-  [::annex::]14 F125 SCHEDULE 14 .  [::region::]E+W
   """
   def tag_sub_section_range(binary) do
     binary
