@@ -100,6 +100,45 @@ defmodule UKParser do
     end
   end
 
+  describe "heading/2" do
+    test "⭐1 Foobar" do
+      binary = ~s/#{Legl.heading_emoji()}1 Foobar/
+
+      record = %{
+        flow: "",
+        type: "",
+        chapter: "",
+        subchapter: "",
+        article: "",
+        para: "",
+        sub: 0,
+        str: ""
+      }
+
+      s = UK.heading(binary, record)
+
+      assert s ==
+               %{
+                 article: "1",
+                 chapter: "",
+                 flow: "",
+                 para: "",
+                 sub: 0,
+                 str: "Foobar",
+                 subchapter: "",
+                 type: "article, heading"
+               }
+    end
+  end
+
+  describe "get_A_heading/2" do
+    test "get_A_heading/2 :act" do
+      data = [
+        "[::heading::][F6522  [::region::]U.K.After Schedule 13 to the Taxes"
+      ]
+    end
+  end
+
   describe "get_section/2" do
     test "section with no region" do
       binary = ~s/6(1)Section 103 of the Utilities Act 2000/
@@ -243,37 +282,6 @@ defmodule UKParser do
                  str: "(1) Foobar",
                  subchapter: "",
                  type: "sub-article"
-               }
-    end
-  end
-
-  describe "heading/2" do
-    test "⭐1 Foobar" do
-      binary = ~s/#{Legl.heading_emoji()}1 Foobar/
-
-      record = %{
-        flow: "",
-        type: "",
-        chapter: "",
-        subchapter: "",
-        article: "",
-        para: "",
-        sub: 0,
-        str: ""
-      }
-
-      s = UK.heading(binary, record)
-
-      assert s ==
-               %{
-                 article: "1",
-                 chapter: "",
-                 flow: "",
-                 para: "",
-                 sub: 0,
-                 str: "Foobar",
-                 subchapter: "",
-                 type: "article, heading"
                }
     end
   end

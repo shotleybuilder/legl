@@ -128,9 +128,7 @@ defmodule UK.Parser do
   end
 
   def separate_main_and_schedules(binary) do
-    with true <- Regex.match?(~r/\[::annex::\]/, binary) do
-      # regex = ~r/^([\s\S]+)(\[::annex::\][\s\S]+)$/
-      # [_, main, schedules] = Regex.run(regex, binary)
+    with true <- String.contains?(binary, "[::annex::]") do
       [main, schedules] = String.split(binary, "[::annex::]", parts: 2)
       {main, ~s/[::annex::]#{schedules}/}
     else
@@ -341,21 +339,23 @@ defmodule UK.Parser do
   There is an initial captialisation and no ending period
   """
   def get_heading(binary, %{type: :act}) do
+    tag = ~s/(?:#{@regex_components.section}|#{@regex_components.paragraph})/
+
     binary
     # U.K. REPTILES Small number of headings have the Region first
     |> (&Regex.replace(
-          ~r/^(#{@region_regex})[ ]([A-Z].*?)(etc\.)?$([\s\S]+#{@regex_components.section})(\d+[A-Z]?)(-\d*[ ])?/m,
+          ~r/^(#{@region_regex})[ ]([A-Z].*?)(etc\.)?$([\s\S]+#{tag})(\d+[A-Z]?)(-\d*[ ])?/m,
           &1,
           "#{@components.heading}\\g{5} \\g{2}\\g{3} [::region::]\\g{1}\\g{4}\\g{5}\\g{6}"
         )).()
     # The Local Government (Miscellaneous Provisions) Act 1953 (c. 26)E+W
     |> (&Regex.replace(
-          ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-\d*[ ])?/m,
+          ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+?#{tag})(\d+[A-Z]?)(-\d*[ ])?/m,
           &1,
           "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
         )).()
     |> (&Regex.replace(
-          ~r/^([A-Z].*?)(etc\.)?(#{@country_regex})$([\s\S]+?#{@regex_components.section})(\d+[A-Z]?)(-\d*[ ])?/m,
+          ~r/^([A-Z].*?)(etc\.)?(#{@country_regex})$([\s\S]+?#{tag})(\d+[A-Z]?)(-\d*[ ])?/m,
           &1,
           "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
         )).()
@@ -377,12 +377,14 @@ defmodule UK.Parser do
           )).()
 
   def get_A_heading(binary, :act) do
+    tag = ~s/(?:#{@regex_components.section}|#{@regex_components.paragraph})/
+
     regex =
-      ~s/^#{@regex_components.heading}([^\\d].*?)[ ](.*?)\\[::region::\\](.*)$([\\s\\S]+?#{@regex_components.section})(\\d+[A-Z]*)(-?\\d*[ ])/
+      ~r/^#{@regex_components.heading}([^\d].*?)[ ](.*?)\[::region::\](.*)$([\s\S]+?#{tag})(\d+[A-Z]*)(-?\d*[ ])/
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex}/m,
+          regex,
           &1,
           "#{@components.heading}\\g{5} \\g{1} \\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
         )).()
@@ -958,6 +960,18 @@ defmodule UK.Parser do
         case String.match?(x, ~r/\[::region::\]/) do
           true -> ["[::part::]#{x}" | acc]
           _ -> [~s/[::part::]#{x} [::region::]/ | acc]
+        end
+
+      "[::paragraph::]" <> x, acc ->
+        case String.contains?(x, "[::region::]") do
+          true -> ["[::paragraph::]#{x}" | acc]
+          _ -> [~s/[::paragraph::]#{x} [::region::]/ | acc]
+        end
+
+      "[::sub_paragraph::]" <> x, acc ->
+        case String.contains?(x, "[::region::]") do
+          true -> ["[::sub_paragraph::]#{x}" | acc]
+          _ -> [~s/[::sub_paragraph::]#{x} [::region::]/ | acc]
         end
 
       x, acc ->

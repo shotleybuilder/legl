@@ -190,13 +190,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
   def part_efs(binary) do
     # See uk_annotations.exs for examples and test
-    regex = ~s/^(\\[?F\\d+)(\\[?F\\d+)?[ ]?(\\[?(?:PART|Part))(.*?)(#{@geo_regex})(.*)/
+    regex = ~r/^(\[?F\d+)(\[?F\d+)?[ ]?(\[?(?:PART|Part))([IVX \d].*?)(#{@geo_regex})(.*)/m
 
     QA.scan_and_print(binary, regex, "PART")
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex}/m,
+          regex,
           &1,
           "#{@components.part}\\g{1}\\g{2} \\g{3} \\g{4} [::region::]\\g{5}"
         )).()

@@ -19,6 +19,7 @@ defmodule UK.Act do
     :max_commencements,
     :max_extents,
     :max_editorials,
+    :heading?,
     :table_counter,
     :text
   ]
@@ -36,7 +37,7 @@ defmodule UK.Act do
   defstruct @fields
 
   @doc """
-    Creates the UK.Act struct with the structure given by @fields
+    Creates a UK.Act struct with the structure given by @fields and default values
   """
   def act,
     do:

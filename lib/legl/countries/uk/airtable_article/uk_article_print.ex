@@ -43,6 +43,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticlePrint do
           value when is_integer(value) ->
             lengths
 
+          value when is_boolean(value) ->
+            lengths
+
           value ->
             case field do
               :text ->
@@ -69,13 +72,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticlePrint do
           nil ->
             acc
 
-          value when is_integer(value) ->
-            acc
-
-          value when is_list(value) ->
-            acc
-
-          value ->
+          value when is_binary(value) ->
             case field do
               :text ->
                 {value, _} = String.split_at(value, 100)
@@ -87,6 +84,16 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticlePrint do
                 String.pad_trailing(value, Map.get(max_field_lengths, field))
                 |> (&[&1 | acc]).()
             end
+
+          value when is_list(value) ->
+            case field do
+              :changes ->
+                Enum.join(value, ",")
+                |> (&[&1 | acc]).()
+            end
+
+          value ->
+            acc
         end
       end)
       |> Enum.reverse()

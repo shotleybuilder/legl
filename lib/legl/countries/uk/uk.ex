@@ -37,12 +37,14 @@ defmodule UK do
           number_fields: UK.Act.number_fields(),
           part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
           chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
-          heading: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^([A-Z]?\\d*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
           section: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
+          paragraph: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
-          annex: ~s/(\\d*[A-Z]*)[ ](.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
+          annex: ~s/(\\d*[A-Z]*)[ ]?(.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
         }
 
       :regulation ->

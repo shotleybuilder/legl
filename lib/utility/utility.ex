@@ -158,7 +158,7 @@ defmodule Legl.Utility do
   end
 
   @doc """
-  %{"A" => 97, "B" => 98, ...}
+  %{"A" => 65, "B" => 66, ...}
   """
   def alphabet_to_numeric_map() do
     Enum.reduce(
