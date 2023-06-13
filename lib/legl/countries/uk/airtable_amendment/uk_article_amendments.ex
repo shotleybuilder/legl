@@ -4,6 +4,7 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   alias __MODULE__
 
   def find_changes(records) do
+    IO.puts("Creating Data for the Airtable Amendments Table")
     # 'Changes' field holds list of changes (amendments, mods) applying to that record
     r = List.last(records)
 
@@ -87,14 +88,32 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
 
   @doc """
   Function
+  Loads from .csv if no records are provided
   Run in iex
-  Legl.Countries.Uk.AirtableAmendment.Amendments.amendments_table_workflow()
+  Legl.Countries.Uk.AirtableAmendment.Amendments.amendments()
   """
-  def amendments_table_workflow() do
+  def amendments(%{country: :uk} = _opts) do
+    with {:ok, records} <- load_source_records("lib/legl/data_files/csv/airtable_act.csv") do
+      amendments_table_workflow(records)
+    end
+  end
+
+  def amendments(_opts), do: nil
+
+  @doc """
+  Function
+  Loads from .csv if no records are provided
+  """
+  def amendments(records, %{country: :uk} = _opts) do
+    amendments_table_workflow(records)
+  end
+
+  def amendments(_records, _opts), do: nil
+
+  defp amendments_table_workflow(records) do
     file = open_file()
 
-    with {:ok, records} <- load_source_records("lib/airtable_act.csv"),
-         {:ok, amendments} <- amendments(records),
+    with {:ok, amendments} <- get_amendments(records),
          {:ok, amendments} <- amendment_relationships(records, amendments) do
       Enum.sort_by(amendments, &Atom.to_string(elem(&1, 0)), {:asc, NaturalOrder})
       |> Enum.each(fn amendment ->
@@ -150,7 +169,7 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   @doc """
   Function populates a map with the %Amendments{} struct
   """
-  def amendments(records) do
+  def get_amendments(records) do
     Enum.reduce(records, %{}, fn
       %{amendment: ""} = _record, acc ->
         acc
@@ -172,6 +191,19 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
       %{changes: ""} = _record, acc ->
         acc
 
+      %{changes: changes} = record, acc ->
+        record =
+          case is_binary(changes) do
+            true ->
+              changes = String.split(changes, ",")
+              %{record | changes: changes}
+
+            _ ->
+              record
+          end
+
+        update_amendment(record, acc)
+
       record, acc ->
         update_amendment(record, acc)
     end)
@@ -186,7 +218,7 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   def update_amendment(record, amendments) do
     # IO.inspect(record.changes)
 
-    String.split(record.changes, ",")
+    record.changes
     |> Enum.reduce(amendments, fn change, acc ->
       key = :"#{change}"
 

@@ -5,13 +5,9 @@ defmodule TUR.Parser do
     only: [
       part_emoji: 0,
       heading_emoji: 0,
-      content_emoji: 0,
       chapter_emoji: 0,
-      section_emoji: 0,
       article_emoji: 0,
-      sub_article_emoji: 0,
       # numbered_para_emoji: 0,
-      amendment_emoji: 0,
       annex_emoji: 0,
       pushpin_emoji: 0,
       footnote_emoji: 0
@@ -172,7 +168,7 @@ defmodule TUR.Parser do
     Regex.replace(
       ~r/^\((\d+)\)[ ]/m,
       binary,
-      "#{sub_article_emoji}\\g{1} \\0"
+      "sub_article_emoji\\g{1} \\0"
     )
   end
 
@@ -181,7 +177,7 @@ defmodule TUR.Parser do
       ~r/^(Ek[ ])([A-Z]{1,3})\n(.*)/m,
       binary,
       fn
-        m, annex, annex_num, title ->
+        _m, annex, annex_num, title ->
           "#{annex_emoji()}#{Legl.conv_roman_numeral(annex_num)} #{annex}#{annex_num} #{title}"
       end
     )
@@ -189,7 +185,7 @@ defmodule TUR.Parser do
 
   def rm_annex_content(binary) do
     Regex.replace(
-      ~r/^(#{annex_emoji}.*)(?:.|\n)*?\n(?=#{annex_emoji})/m,
+      ~r/^(annex_emoji.*)(?:.|\n)*?\n(?=annex_emoji)/m,
       binary,
       "\\g{1}\n\\g{2}"
     )
@@ -199,7 +195,7 @@ defmodule TUR.Parser do
     Regex.replace(
       ~r/^\(Ek[ ](?:fıkra|cümleler)[ ]?:[ ]?\d{1,2}\/\d{1,2}\/\d{4}-\d+\/\d+[ ]md\./m,
       binary,
-      "#{sub_article_emoji}\\0"
+      "sub_article_emoji\\0"
     )
   end
 
@@ -207,7 +203,7 @@ defmodule TUR.Parser do
     Regex.replace(
       ~r/^\(Değişik[ ]?.+:[ ]\d{1,2}\/\d{1,2}\/\d{1,4}-[A-Z]*-?\d+\/\d+[ ]md\.\)/m,
       binary,
-      "#{sub_article_emoji}\\0"
+      "sub_article_emoji\\0"
     )
   end
 
@@ -226,8 +222,8 @@ defmodule TUR.Parser do
       fn
         m, art_num, para_num ->
           case is_para_num(para_num) do
-            "" -> "#{amendment_emoji}#{art_num} #{m}"
-            _ -> "#{amendment_emoji}#{art_num}_#{para_num} #{m}"
+            "" -> "amendment_emoji#{art_num} #{m}"
+            _ -> "amendment_emoji#{art_num}_#{para_num} #{m}"
           end
       end
     )

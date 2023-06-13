@@ -272,10 +272,19 @@ defmodule UK do
         :regulation -> UK.Regulation.fields()
       end
 
-    Legl.airtable(
-      schema(opts.type),
-      Keyword.merge(Map.to_list(opts), fields: fields)
-    )
+    schema = schema(opts.type)
+
+    opts = Keyword.merge(Map.to_list(opts), fields: fields, schema: schema)
+
+    # IO.inspect(opts)
+
+    records =
+      Legl.airtable(
+        schema,
+        opts
+      )
+
+    Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(records, opts)
 
     :ok
   end

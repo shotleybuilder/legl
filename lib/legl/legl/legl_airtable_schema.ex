@@ -3,32 +3,12 @@ defmodule Legl.Airtable.Schema do
 
   """
 
-  @airtable_columns [
-    "ID",
-    "UK",
-    "Flow",
-    "Record_Type",
-    "Part",
-    "Chapter",
-    "Heading",
-    "Section||Regulation",
-    "Sub_Section||Sub_Regulation",
-    "Paragraph",
-    "Sub_Paragraph",
-    "Amendment",
-    "paste_text_here",
-    "Region",
-    "Changes"
-  ]
-  Enum.join(@airtable_columns, ",")
-
   @default_schema_opts %{
     records: Types.Component.components_as_list(),
     dedupe: true
   }
 
-  alias Legl.Countries.Uk.AirtableArticle.UkRegionConversion
-  alias Legl.Countries.Uk.AirtableAmendment.Amendments
+  alias Legl.Legl.LeglPrint
 
   # alias __MODULE__
 
@@ -43,57 +23,18 @@ defmodule Legl.Airtable.Schema do
   def schema(binary, regex, opts \\ []) do
     opts = Enum.into(opts, @default_schema_opts)
 
-    file = open_file(opts)
-
     with records <- records(binary, regex, opts),
          dupes <- dupes(records, "Duplicates"),
          # Dedupe the records if there are duplicate IDs
          records <- dedupe(records, dupes, opts),
          # Check the deduping worked
-         dupes(records, "\nDuplicates after Codification"),
-         records <- UkRegionConversion.region_conversion(records, opts) do
+         dupes(records, "\nDuplicates after Codification") do
       Enum.count(records) |> (&IO.puts("\nnumber of records = #{&1}")).()
 
-      {:ok, records} =
-        case opts.country do
-          :uk ->
-            IO.puts("Creating Data for the Airtable Amendments Table")
-            Amendments.find_changes(records)
+      LeglPrint.to_csv(records, opts)
 
-          _ ->
-            records
-        end
-
-      Enum.each(records, fn record ->
-        copy_to_csv(file, record)
-      end)
-
-      if opts.country == :uk do
-        Amendments.amendments_table_workflow()
-      end
-
-      File.close(file)
-
-      # A proxy of the Airtable table useful for debugging 'at_tabulated.txt'
-      Legl.Countries.Uk.AirtableArticle.UkArticlePrint.make_tabular_txtfile(records, opts)
-      |> IO.puts()
-
-      Enum.map(records, fn x -> conv_map_to_record_string(x, opts) end)
-      # |> Enum.reverse()
-      |> Enum.join("\n")
+      records
     end
-  end
-
-  def open_file(opts) do
-    filename = ~s/airtable_#{Atom.to_string(opts.type)}.csv/
-    {:ok, csv} = "lib/data_files/csv/#{filename}" |> Path.absname() |> File.open([:utf8, :write])
-
-    IO.puts(
-      csv,
-      @airtable_columns
-    )
-
-    csv
   end
 
   def component_for_regex(name) when is_atom(name) do
@@ -175,76 +116,6 @@ defmodule Legl.Airtable.Schema do
       _ ->
         records
     end
-  end
-
-  @spec conv_map_to_record_string(map, any) :: binary
-  def conv_map_to_record_string(%_{} = record, %{fields: fields} = _opts) do
-    Map.from_struct(record)
-    |> conv_map_to_record_string(fields)
-  end
-
-  def conv_map_to_record_string(%{sub: 0} = record, fields) when is_map(record),
-    do: conv_map_to_record_string(%{record | sub: ""}, fields)
-
-  def conv_map_to_record_string(record, fields) when is_map(record) do
-    fields
-    |> Enum.reduce([], fn x, acc -> [Map.get(record, x) | acc] end)
-    |> Enum.reduce(
-      [],
-      fn
-        nil, acc -> acc
-        x, acc -> [x | acc]
-      end
-    )
-    |> Enum.join("\t")
-  end
-
-  def copy_to_csv(
-        file,
-        %{
-          id: id,
-          name: name,
-          flow: flow,
-          type: record_type,
-          part: part,
-          chapter: chapter,
-          heading: heading,
-          section: section,
-          sub_section: sub_section,
-          para: para,
-          sub_para: sub_para,
-          amendment: amendment,
-          region: region,
-          text: text,
-          changes: changes
-        } = _record
-      ) do
-    changes =
-      changes
-      |> Enum.reverse()
-      |> Enum.join(",")
-      |> Legl.Utility.csv_quote_enclosure()
-
-    [
-      id,
-      name,
-      flow,
-      record_type,
-      part,
-      chapter,
-      heading,
-      section,
-      sub_section,
-      para,
-      sub_para,
-      amendment,
-      Legl.Utility.csv_quote_enclosure(text),
-      region,
-      changes
-    ]
-    # |> IO.inspect()
-    |> Enum.join(",")
-    |> (&IO.puts(file, &1)).()
   end
 
   @doc """

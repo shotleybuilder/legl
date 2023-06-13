@@ -112,29 +112,29 @@ defmodule Legl do
 
   @spec txt(any) :: <<_::64, _::_*8>>
   def txt(name) do
-    "lib/#{name}.txt"
+    "lib/legl/data_files/csv/#{name}.txt"
   end
 
   def csv(name) do
-    "lib/#{name}.csv"
+    "lib/legl/data_files/csv/#{name}.csv"
   end
 
-  def snippet, do: "lib/snippet.txt"
+  def snippet, do: "lib/legl/data_files/txt/snippet.txt"
 
-  def original, do: "lib/original.txt"
-  def original_annex, do: "lib/original-annex.txt"
+  def original, do: "lib/legl/data_files/txt/original.txt"
+  def original_annex, do: "lib/legl/data_files/txt/original-annex.txt"
 
-  @annotated Path.absname("lib/annotated.txt")
-  def annotated_annex, do: "lib/annotated-annex.txt"
+  @annotated Path.absname("lib/legl/data_files/txt/annotated.txt")
+  def annotated_annex, do: "lib/legl/data_files/txt/annotated-annex.txt"
 
-  def airtable, do: "lib/airtable.txt"
-  def chapter, do: "lib/chapter.txt"
-  def section, do: "lib/section.txt"
-  def article, do: "lib/article.txt"
-  def sub_article, do: "lib/sub_article.txt"
+  def airtable, do: "lib/legl/data_files/txt/airtable.txt"
+  def chapter, do: "lib/legl/data_files/txt/chapter.txt"
+  def section, do: "lib/legl/data_files/txt/section.txt"
+  def article, do: "lib/legl/data_files/txt/article.txt"
+  def sub_article, do: "lib/legl/data_files/txt/sub_article.txt"
 
-  def type, do: "lib/type.txt"
-  def txts, do: "lib/txts.txt"
+  def type, do: "lib/legl/data_files/txt/type.txt"
+  def txts, do: "lib/legl/data_files/txt/txts.txt"
 
   @doc """
   Emojis
@@ -171,17 +171,33 @@ defmodule Legl do
   def nor_flag_emoji, do: <<0x1F1F3::utf8>> <> <<0x1F1F1::utf8>>
 
   def uk_flag_emoji, do: <<0x1F1EC::utf8>> <> <<0x1F1E7::utf8>>
+
   def england_flag_emoji() do
-    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE0065::utf8>> <> <<0xE006E::utf8>> <> <<0xE0067::utf8>> <> <<0xE007F::utf8>>
+    <<0x1F3F4::utf8>> <>
+      <<0xE0067::utf8>> <>
+      <<0xE0062::utf8>> <>
+      <<0xE0065::utf8>> <> <<0xE006E::utf8>> <> <<0xE0067::utf8>> <> <<0xE007F::utf8>>
   end
+
   def wales_flag_emoji() do
-    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE0077::utf8>> <> <<0xE006C::utf8>> <> <<0xE0073::utf8>> <> <<0xE007F::utf8>>
+    <<0x1F3F4::utf8>> <>
+      <<0xE0067::utf8>> <>
+      <<0xE0062::utf8>> <>
+      <<0xE0077::utf8>> <> <<0xE006C::utf8>> <> <<0xE0073::utf8>> <> <<0xE007F::utf8>>
   end
+
   def scotland_flag_emoji() do
-    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE0073::utf8>> <> <<0xE0063::utf8>> <> <<0xE0074::utf8>> <> <<0xE007F::utf8>>
+    <<0x1F3F4::utf8>> <>
+      <<0xE0067::utf8>> <>
+      <<0xE0062::utf8>> <>
+      <<0xE0073::utf8>> <> <<0xE0063::utf8>> <> <<0xE0074::utf8>> <> <<0xE007F::utf8>>
   end
+
   def northern_ireland_flag_emoji() do
-    <<0x1F3F4::utf8>> <> <<0xE0067::utf8>> <> <<0xE0062::utf8>> <> <<0xE006E::utf8>> <> <<0xE0069::utf8>> <> <<0xE0072::utf8>> <> <<0xE007F::utf8>>
+    <<0x1F3F4::utf8>> <>
+      <<0xE0067::utf8>> <>
+      <<0xE0062::utf8>> <>
+      <<0xE006E::utf8>> <> <<0xE0069::utf8>> <> <<0xE0072::utf8>> <> <<0xE007F::utf8>>
   end
 
   # 🎈 balloon
@@ -237,42 +253,71 @@ defmodule Legl do
 
   @spec airtable(atom | %{:title_name => any, optional(any) => any}, keyword) :: :ok
   def airtable(country_schema, opts \\ []) when is_list(opts) do
-
     {:ok, binary} = File.read(@annotated)
 
+    records = Legl.Airtable.Schema.schema(binary, country_schema, opts)
+
+    if Keyword.get(opts, :tdl) == true do
+      # tdl = tab delimited
+      tdl =
+        Enum.map(records, fn x -> conv_map_to_record_string(x, opts) end)
+        |> Enum.join("\n")
+
+      File.write(airtable(), tdl)
+      manual_paste(tdl, opts)
+    end
+
+    records
+  end
+
+  defp manual_paste(binary, opts) do
+    no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)
     chunk = Keyword.get(opts, :chunk, 200)
 
-    binary = Legl.Airtable.Schema.schema(binary, country_schema, opts)
+    cond do
+      no_of_lines < chunk ->
+        copy(binary)
 
-    File.write(Legl.airtable(), binary)
-
-    no_of_lines = Enum.count(String.graphemes(binary), fn x -> x == "\n" end)
-
-    case Keyword.get(opts, :tdl) do
       true ->
-        cond do
-          no_of_lines < chunk ->
-            copy(binary)
+        String.split(binary, "\n")
+        |> Enum.chunk_every(chunk)
+        |> Enum.map(fn x -> Enum.join(x, "\n") end)
+        |> Enum.reduce("", fn str, acc ->
+          copy(str)
+          ExPrompt.confirm("Pasted into Airtable?")
+          acc <> str
+        end)
 
-          true ->
-            String.split(binary, "\n")
-            |> Enum.chunk_every(chunk)
-            |> Enum.map(fn x -> Enum.join(x, "\n") end)
-            |> Enum.reduce("", fn str, acc ->
-              copy(str)
-              ExPrompt.confirm("Pasted into Airtable?")
-              acc <> str
-            end)
-            :ok
-        end
-      _ -> :ok
+        :ok
     end
   end
 
-  def copy(text) do
+  defp copy(text) do
     port = Port.open({:spawn, "xclip -selection clipboard"}, [])
     Port.command(port, text)
     Port.close(port)
     IO.puts("copied to clipboard: #{String.slice(text, 0, 10)}...")
+  end
+
+  @spec conv_map_to_record_string(map, any) :: binary
+  def conv_map_to_record_string(%_{} = record, %{fields: fields} = _opts) do
+    Map.from_struct(record)
+    |> conv_map_to_record_string(fields)
+  end
+
+  def conv_map_to_record_string(%{sub: 0} = record, fields) when is_map(record),
+    do: conv_map_to_record_string(%{record | sub: ""}, fields)
+
+  def conv_map_to_record_string(record, fields) when is_map(record) do
+    fields
+    |> Enum.reduce([], fn x, acc -> [Map.get(record, x) | acc] end)
+    |> Enum.reduce(
+      [],
+      fn
+        nil, acc -> acc
+        x, acc -> [x | acc]
+      end
+    )
+    |> Enum.join("\t")
   end
 end
