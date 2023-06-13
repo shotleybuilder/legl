@@ -92,7 +92,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticlePrint do
                 |> (&[&1 | acc]).()
             end
 
-          value ->
+          _value ->
             acc
         end
       end)

@@ -3,8 +3,6 @@ defmodule Legl.Airtable.Schema do
 
   """
 
-  @act_csv "airtable_act"
-  @regulation_csv "airtable_regulation"
   @airtable_columns [
     "ID",
     "UK",
@@ -22,39 +20,15 @@ defmodule Legl.Airtable.Schema do
     "Region",
     "Changes"
   ]
-
-  def at_cols(), do: Enum.join(@airtable_columns, ",")
-
-  def open_file(:act, opts) do
-    {:ok, csv} = "lib/#{@act_csv}.csv" |> Path.absname() |> File.open(opts)
-
-    IO.puts(
-      csv,
-      at_cols()
-    )
-
-    csv
-  end
-
-  def open_file(:regulation, opts) do
-    {:ok, csv} = "lib/#{@regulation_csv}.csv" |> Path.absname() |> File.open(opts)
-
-    IO.puts(
-      csv,
-      at_cols()
-    )
-
-    csv
-  end
-
-  def component_for_regex(name) when is_atom(name) do
-    Types.Component.mapped_components_for_regex() |> Map.get(name)
-  end
+  Enum.join(@airtable_columns, ",")
 
   @default_schema_opts %{
     records: Types.Component.components_as_list(),
     dedupe: true
   }
+
+  alias Legl.Countries.Uk.AirtableArticle.UkRegionConversion
+  alias Legl.Countries.Uk.AirtableAmendment.Amendments
 
   # alias __MODULE__
 
@@ -69,73 +43,61 @@ defmodule Legl.Airtable.Schema do
   def schema(binary, regex, opts \\ []) do
     opts = Enum.into(opts, @default_schema_opts)
 
-    file = open_file(opts.type, [:utf8, :write])
+    file = open_file(opts)
 
-    records =
-      records(binary, regex, opts)
-      |> Enum.reduce([], fn record, acc ->
-        record = Map.put(record, :name, opts.name) |> add_id_to_record(opts)
-        [record | acc]
+    with records <- records(binary, regex, opts),
+         dupes <- dupes(records, "Duplicates"),
+         # Dedupe the records if there are duplicate IDs
+         records <- dedupe(records, dupes, opts),
+         # Check the deduping worked
+         dupes(records, "\nDuplicates after Codification"),
+         records <- UkRegionConversion.region_conversion(records, opts) do
+      Enum.count(records) |> (&IO.puts("\nnumber of records = #{&1}")).()
+
+      {:ok, records} =
+        case opts.country do
+          :uk ->
+            IO.puts("Creating Data for the Airtable Amendments Table")
+            Amendments.find_changes(records)
+
+          _ ->
+            records
+        end
+
+      Enum.each(records, fn record ->
+        copy_to_csv(file, record)
       end)
 
-    # Find any dupes
-    dupes =
-      Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&[&1 | acc]).() end)
-      |> Legl.Utility.duplicate_records()
-      |> IO.inspect(label: "Duplicates", limit: :infinity)
-
-    # Dedupe the records if there are duplicate IDs
-    records =
-      case opts.dedupe do
-        true ->
-          case Enum.count(dupes) do
-            0 -> records
-            _ -> make_record_duplicates_uniq(dupes, records, opts)
-          end
-
-        _ ->
-          records
+      if opts.country == :uk do
+        Amendments.amendments_table_workflow()
       end
 
-    if opts.dedupe,
-      # Check the deduping worked
-      do:
-        Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&[&1 | acc]).() end)
-        |> Legl.Utility.duplicate_records()
-        |> IO.inspect(label: "\nDuplicates after Codification", limit: :infinity)
+      File.close(file)
 
-    records = Enum.map(records, &convert_region_code(&1))
-    IO.puts("\nRegion Code Conversion Completed\n")
+      # A proxy of the Airtable table useful for debugging 'at_tabulated.txt'
+      Legl.Countries.Uk.AirtableArticle.UkArticlePrint.make_tabular_txtfile(records, opts)
+      |> IO.puts()
 
-    Enum.count(records) |> (&IO.puts("\nnumber of records = #{&1}")).()
-
-    {:ok, records} =
-      case opts.country do
-        :uk ->
-          IO.puts("Creating Data for the Airtable Amendments Table")
-          Legl.Countries.Uk.AirtableAmendment.Amendments.find_changes(records)
-
-        _ ->
-          records
-      end
-
-    Enum.each(records, fn record ->
-      copy_to_csv(file, record)
-    end)
-
-    if opts.country == :uk do
-      Legl.Countries.Uk.AirtableAmendment.Amendments.amendments_table_workflow()
+      Enum.map(records, fn x -> conv_map_to_record_string(x, opts) end)
+      # |> Enum.reverse()
+      |> Enum.join("\n")
     end
+  end
 
-    File.close(file)
+  def open_file(opts) do
+    filename = ~s/airtable_#{Atom.to_string(opts.type)}.csv/
+    {:ok, csv} = "lib/data_files/csv/#{filename}" |> Path.absname() |> File.open([:utf8, :write])
 
-    # A proxy of the Airtable table useful for debugging 'at_tabulated.txt'
-    Legl.Countries.Uk.AirtableArticle.UkArticlePrint.make_tabular_txtfile(records, opts)
-    |> IO.puts()
+    IO.puts(
+      csv,
+      @airtable_columns
+    )
 
-    Enum.map(records, fn x -> conv_map_to_record_string(x, opts) end)
-    # |> Enum.reverse()
-    |> Enum.join("\n")
+    csv
+  end
+
+  def component_for_regex(name) when is_atom(name) do
+    Types.Component.mapped_components_for_regex() |> Map.get(name)
   end
 
   def records(binary, regex, opts) do
@@ -189,6 +151,30 @@ defmodule Legl.Airtable.Schema do
           acc
       end
     end)
+    # Add id of law directory table record into each article record
+    |> Enum.reduce([], fn record, acc ->
+      record = Map.put(record, :name, opts.name) |> add_id_to_record(opts)
+      [record | acc]
+    end)
+  end
+
+  def dupes(records, label) do
+    Enum.reduce(records, [], fn x, acc -> Map.get(x, :id) |> (&[&1 | acc]).() end)
+    |> Legl.Utility.duplicate_records()
+    |> IO.inspect(label: label, limit: :infinity)
+  end
+
+  def dedupe(records, dupes, opts) do
+    case opts.dedupe do
+      true ->
+        case Enum.count(dupes) do
+          0 -> records
+          _ -> make_record_duplicates_uniq(dupes, records, opts)
+        end
+
+      _ ->
+        records
+    end
   end
 
   @spec conv_map_to_record_string(map, any) :: binary
@@ -270,50 +256,6 @@ defmodule Legl.Airtable.Schema do
 
   def make_record_duplicates_uniq(dupes, records, %{country: :uk} = _opts) do
     Legl.Countries.Uk.AirtableArticle.UkArticleId.make_record_duplicates_uniq(dupes, records)
-  end
-
-  @doc """
-
-  """
-
-  def convert_region_code(%{region: ""} = record), do: record
-
-  def convert_region_code(%{region: "U.K."} = record) do
-    region = Legl.Utility.csv_quote_enclosure("UK,England,Wales,Scotland,Northern Ireland")
-    %{record | region: region}
-  end
-
-  def convert_region_code(%{region: "E+W+S"} = record) do
-    region = Legl.Utility.csv_quote_enclosure("GB,England,Wales,Scotland")
-    %{record | region: region}
-  end
-
-  def convert_region_code(%{region: "E"} = record), do: %{record | region: "England"}
-
-  def convert_region_code(%{region: "S"} = record), do: %{record | region: "Scotland"}
-
-  def convert_region_code(%{region: "W"} = record), do: %{record | region: "Wales"}
-
-  def convert_region_code(%{region: "N.I."} = record), do: %{record | region: "Northern Ireland"}
-
-  def convert_region_code(%{region: region} = record)
-      when region in ["E+W", "E+W+N.I.", "S+N.I."] do
-    region =
-      String.split(region, "+")
-      |> Enum.reduce([], fn x, acc ->
-        cond do
-          x == "E" -> ["England" | acc]
-          x == "W" -> ["Wales" | acc]
-          x == "N.I." -> ["Northern Ireland" | acc]
-          x == "S" -> ["Scotland" | acc]
-          true -> IO.inspect(x, label: "convert_region_code/1")
-        end
-      end)
-      |> Enum.reverse()
-      |> Enum.join(",")
-      |> Legl.Utility.csv_quote_enclosure()
-
-    %{record | region: region}
   end
 
   def title(regex, "[::title::]" <> str, last_record) do
