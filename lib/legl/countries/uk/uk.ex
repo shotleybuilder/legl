@@ -106,7 +106,8 @@ defmodule UK do
     qa_lcn_chapter: true,
     qa_lcn_annex: true,
     qa_lcn_section: true,
-    qa_lcn_sub_section: false
+    qa_lcn_sub_section: false,
+    qa_lcn_paragraph: true
   }
 
   @doc """
@@ -213,7 +214,10 @@ defmodule UK do
     csv: true,
     # tab delimited list
     tdl: false,
-    chunk: 200
+    chunk: 200,
+    # debug print to screen
+    separate_ef_codes_from_numerics: false,
+    separate_ef_codes_from_non_numerics: false
   }
 
   @doc """
@@ -278,13 +282,8 @@ defmodule UK do
 
     # IO.inspect(opts)
 
-    records =
-      Legl.airtable(
-        schema,
-        opts
-      )
-
-    Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(records, opts)
+    Legl.airtable(schema, opts)
+    |> Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(opts)
 
     :ok
   end

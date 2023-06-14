@@ -613,12 +613,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     {acc, io} =
       Enum.reduce(ef_tags, {binary, []}, fn {ef, sn, amd_type, _tag}, {acc, io} ->
-        regex = ~r/^(\[?F?\d*)?(\[?)?#{ef}((?:\[?F?\d*)*)[ ]?#{sn}[ ]?([A-Z \.][A-Za-z \.].*)/m
+        regex =
+          ~r/^(\[?F?\d*)?(\[?)?#{ef}((?:\[?F?\d*)*)[ ]?(#{sn}[A-Z]{0,2})[ ]?([A-Z \.][A-Za-z \.].*)/m
 
         io =
           case Regex.run(regex, acc) do
             nil -> io
-            [m, _, _, _, _] -> [{m, ef, sn, amd_type} | io]
+            [m, _, _, _, _, _] -> [{m, ef, sn, amd_type} | io]
           end
 
         acc =
@@ -626,7 +627,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           |> (&Regex.replace(
                 regex,
                 &1,
-                "#{@components.section}#{sn} \\g{1}\\g{2}#{ef}\\g{3} #{sn} \\g{4}"
+                "#{@components.section}\\g{4} \\g{1}\\g{2}#{ef}\\g{3} \\g{4} \\g{5}"
               )).()
           |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
 

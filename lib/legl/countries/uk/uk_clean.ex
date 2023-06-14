@@ -15,9 +15,10 @@ defmodule Legl.Countries.Uk.UkClean do
       binary
       # |> (&Kernel.<>("CLEANED\n", &1)).()
       |> Legl.Parser.rm_empty_lines()
+      |> collapse_amendment_text_between_quotes()
+      |> collapse_amendment_text_between_quotes()
       |> close_parentheses()
       |> rm_marginal_citations()
-      |> collapse_amendment_text_between_quotes()
       |> separate_part()
       ## |> separate_chapter()
       ## |> separate_schedule()
@@ -151,15 +152,14 @@ defmodule Legl.Countries.Uk.UkClean do
 
     regex =
       [
-        ~s/inserte?d?—/,
-        ~s/substituted?—/,
+        ~s/inserte?d?.*?—$/,
+        ~s/substituted?.*?—$/,
         ~s/adde?d?—/,
-        ~s/(?:substituted|inserted) the following subsections?—/,
         ~s/(?:substituted|inserted) the following subsections?—/,
         ~s/(?:substituted|inserted) the following sections?—/,
         ~s/(?:substituted|inserted) the following Schedules?—/,
         ~s/(?:substituted|inserted) the following Parts?—/,
-        ~s/(?:substituted|inserted) the following paragraphs?—/,
+        ~s/(?:substituted|inserted) the following s?u?b?-?paragraphs?—/,
         ~s/(?:substituted|inserted) the following sections—/,
         ~s/[Tt]he following (?:provisions|sections|sub-paragraph)? ?shall be (?:substituted|inserted) (?:after|in) .*?—/,
         ~s/substituted in each case—/
@@ -309,10 +309,10 @@ defmodule Legl.Countries.Uk.UkClean do
               true ->
                 x = String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len)
 
-                join("#{@components.section}1 " <> x) <> " [::region::]"
+                join("#{@components.table}" <> x) <> " [::region::]"
 
               _ ->
-                join("#{@components.section}1 " <> x) <> " [::region::]"
+                join("#{@components.table}" <> x) <> " [::region::]"
             end
           end
         )).()

@@ -112,7 +112,7 @@ defmodule Legl do
 
   @spec txt(any) :: <<_::64, _::_*8>>
   def txt(name) do
-    "lib/legl/data_files/csv/#{name}.txt"
+    "lib/legl/data_files/txt/#{name}.txt"
   end
 
   def csv(name) do
@@ -257,6 +257,7 @@ defmodule Legl do
 
     records = Legl.Airtable.Schema.schema(binary, country_schema, opts)
 
+    # tdl = tab delimited list
     if Keyword.get(opts, :tdl) == true do
       # tdl = tab delimited
       tdl =

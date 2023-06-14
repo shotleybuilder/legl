@@ -586,7 +586,7 @@ defmodule UK.Parser do
   def get_sub_section(binary, :act, component),
     do:
       Regex.replace(
-        ~r/^(\[?\((\d+[A-Z]?[A-Z]?)\)\]?)[ ]?([,\[“A-Z])/m,
+        ~r/^(\[?\((\d+[A-Z]?[A-Z]?)\)\]?)[ ]?([,\[“A-Z]\.?)/m,
         binary,
         "#{component}\\g{2} \\g{1} \\g{3}"
       )

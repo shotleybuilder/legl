@@ -1,22 +1,23 @@
 defmodule Legl.Legl.LeglPrint do
   @airtable_columns [
-    "ID",
-    "UK",
-    "Flow",
-    "Record_Type",
-    "Part",
-    "Chapter",
-    "Heading",
-    "Section||Regulation",
-    "Sub_Section||Sub_Regulation",
-    "Paragraph",
-    "Sub_Paragraph",
-    "Amendment",
-    "paste_text_here",
-    "Region",
-    "Changes"
-  ]
-  Enum.join(@airtable_columns, ",")
+                      "ID",
+                      "UK",
+                      "Flow",
+                      "Record_Type",
+                      "Part",
+                      "Chapter",
+                      "Heading",
+                      "Section||Regulation",
+                      "Sub_Section||Sub_Regulation",
+                      "Paragraph",
+                      "Dupe",
+                      "Amendment",
+                      "paste_text_here",
+                      "Region",
+                      "Changes",
+                      "ID_QA"
+                    ]
+                    |> Enum.join(",")
 
   def to_csv(records, opts) do
     file = open_file(opts)
@@ -83,7 +84,8 @@ defmodule Legl.Legl.LeglPrint do
       amendment,
       Legl.Utility.csv_quote_enclosure(text),
       region,
-      changes
+      changes,
+      id
     ]
     # |> IO.inspect()
     |> Enum.join(",")

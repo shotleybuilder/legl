@@ -99,6 +99,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
       qa_list_clause_numbers(binary, @regex_components.sub_section)
     end
 
+    if opts.qa_lcn_paragraph do
+      qa_list_clause_numbers(binary, @regex_components.paragraph)
+    end
+
     binary
   end
 

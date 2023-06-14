@@ -2,9 +2,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkRegionConversion do
   @doc """
 
   """
-  def region_conversion(records, %{country: "UK"} = _opts) do
+  def region_conversion(records, %{country: :uk} = _opts) do
+    IO.puts("\nRegion Code Conversion\n")
     Enum.map(records, &convert_region_code(&1))
-    IO.puts("\nRegion Code Conversion Completed\n")
   end
 
   def region_conversion(records, _opts), do: records

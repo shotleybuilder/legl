@@ -1,22 +1,18 @@
 defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
-  defstruct [:ef, :text, ids: []]
+  defstruct [:id, :ef, :text, ids: []]
 
   alias __MODULE__
 
-  def find_changes(records) do
+  def find_changes(records, opts) do
     IO.puts("Creating Data for the Airtable Amendments Table")
     # 'Changes' field holds list of changes (amendments, mods) applying to that record
-    r = List.last(records)
 
     change_stats = [
-      amendments: {r.max_amendments, "F"},
-      modifications: {r.max_modifications, "C"},
-      commencements: {r.max_commencements, "I"},
-      extents: {r.max_extents, "E"}
+      amendments: opts.amendments,
+      modifications: opts.modifications,
+      commencements: opts.commencements,
+      extents: opts.extents
     ]
-
-    # Print change stats to the console
-    Enum.each(change_stats, fn {k, {total, code}} -> IO.puts("#{k} #{total} code: #{code}") end)
 
     IO.puts("\nStarting Search for Change Stats")
     # rng = List.last(records).max_amendments |> IO.inspect(label: "Amendments (Fs)")
@@ -38,6 +34,15 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   @doc """
   Search for the change markers in the provision texts only
   """
+  def find_change_in_record(code, rng, %{type: "part"} = record),
+    do: find_change_in_record({code, rng, record})
+
+  def find_change_in_record(code, rng, %{type: "chapter]"} = record),
+    do: find_change_in_record({code, rng, record})
+
+  def find_change_in_record(code, rng, %{type: "heading"} = record),
+    do: find_change_in_record({code, rng, record})
+
   def find_change_in_record(code, rng, %{type: "section"} = record),
     do: find_change_in_record({code, rng, record})
 
@@ -56,11 +61,14 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   def find_change_in_record(code, rng, %{type: "sub-paragraph"} = record),
     do: find_change_in_record({code, rng, record})
 
+  def find_change_in_record(code, rng, %{type: "annex"} = record),
+    do: find_change_in_record({code, rng, record})
+
   def find_change_in_record(_code, _rng, record), do: record
 
   def find_change_in_record({code, rng, record}) do
-    Enum.reduce(1..rng, record, fn n, acc ->
-      case String.contains?(record.text, ~s/#{code}#{n} /) do
+    Enum.reduce(rng..1, record, fn n, acc ->
+      case Regex.match?(~r/#{code}#{n}[ ]/m, record.text) do
         true ->
           changes = [~s/#{code}#{n}/ | acc.changes]
           %{acc | changes: changes}
@@ -71,20 +79,131 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
     end)
   end
 
+  @doc """
+  Function creates a space between Ef code and following numeric text.
+  eg F1232023 becomes F123 2023
+  """
+  def separate_ef_codes_from_numerics(records, opts) do
+    {max, _} = opts.amendments
+    ef_codes = Enum.map(max..1, &Kernel.<>("F", Integer.to_string(&1)))
+    ef_size = String.length(List.first(ef_codes))
+    regex = ~r/F\d{#{ef_size},}/m
+
+    {acc, io} =
+      Enum.reduce(records, {[], []}, fn record, {acc, io} ->
+        case Regex.scan(regex, record.text) do
+          nil ->
+            {[record | acc], io}
+
+          [] ->
+            {[record | acc], io}
+
+          codes ->
+            {r_acc, io_acc} =
+              Enum.reduce(codes, {record, []}, fn
+                [], accum ->
+                  accum
+
+                [code], {r_acc, io_acc} = accum ->
+                  case iterate_ef_code(code, ef_codes) do
+                    nil ->
+                      accum
+
+                    {ef, value} ->
+                      r_acc =
+                        Regex.replace(~r/#{ef}#{value}/m, r_acc.text, "#{ef} #{value}")
+                        # |> IO.inspect()
+                        |> (&Map.put(r_acc, :text, &1)).()
+
+                      io_acc = [{ef, value, r_acc.text} | io_acc]
+                      {r_acc, io_acc}
+                  end
+              end)
+
+            {[r_acc | acc], [io_acc | io]}
+        end
+      end)
+
+    IO.puts("Separation of F codes from numerics found #{Enum.count(io)} changes\n")
+
+    # Optional print to console for debug / QA
+    if opts.separate_ef_codes_from_numerics == true do
+      Enum.each(io, fn x ->
+        Enum.each(x, fn {ef, value, text} ->
+          IO.puts("EF: #{ef};\tValue: #{value};\nText: #{text}\n\n")
+        end)
+      end)
+    end
+
+    acc
+  end
+
+  def iterate_ef_code(ef_code, ef_codes) do
+    # Build list of tuples where each separate code at different point
+    # [{F1234, 5}, {F123, 45}, {F12, 345}, {F1, 2345}]
+
+    max = String.length(ef_code)
+
+    splits =
+      Enum.reduce(1..max, [], fn x, acc ->
+        [String.split_at(ef_code, x) | acc]
+      end)
+
+    # Find member of set of ef_codes
+    Enum.reduce_while(splits, nil, fn {ef, _} = split, acc ->
+      case Enum.member?(ef_codes, ef) do
+        true ->
+          {:halt, split}
+
+        false ->
+          {:cont, acc}
+      end
+    end)
+  end
+
+  def separate_ef_codes_from_non_numerics(records, opts) do
+    regex = ~r/(F\d+)([\."“,£\[\(])/m
+
+    # Optional print to console for debugging / QA
+    if opts.separate_ef_codes_from_non_numerics == true do
+      Enum.reduce(records, [], fn record, acc ->
+        case Regex.scan(~r/(F\d+)([\."“,£\[\(])/m, record.text) do
+          [] ->
+            acc
+
+          matches ->
+            Enum.reduce(matches, acc, fn
+              [_, f, <<226>>], accum -> [{f, <<226, 128, 156>>} | accum]
+              [_, f, <<194>>], accum -> [{f, <<194, 163>>} | accum]
+              [_, f, v], accum -> [{f, v} | accum]
+            end)
+        end
+      end)
+      |> List.flatten()
+      |> Enum.map(fn {f, v} -> "#{f} #{v}" end)
+      |> Enum.join(" | ")
+      |> IO.inspect(limit: :infinity, label: "Separated Non-Numerics")
+    end
+
+    Enum.reduce(records, [], fn record, acc ->
+      Regex.replace(
+        regex,
+        record.text,
+        "\\g{1} \\g{2}"
+      )
+      |> (&Map.put(record, :text, &1)).()
+      |> (&[&1 | acc]).()
+    end)
+  end
+
   @amendments_csv "lib/legl/countries/uk/airtable_amendment/amendments.csv"
   @airtable_amendment_table_fields [
+                                     "ID",
                                      "Ef Code",
                                      "Articles",
                                      "Text"
                                    ]
                                    |> Enum.join(",")
-
-  @field_keys ~s[
-    id name flow record_type part chapter heading section sub_section para dupe amendment text region changes
-  ]
-              |> String.trim()
-              |> String.split()
-              |> Enum.map(fn k -> String.to_atom(k) end)
 
   @doc """
   Function
@@ -92,9 +211,12 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   Run in iex
   Legl.Countries.Uk.AirtableAmendment.Amendments.amendments()
   """
-  def amendments(%{country: :uk} = _opts) do
-    with {:ok, records} <- load_source_records("lib/legl/data_files/csv/airtable_act.csv") do
-      amendments_table_workflow(records)
+  def amendments(%{country: :uk} = opts) do
+    with {:ok, records} <-
+           Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.load_source_records(
+             "lib/legl/data_files/csv/airtable_act.csv"
+           ) do
+      amendments_table_workflow(records, opts)
     end
   end
 
@@ -104,20 +226,22 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   Function
   Loads from .csv if no records are provided
   """
-  def amendments(records, %{country: :uk} = _opts) do
-    amendments_table_workflow(records)
+  def amendments(records, %{country: :uk} = opts) do
+    amendments_table_workflow(records, opts)
   end
 
   def amendments(_records, _opts), do: nil
 
-  defp amendments_table_workflow(records) do
+  defp amendments_table_workflow(records, opts) do
     file = open_file()
+    IO.puts("\nStart Processing Amendments\n")
 
     with {:ok, amendments} <- get_amendments(records),
          {:ok, amendments} <- amendment_relationships(records, amendments) do
       Enum.sort_by(amendments, &Atom.to_string(elem(&1, 0)), {:asc, NaturalOrder})
-      |> Enum.each(fn amendment ->
-        save_to_csv(file, amendment)
+      |> Enum.each(fn {_k, v} ->
+        Map.put(v, :id, opts.name <> "_" <> v.ef)
+        |> (&save_to_csv(file, &1)).()
       end)
     else
       :error -> :error
@@ -139,42 +263,11 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
   end
 
   @doc """
-  Function to load the records into memory from the
-  'airtable_act.csv' or 'airtable_regulation.csv' files
-  """
-  def load_source_records(path) do
-    Path.absname(path)
-    |> File.stream!()
-    |> CSV.decode(headers: false)
-    |> Enum.reduce(
-      [],
-      fn
-        {:ok, record}, acc ->
-          record
-          |> (&Enum.zip(@field_keys, &1)).()
-          |> Enum.into(%{})
-          |> (&[&1 | acc]).()
-
-        {:error, error}, acc ->
-          IO.puts("ERROR #{error}")
-          acc
-      end
-    )
-    |> Enum.reverse()
-    # Rem header row
-    |> List.delete_at(0)
-    |> (&{:ok, &1}).()
-  end
-
-  @doc """
   Function populates a map with the %Amendments{} struct
   """
   def get_amendments(records) do
     Enum.reduce(records, %{}, fn
-      %{amendment: ""} = _record, acc ->
-        acc
-
-      %{record_type: ~s/amendment,textual/, amendment: id} = record, acc ->
+      %{type: ~s/"amendment,textual"/, amendment: id} = record, acc ->
         Map.put_new(acc, :"F#{id}", %Amendments{ef: "F#{id}", text: record.text})
 
       _record, acc ->
@@ -222,7 +315,7 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
     |> Enum.reduce(amendments, fn change, acc ->
       key = :"#{change}"
 
-      if key == :F59 do
+      if key == :F107 do
         IO.inspect(Map.get(acc, key), label: "#{key}")
       end
 
@@ -237,14 +330,14 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
     end)
   end
 
-  def save_to_csv(file, {_, %{ef: ef, text: text, ids: ids}} = _amendment) do
+  def save_to_csv(file, %{id: id, ef: ef, text: text, ids: ids} = _amendment) do
     ids =
       ids
       |> Enum.reverse()
       |> Enum.join(",")
       |> Legl.Utility.csv_quote_enclosure()
 
-    [ef, ids, text]
+    [id, ef, ids, text]
     |> Enum.join(",")
     |> (&IO.puts(file, &1)).()
   end
