@@ -51,37 +51,35 @@ defmodule UK.Parser do
       |> get_extents(:act)
       |> get_editorial(:act)
 
-    binary =
-      case separate_main_and_schedules(binary) do
-        {main, schedules} ->
-          IO.puts("\nLENGTH OF MAIN and ANNEXES")
-          IO.puts("main length: #{String.length(main)}")
-          IO.puts("schedules length: #{String.length(schedules)}")
+    {main, schedules} = separate_main_and_schedules(binary)
 
-          main =
-            main
-            |> get_A_section(:act, "section")
-            |> get_section_with_period(@components.section, opts)
-            |> get_section(:act, @components.section)
-            |> get_sub_section(:act, @components.sub_section)
+    IO.puts("\nLENGTH OF MAIN and ANNEXES")
+    IO.puts("main length: #{String.length(main)}")
+    IO.puts("schedules length: #{String.length(schedules)}")
 
-          schedules =
-            case schedules do
-              "" ->
-                ""
+    main =
+      main
+      |> get_A_section(:act, "section")
+      |> get_section_with_period(@components.section, opts)
+      |> get_section(:act, @components.section)
+      |> get_sub_section(:act, @components.sub_section)
 
-              _ ->
-                schedules
-                |> get_annex()
-                |> provision_before_schedule()
-                |> get_A_section(:act, "paragraph")
-                |> get_section_with_period(@components.paragraph, opts)
-                |> get_section(:act, @components.paragraph)
-                |> get_sub_section(:act, @components.sub_paragraph)
-            end
+    schedules =
+      case schedules do
+        "" ->
+          ""
 
-          ~s/#{main}\n#{schedules}/
+        _ ->
+          schedules
+          |> get_annex()
+          |> provision_before_schedule()
+          |> get_A_section(:act, "paragraph")
+          |> get_section_with_period(@components.paragraph, opts)
+          |> get_section(:act, @components.paragraph)
+          |> get_sub_section(:act, @components.sub_paragraph)
       end
+
+    binary = ~s/#{main}\n#{schedules}/
 
     binary =
       binary

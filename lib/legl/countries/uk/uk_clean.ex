@@ -432,8 +432,13 @@ defmodule Legl.Countries.Uk.UkClean do
     join(txt)
   end
 
+  @doc """
+  Function to collapse tables
+  Difficult to prescribe what is and isn't likely to form the text of the Table
+  Mark-up the end of Table's manually with hashtag #
+  """
   def collapse_table_text(binary) do
-    regex = ~r/^TABLE\n([\s\S]*?)(?=\n^[\d\(])/m
+    regex = ~r/^TABLE\n([\s\S]*?)(?=[#]$)/m
 
     binary
     |> (&Regex.replace(

@@ -28,6 +28,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_commencing_ies()
       |> tag_extent_ees()
       |> tag_editorial_xes()
+      |> cross_heading_efs()
 
     {main, schedules} = separate_main_and_schedules(binary)
 
@@ -61,7 +62,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     binary =
       binary
       |> tag_sub_sub_section_efs()
-      |> cross_heading_efs()
       |> tag_section_wash_up()
       |> tag_heading_efs()
       |> tag_txt_amend_efs_wash_up()
@@ -178,7 +178,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         # ~s/Part[ ]/, can be confused with an actual Part clause
         ~s/[Cc]ross[- ]?heading/,
         ~s/Chapter.*?\\(ss\\.[ ].*?\\)[ ]inserted/,
-        ~s/Act repealed/
+        ~s/Act repealed/,
+        ~s/Sum[ ]in[ ][Ss]\\./
       ]
       |> Enum.join("|")
 
@@ -355,7 +356,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     b = _bracket = ~s/(\\[?)/
 
     regex = %{
-      ef_b4_sn: ~r/^((?:\[?F\d+)*?)#{b}#{ef}[ ]?#{b}[ ]?#{sn}[ \.]?([A-Z\[\] ].*|\((\d+)\).*)/m,
+      ef_b4_sn:
+        ~r/^((?:\[?F\d+)*?)#{b}#{ef}[ ]?#{b}[ ]?#{sn}[ \.]?([A-Z\[\] ][^\()].*|\((1)\).*)/m,
       sn_b4_ef: ~r/^#{b}[ ]?#{sn}[ ]?#{b}#{ef}[ ]?#{b}([A-Z].*|\((\d+)\).*)/m,
       ef_b4_efs_b4_sn: ~r/^(\[?)#{ef}((?:\[?F\d+)*?)#{sn}[ \.]?(\]?[A-Z].*)/m,
       x: ~r/^(X\d+)[ ]?(\[?)#{ef}#{sn}/m
@@ -586,7 +588,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             # Ensure ss is Ss.
             # 🔻F229🔻 Chapter IIA (ss. 91A-91B)
             # 🔻F561🔻 Cross heading, ss. 33A and 33B inserted
-            |> (&Regex.replace(~r/[ ]ss\./m, &1, " Ss.")).()
+            |> (&Regex.replace(~r/[ \(]ss\./m, &1, " Ss.")).()
             # 🔻F561🔻 Cross heading, ss. 33A and 33B inserted
             # Make 'and' a ','
             |> (&Regex.replace(~r/([ ]Ss\.[ ]\d+[A-Z]*)[ ]and/m, &1, "\\g{1},")).()
