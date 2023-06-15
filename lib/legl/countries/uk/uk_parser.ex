@@ -7,9 +7,9 @@ defmodule UK.Parser do
 
   @regex_components Component.mapped_components_for_regex()
 
-  @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W"
-  @country_regex "N\\.I\\.|S|W|E"
-  @geo_regex @region_regex <> "|" <> @country_regex
+  @region_regex UK.region()
+  @country_regex UK.country()
+  @geo_regex UK.geo()
 
   import Legl,
     only: [
@@ -66,18 +66,21 @@ defmodule UK.Parser do
             |> get_sub_section(:act, @components.sub_section)
 
           schedules =
-            schedules
-            |> get_annex()
-            |> provision_before_schedule()
-            |> get_A_section(:act, "paragraph")
-            |> get_section_with_period(@components.paragraph, opts)
-            |> get_section(:act, @components.paragraph)
-            |> get_sub_section(:act, @components.sub_paragraph)
+            case schedules do
+              "" ->
+                ""
+
+              _ ->
+                schedules
+                |> get_annex()
+                |> provision_before_schedule()
+                |> get_A_section(:act, "paragraph")
+                |> get_section_with_period(@components.paragraph, opts)
+                |> get_section(:act, @components.paragraph)
+                |> get_sub_section(:act, @components.sub_paragraph)
+            end
 
           ~s/#{main}\n#{schedules}/
-
-        binary ->
-          binary
       end
 
     binary =
@@ -132,7 +135,7 @@ defmodule UK.Parser do
       [main, schedules] = String.split(binary, "[::annex::]", parts: 2)
       {main, ~s/[::annex::]#{schedules}/}
     else
-      false -> binary
+      false -> {binary, ""}
     end
   end
 
@@ -460,7 +463,7 @@ defmodule UK.Parser do
       # 19AE+WThe adoption duty does not apply to a drainage system
       # 1SBefore making an order the Minister shall prepare
       |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]*?)(#{@geo_regex})(.*)/m,
+            ~r/^(\d{1,3}[A-Z]*?)(#{@geo_regex})([A-Z].*)/m,
             &1,
             "#{component}\\g{1} \\g{1} \\g{3} [::region::]\\g{2}"
           )).()

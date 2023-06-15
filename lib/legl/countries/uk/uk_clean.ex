@@ -13,7 +13,7 @@ defmodule Legl.Countries.Uk.UkClean do
   def clean_original(binary, %{type: :act} = opts) do
     binary =
       binary
-      # |> (&Kernel.<>("CLEANED\n", &1)).()
+      |> rm_between_marks()
       |> Legl.Parser.rm_empty_lines()
       |> collapse_amendment_text_between_quotes()
       |> collapse_amendment_text_between_quotes()
@@ -31,6 +31,7 @@ defmodule Legl.Countries.Uk.UkClean do
       |> numericalise_schedules(opts)
       |> rem_quotes()
       |> join_repeals()
+      |> join_repeals_ii()
       |> join_derivations()
       |> collapse_table_text()
       |> rm_multi_space()
@@ -72,6 +73,17 @@ defmodule Legl.Countries.Uk.UkClean do
     |> File.write(binary)
 
     # clean_original(binary, opts)
+  end
+
+  @doc """
+  Certain pieces of legislation contain content for which we are not interested.
+  This function deletes lines from the clean.txt that lie between manually marked
+  emojis.
+  🟢 is used to mark
+  """
+  def rm_between_marks(binary) do
+    regex = ~r/^🟢[\S\s]*?🟢$/m
+    Regex.replace(regex, binary, "")
   end
 
   def rm_marginal_citations(binary) do
@@ -152,9 +164,10 @@ defmodule Legl.Countries.Uk.UkClean do
 
     regex =
       [
-        ~s/inserte?d?.*?—$/,
-        ~s/substituted?.*?—$/,
+        ~s/inserte?d?.*?—/,
+        ~s/substituted?.*?—/,
         ~s/adde?d?—/,
+        ~s/sections are—$/,
         ~s/(?:substituted|inserted) the following subsections?—/,
         ~s/(?:substituted|inserted) the following sections?—/,
         ~s/(?:substituted|inserted) the following Schedules?—/,
@@ -162,7 +175,8 @@ defmodule Legl.Countries.Uk.UkClean do
         ~s/(?:substituted|inserted) the following s?u?b?-?paragraphs?—/,
         ~s/(?:substituted|inserted) the following sections—/,
         ~s/[Tt]he following (?:provisions|sections|sub-paragraph)? ?shall be (?:substituted|inserted) (?:after|in) .*?—/,
-        ~s/substituted in each case—/
+        ~s/substituted in each case—/,
+        ~s/\\(and the italic cross-heading before it\\) insert—/
       ]
       |> Enum.join("|")
 
@@ -180,11 +194,11 @@ defmodule Legl.Countries.Uk.UkClean do
         "\u2B55" ->
           {[~s/\u2B55/ | acc], 10000}
 
-        # left double quote mark is 8220 as codepoint or 201C in Hex
+        # left double quote mark “ is 8220 as codepoint or 201C in Hex
         "\u201C" ->
           {[~s/\u201C/ | acc], counter + 1}
 
-        # right double quote mark is 8221 as codepoint or 201D in Hex
+        # right double quote mark ” is 8221 as codepoint or 201D in Hex
         # if the counter is back to 1 then we've found the matching pair
         # cross mark ❌ is 10060 as codepoint or 274C in Hex
         "\u201D" ->
@@ -253,11 +267,11 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   defp closing_quotes(binary) do
-    regex = ~s/(.)\\"([\\. \\)])/
+    regex = ~r/(.)\"/m
     QA.scan_and_print(binary, regex, "Closing Quotes", true)
 
     Regex.replace(
-      ~r/#{regex}/m,
+      regex,
       binary,
       fn _, prefix, suffix ->
         ~s/#{prefix}\u201D#{suffix}/
@@ -301,6 +315,54 @@ defmodule Legl.Countries.Uk.UkClean do
     binary
     |> (&Regex.replace(
           regex,
+          &1,
+          fn x ->
+            len = String.length(x)
+
+            case len > 500 do
+              true ->
+                x = String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len)
+
+                join("#{@components.table}" <> x) <> " [::region::]"
+
+              _ ->
+                join("#{@components.table}" <> x) <> " [::region::]"
+            end
+          end
+        )).()
+  end
+
+  def join_repeals_ii(binary) do
+    title1 = ~s/Short [Tt]itle and chapter or title and number[ \t]Extent of repeal or revocation/
+    title2 = ~s/Short [Tt]itle[ ]*and[ ]chapter[ \t]Extent of [Rr]epeal/
+    str = ~s/(#{title1}|#{title2})/
+
+    regex1 = ~r/^#{str}\n[\s\S]*?(?=\n^(?:\(\d|Part[ ]\d))/m
+    regex2 = ~r/#{str}\n[\s\S]*$/
+
+    # IO.inspect(regex)
+    # QA.scan_and_print(binary, regex, "Repeal", true)
+
+    binary
+    |> (&Regex.replace(
+          regex1,
+          &1,
+          fn x ->
+            len = String.length(x)
+
+            case len > 500 do
+              true ->
+                x = String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len)
+
+                join("#{@components.table}" <> x) <> " [::region::]"
+
+              _ ->
+                join("#{@components.table}" <> x) <> " [::region::]"
+            end
+          end
+        )).()
+    |> (&Regex.replace(
+          regex2,
           &1,
           fn x ->
             len = String.length(x)

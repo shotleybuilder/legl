@@ -37,6 +37,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess do
          Amendments.amendments(records, opts),
          records <- rm_amendments(records) do
       # A proxy of the Airtable table useful for debugging 'at_tabulated.txt'
+      IO.puts("number of records w/o amendments #{Enum.count(records)}")
+
       UkArticlePrint.make_tabular_txtfile(records, opts)
       |> IO.puts()
 

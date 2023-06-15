@@ -21,11 +21,13 @@ defmodule UK do
 
   @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|S\\+N\\.I\\."
   @country_regex "N\\.I\\.|S|W|E"
-  # U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|N\\.I\\.|S|W|E
-  # U\.K\.|E\+W\+N\.I\.|E\+W\+S|E\+W|N\.I\.|S|W|E
+  @geo_regex @region_regex <> "|" <> @country_regex
+  # U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|N\\.I\\.
+  # geo U\.K\.|E\+W\+N\.I\.|E\+W\+S|E\+W|N\.I\.|S|W|E
 
   def region(), do: @region_regex
   def country(), do: @country_regex
+  def geo(), do: @geo_regex
 
   # @impl true
   def schema(type) do

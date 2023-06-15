@@ -42,12 +42,19 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> tag_sub_section_efs(@components.sub_section)
 
     schedules =
-      schedules
-      |> tag_schedule_range()
-      |> tag_schedule_efs(opts)
-      |> tag_schedule_section_efs()
-      |> tag_sub_section_range(@components.sub_paragraph)
-      |> tag_sub_section_efs(@components.sub_paragraph)
+      case schedules do
+        # there are no schedules to process
+        "" ->
+          ""
+
+        _ ->
+          schedules
+          |> tag_schedule_range()
+          |> tag_schedule_efs(opts)
+          |> tag_schedule_section_efs()
+          |> tag_sub_section_range(@components.sub_paragraph)
+          |> tag_sub_section_efs(@components.sub_paragraph)
+      end
 
     binary = ~s/#{main}\n#{schedules}/
 
@@ -86,22 +93,29 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       cond do
         Regex.match?(patterns.xs_region, binary) -> :xs_region
         Regex.match?(patterns.xs, binary) -> :xs
-        Regex.match?(patterns["1s_region"], binary) -> :ls_region
-        Regex.match?(patterns["1s, binary"], binary) -> :ls
+        Regex.match?(patterns[:"1s_region"], binary) -> :"1s_region"
+        Regex.match?(patterns[:"1s"], binary) -> :"1s"
+        true -> :no_schedules
       end
 
-    [_, main, schedules] =
-      binary
-      |> (&Regex.replace(
-            Map.get(patterns, s_pattern),
-            &1,
-            fn regex_result ->
-              separate_main_and_schedules_result(regex_result)
-            end
-          )).()
-      |> (&Regex.run(~r/^([\s\S]+)(\[::annex::\][\s\S]+)$/, &1)).()
+    case s_pattern do
+      :no_schedules ->
+        {binary, ""}
 
-    {main, schedules}
+      _ ->
+        [_, main, schedules] =
+          binary
+          |> (&Regex.replace(
+                Map.get(patterns, s_pattern),
+                &1,
+                fn regex_result ->
+                  separate_main_and_schedules_result(regex_result)
+                end
+              )).()
+          |> (&Regex.run(~r/^([\s\S]+)(\[::annex::\][\s\S]+)$/, &1)).()
+
+        {main, schedules}
+    end
   end
 
   defp separate_main_and_schedules_result([_, title, region]) do
@@ -320,7 +334,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   PATTERN.  NORMAL SECTIONS 1, 6, 10 etc.
   """
   def tag_section_efs_ii(binary, opts \\ %{qa_sii?: false, qa_sii_limit?: false}) do
-    regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+).*?(?:repealed|substituted|omitted|ceased).*/m
+    regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+).*?(?:repealed|substituted|omitted|ceased|shall cease).*/m
 
     if opts.qa_sii? == true do
       QA.scan_and_print(binary, regex, "S. SECTIONS II", opts.qa_sii_limit?)
@@ -341,13 +355,13 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     b = _bracket = ~s/(\\[?)/
 
     regex = %{
-      ef_b4_sn: ~r/^((?:\[?F\d+)*?)#{b}#{ef}[ ]?#{b}[ ]?#{sn}[ \.]?([A-Z\[ ].*|\((\d+)\).*)/m,
+      ef_b4_sn: ~r/^((?:\[?F\d+)*?)#{b}#{ef}[ ]?#{b}[ ]?#{sn}[ \.]?([A-Z\[\] ].*|\((\d+)\).*)/m,
       sn_b4_ef: ~r/^#{b}[ ]?#{sn}[ ]?#{b}#{ef}[ ]?#{b}([A-Z].*|\((\d+)\).*)/m,
       ef_b4_efs_b4_sn: ~r/^(\[?)#{ef}((?:\[?F\d+)*?)#{sn}[ \.]?(\]?[A-Z].*)/m,
       x: ~r/^(X\d+)[ ]?(\[?)#{ef}#{sn}/m
     }
 
-    if ef == "F1393" do
+    if ef == "F128" do
       Regex.run(regex.ef_b4_sn, binary)
       |> IO.inspect(label: "DEBUG tag_sections_replace/3")
     end

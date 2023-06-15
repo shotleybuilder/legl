@@ -167,7 +167,7 @@ defmodule Legl.Countries.Uk.AirtableAmendment.Amendments do
     # Optional print to console for debugging / QA
     if opts.separate_ef_codes_from_non_numerics == true do
       Enum.reduce(records, [], fn record, acc ->
-        case Regex.scan(~r/(F\d+)([\."“,£\[\(])/m, record.text) do
+        case Regex.scan(~r/(F\d+)([\."“,£\[\(A-Z])/m, record.text) do
           [] ->
             acc
 

@@ -7,9 +7,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticlePrint do
     field_lengths(records, opts)
     # |> IO.inspect(label: "field lengths")
     |> txt(records, opts)
-    |> Enum.reverse()
+    # |> Enum.reverse()
     |> Enum.join("\n")
-    |> (&File.write("lib/at_tabulated.txt", &1)).()
+    |> (&File.write("lib/legl/data_files/txt/at_tabulated.txt", &1)).()
   end
 
   defp field_lengths(records, opts) do
