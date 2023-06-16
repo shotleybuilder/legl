@@ -323,10 +323,92 @@ defmodule UKAnnotations do
               "[::section::]15 F5[F1 15 Further exemptions from ss. 13 and 14.E+W"
             ]
             |> Enum.join("\n")
+
+  @ss_complex [
+                "🔻F440🔻 Pt. 2A  (Ss. 78A-78YC) inserted",
+                "🔻F501🔻 Pt. IIA (Ss. 78A-78YC) inserted",
+                "🔻F504🔻 Pt. IIA (Ss. 78A-78YC) inserted",
+                "🔻F513🔻 Pt. IIA (Ss. 78A-78YC) inserted",
+                "F441[F44078A Preliminary.S",
+                "F455[F44078C Identification and designation of special sites.S",
+                "F459[F44078E Duty of enforcing authority to require remediation of contaminated land etc.S",
+                "F463[F44078G Grant of, and compensation for, rights of entry etc.S",
+                "F464[F44078H Restrictions and prohibitions on serving remediation notices.S",
+                "F465[F44078JRestrictions on liability relating to the pollution of controlled waters.S",
+                "F466[F44078K Liability in respect of contaminating substances which escape to other land.S",
+                "F469[F44078L Appeals against remediation notices.S",
+                "F481[F44078N Powers of the enforcing authority to carry out remediation.S",
+                "F494[F44078X Supplementary provisions.S",
+                "F50178YA Supplementary provisions with respect to guidance by the Secretary of State.E+W+S",
+                "F50478YB Interaction of this Part with other enactments.E+W",
+                "F50478YB Interaction of this Part with other enactments.S",
+                "[F51378YC This Part and radioactivity.S"
+              ]
+              |> Enum.join("\n")
+  @ss_complex_model [
+                      "🔻F440🔻 Pt. 2A  (Ss. 78A-78YC) inserted",
+                      "🔻F501🔻 Pt. IIA (Ss. 78A-78YC) inserted",
+                      "🔻F504🔻 Pt. IIA (Ss. 78A-78YC) inserted",
+                      "🔻F513🔻 Pt. IIA (Ss. 78A-78YC) inserted",
+                      "[::section::]78A F441[F440 78A Preliminary.S",
+                      "[::section::]78C F455[F440 78C Identification and designation of special sites.S",
+                      "[::section::]78E F459[F440 78E Duty of enforcing authority to require remediation of contaminated land etc.S",
+                      "[::section::]78G F463[F440 78G Grant of, and compensation for, rights of entry etc.S",
+                      "[::section::]78H F464[F440 78H Restrictions and prohibitions on serving remediation notices.S",
+                      "[::section::]78J F465[F440 78J Restrictions on liability relating to the pollution of controlled waters.S",
+                      "[::section::]78K F466[F440 78K Liability in respect of contaminating substances which escape to other land.S",
+                      "[::section::]78L F469[F440 78L Appeals against remediation notices.S",
+                      "[::section::]78N F481[F440 78N Powers of the enforcing authority to carry out remediation.S",
+                      "[::section::]78X F494[F440 78X Supplementary provisions.S",
+                      "[::section::]78YA F501 78YA Supplementary provisions with respect to guidance by the Secretary of State.E+W+S",
+                      "[::section::]78YB F504 78YB Interaction of this Part with other enactments.E+W",
+                      "[::section::]78YB F504 78YB Interaction of this Part with other enactments.S",
+                      "[::section::]78YC [F513 78YC This Part and radioactivity.S"
+                    ]
+                    |> Enum.join("\n")
+
+  alias Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation, as: Optimiser
+  alias Legl.Countries.Uk.AirtableArticle.UkEfCodes, as: EfCodes
+
   describe "section_ss_efs/1" do
     test "section_ss_efs/1 sections" do
       result = section_ss_efs(@ss)
       assert result == @ss_model
+    end
+
+    test "section_ss_ef_codes/1" do
+      ef_codes = section_ss_ef_codes(@ss_complex)
+
+      assert ef_codes == [
+               {:F513, {"F513", "78A-78YC", "inserted"}},
+               {:F504, {"F504", "78A-78YC", "inserted"}},
+               {:F501, {"F501", "78A-78YC", "inserted"}},
+               {:F440, {"F440", "78A-78YC", "inserted"}}
+             ]
+    end
+
+    test "Optimiser.optimise_ef_codes/2" do
+      ef_codes = section_ss_ef_codes(@ss_complex)
+      optimised_ef_codes = Optimiser.optimise_ef_codes(ef_codes, "SECTIONS")
+
+      assert optimised_ef_codes == [
+               {:F513, {"F513", "78A-78YC", "inserted"}},
+               {:F504, {"F504", "78A-78YC", "inserted"}},
+               {:F501, {"F501", "78A-78YC", "inserted"}},
+               {:F440, {"F440", "78A-78YC", "inserted"}}
+             ]
+    end
+
+    test "EfCodes.ef_tags/1" do
+      ef_codes = section_ss_ef_codes(@ss_complex)
+      optimised_ef_codes = Optimiser.optimise_ef_codes(ef_codes, "SECTIONS")
+      ef_tags = EfCodes.ef_tags(optimised_ef_codes)
+      assert Enum.count(ef_tags) == 116
+    end
+
+    test "section_ss_efs/1 sections complex" do
+      result = section_ss_efs(@ss_complex)
+      assert result == @ss_complex_model
     end
   end
 
@@ -414,7 +496,7 @@ defmodule UKAnnotations do
         ]
         |> Enum.join("\n")
 
-      fresult = tag_sub_section_efs(binary)
+      fresult = tag_sub_section_efs(binary, ~s/[::sub-section::]/)
       # |> IO.inspect()
 
       test =

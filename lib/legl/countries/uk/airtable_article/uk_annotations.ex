@@ -588,7 +588,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
             # Ensure ss is Ss.
             # 🔻F229🔻 Chapter IIA (ss. 91A-91B)
             # 🔻F561🔻 Cross heading, ss. 33A and 33B inserted
-            |> (&Regex.replace(~r/[ \(]ss\./m, &1, " Ss.")).()
+            |> (&Regex.replace(~r/([ \(])ss\./m, &1, "\\g{1}Ss.")).()
             # 🔻F561🔻 Cross heading, ss. 33A and 33B inserted
             # Make 'and' a ','
             |> (&Regex.replace(~r/([ ]Ss\.[ ]\d+[A-Z]*)[ ]and/m, &1, "\\g{1},")).()
@@ -600,30 +600,9 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       |> Enum.reverse()
       |> Enum.join("\n")
 
-    # section_number_pattern
-    snp = ~s/\\d+[A-Z]{0,2}/
+    ef_codes = section_ss_ef_codes(binary)
 
-    patterns =
-      [
-        # 🔻F494🔻 Ss. 33A-33C inserted
-        # 🔻F426🔻 Ss. 27H-27K inserted
-        # 🔻F490🔻 Ss. 32-35 substituted
-        ~s/#{snp}-#{snp}/,
-        # 🔻F126🔻 Ss. 31, 32 and 34-42 repealed (E.W.)
-        ~s/(?:#{snp},[ ])+#{snp}[ ]and[ ]#{snp}-#{snp}/,
-        # 🔻F749🔻 S. 41EA, 41EB inserted
-        # 🔻F143🔻 Ss. 17A, 17AA substituted
-        # 🔻F276🔻 Ss. 16, 16A, 17 and cross-heading substituted
-        ~s/(?:#{snp},[ ])+#{snp}/
-      ]
-      |> Enum.join("|")
-
-    regex =
-      ~s/^🔻(F\\d+)🔻(?:.*?[ ]Ss?\\.[ ])(#{patterns}).*?(repealed|inserted|substituted|omitted)/
-
-    ef_codes = EfCodes.ef_codes(binary, regex, "SS.")
-
-    ef_codes = Optimiser.optimise_ef_codes(ef_codes, "SECTIONS")
+    ef_codes = Optimiser.optimise_ef_codes(ef_codes, "SS.")
 
     ef_tags = EfCodes.ef_tags(ef_codes)
 
@@ -652,6 +631,31 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     QA.print_selected_sections(io)
     acc
+  end
+
+  def section_ss_ef_codes(binary) do
+    # section_number_pattern
+    snp = ~s/\\d+[A-Z]{0,2}/
+
+    patterns =
+      [
+        # 🔻F494🔻 Ss. 33A-33C inserted
+        # 🔻F426🔻 Ss. 27H-27K inserted
+        # 🔻F490🔻 Ss. 32-35 substituted
+        ~s/#{snp}-#{snp}/,
+        # 🔻F126🔻 Ss. 31, 32 and 34-42 repealed (E.W.)
+        ~s/(?:#{snp},[ ])+#{snp}[ ]and[ ]#{snp}-#{snp}/,
+        # 🔻F749🔻 S. 41EA, 41EB inserted
+        # 🔻F143🔻 Ss. 17A, 17AA substituted
+        # 🔻F276🔻 Ss. 16, 16A, 17 and cross-heading substituted
+        ~s/(?:#{snp},[ ])+#{snp}/
+      ]
+      |> Enum.join("|")
+
+    regex =
+      ~r/^🔻(F\d+)🔻(?:.*?[ \()]Ss?\.[ ])(#{patterns}).*?(repealed|inserted|substituted|omitted)/m
+
+    EfCodes.ef_codes(binary, regex, "SS.")
   end
 
   def build_schedule_regex() do
