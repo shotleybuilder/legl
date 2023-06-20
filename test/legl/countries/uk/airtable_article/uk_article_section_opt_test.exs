@@ -30,11 +30,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionOptTest do
             acc ++ [{:"#{ef}", {ef, sn, amd}}]
           end)
 
-  describe "optimise_ef_codes/1" do
+  describe "optimise_ef_codes/2" do
     test "single_range of ef_codes" do
-      result = optimise_ef_codes(@test_data_single)
+      result = optimise_ef_codes(@test_data_single, "TEST")
 
-      assert @mapper == result
+      assert result == @mapper
     end
   end
 
@@ -42,14 +42,14 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionOptTest do
     test "single_range of ef_codes" do
       result = optimiser(@test_data_single)
 
-      assert @model_optimiser == result
+      assert result == @model_optimiser
     end
   end
 
   describe "mapper/1" do
     test "mapper/1 list count 1" do
-      result = mapper(@model_optimise)
-      assert @mapper == result
+      result = mapper(@model_optimiser)
+      assert result == @mapper
     end
   end
 

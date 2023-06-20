@@ -182,9 +182,10 @@ defmodule Legl.Countries.Uk.UkClean do
 
     binary
     |> (&Regex.replace(
-          ~r/(#{regex})(#{@region_regex})?([\s\S]*?)(“)/m,
+          ~r/(#{regex})(#{@region_regex})?\n(.*?)“/m,
+          # ~r/(#{regex})(#{@region_regex})?([\s\S]*?)(“)/m,
           &1,
-          "\\1 \\2\n⭕\\4 \\3"
+          "\\1 \\2\n⭕“\\3"
         )).()
     |> String.graphemes()
     |> Enum.reduce({[], 0}, fn char, {acc, counter} ->
@@ -246,10 +247,17 @@ defmodule Legl.Countries.Uk.UkClean do
   def join_empty_numbered(binary),
     do:
       Regex.replace(
-        ~r/^(\(([a-z]+|[ivmcldx]+)\)|\d+\.?)(?:\r\n|\n)/m,
+        ~r/^(\(([a-z]+|[ivmcldx]+)\))(?:\r\n|\n)/m,
         binary,
         "\\g{1} "
       )
+      # to join sections that are separated from the sub-section
+      # 8\n(1) -> 8(1)
+      |> (&Regex.replace(
+            ~r/^(\d+\.?)\n^\(/m,
+            &1,
+            "\\g{1}("
+          )).()
 
   defp opening_quotes(binary) do
     # [F44(5)"Welsh zone”
@@ -333,9 +341,12 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   def join_repeals_ii(binary) do
-    title1 = ~s/Short [Tt]itle and chapter or title and number[ \t]Extent of repeal or revocation/
-    title2 = ~s/Short [Tt]itle[ ]*and[ ]chapter[ \t]Extent of [Rr]epeal/
-    str = ~s/(#{title1}|#{title2})/
+    title1 =
+      ~s/Short [Tt]itle and chapter or title and number[ \\t]Extent of repeal or revocation/
+
+    title2 = ~s/Short [Tt]itle[ ]*and[ ]chapter[ \\t]Extent of [Rr]epeal/
+    title3 = ~s/Reference[ \\t]+Short title or title[ \\t]+Extent of repeal orrevocation/
+    str = ~s/(#{title1}|#{title2}|#{title3})/
 
     regex1 = ~r/^#{str}\n[\s\S]*?(?=\n^(?:\(\d|Part[ ]\d))/m
     regex2 = ~r/#{str}\n[\s\S]*$/

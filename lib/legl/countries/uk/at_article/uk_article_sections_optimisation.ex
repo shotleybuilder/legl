@@ -72,8 +72,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkEfCodes do
       |> Enum.sort_by(&elem(&1, 3), {:desc, NaturalOrder})
 
     case Enum.count(ef_tags) do
-      0 -> IO.puts("ERROR: zero Ef_tags created")
-      _ -> IO.puts("EF_TAGS COUNT #{Enum.count(ef_tags)}")
+      0 ->
+        IO.puts("ERROR: zero Ef_tags created")
+
+      _ ->
+        IO.puts("EF_TAGS COUNT #{Enum.count(ef_tags)}")
+        IO.inspect(ef_tags)
     end
 
     ef_tags
@@ -120,7 +124,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation do
 
             result ->
               [_hd | tail] = result
-              s_codes = Utility.RangeCalc.range(tail)
+              s_codes = Utility.RangeCalc.range(tail) |> Enum.reverse()
 
               # IO.puts("rng #{rng} count #{Enum.count(v)}")
               # Does the size of the range equal the number of F codes?

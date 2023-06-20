@@ -149,17 +149,17 @@ defmodule UK.Parser do
     # [::part::]F902 [PART IIIA Promotion of the Efficient Use of Water [::region::]E+W
     # [::part::][F1472 Part 7A Further provision about regulation [::region::]U.K.
     regex =
-      ~s/^#{@regex_components.part}(.*?)[ ](?:\\[?PART|\\[?Part)[ ](.*?)[ ](.*?)\\[::region::\\](.*)$/
+      ~r/^#{@regex_components.part}(.*?)[ ](?:\[?PART|\[?Part)[ ](.*?)(\]?)[ ](.*?)\[::region::\](.*)$/m
 
     binary
     |> (&Regex.replace(
-          ~r/#{regex}/m,
+          regex,
           &1,
-          fn _, ef, num, txt, region ->
+          fn _, ef, num, bkt, txt, region ->
             [_, t, u, p] = Regex.run(~r/(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})(.*)/, num)
             conv_num = ~s/#{Legl.conv_roman_numeral(t <> u)}/ <> p
 
-            "#{@components.part}#{conv_num} #{ef} PART #{num} #{txt} [::region::]#{region}"
+            "#{@components.part}#{conv_num} #{ef} PART #{num}#{bkt} #{txt} [::region::]#{region}"
           end
         )).()
   end
@@ -381,13 +381,13 @@ defmodule UK.Parser do
     tag = ~s/(?:#{@regex_components.section}|#{@regex_components.paragraph})/
 
     regex =
-      ~r/^#{@regex_components.heading}([^\d].*?)[ ](.*?)\[::region::\](.*)$([\s\S]+?#{tag})(\d+[A-Z]*)(-?\d*[ ])/
+      ~r/^#{@regex_components.heading}([^\d].*?)[ ](.*?)\[::region::\](.*)$([\s\S]+?#{tag})(\d+[A-Z]*)(-?\d*[ ])/m
 
     binary
     |> (&Regex.replace(
           regex,
           &1,
-          "#{@components.heading}\\g{5} \\g{1} \\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
+          "#{@components.heading}\\g{5} \\g{1} \\g{2}[::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
         )).()
   end
 
@@ -415,25 +415,33 @@ defmodule UK.Parser do
             "#{component}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
           )).()
       # 1(1) Foobar U.K.
+      # 3[F873(1)FoobarE+W+S
       |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*?)(#{@region_regex})$/m,
+            ~r/^(\d{1,3}[A-Z]?)(\[?F?\d*)\((\d{1,3})\)[ ]?(.*?)(#{@region_regex})$/m,
             &1,
-            "#{component}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
+            "#{component}\\g{1}-\\g{3} \\g{1}\\g{2}(\\g{3}) \\g{4} [::region::]\\g{5}"
           )).()
       # 1(1) Foobar S
       # 1(1) Foobar
+      # 3[F873(1)FoobarS
       # regex - the end of line marker pulls the non-greedy to the end when region not present
       # cannot use for region because it would match every clause
       |> (&Regex.replace(
-            ~r/^(\d{1,3}[A-Z]?)\((\d{1,3})\)[ ]?(.*?)(#{@country_regex})?$/m,
+            ~r/^(\d{1,3}[A-Z]?)(\[?F?\d*)\((\d{1,3})\)[ ]?(.*?)(#{@country_regex})?$/m,
             &1,
-            "#{component}\\g{1}-\\g{2} \\g{1}(\\g{2}) \\g{3} [::region::]\\g{4}"
+            "#{component}\\g{1}-\\g{3} \\g{1}\\g{2}(\\g{3}) \\g{4} [::region::]\\g{5}"
           )).()
       # A1The net-zero emissions targetS
       |> (&Regex.replace(
             ~r/^([A-Z]\d{1,3})([A-Z].*)(#{@region_regex})$/m,
             &1,
             "#{component}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
+          )).()
+      # A1E+WThe mineral planning authority for an area in England may,
+      |> (&Regex.replace(
+            ~r/^([A-Z]\d{1,3})(#{@region_regex})([A-Z].*)/m,
+            &1,
+            "#{component}\\g{1} \\g{1} \\g{3} [::region::]\\g{2}"
           )).()
       # 8ANitrogen balance sheetS
       # 18D Group 2 offences and licences etc. : power to enter premises E+W
@@ -510,6 +518,12 @@ defmodule UK.Parser do
           ~r/^(\d{1,3}[A-Z]*)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
           &1,
           "#{component}\\g{1}-\\g{2} \\g{1}.(\\g{2}) \\g{3} [::region::]\\g{4}"
+        )).()
+    # 109B.Cancellation or variation of restriction noticesE+W
+    |> (&Regex.replace(
+          ~r/^(\d{1,3}[A-Z]*)\.[ ]?(.*)(#{@region_regex})$/m,
+          &1,
+          "#{component}\\g{1} \\g{1} \\g{2} [::region::]\\g{3}"
         )).()
     # 161A.Notices requiring persons to carry out works and operationsE+W
     # 33A.U.K.Bartley Water, above the toll bridge at Eling.

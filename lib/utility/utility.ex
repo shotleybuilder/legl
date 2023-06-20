@@ -67,9 +67,12 @@ defmodule Legl.Utility do
     :ok
   end
 
-  def save_at_records_to_file(records) when is_list(records) do
+  def save_at_records_to_file(records),
+    do: save_at_records_to_file(records, "lib/legl/data_files/txt/airtable.txt")
+
+  def save_at_records_to_file(records, path) when is_list(records) do
     {:ok, file} =
-      "lib/airtable.txt"
+      path
       |> Path.absname()
       |> File.open([:utf8, :write])
 

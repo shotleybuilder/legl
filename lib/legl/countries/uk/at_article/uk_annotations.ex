@@ -205,7 +205,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
   def part_efs(binary) do
     # See uk_annotations.exs for examples and test
-    regex = ~r/^(\[?F\d+)(\[?F\d+)?[ ]?(\[?(?:PART|Part))([IVX \d].*?)(#{@geo_regex})(.*)/m
+    regex = ~r/^(\[?F\d+)(\[?F\d+)?[ ]?(\[?(?:PART|Part))[ ]?([IVX\d].*?)(#{@geo_regex})(.*)/m
 
     QA.scan_and_print(binary, regex, "PART")
 
@@ -684,10 +684,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     # The regex in this map are not used in prod.  Helpful for debugging a complex regex
     %{
-      and_: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{and_}).*?by/m,
-      csv_: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{csv_}).*?by/m,
-      snp: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{snp}).*?by/m,
-      full: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*[ ]?paras?\.[ ]?(#{full}).*?by/m
+      and_: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*.*?paras?\.[ ]?(#{and_}).*?by/m,
+      csv_: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*.*?paras?\.[ ]?(#{csv_}).*?by/m,
+      snp: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*.*?paras?\.[ ]?(#{snp}).*?by/m,
+      full: ~r/^🔻(F\d+)🔻.*?Schs?\.[ ]\d*[A-Z]*.*?paras?\.[ ]?(#{full}).*?by/m
     }
   end
 

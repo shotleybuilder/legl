@@ -133,9 +133,25 @@ defmodule UKParser do
 
   describe "get_A_heading/2" do
     test "get_A_heading/2 :act" do
-      data = [
-        "[::heading::][F6522  [::region::]U.K.After Schedule 13 to the Taxes"
-      ]
+      data =
+        [
+          "[::heading::][F359 Waste reduction schemes [::region::]E+W",
+          "[::amendment_heading::]Textual Amendments",
+          "[::amendment::]F359 S. 60A inserted (E.W.) by Climate Change Act 2008",
+          "[::section::]60A 60A Waste reduction schemes [::region::]E+W"
+        ]
+        |> Enum.join("\n")
+
+      result = UK.Parser.get_A_heading(data, :act)
+
+      assert result ==
+               [
+                 "[::heading::]60A [F359 Waste reduction schemes [::region::]E+W",
+                 "[::amendment_heading::]Textual Amendments",
+                 "[::amendment::]F359 S. 60A inserted (E.W.) by Climate Change Act 2008",
+                 "[::section::]60A 60A Waste reduction schemes [::region::]E+W"
+               ]
+               |> Enum.join("\n")
     end
   end
 
