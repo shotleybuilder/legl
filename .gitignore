@@ -31,6 +31,7 @@ lib/*/at_formula/
 *.beam
 *.html
 *.csv
+*.json
 
 lib/si_code_regions.csv
 lib/si_codes.csv

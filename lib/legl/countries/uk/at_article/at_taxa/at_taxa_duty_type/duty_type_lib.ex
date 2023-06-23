@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
+defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   @default_opts %{
     dutyholder: "person"
   }
@@ -8,17 +8,22 @@ defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
                  "[Hh]older"
                ]
                |> Enum.join("|")
+               |> (fn x -> ~s/(#{x})/ end).()
 
   @agencies [
+              "[Aa]gency",
               "authority",
               "Environment Agency",
               "local authorit(y|ies)",
               "enforcing authority",
               "local enforcing authority",
               "SEPA",
-              "Scottish Environment Proection Agency"
+              "Scottish Environment Proection Agency",
+              "court"
             ]
             |> Enum.join("|")
+            # enclose in parentheses to create a regex 'OR'
+            |> (fn x -> ~s/(#{x})/ end).()
 
   def regex(function, opts \\ []) do
     opts = Enum.into(opts, @default_opts)
@@ -45,27 +50,31 @@ defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
   """
   def duty(_opts) do
     [
-      " ?[Nn]o (#{@dutyholders}) shall",
-      " ?[Tt]he (#{@dutyholders}).*?must use",
-      " ?[Tt]he (#{@dutyholders}).*?shall",
-      " (#{@dutyholders}) (shall notify|shall furnish the authority)",
-      " ?[Aa] (#{@dutyholders}) shall not",
-      " shall be the duty of any (#{@dutyholders})",
-      " ?[Aa]pplication.*?shall be made to (the )?(#{@agencies}) "
+      " ?[Nn]o #{@dutyholders} shall",
+      " ?([Aa]|[Tt]he) #{@dutyholders}.*?must use",
+      " ?([Aa]|[Tt]he) #{@dutyholders}.*?shall",
+      " #{@dutyholders} (shall notify|shall furnish the authority)",
+      " shall be the duty of any #{@dutyholders}",
+      " ?[Aa]pplication.*?shall be made to (the )?#{@agencies} "
     ]
   end
 
   def right(_opts) do
     [
-      " [Pp]erson.*?may at any time"
+      " #{@dutyholders} may[, ]",
+      " permission of that #{@dutyholders}"
     ]
   end
 
+  @doc """
+  Powers vested in government and agencies that they must exercise
+  """
   def responsibility(_opts) do
     [
-      " Secretary of State.*?shall.*?[—\.]",
-      " ?[Ii]t shall be the duty of.*?(#{@agencies}).*\.",
-      " (#{@agencies}) shall"
+      " ?Secretary of State[^—\.]*?shall",
+      " ?Secretary of State[^—\.]*?has determined",
+      " ?[Ii]t shall be the duty of[^—\.]*?#{@agencies}",
+      " ?#{@agencies}[^—\.]*?shall"
     ]
   end
 
@@ -74,7 +83,7 @@ defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
   """
   def discretionary(_opts) do
     [
-      " (#{@agencies}) may"
+      " #{@agencies}[^—\.]*?may"
     ]
   end
 
@@ -90,9 +99,10 @@ defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
       " Secretary of State may, by regulations?, (substitute|prescribe) ",
       " Secretary of State may.*?direct ",
       " Secretary of State may.*make.*(scheme|plans?|regulations?) ",
+      " Secretary of State[^—\.]*?may[, ]",
       " Secretary of State considers necessary",
       " in the opinion of the Secretary of State ",
-      " [Rr]egulations.*?under (this )?(section|subsection)",
+      #   " [Rr]egulations.*?under (this )?(section|subsection)",
       " functions.*(exercis(ed|able)|conferred) ",
       " exercising.*functions "
     ]
@@ -124,8 +134,7 @@ defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
       " has?v?e? the (?:same )?meanings? ",
       " [Ff]or the purpose of determining ",
       " any reference in this .*?to ",
-      " interpretation ",
-      " [Ff]or the purposes of.*?(Part|Chapter|[sS]ection|subsection)"
+      " interpretation "
     ]
   end
 
@@ -146,7 +155,8 @@ defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
   def exemption(_opts) do
     [
       " shall not apply to (Scotland|Wales|Northern Ireland)",
-      " shall not apply in any case where[, ]"
+      " shall not apply in any case where[, ]",
+      " #{@dutyholders} shall not be liable"
     ]
   end
 
@@ -162,10 +172,10 @@ defmodule Legl.Countries.Uk.AtDutyTypeTaxa.DutyTypeLib do
   def amendment(_opts) do
   end
 
-  def charges_fees(_opts) do
+  def charge_fee(_opts) do
     [
       " fees and charges ",
-      " (fees|charges) payable ",
+      " (fees?|charges?) .*(paid|payable) ",
       " by the (fee|charge) ",
       " failed to pay a (fee|charge) "
     ]
