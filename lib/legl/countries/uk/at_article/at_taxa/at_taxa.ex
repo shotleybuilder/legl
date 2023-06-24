@@ -41,9 +41,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
     with(
       {:ok, records} <- get(opts.source, opts),
-      {:ok, records, _} <- Dutyholder.process(records, filesave?: false),
+      {:ok, records} <- Dutyholder.process(records, filesave?: false),
+      IO.inspect(records),
       {:ok, records} <- Dutyholder.aggregate(records),
-      # IO.inspect(records),
+      IO.inspect(records),
       {:ok, records, _} <- DutyType.process(records, filesave?: false),
       {:ok, records} <- DutyType.aggregate(records),
       # IO.inspect(records),
