@@ -8,8 +8,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
   alias Legl.Services.Airtable.Records
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib, as: Lib
 
-  @default_dutyholder ""
-
   @at_id "UK_ukpga_1990_43_EPA"
 
   @default_opts %{
@@ -95,7 +93,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
 
     records =
       Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
-        classes = Lib.workflow(Map.get(fields, :Text))
+        classes = Lib.workflow(Map.get(fields, :aText))
 
         fields = Map.put(fields, opts.field, classes)
 
@@ -130,7 +128,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
                 IO.puts("ERROR: #{inspect(record)}")
 
               [id] ->
-                Map.put(acc, id, {record.id, Map.get(fields, :Dutyholder)})
+                Map.put(acc, id, {Map.get(record, :id), Map.get(fields, :Dutyholder)})
             end
 
           _ ->
@@ -214,15 +212,4 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
       Legl.Services.Airtable.AtPatch.patch_records(result_subset, headers, params)
     end)
   end
-
-  def duty_type_taxa_functions(class),
-    do:
-      String.downcase(class)
-      |> (&String.replace(&1, "-", "")).()
-      |> (&String.replace(&1, "&", "")).()
-      |> (&String.replace(&1, "/", "")).()
-      |> (&Regex.replace(~r/[ ]{2,}/, &1, " ")).()
-      |> (&String.replace(&1, ", ", "_")).()
-      |> (&String.replace(&1, " ", "_")).()
-      |> (&String.to_atom/1).()
 end

@@ -5,7 +5,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
 
   @dutyholders [
                  "[Pp]erson",
-                 "[Hh]older"
+                 "[Hh]older",
+                 "[Pp]roducer"
                ]
                |> Enum.join("|")
                |> (fn x -> ~s/(#{x})/ end).()
@@ -19,23 +20,78 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
               "local enforcing authority",
               "SEPA",
               "Scottish Environment Proection Agency",
-              "court"
+              "(Office for Environmental Protection|OEP)",
+              "court",
+              "[Aa]ppropriate person"
             ]
             |> Enum.join("|")
             # enclose in parentheses to create a regex 'OR'
             |> (fn x -> ~s/(#{x})/ end).()
 
-  def regex(function, opts \\ []) do
-    opts = Enum.into(opts, @default_opts)
+  def workflow(text) do
+    {_, classes} =
+      {text, []}
+      # |> pre_process(blacklist())
+      # has to process first to ensure the amending text for other law doesn't get tagged
+      |> process(amendment())
+      |> process(responsibility())
+      |> process(discretionary())
+      |> process(right())
+      |> process(duty())
+      # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
+      |> process(power_conferred())
+      # |> process("Enaction, Citation, Commencement", enaction_citation_commencement())
+      |> process(interpretation_definition())
+      |> process(application_scope())
+      |> process(extension())
+      |> process(exemption())
+      |> process(repeal_revocation())
+      # |> process("Transitional Arrangement", transitional_arrangement())
 
-    case Kernel.apply(__MODULE__, function, [opts]) do
-      nil ->
-        nil
+      |> process(charge_fee())
+      |> process(offence())
+      |> process(enforcement_prosecution())
+      |> process(defence_appeal())
 
-      term ->
-        term = Enum.join(term, "|")
-        ~r/(#{term})/
-    end
+    if classes == [],
+      do: ["Process, Rule, Constraint, Condition"],
+      else:
+        classes
+        |> Enum.filter(fn x -> x != nil end)
+        # |> Enum.reverse()
+        |> Enum.uniq()
+  end
+
+  def pre_process({text, collector}, blacklist) do
+    Enum.reduce(blacklist, text, fn regex, acc ->
+      Regex.replace(~r/#{regex}/, acc, "")
+    end)
+    |> (&{&1, collector}).()
+  end
+
+  defp blacklist() do
+    [
+      "[ “][Aa] person guilty of an offence",
+      "person is ordered",
+      "person shall not be liable",
+      "person.?shall be liable",
+      "person is given a notice",
+      "person who commits an offence",
+      "person who fails"
+    ]
+  end
+
+  defp process(collector, regexes) do
+    Enum.reduce(regexes, collector, fn {regex, class}, {text, classes} = acc ->
+      case Regex.match?(~r/#{regex}/, text) do
+        true ->
+          # A specific term (approved person) should be removed from the text to avoid matching on 'person'
+          {Regex.replace(~r/#{regex}/m, text, ""), [class | classes]}
+
+        false ->
+          acc
+      end
+    end)
   end
 
   def purpose(_opts) do
@@ -48,67 +104,72 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
 
   params.  Dutyholder should accommodate intial capitalisation eg [Pp]erson, [Ee]mployer
   """
-  def duty(_opts) do
+  def duty() do
     [
-      " ?[Nn]o #{@dutyholders} shall",
-      " ?([Aa]|[Tt]he) #{@dutyholders}.*?must use",
-      " ?([Aa]|[Tt]he) #{@dutyholders}.*?shall",
-      " #{@dutyholders} (shall notify|shall furnish the authority)",
-      " shall be the duty of any #{@dutyholders}",
-      " ?[Aa]pplication.*?shall be made to (the )?#{@agencies} "
+      {" ?[Nn]o #{@dutyholders} shall", "Duty"},
+      {" ?([Aa]n?|[Tt]he) #{@dutyholders}.*?must use", "Duty"},
+      {" ?([Aa]n?|[Tt]he) #{@dutyholders}.*?shall", "Duty"},
+      {" #{@dutyholders} (shall notify|shall furnish the authority)", "Duty"},
+      {" shall be the duty of any #{@dutyholders}", "Duty"},
+      {" ?[Aa]pplication.*?shall be made to (the )?#{@agencies} ", "Duty"}
     ]
   end
 
-  def right(_opts) do
+  def right() do
     [
-      " #{@dutyholders} may[, ]",
-      " permission of that #{@dutyholders}"
+      {" #{@dutyholders} may (be|not)", nil},
+      {"requested by a #{@dutyholders}", "Right"},
+      {"shall consult.*?#{@dutyholders}", "Right"},
+      {" #{@dutyholders} may[, ]", "Right"},
+      {" #{@dutyholders}.*?shall be entitled", "Right"},
+      {" permission of that #{@dutyholders}", "Right"}
     ]
   end
 
   @doc """
   Powers vested in government and agencies that they must exercise
   """
-  def responsibility(_opts) do
+  def responsibility() do
     [
-      " ?Secretary of State[^—\.]*?shall",
-      " ?Secretary of State[^—\.]*?has determined",
-      " ?[Ii]t shall be the duty of[^—\.]*?#{@agencies}",
-      " ?#{@agencies}[^—\.]*?shall"
+      {" ?Secretary of State[^—\\.]*?shall", "Responsibility"},
+      {" ?Secretary of State[^—\\.]*?has determined", "Responsibility"},
+      {"Secretary of State must", "Responsibility"},
+      {" ?[Ii]t shall be the duty of[^—\\.]*?#{@agencies}", "Responsibility"},
+      {" ?#{@agencies}[^—\\.]*?shall", "Responsibility"}
     ]
   end
 
   @doc """
   Powers vested in government and agencies that they can exercise with discretion
   """
-  def discretionary(_opts) do
+  def discretionary() do
     [
-      " #{@agencies}[^—\.]*?may"
+      {" #{@agencies}[^—\\.]*?may", "Discretionary"}
     ]
   end
 
-  def process_rule_constraint_condition(_opts) do
+  def process_rule_constraint_condition() do
   end
 
   @doc """
   Function to tag clauses providing government and agencies with powers
   Uses the 'Dutyholder' field to pre-filter records for processing
   """
-  def power_conferred(_opts) do
+  def power_conferred() do
     [
-      " Secretary of State may, by regulations?, (substitute|prescribe) ",
-      " Secretary of State may.*?direct ",
-      " Secretary of State may.*make.*(scheme|plans?|regulations?) ",
-      " Secretary of State[^—\.]*?may[, ]",
-      " Secretary of State considers necessary",
-      " in the opinion of the Secretary of State ",
-      #   " [Rr]egulations.*?under (this )?(section|subsection)",
-      " functions.*(exercis(ed|able)|conferred) ",
-      " exercising.*functions "
+      {" Secretary of State may, by regulations?, (substitute|prescribe) ", "Power Conferred"},
+      {" Secretary of State may.*?direct ", "Power Conferred"},
+      {" Secretary of State may.*make.*(scheme|plans?|regulations?) ", "Power Conferred"},
+      {" Secretary of State[^—\\.]*?may[, ]", "Power Conferred"},
+      {" Secretary of State considers necessary", "Power Conferred"},
+      {" in the opinion of the Secretary of State ", "Power Conferred"},
+      #   " [Rr]egulations.*?under (this )?(section|subsection)", "Power Conferred"},
+      {" functions.*(exercis(ed|able)|conferred) ", "Power Conferred"},
+      {" exercising.*functions ", "Power Conferred"}
     ]
   end
 
-  def enaction_citation_commencement(_opts) do
+  def enaction_citation_commencement() do
   end
 
   @doc """
@@ -116,7 +177,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   The most common pattern is
     “term” means...
   """
-  def interpretation_definition(_opts) do
+  def interpretation_definition() do
     defn =
       [
         "means",
@@ -130,70 +191,85 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       |> Enum.join("|")
 
     [
-      "[a-z]” (#{defn})[ —,]",
-      " has?v?e? the (?:same )?meanings? ",
-      " [Ff]or the purpose of determining ",
-      " any reference in this .*?to ",
-      " interpretation "
+      {"[a-z]” (#{defn})[ —,]", "Interpretation, Definition"},
+      {" has?v?e? the (?:same )?meanings? ", "Interpretation, Definition"},
+      {" [Ff]or the purpose of determining ", "Interpretation, Definition"},
+      {" any reference in this .*?to ", "Interpretation, Definition"},
+      {" interpretation ", "Interpretation, Definition"}
     ]
   end
 
-  def application_scope(_opts) do
+  def application_scope() do
     [
-      " ?This (Part|Chapter|[Ss]ection) applies",
-      " ?This (Part|Chapter|[Ss]ection) does not apply",
-      " ?does not apply"
+      {" ?This (Part|Chapter|[Ss]ection) applies", "Application, Scope"},
+      {" ?This (Part|Chapter|[Ss]ection) does not apply", "Application, Scope"},
+      {" ?does not apply", "Application, Scope"}
     ]
   end
 
-  def extension(_opts) do
+  def extension() do
     [
-      " shall have effect "
+      {" shall have effect ", "Extension"}
     ]
   end
 
-  def exemption(_opts) do
+  def exemption() do
     [
-      " shall not apply to (Scotland|Wales|Northern Ireland)",
-      " shall not apply in any case where[, ]",
-      " #{@dutyholders} shall not be liable"
+      {" shall not apply to (Scotland|Wales|Northern Ireland)", "Exemption"},
+      {" shall not apply in any case where[, ]", "Exemption"},
+      {" #{@dutyholders} shall not be liable", "Exemption"}
     ]
   end
 
-  def repeal_revocation(_opts) do
+  def repeal_revocation() do
     [
-      " . . . . . . . "
+      {" . . . . . . . ", "Repeal, Revocation"},
+      {"repealed—", "Repeal, Revocation"}
     ]
   end
 
-  def transitional_arrangement(_opts) do
+  def transitional_arrangement() do
   end
 
-  def amendment(_opts) do
-  end
-
-  def charge_fee(_opts) do
+  def amendment() do
     [
-      " fees and charges ",
-      " (fees?|charges?) .*(paid|payable) ",
-      " by the (fee|charge) ",
-      " failed to pay a (fee|charge) "
+      {"shall be inserted the words— ?\n?“[\\s\\S]*”", "Amendment"},
+      {"shall be inserted— ?\\n?“[\\s\\S]*”", "Amendment"},
+      {" (substitute|insert)— ?\\n?“[\\s\\S]*”", "Amendment"},
+      {"omit the words", "Amendment"},
+      {"for.*?substitute", "Amendment"},
+      {"shall be (inserted|substituted) the words", "Amendment"},
+      {"[Aa]mendments?", "Amendment"},
+      {"[Aa]mended as follows", "Amendment"}
     ]
   end
 
-  def offence(_opts) do
+  def charge_fee() do
     [
-      " ?[Oo]ffences? ",
-      " ?[Ff]ixed penalty "
+      {" fees and charges ", "Charge, Fee"},
+      {" (fees?|charges?) .*(paid|payable) ", "Charge, Fee"},
+      {" by the (fee|charge) ", "Charge, Fee"},
+      {" failed to pay a (fee|charge) ", "Charge, Fee"}
     ]
   end
 
-  def enforcement_prosecution(_opts) do
+  def offence() do
+    [
+      {" ?[Oo]ffences?[ \\.,]", "Offence"},
+      {" ?[Ff]ixed penalty ", "Offence"}
+    ]
   end
 
-  def defence_appeal(_opts) do
+  def enforcement_prosecution() do
     [
-      " [Aa]ppeal "
+      {"proceedings", "Enforcement, Prosecution"},
+      {"conviction", "Enforcement, Prosecution"}
+    ]
+  end
+
+  def defence_appeal() do
+    [
+      {" [Aa]ppeal ", "Defence, Appeal"}
     ]
   end
 end

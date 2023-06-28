@@ -57,7 +57,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   def workflow(opts \\ []) do
     with(
       {:ok, records} <- get(opts),
-      {:ok, records, _results} <- process(records),
+      {:ok, records} <- process(records),
       {:ok, records} <- aggregate(records)
     ) do
       patch(records)
@@ -69,7 +69,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
   def workflow_() do
     with(
-      {:ok, records, _results} <- process(),
+      {:ok, records} <- process(),
       {:ok, records} <- aggregate(records)
     ) do
       patch(records)
@@ -112,7 +112,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     end
   end
 
-  @process_opts %{filesave?: true}
+  @process_opts %{filesave?: true, field: :"Duty Type"}
 
   def process() do
     json = @path |> Path.absname() |> File.read!()
@@ -124,67 +124,37 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     opts = Enum.into(opts, @process_opts)
     # IO.inspect(records)
 
-    results =
-      Enum.reduce(records, [], fn %{"id" => id, "fields" => fields} = _record, acc ->
-        classes = duty_type?({fields["Record_Type"], fields["Text"]})
-        [%{"id" => id, "fields" => %{"Duty Type (Script)" => classes}} | acc]
+    records =
+      Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
+        classes = classes(fields)
+        fields = Map.put(fields, opts.field, classes)
+
+        [Map.put(record, :fields, fields) | acc]
       end)
       |> Enum.reverse()
 
-    records_results =
-      Enum.zip(records, results)
-      |> Enum.reduce([], fn {m1, m2}, acc ->
-        Map.merge(m1, m2, fn
-          _k, v1, v1 -> v1
-          _k, v1, v2 -> Map.merge(v1, v2)
-        end)
-        |> (&[&1 | acc]).()
-      end)
+    if opts.filesave? == true, do: save_results_as_json(records)
 
-    if opts.filesave? == true, do: save_results_as_json(records_results)
-
-    {:ok, records_results, results}
+    {:ok, records}
   end
 
-  def save_results_as_json(records_results) do
-    results_json = Jason.encode!(records_results)
-
-    Legl.Utility.save_at_records_to_file(~s/#{results_json}/, @results_path)
-  end
-
-  @doc """
-  Function returns all the members of the duty types taxonomy that match the
-  text. Duty Types is a multi-select field and therefore can support multiple
-  entries, but this comes at the cost time to parse
-  """
-  def duty_type?({["section"], text}) do
-    case String.contains?(text, "\n") do
-      true -> duty_type?({nil, text})
+  defp classes(%{Record_Type: ["section"], aText: aText} = fields) when is_map(fields) do
+    case Regex.match?(~r/\n/, aText) do
+      true -> classes(aText)
       false -> []
     end
   end
 
-  def duty_type?({_, text}) do
-    classes =
-      Enum.reduce(@duty_type_taxa, [], fn class, acc ->
-        function = duty_type_taxa_functions(class)
-        regex = Lib.regex(function)
+  defp classes(%{aText: aText} = fields) when is_map(fields) do
+    classes(aText)
+  end
 
-        if regex != nil do
-          case Regex.match?(regex, text) do
-            true -> acc ++ [class]
-            false -> acc
-          end
-        else
-          acc
-        end
-      end)
+  defp classes(aText) when is_binary(aText) do
+    Lib.workflow(aText)
+  end
 
-    if classes == [] do
-      ["#{@default_duty_type}"]
-    else
-      classes
-    end
+  def save_results_as_json(records) do
+    Legl.Utility.save_at_records_to_file(~s/#{Jason.encode!(records)}/, @results_path)
   end
 
   @doc """
@@ -192,18 +162,18 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   """
   def aggregate(records_results) do
     sections =
-      Enum.reduce(records_results, %{}, fn %{"fields" => fields} = record, acc ->
-        case fields["Record_Type"] do
+      Enum.reduce(records_results, %{}, fn %{fields: fields} = record, acc ->
+        case Map.get(fields, :Record_Type) do
           ["section"] ->
             case Regex.run(
                    ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
-                   fields["ID"]
+                   Map.get(fields, :ID)
                  ) do
               nil ->
                 IO.puts("ERROR: #{inspect(record)}")
 
               [id] ->
-                Map.put(acc, id, {record["id"], fields["Duty Type (Script)"]})
+                Map.put(acc, id, {Map.get(record, :id), Map.get(fields, :"Duty Type (Script)")})
             end
 
           _ ->
@@ -215,17 +185,17 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     # %{Section ID number => {record_id, [duty types]}, ...}
 
     sections =
-      Enum.reduce(records_results, sections, fn %{"fields" => fields} = _record, acc ->
-        case fields["Record_Type"] do
+      Enum.reduce(records_results, sections, fn %{fields: fields} = _record, acc ->
+        case Map.get(fields, :Record_Type) do
           ["sub-section"] ->
             [id] =
               Regex.run(
                 ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
-                fields["ID"]
+                Map.get(fields, :ID)
               )
 
             {record_id, duty_types} = Map.get(acc, id)
-            duty_types = (duty_types ++ fields["Duty Type (Script)"]) |> Enum.uniq()
+            duty_types = (duty_types ++ Map.get(fields, :"Duty Type (Script)")) |> Enum.uniq()
             Map.put(acc, id, {record_id, duty_types})
 
           _ ->
@@ -236,12 +206,12 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     # Builds a list of maps where the aggregate for the sub-section's parent section
     # is stored against the sub-section
 
-    Enum.reduce(records_results, [], fn %{"fields" => fields} = record, acc ->
-      case fields["Record_Type"] do
+    Enum.reduce(records_results, [], fn %{fields: fields} = record, acc ->
+      case Map.get(fields, :Record_Type) do
         x when x in [["section"], ["sub-section"]] ->
           case Regex.run(
                  ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
-                 fields["ID"]
+                 Map.get(fields, :ID)
                ) do
             nil ->
               IO.puts("ERROR: #{inspect(record)}")
@@ -249,10 +219,30 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
             [id] ->
               {_, duty_types} = Map.get(sections, id)
 
-              fields = Map.put(record["fields"], "Duty Type Aggregate (Script)", duty_types)
+              fields = Map.put(fields, :"Duty Type Aggregate (Script)", duty_types)
 
-              [Map.put(record, "fields", fields) | acc]
+              [Map.put(record, :fields, fields) | acc]
           end
+
+        _ ->
+          [record | acc]
+      end
+    end)
+    |> (&{:ok, &1}).()
+  end
+
+  @doc """
+  Function that revises the dutyholder tag based on the outcome of the duty type tag.
+  Eg, amendment clauses to not have dutyholders
+  """
+  def revise_dutyholder(records) do
+    records
+    |> Enum.reduce([], fn %{fields: fields} = record, acc ->
+      case Map.get(fields, :"Duty Type") do
+        x when x in [["Amendment"], ["Repeal, Revocation"], ["Interpretation, Definition"], []] ->
+          Map.put(fields, :Dutyholder, [])
+          |> (&Map.put(record, :fields, &1)).()
+          |> (&[&1 | acc]).()
 
         _ ->
           [record | acc]
@@ -287,11 +277,4 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
       Legl.Services.Airtable.AtPatch.patch_records(result_subset, headers, params)
     end)
   end
-
-  def duty_type_taxa_functions(class),
-    do:
-      String.downcase(class)
-      |> (&String.replace(&1, ", ", "_")).()
-      |> (&String.replace(&1, " ", "_")).()
-      |> (&String.to_atom/1).()
 end

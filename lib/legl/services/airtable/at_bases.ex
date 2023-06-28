@@ -51,7 +51,9 @@ defmodule Legl.Services.Airtable.AtBases do
       # UK 🇬🇧️ E 💚️ - Planning
       "uk_e_planning" => "appJ3UVvRHEGIpNi4",
       # UK 🇬🇧️ E 💚️ - Pollution
-      "uk_e_pollution" => "appj4oaimWQfwtUri"
+      "uk_e_pollution" => "appj4oaimWQfwtUri",
+      # UK 🇬🇧️ E 💚️ - Waste
+      "uk_e_waste" => "appfXbCYZmxSFQ6uY"
     }
   end
 end

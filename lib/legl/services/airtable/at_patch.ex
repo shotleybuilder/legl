@@ -5,9 +5,16 @@ defmodule Legl.Services.Airtable.AtPatch do
   def patch_records(body, headers, params) do
     with(
       {:ok, url} <- Url.url(params.base, params.table, params.options),
-      {:ok, _response} <- Client.patch(url, body, headers)
+      {:ok, response} <- Client.patch(url, body, headers)
     ) do
-      :ok
+      case response do
+        %HTTPoison.Response{status_code: 422, body: body} ->
+          IO.puts("Status: 422")
+          IO.inspect(body)
+
+        %HTTPoison.Response{status_code: code, body: _body} ->
+          IO.puts("Status Code: #{code}")
+      end
     else
       {:error, error} ->
         {:error, error}

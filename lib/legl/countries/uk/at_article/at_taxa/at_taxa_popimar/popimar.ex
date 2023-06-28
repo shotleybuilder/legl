@@ -19,11 +19,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
     "Organisation - Costs",
     "Records",
     "Permit, Authorisation, License",
-    "Aspects & Hazards",
+    "Aspects and Hazards",
     "Planning & Risk / Impact Assessment",
     "Risk Control",
     "Notification",
-    "Maintenance, Examination & Testing",
+    "Maintenance, Examination and Testing",
     "Checking, Monitoring",
     "Review"
   ]
@@ -47,8 +47,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
   def workflow(opts \\ []) do
     with(
       {:ok, records} <- get(opts),
-      {:ok, records_results, _results} <- process(records),
-      {:ok, records} <- aggregate(records_results)
+      {:ok, records} <- process(records),
+      {:ok, records} <- aggregate(records)
     ) do
       patch(records)
     else
@@ -59,8 +59,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
 
   def workflow_() do
     with(
-      {:ok, records_results, _results} <- process(),
-      {:ok, records} <- aggregate(records_results)
+      {:ok, records} <- process(),
+      {:ok, records} <- aggregate(records)
     ) do
       patch(records)
     else
@@ -109,7 +109,7 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
     end
   end
 
-  @process_opts %{filesave?: true, field: "POPIMAR (Script)", path: @results_path}
+  @process_opts %{filesave?: true, field: :POPIMAR, path: @results_path}
 
   def process() do
     json = @path |> Path.absname() |> File.read!()
@@ -121,35 +121,22 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
     opts = Enum.into(opts, @process_opts)
     # IO.inspect(records)
 
-    results =
-      Enum.reduce(records, [], fn %{"id" => id, "fields" => fields} = _record, acc ->
-        classes = popimar_type?({fields["Record_Type"], fields["Text"]})
-        [%{"id" => id, "fields" => %{"#{opts.field}" => classes}} | acc]
+    records =
+      Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
+        classes = popimar_type?({Map.get(fields, :Record_Type), Map.get(fields, :aText)})
+        fields = Map.put(fields, opts.field, classes)
+
+        [Map.put(record, :fields, fields) | acc]
       end)
       |> Enum.reverse()
 
-    records = combine(records, results)
-
     if opts.filesave? == true, do: save_results_as_json(records, opts.path)
 
-    {:ok, records, results}
+    {:ok, records}
   end
 
-  def combine(records, results) do
-    Enum.zip(records, results)
-    |> Enum.reduce([], fn {m1, m2}, acc ->
-      Map.merge(m1, m2, fn
-        _k, v1, v1 -> v1
-        _k, v1, v2 -> Map.merge(v1, v2)
-      end)
-      |> (&[&1 | acc]).()
-    end)
-  end
-
-  def save_results_as_json(records_results, path) do
-    results_json = Jason.encode!(records_results)
-
-    Legl.Utility.save_at_records_to_file(~s/#{results_json}/, path)
+  def save_results_as_json(records, path) do
+    Legl.Utility.save_at_records_to_file(~s/#{Jason.encode!(records)}/, path)
   end
 
   @doc """
@@ -185,18 +172,18 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
   """
   def aggregate(records) do
     sections =
-      Enum.reduce(records, %{}, fn %{"fields" => fields} = record, acc ->
-        case fields["Record_Type"] do
+      Enum.reduce(records, %{}, fn %{fields: fields} = record, acc ->
+        case Map.get(fields, :Record_Type) do
           ["section"] ->
             case Regex.run(
                    ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
-                   fields["ID"]
+                   Map.get(fields, :ID)
                  ) do
               nil ->
                 IO.puts("ERROR: #{inspect(record)}")
 
               [id] ->
-                Map.put(acc, id, {record["id"], fields["POPIMAR (Script)"]})
+                Map.put(acc, id, {Map.get(record, :id), Map.get(fields, :"POPIMAR (Script)")})
             end
 
           _ ->
@@ -208,17 +195,17 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
     # %{Section ID number => {record_id, [duty types]}, ...}
 
     sections =
-      Enum.reduce(records, sections, fn %{"fields" => fields} = _record, acc ->
-        case fields["Record_Type"] do
+      Enum.reduce(records, sections, fn %{fields: fields} = _record, acc ->
+        case Map.get(fields, :Record_Type) do
           ["sub-section"] ->
             [id] =
               Regex.run(
                 ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
-                fields["ID"]
+                Map.get(fields, :ID)
               )
 
             {record_id, duty_types} = Map.get(acc, id)
-            duty_types = (duty_types ++ fields["POPIMAR (Script)"]) |> Enum.uniq()
+            duty_types = (duty_types ++ Map.get(fields, :"POPIMAR (Script)")) |> Enum.uniq()
             Map.put(acc, id, {record_id, duty_types})
 
           _ ->
@@ -229,12 +216,12 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
     # Updates records where the aggregate for the sub-section's parent section
     # and that section is stored in the POPIMAR Aggregate field of the record
 
-    Enum.reduce(records, [], fn %{"fields" => fields} = record, acc ->
-      case fields["Record_Type"] do
+    Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
+      case Map.get(fields, :Record_Type) do
         x when x in [["section"], ["sub-section"]] ->
           case Regex.run(
                  ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
-                 fields["ID"]
+                 Map.get(fields, :ID)
                ) do
             nil ->
               IO.puts("ERROR: #{inspect(record)}")
@@ -242,9 +229,9 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
             [id] ->
               {_, duty_types} = Map.get(sections, id)
 
-              fields = Map.put(record["fields"], "POPIMAR Aggregate (Script)", duty_types)
+              fields = Map.put(fields, :"POPIMAR Aggregate (Script)", duty_types)
 
-              [Map.put(record, "fields", fields) | acc]
+              [Map.put(record, :fields, fields) | acc]
           end
 
         _ ->

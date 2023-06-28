@@ -81,7 +81,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Cc]ost[- ]benefit",
       "[Nn]ett? cost",
       "[Ff]ee[ \\.,:;”]",
-      "[Cc]harge"
+      "[Cc]harge",
+      "[Ff]inancial loss"
     ]
   end
 
@@ -92,7 +93,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Ll]ogbook",
       "[Ii]ventory",
       "[Dd]atabase",
-      "([Ee]nforcement|[Pp]rohibition|[Ii]mprovement) notice"
+      "([Ee]nforcement|[Pp]rohibition|[Ii]mprovement) notice",
+      "[Dd]ocuments?"
     ]
   end
 
@@ -109,7 +111,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
     ]
   end
 
-  def aspects_hazards() do
+  def aspects_and_hazards() do
     [
       "[Aa]spects and impacts",
       "[Hh]azard"
@@ -122,26 +124,29 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Ss]trategic plan",
       "[Bb]usiness plan",
       "[Ii]mpact [Aa]ssessment",
-      "[Rr]isk [Aa]ssessment"
+      "[Rr]isk [Aa]ssessment",
+      "assessment of any risks"
     ]
   end
 
   def risk_control() do
     [
       "[Rr]isk [Cc]ontrol",
-      "[Rr]isk mitigation"
+      "[Rr]isk mitigation",
+      "use the best available techniques not entailing excessive cost"
     ]
   end
 
   def notification() do
     [
+      "given.*?notice",
       "[Nn]otify",
       "[Nn]otification",
       "[Aa]pplication for"
     ]
   end
 
-  def maintenance_examination_testing() do
+  def maintenance_examination_and_testing() do
     [
       "[Mm]aintenance",
       "[Ee]xamination",
