@@ -49,7 +49,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
     [
       "[Cc]omminiate?i?o?n?g?",
       "[Cc]onsulti?n?g?",
-      "[Cc]onsultation"
+      "[Cc]onsultation",
+      "send a copy of it to"
     ]
   end
 

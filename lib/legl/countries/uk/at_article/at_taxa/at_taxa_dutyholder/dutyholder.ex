@@ -80,7 +80,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
     end
   end
 
-  @process_opts %{filesave?: true, field: :Dutyholder, path: @results_path}
+  @process_opts %{filesave?: true, path: @results_path}
 
   def process() do
     json = @path |> Path.absname() |> File.read!()

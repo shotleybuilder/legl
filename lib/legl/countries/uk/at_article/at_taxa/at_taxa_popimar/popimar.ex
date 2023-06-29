@@ -123,7 +123,26 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
 
     records =
       Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
-        classes = popimar_type?({Map.get(fields, :Record_Type), Map.get(fields, :aText)})
+        classes =
+          case Enum.any?(Map.get(fields, :"Duty Type"), fn x ->
+                 Enum.member?(
+                   [
+                     "Duty",
+                     "Right",
+                     "Responsibility",
+                     "Discretionary",
+                     "Process, Rule, Constraint, Condition"
+                   ],
+                   x
+                 )
+               end) do
+            true ->
+              popimar_type?({Map.get(fields, :Record_Type), Map.get(fields, :aText)})
+
+            _ ->
+              []
+          end
+
         fields = Map.put(fields, opts.field, classes)
 
         [Map.put(record, :fields, fields) | acc]

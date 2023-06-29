@@ -73,6 +73,11 @@ defmodule Legl.Services.Airtable.AtTables do
       "appj4oaimWQfwtUri" => %{
         "uk_pollution" => "tblkO070AAO2ARVvb",
         "articles" => "tblCLJTI62iGWXcgh"
+      },
+      # waste
+      "appfXbCYZmxSFQ6uY" => %{
+        "uk_waste" => "tbl8MXQF5pHbzNyHZ",
+        "articles" => "tblyEwloJsZj5kojX"
       }
     }
   end

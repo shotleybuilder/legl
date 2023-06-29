@@ -126,8 +126,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
     records =
       Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
-        classes = classes(fields)
-        fields = Map.put(fields, opts.field, classes)
+        {dutyholders, duty_types} = classes(fields)
+        fields = Map.merge(fields, %{Dutyholder: dutyholders, "Duty Type": duty_types})
+        # fields = Map.put(fields, opts.field, classes)
 
         [Map.put(record, :fields, fields) | acc]
       end)
@@ -141,7 +142,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   defp classes(%{Record_Type: ["section"], aText: aText} = fields) when is_map(fields) do
     case Regex.match?(~r/\n/, aText) do
       true -> classes(aText)
-      false -> []
+      false -> {[], []}
     end
   end
 

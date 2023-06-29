@@ -10,6 +10,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       aText: "",
       Dutyholder: [],
       "Dutyholder Aggregate": [],
+      "Duty Actor": [],
+      "Duty Actor Aggregate": [],
       "Duty Type": [],
       "Duty Type Aggregate": [],
       POPIMAR: [],
@@ -54,15 +56,16 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
     with(
       {:ok, records} <- get(opts.source, opts),
-      {:ok, records} <- pre_process(records, blacklist()),
-      {:ok, records} <- Dutyholder.process(records, filesave?: false, field: :Dutyholder),
-      IO.puts("DutyHolder complete"),
       {:ok, records} <- DutyType.process(records, filesave?: false, field: :"Duty Type"),
+      # {:ok, records} <- pre_process(records, blacklist()),
+      {:ok, records} <- Dutyholder.process(records, filesave?: false, field: :"Duty Actor"),
+      IO.puts("Duty Actor complete"),
       {:ok, records} <- DutyType.revise_dutyholder(records),
       IO.puts("Duty Type complete"),
       {:ok, records} <- Popimar.process(records, filesave?: false, field: :POPIMAR),
       IO.puts("POPIMAR complete"),
       {:ok, records} <- aggregate({:Dutyholder, :"Dutyholder Aggregate"}, records),
+      {:ok, records} <- aggregate({:"Duty Actor", :"Duty Actor Aggregate"}, records),
       {:ok, records} <-
         aggregate({:"Duty Type", :"Duty Type Aggregate"}, records),
       {:ok, records} <- aggregate({:POPIMAR, :"POPIMAR Aggregate"}, records),
@@ -80,7 +83,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
           |> (&[&1 | acc]).()
         end)
 
-      if opts.patch? == true, do: patch(records)
+      if opts.patch? == true, do: patch(records, opts)
       # records
       :ok
     else
@@ -95,7 +98,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     # IO.inspect(records)
 
     Enum.reduce(records, [], fn record, acc ->
-      [struct(%__MODULE__{}, record) | acc]
+      %{fields: fields} = record = struct(%__MODULE__{}, record)
+      fields = Map.put(fields, :aText, Map.get(fields, :Text))
+
+      Map.put(record, :fields, fields)
+      |> (&[&1 | acc]).()
     end)
     |> (&{:ok, &1}).()
   end
@@ -129,7 +136,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       # IO.inspect(recordset)
 
       Enum.reduce(records, [], fn record, acc ->
-        [struct(%__MODULE__{}, record) | acc]
+        %{fields: fields} = record = struct(%__MODULE__{}, record)
+        fields = Map.put(fields, :aText, Map.get(fields, :Text))
+
+        Map.put(record, :fields, fields)
+        |> (&[&1 | acc]).()
       end)
       |> (&{:ok, &1}).()
     else
@@ -158,6 +169,15 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       cond do
         Regex.match?(~r/[1234567890]/, opts.chapter) == true ->
           formula ++ [~s/{Chapter}="#{opts.chapter}"/]
+
+        true ->
+          formula
+      end
+
+    formula =
+      cond do
+        Regex.match?(~r/[1234567890]/, opts.section) == true ->
+          formula ++ [~s/{Section||Regulation}="#{opts.section}"/]
 
         true ->
           formula
@@ -195,13 +215,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   defp blacklist() do
     [
       # offence
-      "(shall be|person) guilty of an offence",
-      "person shall not be guilty of an offence",
+      "(shall be|person) guilty",
+      "person shall not be guilty",
       "person is ordered",
       "person shall not be liable",
       "person.*?(shall be|is) liable",
-      "person.*?who commits a.*?offence",
-      "commission by any person of an offence",
+      "person.*?who commits an?",
+      "commission by any person",
       "person who fails",
       "person may not be convicted",
       # notices
