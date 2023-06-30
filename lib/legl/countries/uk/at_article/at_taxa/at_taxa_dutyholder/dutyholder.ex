@@ -93,7 +93,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
 
     records =
       Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
-        classes = Lib.workflow(Map.get(fields, :aText))
+        classes = Lib.workflow(Map.get(fields, :aText), :actor)
 
         fields = Map.put(fields, opts.field, classes)
 

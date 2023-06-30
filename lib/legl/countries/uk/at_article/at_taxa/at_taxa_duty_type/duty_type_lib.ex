@@ -1,26 +1,31 @@
 defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib
 
-  @default_opts %{
-    dutyholder: "person"
-  }
-
-  @person DutyholderLib.dutyholders_list(:person)
-
-  @government DutyholderLib.dutyholders_list(:government)
-
-  def workflow(text) do
-    {_, {dutyholders, duty_types}} =
+  def workflow(text, actors) do
+    {text, {[], duty_types}} =
       {text, {[], []}}
-      |> pre_process(blacklist())
       # has to process first to ensure the amending text for other law doesn't get tagged
       |> process(amendment())
-      |> process_dutyholder(responsibility())
-      |> process_dutyholder(discretionary())
-      |> process_dutyholder(right())
-      |> process_dutyholder(duty())
+
+    {text, {dutyholders, duty_types}} =
+      if actors != [] do
+        {regex, lib} = _governed = DutyholderLib.custom_dutyholders(actors, :governed)
+        {gvt_regex, gvt_lib} = _government = DutyholderLib.custom_dutyholders(actors, :government)
+
+        {text, {[], duty_types}}
+        |> pre_process(blacklist(regex))
+        |> process_dutyholder(responsibility(gvt_regex), gvt_lib)
+        |> process_dutyholder(discretionary(gvt_regex), gvt_lib)
+        |> process_dutyholder(right(regex), lib)
+        |> process_dutyholder(duty(regex, gvt_regex), lib)
+        |> process(power_conferred(gvt_regex))
+      else
+        {text, {[], duty_types}}
+      end
+
+    {_text, {dutyholders, duty_types}} =
+      {text, {dutyholders, duty_types}}
       # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
-      |> process(power_conferred())
       |> process(enaction_citation_commencement())
       |> process(interpretation_definition())
       |> process(application_scope())
@@ -28,7 +33,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       |> process(exemption())
       |> process(repeal_revocation())
       # |> process("Transitional Arrangement", transitional_arrangement())
-
       |> process(charge_fee())
       |> process(offence())
       |> process(enforcement_prosecution())
@@ -51,19 +55,26 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     |> (&{&1, collector}).()
   end
 
-  defp blacklist() do
-    ["area of the authority"]
+  defp blacklist(governed) do
+    [
+      "area of the authority",
+      "#{governed}may (?:be|not)"
+    ]
   end
 
-  defp process_dutyholder(collector, regexes) do
-    Enum.reduce(regexes, collector, fn {regex, duty_type, library},
+  defp process_dutyholder(collector, _regexes, []), do: collector
+
+  defp process_dutyholder(collector, regexes, library) do
+    Enum.reduce(regexes, collector, fn {regex, duty_type},
                                        {text, {dutyholders, duty_types}} = acc ->
       case Regex.run(~r/#{regex}/m, text) do
         [match] ->
           dutyholder = DutyholderLib.workflow(match, library)
 
           # if library == :person,
-          # do: IO.puts("#{regex}\n#{inspect(dutyholder)}\n#{inspect(match)}")
+          # IO.puts(
+          #  "REGEX: #{regex}\nDUTYHOLDER: #{inspect(dutyholder)}\nMATCH TEXT: #{inspect(match)}"
+          # )
 
           duty_type = if is_binary(duty_type), do: [duty_type], else: duty_type
 
@@ -109,53 +120,54 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
 
   params.  Dutyholder should accommodate intial capitalisation eg [Pp]erson, [Ee]mployer
   """
-  def duty() do
+  def duty(governed, government) do
     [
-      {"[Nn]o#{@person}shall", "Duty", :person},
-      {"(?:[Aa]n?|[Tt]he)#{@person}.*?must", "Duty", :person},
-      {"(?:[Aa]n?|[Tt]he)#{@person}.*?shall", "Duty", :person},
-      {"#{@person}(?:shall notify|shall furnish the authority)", "Duty", :person},
-      {"shall be the duty of any#{@person}", "Duty", :person},
-      {"requiring a#{@person}.*?to", "Duty", :person},
-      {"[Aa]pplication.*?shall be made to ?(the )?#{@government}", "Duty", :person}
+      {"[Nn]o#{governed}shall", "Duty"},
+      {"(?:[Aa]n?|[Tt]he)#{governed}.*?must", "Duty"},
+      {"(?:[Aa]n?|[Tt]he)#{governed}.*?shall", "Duty"},
+      {"#{governed}(?:shall notify|shall furnish the authority)", "Duty"},
+      {"shall be the duty of any#{governed}", "Duty"},
+      {"requiring a#{governed}.*?to", "Duty"},
+      {"[Aa]pplication.*?shall be made to ?(the )?#{government}", "Duty"},
+      {"#{governed}shall not be liable", "Exemption"}
     ]
   end
 
-  def right() do
+  def right(governed) do
     [
-      {"[Nn]o#{@person}may", "Duty", :person},
-      {"#{@person}may (?:be|not)", nil, :person},
-      {"requested by a#{@person}", "Right", :person},
-      {"shall consult.*?#{@person}", "Right", :person},
-      {"#{@person}may[, ]", "Right", :person},
-      {"#{@person}.*?shall be entitled", "Right", :person},
-      {"permission of that#{@person}", "Right", :person}
+      {"#{governed}may.*?, but may not", ["Duty", "Right"]},
+      {"[Nn]o#{governed}may", "Duty"},
+      {"requested by a#{governed}", "Right"},
+      {"shall consult.*?#{governed}", "Right"},
+      {"#{governed}may[, ]", "Right"},
+      {"#{governed}.*?shall be entitled", "Right"},
+      {"permission of that#{governed}", "Right"},
+      {"[Ii]t is a defence for agoverned}", "Defence, Appeal"}
     ]
   end
 
   @doc """
   Powers vested in government and agencies that they must exercise
   """
-  def responsibility() do
+  def responsibility(government) do
     [
-      {"#{@government}[^—\\.]*?(?:must|shall)", "Responsibility", :government},
-      {"#{@government}[^—\\.]*?has determined", "Responsibility", :government},
-      {" ?[Ii]t shall be the duty of[^—\\.]*?#{@government}", "Responsibility", :government},
-      {"#{@government}[^—\\.]*?(?:must|shall)", "Responsibility", :government},
-      {"it shall be the duty of a?n? ?#{@government}", "Responsibility", :government},
-      {"#{@government} owes a duty to", "Responsibility", :government},
-      {"is to be.*?by a#{@government}", "Responsibility", :government},
-      {"#{@government}is to have regard", "Responsibility", :government}
+      {"#{government}[^—\\.]*?(?:must|shall)", "Responsibility"},
+      {"#{government}[^—\\.]*?has determined", "Responsibility"},
+      {" ?[Ii]t shall be the duty of[^—\\.]*?#{government}", "Responsibility"},
+      {"#{government}[^—\\.]*?(?:must|shall)", "Responsibility"},
+      {"it shall be the duty of a?n? ?#{government}", "Responsibility"},
+      {"#{government} owes a duty to", "Responsibility"},
+      {"is to be.*?by a#{government}", "Responsibility"},
+      {"#{government}is to have regard", "Responsibility"}
     ]
   end
 
   @doc """
   Powers vested in government and agencies that they can exercise with discretion
   """
-  def discretionary() do
+  def discretionary(government) do
     [
-      {"#{@person}may.*?, but may not", ["Duty", "Right"], :person},
-      {"#{@government}[^—\\.]*?may", "Discretionary", :government}
+      {"#{government}[^—\\.]*?may", "Discretionary"}
     ]
   end
 
@@ -166,20 +178,19 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   Function to tag clauses providing government and agencies with powers
   Uses the 'Dutyholder' field to pre-filter records for processing
   """
-  def power_conferred() do
+  def power_conferred(government) do
     [
-      {"#{@government}.*?may.*?by regulation.*?(specify|substitute|prescribe)",
-       "Power Conferred"},
-      {"#{@government} may.*?direct ", "Power Conferred"},
-      {"#{@government} may.*make.*(scheme|plans?|regulations?) ", "Power Conferred"},
-      {"#{@government}[^—\\.]*?may[, ]", "Power Conferred"},
-      {"#{@government} considers necessary", "Power Conferred"},
-      {" in the opinion of the #{@government} ", "Power Conferred"},
+      {"#{government}.*?may.*?by regulation.*?(specify|substitute|prescribe)", "Power Conferred"},
+      {"#{government} may.*?direct ", "Power Conferred"},
+      {"#{government} may.*make.*(scheme|plans?|regulations?) ", "Power Conferred"},
+      {"#{government}[^—\\.]*?may[, ]", "Power Conferred"},
+      {"#{government} considers necessary", "Power Conferred"},
+      {" in the opinion of the #{government} ", "Power Conferred"},
       #   " [Rr]egulations.*?under (this )?(section|subsection)", "Power Conferred"},
       {" functions.*(exercis(ed|able)|conferred) ", "Power Conferred"},
       {" exercising.*functions ", "Power Conferred"},
-      {"#{@government} shall be entitled", "Power Conferred"},
-      {"#{@government} may by regulations?", "Power Conferred"},
+      {"#{government} shall be entitled", "Power Conferred"},
+      {"#{government} may by regulations?", "Power Conferred"},
       {"power to make regulations", "Power Conferred"},
       {"[Tt]he power under (?:subsection)", "Power Conferred"}
     ]
@@ -244,8 +255,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   def exemption() do
     [
       {" shall not apply to (Scotland|Wales|Northern Ireland)", "Exemption"},
-      {" shall not apply in any case where[, ]", "Exemption"},
-      {" #{@person} shall not be liable", "Exemption"}
+      {" shall not apply in any case where[, ]", "Exemption"}
     ]
   end
 
@@ -298,8 +308,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
 
   def defence_appeal() do
     [
-      {" [Aa]ppeal ", "Defence, Appeal"},
-      {"[Ii]t is a defence for a#{@person}", "Defence, Appeal"}
+      {" [Aa]ppeal ", "Defence, Appeal"}
     ]
   end
 end

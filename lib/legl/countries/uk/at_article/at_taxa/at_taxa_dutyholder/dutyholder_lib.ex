@@ -3,52 +3,94 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   Functions to create a list of dutyholder tags for a piece of text
 
   """
-  def workflow(""), do: []
 
-  def workflow(text) when is_binary(text) do
-    {_, classes} =
-      {text, []}
-      |> pre_process(blacklist())
-      |> process(government())
-      |> process(business())
-      |> process(person())
-      |> process(public())
-      |> process(specialist())
-      |> process(cdm())
-      |> process(supply_chain())
-      |> process(servicer())
-      |> process(environmentalist())
+  import DutyholderDefinitions
 
-    classes
-    |> Enum.filter(fn x -> x != "Nil" end)
-    |> Enum.reverse()
+  @dutyholder_library dutyholder_library()
+  @government government()
+  @governed governed()
 
-    # if classes == [],
-    #  do: [""],
-    #  else:
-    #    classes
-    #    |> Enum.reverse()
-  end
-
-  def workflow(text, library) do
-    library = library_picker(library)
-    {_, classes} = process({text, []}, library)
-
-    classes
-    |> Enum.filter(fn x -> x != "Nil" end)
-    |> Enum.reverse()
-  end
-
-  def print_list_to_console() do
-    classes =
-      business() ++
-        person() ++
-        public() ++
-        specialist() ++
-        government() ++ cdm() ++ supply_chain() ++ servicer() ++ environmentalist()
+  def print_dutyholders_to_console() do
+    classes = @dutyholder_library
 
     Enum.map(classes, fn {class, _} -> Atom.to_string(class) end)
     |> Enum.each(fn x -> IO.puts(x) end)
+  end
+
+  def workflow(""), do: []
+
+  def workflow(text, :actor) do
+    {_, classes} =
+      {text, []}
+      |> blacklister(blacklist())
+      |> process(@dutyholder_library, true)
+
+    classes
+    |> Enum.reverse()
+  end
+
+  def workflow(text, library) when is_list(library) do
+    {text, []}
+    |> process(library, true)
+    |> elem(1)
+    |> Enum.reverse()
+  end
+
+  defp blacklister({text, collector}, blacklist) do
+    Enum.reduce(blacklist, text, fn regex, acc ->
+      Regex.replace(~r/#{regex}/m, acc, "")
+    end)
+    |> (&{&1, collector}).()
+  end
+
+  defp process(collector, library, rm?) do
+    library = process_library(library)
+
+    Enum.reduce(library, collector, fn {regex, class}, {text, classes} = acc ->
+      case Regex.match?(~r/#{regex}/, text) do
+        true ->
+          case rm? do
+            true ->
+              {Regex.replace(~r/#{regex}/m, text, ""), [class | classes]}
+
+            false ->
+              {text, [class | classes]}
+          end
+
+        false ->
+          acc
+      end
+    end)
+  end
+
+  def custom_dutyholders(actors, library) do
+    lib = custom_dutyholder_library(actors, library)
+    {dutyholders_regex(lib), lib}
+  end
+
+  @doc """
+  Function builds a custom library based on the results of the Duty Actor tagging
+  This library is used for Duty Type and Dutyholder tagging
+  """
+  def custom_dutyholder_library(actors, library) when is_list(actors) do
+    library =
+      cond do
+        library == :government -> @government
+        library == :governed -> @governed
+        true -> @dutyholder_library
+      end
+
+    actors = Enum.map(actors, &String.to_atom/1)
+
+    Enum.reduce(actors, [], fn actor, acc ->
+      case Keyword.has_key?(library, actor) do
+        true ->
+          [{actor, Keyword.get(library, actor)} | acc]
+
+        false ->
+          acc
+      end
+    end)
   end
 
   @doc """
@@ -59,8 +101,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   \\.,:;”]|[ “][Ll]essee[ \\.,:;”]|[ “][Oo]wner[ \\.,:;”]|[ “][Ii]nvestors[
   \\.,:;”])"
   """
-  def dutyholders_list(library) do
-    library_picker(library)
+  def dutyholders_regex(library) do
+    library
     |> Enum.reduce([], fn
       {_k, v}, acc when is_binary(v) ->
         ["[ “]#{v}[ \\.,:;”]" | acc]
@@ -74,11 +116,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     end)
     |> Enum.join("|")
     |> (fn x -> ~s/(?:#{x})/ end).()
-  end
-
-  def library_picker(lib) do
-    %{person: person(), business: business(), government: government()}
-    |> Map.get(lib)
   end
 
   @doc """
@@ -107,180 +144,5 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
         |> (&[&1 | acc]).()
     end)
     |> Enum.reverse()
-  end
-
-  defp process(collector, library) do
-    library = process_library(library)
-
-    Enum.reduce(library, collector, fn {regex, class}, {text, classes} = acc ->
-      case Regex.match?(~r/#{regex}/, text) do
-        true ->
-          # A specific term (approved person) should be removed from the text to
-          # avoid matching on 'person'
-          {Regex.replace(~r/#{regex}/m, text, ""), [class | classes]}
-
-        false ->
-          acc
-      end
-    end)
-  end
-
-  defp pre_process({text, collector}, blacklist) do
-    Enum.reduce(blacklist, text, fn regex, acc ->
-      Regex.replace(~r/#{regex}/, acc, "")
-    end)
-    |> (&{&1, collector}).()
-  end
-
-  defp blacklist() do
-    [
-      "local authority collected municipal waste"
-    ]
-  end
-
-  defp business() do
-    [
-      "Org: Investor": "[Ii]nvestors",
-      "Org: Owner": "[Oo]wner",
-      "Org: Lessee": "[Ll]essee",
-      "Org: Occupier": ["[Oo]ccupiers?", "[Pp]erson who is in occupation"],
-      "Org: Employer": "[Ee]mployers",
-      "Org: Company": [
-        "[Cc]ompany?i?e?s?",
-        "[Bb]usinesse?s?",
-        "[Ee]nterprises?",
-        "[Bb]ody?i?e?s? corporate"
-      ],
-      Organisation: "[Oo]rganisations?"
-    ]
-  end
-
-  defp person() do
-    [
-      "Ind: Employee": "[Ee]mployees?",
-      "Ind: Worker": "[Ww]orkers?",
-      "Ind: Responsible Person": "[Rr]esponsible [Pp]ersons?",
-      "Ind: Competent Person": "[Cc]ompetent [Pp]ersons?",
-      "Ind: Authorised Person": ["[Aa]uthorised [Pp]erson", "[Aa]uthorised [Bb]ody"],
-      "Ind: Appointed Person": "[Aa]ppointed [Pp]ersons?",
-      "Ind: Relevant Person": "[Rr]elevant [Pp]erson",
-      "Ind: Operator": ["[Oo]perators?", "[Pp]erson who operates the plant"],
-      "Ind: Person": ["[Pp]erson", "site manager"],
-      "Ind: Duty Holder": "[Dd]uty [Hh]olders?",
-      "Ind: Holder": "[Hh]olders?",
-      "Ind: User": "[Uu]sers?",
-      "Ind: Licensee": ["[Ll]icensee", "[Aa]pplicant"],
-      "SC: Dealer": "(?:[Ss]crap metal )?[Dd]ealer"
-    ]
-  end
-
-  defp public() do
-    [
-      nil: "[Pp]ublic (?:nature|sewer|importance|functions?|interest|[Ss]ervices)",
-      Public: ["[Pp]ublic", "[Ee]veryone", "[Cc]itizens?"]
-    ]
-  end
-
-  defp specialist() do
-    [
-      "Spc: Advisor": "[Aa]dvis[oe]r",
-      "Spc: OH Advisor": ["[Nn]urse", "[Pp]hysician", "[Dd]octor"],
-      nil: "[Rr]epresentatives? of",
-      "Spc: Representative": "[Rr]epresentatives?",
-      "Spc: Trade Union": "[Tt]rade [Uu]nions?",
-      "Spc: Assessor": "[Aa]ssessors?",
-      "Spc: Inspector": "[Ii]nspectors?"
-    ]
-  end
-
-  defp government() do
-    authority =
-      [
-        "[Pp]ublic",
-        "[Ll]ocal",
-        "[Ww]aste disposal",
-        "[Ww]aste collection",
-        "monitoring"
-      ]
-      |> Enum.join("|")
-
-    [
-      "Gvt: Minister": [
-        "Secretary of State",
-        "[Mm]iniste?ry?s?",
-        "National Assembly for Wales",
-        "Assembly"
-      ],
-      "Gvt: Agency": [
-        "Environment Agency",
-        "SEPA",
-        "Scottish Environment Protection Agency",
-        "Office for Environmental Protection",
-        "OEP",
-        "Natural Resources Body for Wales",
-        "Department of the Environment",
-        "[Tt]he Department",
-        "[Aa]gency"
-      ],
-      "Gvt: Officer": ["[Aa]uthorised [Oo]fficer", "[Oo]fficer of a local authority"],
-      "Gvt: Authority": [
-        "(?:[Rr]egulati?on?r?y?|[Ee]nforce?(?:ment|ing)) [Aa]uthority?i?e?s?",
-        "(?:[Tt]he|[Aa]n|appropriate|allocating) authority",
-        "[Rr]egulators?",
-        "(?:#{authority}) [Aa]uthority?i?e?s?"
-      ],
-      "Gvt: Appropriate Person": "[Aa]ppropriate [Pp]ersons?",
-      Judiciary: ["court", "justice of the peace"]
-    ]
-  end
-
-  defp cdm() do
-    [
-      "CDM: Principal Designer": "[Pp]rincipal [Dd]esigner",
-      "CDM: Designer": "[Dd]esigner",
-      "CDM: Constructor": "[Cc]onstructor",
-      "CDM: Principal Contractor": "[Pp]rincipal [Cc]ontractor",
-      "CDM: Contractor": "[Cc]ontractor"
-    ]
-  end
-
-  defp supply_chain() do
-    [
-      "SC: Agent": "[Aa]gent?s",
-      "SC: Keeper": "person who.*?keeps*?",
-      "SC: Manufacturer": "[Mm]anufacturer",
-      "SC: Producer": ["[Pp]roducer", "person who.*?produces*?"],
-      "SC: Marketer": ["[Aa]dvertiser", "[Mm]arketer"],
-      "SC: Supplier": "[Ss]upplier",
-      "SC: Distributor": "[Dd]istributor",
-      "SC: Seller": "[Ss]eller",
-      "SC: Retailer": "[Rr]etailer",
-      "SC: Storer": "[Ss]torer",
-      "SC: Consignor": "[Cc]onsignor",
-      "SC: Handler": "[Hh]andler",
-      "SC: Consignee": "[Cc]onsignee",
-      "SC: Carrier": ["[Tt]ransporter", "person who.*?carries"],
-      "SC: Driver": "[Dd]river",
-      "SC: Importer": ["[Ii]mporter", "person who.*?imports*?"],
-      "SC: Exporter": ["[Ee]xporter", "person who.*?exports*?"]
-    ]
-  end
-
-  defp servicer() do
-    [
-      "Svc: Installer": "[Ii]nstaller",
-      "Svc: Maintainer": "[Mm]aintainer",
-      "Svc: Repairer": "[Rr]epairer"
-    ]
-  end
-
-  defp environmentalist() do
-    [
-      "Env: Reuser": "[Rr]euser",
-      "Env: Treater": " person who.*?treats*?",
-      "Env: Recycler": "[Rr]ecycler",
-      "Env: Disposer": "[Dd]isposer",
-      "Env: Polluter": "[Pp]olluter"
-    ]
   end
 end

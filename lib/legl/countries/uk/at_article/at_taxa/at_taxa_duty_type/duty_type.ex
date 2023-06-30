@@ -139,19 +139,20 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     {:ok, records}
   end
 
-  defp classes(%{Record_Type: ["section"], aText: aText} = fields) when is_map(fields) do
+  defp classes(%{Record_Type: ["section"], aText: aText, "Duty Actor": actors} = fields)
+       when is_map(fields) do
     case Regex.match?(~r/\n/, aText) do
-      true -> classes(aText)
+      true -> classes(aText, actors)
       false -> {[], []}
     end
   end
 
-  defp classes(%{aText: aText} = fields) when is_map(fields) do
-    classes(aText)
+  defp classes(%{aText: aText, "Duty Actor": actors} = fields) when is_map(fields) do
+    classes(aText, actors)
   end
 
-  defp classes(aText) when is_binary(aText) do
-    Lib.workflow(aText)
+  defp classes(aText, actors) when is_binary(aText) and is_list(actors) do
+    Lib.workflow(aText, actors)
   end
 
   def save_results_as_json(records) do

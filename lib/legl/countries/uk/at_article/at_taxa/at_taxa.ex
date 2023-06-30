@@ -1,4 +1,15 @@
 defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
+  @moduledoc """
+  Module to generate taxa classes for sub-sections / sub-articles High level
+  workflow -
+    1. Loops across all records tagging Duty Actors.  These are roles present in
+       the script and this is a 'broad brush' trawl.
+    2. Uses those results to seed the next process which is to tag duty types
+       and the related dutyholders.
+    3. The same duty type process then tags the remaining framework clauses like
+       amendments and offences.
+    4. The last process sets POPIMAR tags for those records tagged with duties.
+  """
   @derive {Jason.Encoder, only: [:id, :fields]}
 
   defstruct [
@@ -56,9 +67,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
     with(
       {:ok, records} <- get(opts.source, opts),
+      # Broad sweep to collect all possible roles across the records
+      {:ok, records} <- Dutyholder.process(records, filesave?: false, field: :"Duty Actor"),
       {:ok, records} <- DutyType.process(records, filesave?: false, field: :"Duty Type"),
       # {:ok, records} <- pre_process(records, blacklist()),
-      {:ok, records} <- Dutyholder.process(records, filesave?: false, field: :"Duty Actor"),
+
       IO.puts("Duty Actor complete"),
       {:ok, records} <- DutyType.revise_dutyholder(records),
       IO.puts("Duty Type complete"),
