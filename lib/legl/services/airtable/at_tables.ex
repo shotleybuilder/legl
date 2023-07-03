@@ -56,7 +56,7 @@ defmodule Legl.Services.Airtable.AtTables do
       },
       # finance
       "appokFoa6ERUUAIkF" => %{
-        "uk_finance" => "tblf0C8GtEXO0J8mk",
+        "uk_finance" => "tblA38ztoX51OMMRP",
         "articles" => "tblH107AQKjlk409E"
       },
       # marine_riverine

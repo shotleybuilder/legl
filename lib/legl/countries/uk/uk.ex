@@ -289,4 +289,14 @@ defmodule UK do
 
     :ok
   end
+
+  @doc """
+  Function provides a shortcut to list all the members of the Dutyholders taxonomy
+  """
+  def dutyholders(),
+    do:
+      Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib.print_dutyholders_to_console()
+
+  def dutyTypes(),
+    do: Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.print_duty_types_to_console()
 end

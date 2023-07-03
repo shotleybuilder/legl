@@ -15,10 +15,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
         {text, {[], duty_types}}
         |> pre_process(blacklist(regex))
         |> process_dutyholder(responsibility(gvt_regex), gvt_lib)
+        |> process(power_conferred(gvt_regex))
         |> process_dutyholder(discretionary(gvt_regex), gvt_lib)
         |> process_dutyholder(right(regex), lib)
         |> process_dutyholder(duty(regex, gvt_regex), lib)
-        |> process(power_conferred(gvt_regex))
       else
         {text, {[], duty_types}}
       end
@@ -129,7 +129,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       {"shall be the duty of any#{governed}", "Duty"},
       {"requiring a#{governed}.*?to", "Duty"},
       {"[Aa]pplication.*?shall be made to ?(the )?#{government}", "Duty"},
-      {"#{governed}shall not be liable", "Exemption"}
+      {"#{governed}shall not be liable", "Exemption"},
+      {"#{governed}.*?is liable", "Liability"}
     ]
   end
 
@@ -180,7 +181,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   """
   def power_conferred(government) do
     [
-      {"#{government}.*?may.*?by regulation.*?(specify|substitute|prescribe)", "Power Conferred"},
+      {"#{government}.*?may.*?by regulation.*?(specify|substitute|prescribe|make)",
+       "Power Conferred"},
       {"#{government} may.*?direct ", "Power Conferred"},
       {"#{government} may.*make.*(scheme|plans?|regulations?) ", "Power Conferred"},
       {"#{government}[^—\\.]*?may[, ]", "Power Conferred"},
@@ -199,8 +201,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   def enaction_citation_commencement() do
     [
       {"(Act|Regulation) may be cited as", "Enactment, Citation, Commencement"},
+      {"(?:Act|Regulation.*?shall have effect)", "Enactment, Citation, Commencement"},
       {"(Act|Regulation) shall come into force", "Enactment, Citation, Commencement"},
-      {"comes? into force", "Enactment, Citation, Commencement"}
+      {"comes? into force", "Enactment, Citation, Commencement"},
+      {"has effect.*?on or after", "Enactment, Citation, Commencement"}
     ]
   end
 
@@ -223,18 +227,19 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       |> Enum.join("|")
 
     [
-      {"[a-z ]”.*?(?:#{defn})[ —,]", "Interpretation, Definition"},
+      {"[A-Za-z\\d ]”.*?(?:#{defn})[ —,]", "Interpretation, Definition"},
+      {"“.*?” is.*?[ —,]", "Interpretation, Definition"},
       {" has?v?e? the (?:same )?meanings? ", "Interpretation, Definition"},
       {" [Ff]or the purpose of determining ", "Interpretation, Definition"},
       {" any reference in this .*?to ", "Interpretation, Definition"},
-      {" interpretation ", "Interpretation, Definition"},
+      {"[Ii]nterpretation", "Interpretation, Definition"},
       {"for the meaning of “", "Interpretation, Definition"}
     ]
   end
 
   def application_scope() do
     [
-      {"This (?:Part|Chapter|[Ss]ection) applies", "Application, Scope"},
+      {"(?:Part|Chapter|[Ss]ection|[Ss]ubsection).*?applies", "Application, Scope"},
       {"This (?:Part|Chapter|[Ss]ection) does not apply", "Application, Scope"},
       {"does not apply", "Application, Scope"},
       {"shall.*?apply", "Application, Scope"},
@@ -262,7 +267,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   def repeal_revocation() do
     [
       {" . . . . . . . ", "Repeal, Revocation"},
-      {"(?:revoked|repealed)[ —]", "Repeal, Revocation"}
+      {"(?:revoked|repealed)[ —]", "Repeal, Revocation"},
+      {"(?:repeals|revocations)", "Repeal, Revocation"}
     ]
   end
 
@@ -273,13 +279,14 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     [
       {"shall be inserted the words— ?\n?“[\\s\\S]*”", "Amendment"},
       {"shall be inserted— ?\\n?“[\\s\\S]*”", "Amendment"},
-      {" (substitute|insert)— ?\\n?“[\\s\\S]*”", "Amendment"},
+      {" (?:substituted?|inserte?d?)—? ?\\n?“[\\s\\S]*”", "Amendment"},
       {"omit the words", "Amendment"},
       {"for.*?substitute", "Amendment"},
-      {"shall be (inserted|substituted) the words", "Amendment"},
+      {"shall be (?:inserted|substituted) the words", "Amendment"},
       {"there is inserted", "Amendment"},
       {"[Aa]mendments?", "Amendment"},
-      {"[Aa]mended as follows", "Amendment"}
+      {"[Aa]mended as follows", "Amendment"},
+      {"omit the following", "Amendment"}
     ]
   end
 

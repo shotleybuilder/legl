@@ -109,7 +109,7 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
     end
   end
 
-  @process_opts %{filesave?: true, field: :POPIMAR, path: @results_path}
+  @process_opts %{filesave?: false, field: :POPIMAR, path: @results_path}
 
   def process() do
     json = @path |> Path.absname() |> File.read!()
@@ -117,7 +117,11 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
     process(records)
   end
 
-  def process(records, opts \\ []) do
+  def process(records, opts \\ [])
+
+  def process(records, %{workflow: %{popimar: false}} = _opts), do: {:ok, records}
+
+  def process(records, opts) do
     opts = Enum.into(opts, @process_opts)
     # IO.inspect(records)
 

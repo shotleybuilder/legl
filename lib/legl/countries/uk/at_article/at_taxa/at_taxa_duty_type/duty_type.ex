@@ -38,15 +38,14 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     "Repeal, Revocation"
   ]
 
-  @default_duty_type "Process, Rule, Constraint, Condition"
+  def print_duty_types_to_console, do: Enum.each(@duty_type_taxa, &IO.puts(~s/"#{&1}"/))
 
-  @at_id "UK_ukpga_1990_43_EPA"
+  @default_duty_type "Process, Rule, Constraint, Condition"
 
   @default_opts %{
     base_name: "uk_e_environmental_protection",
     table_name: "Articles",
     view: "Duty_Type",
-    at_id: @at_id,
     fields: ["ID", "Record_Type", "Text"],
     filesave?: true
   }
@@ -112,7 +111,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     end
   end
 
-  @process_opts %{filesave?: true, field: :"Duty Type"}
+  @process_opts %{filesave?: false, field: :"Duty Type"}
 
   def process() do
     json = @path |> Path.absname() |> File.read!()
@@ -120,7 +119,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     process(records)
   end
 
-  def process(records, opts \\ []) do
+  def process(records, opts \\ [])
+
+  def process(records, %{workflow: %{dutyType: false}} = _opts), do: {:ok, records}
+
+  def process(records, opts) do
     opts = Enum.into(opts, @process_opts)
     # IO.inspect(records)
 
@@ -138,6 +141,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
     {:ok, records}
   end
+
+  defp classes(%{Record_Type: record_type} = fields)
+       when record_type in [["part"], ["chapter"]] and is_map(fields),
+       do: {[], []}
 
   defp classes(%{Record_Type: ["section"], aText: aText, "Duty Actor": actors} = fields)
        when is_map(fields) do

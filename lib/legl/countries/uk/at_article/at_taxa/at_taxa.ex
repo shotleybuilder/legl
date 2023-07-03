@@ -36,39 +36,56 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar
 
-  @at_id "UK_ukpga_1990_43_EPA"
-
-  @dutyholders [
-    "[Aa]uthorised person",
-    "[Pp]erson",
-    "[Hh]older",
-    "[Pp]roducer"
-  ]
-
-  @dh_regex @dutyholders |> Enum.join("|") |> (fn x -> ~s/(#{x})/ end).()
-
   @default_opts %{
     base_name: "uk_e_environmental_protection",
     table_name: "Articles",
-    view: "Taxa",
-    at_id: @at_id,
     fields: ["ID", "Record_Type", "Text"],
     filesave?: true,
     patch?: true,
     source: :file,
-    part: nil
+    part: nil,
+    workflow: [actor: true, dutyType: true, popimar: true, aggregate: true]
   }
 
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/taxa_source_records.json]
   @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/records_results.json]
 
+  def set_workflow_opts(opts) do
+    opts =
+      case Keyword.has_key?(opts, :workflow) do
+        true ->
+          Keyword.put(
+            opts,
+            :workflow,
+            Keyword.merge(@default_opts.workflow, Keyword.get(opts, :workflow))
+          )
+
+        _ ->
+          opts
+      end
+
+    opts = Enum.into(opts, @default_opts)
+
+    opts = Map.put(opts, :workflow, Enum.into(opts.workflow, %{}))
+
+    Enum.reduce(opts.workflow, opts.fields, fn
+      {_k, true}, acc -> acc
+      {:actor, false}, acc -> ["Duty Actor" | acc]
+      {:dutyType, false}, acc -> ["Duty Type" | acc]
+      {:popimar, false}, acc -> ["POPIMAR" | acc]
+    end)
+    |> (&Map.put(opts, :fields, &1)).()
+  end
+
   def workflow(opts \\ []) do
-    opts = Enum.into(opts, @default_opts) |> Map.put(:dutyholders, @dutyholders)
+    opts = set_workflow_opts(opts)
+
+    IO.inspect(opts, label: "OPTIONS")
 
     with(
-      {:ok, records} <- get(opts.source, opts),
+      {:ok, records} <- get(opts),
       # Broad sweep to collect all possible roles across the records
-      {:ok, records} <- Dutyholder.process(records, filesave?: false, field: :"Duty Actor"),
+      {:ok, records} <- Dutyholder.process(records, field: :"Duty Actor"),
       {:ok, records} <- DutyType.process(records, filesave?: false, field: :"Duty Type"),
       # {:ok, records} <- pre_process(records, blacklist()),
 
@@ -82,6 +99,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       {:ok, records} <-
         aggregate({:"Duty Type", :"Duty Type Aggregate"}, records),
       {:ok, records} <- aggregate({:POPIMAR, :"POPIMAR Aggregate"}, records),
+      {:ok, records} <- aggregate_part_chapter(records, "part"),
+      {:ok, records} <- aggregate_part_chapter(records, "chapter"),
       IO.puts("Aggregation Complete")
     ) do
       if opts.filesave? == true do
@@ -105,7 +124,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     end
   end
 
-  def get(:file, _opts) do
+  def get(%{source: :file} = _opts) do
     json = @path |> Path.absname() |> File.read!()
     %{records: records} = Jason.decode!(json, keys: :atoms)
     # IO.inspect(records)
@@ -120,7 +139,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     |> (&{:ok, &1}).()
   end
 
-  def get(:web, opts) do
+  def get(%{source: :web} = opts) do
     opts =
       Map.put(
         opts,
@@ -164,10 +183,15 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
   defp formula(opts) do
     formula = [
-      ~s/{UK}="#{opts.at_id}"/,
       ~s/{flow}="main"/,
-      ~s/OR({Record_Type}="section", {Record_Type}="sub-section")/
+      ~s/OR({Record_Type}="part", {Record_Type}="chapter", {Record_Type}="section", {Record_Type}="sub-section")/
     ]
+
+    formula =
+      case opts.at_id do
+        "" -> formula
+        _ -> formula ++ [~s/{UK}="#{opts.at_id}"/]
+      end
 
     formula =
       cond do
@@ -226,41 +250,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   end
 
   defp blacklist() do
-    [
-      # offence
-      "(shall be|person) guilty",
-      "person shall not be guilty",
-      "person is ordered",
-      "person shall not be liable",
-      "person.*?(shall be|is) liable",
-      "person.*?who commits an?",
-      "commission by any person",
-      "person who fails",
-      "person may not be convicted",
-      # notices
-      "person to be served",
-      "person is given a notice",
-      "notice served on the holder",
-      "notice shall state",
-      # assignment
-      "person may be charged with",
-      "person may be required",
-      "person shall be treated",
-      "person shall not be qualified",
-      "gives?.*?to (the|an?) #{@dh_regex}",
-      "authority shall be deemed",
-      "(given|to) the Secretary of State",
-      # action verbs
-      "the person (has|who had)",
-      "a person appeals",
-      "any other person",
-      "different provision in relation to different persons"
-      # shall
-    ]
+    []
   end
 
   @doc """
-  Function aggregates seb-section and sub-article duty type tag at the level of section.
+  Function aggregates sub-section and sub-article duty type tag at the level of section.
   """
   def aggregate({source, aggregate}, records) do
     sections =
@@ -313,7 +307,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
     Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
       case Map.get(fields, :Record_Type) do
-        x when x in [["section"], ["sub-section"]] ->
+        ["section"] ->
+          # x when x in [["section"], ["sub-section"]] ->
           case Regex.run(
                  ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
                  Map.get(fields, :ID)
@@ -329,11 +324,141 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
               [Map.put(record, :fields, fields) | acc]
           end
 
+        ["sub-section"] ->
+          fields = Map.put(fields, aggregate, [])
+
+          [Map.put(record, :fields, fields) | acc]
+
         _ ->
           [record | acc]
       end
     end)
     |> (&{:ok, &1}).()
+  end
+
+  def aggregate_part_chapter(records, record_type) when record_type in ["part", "chapter"] do
+    regex =
+      cond do
+        record_type == "part" ->
+          ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?/
+
+        record_type == "chapter" ->
+          ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?/
+      end
+
+    aggregator = aggregator(records, record_type, regex)
+
+    case Enum.count(aggregator) do
+      0 ->
+        {:ok, records}
+
+      _ ->
+        aggregator = populate_aggregator(records, aggregator, regex)
+
+        # IO.inspect(aggregator)
+
+        record_aggregate_collector(records, record_type, aggregator, regex)
+        |> (&{:ok, &1}).()
+    end
+  end
+
+  defp aggregator(records, record_type, regex) do
+    Enum.reduce(records, %{}, fn %{fields: fields} = record, acc ->
+      [recordType | _tl] = Map.get(fields, :Record_Type)
+
+      case record_type == recordType do
+        true ->
+          case Regex.run(
+                 regex,
+                 Map.get(fields, :ID)
+               ) do
+            nil ->
+              IO.puts("ERROR: #{inspect(record)}")
+
+            [id] ->
+              Map.put(acc, id, {Map.get(record, :id), [], [], [], []})
+          end
+
+        _ ->
+          acc
+      end
+    end)
+  end
+
+  defp populate_aggregator(records, aggregator, regex) do
+    Enum.reduce(records, aggregator, fn %{fields: fields} = record, acc ->
+      case Map.get(fields, :Record_Type) do
+        ["section"] ->
+          case Regex.run(
+                 regex,
+                 Map.get(fields, :ID)
+               ) do
+            [id] ->
+              case Map.get(acc, id) do
+                nil ->
+                  IO.puts("No record in aggregator for #{id}")
+                  acc
+
+                result ->
+                  {record_id, dutyholders, duty_actors, duty_types, popimars} = result
+
+                  dutyholders =
+                    (dutyholders ++ Map.get(fields, :"Dutyholder Aggregate")) |> Enum.uniq()
+
+                  duty_actors =
+                    (duty_actors ++ Map.get(fields, :"Duty Actor Aggregate")) |> Enum.uniq()
+
+                  duty_types =
+                    (duty_types ++ Map.get(fields, :"Duty Type Aggregate")) |> Enum.uniq()
+
+                  popimars = (popimars ++ Map.get(fields, :"POPIMAR Aggregate")) |> Enum.uniq()
+                  Map.put(acc, id, {record_id, dutyholders, duty_actors, duty_types, popimars})
+              end
+
+            nil ->
+              IO.puts("ERROR: #{inspect(record)}")
+          end
+
+        _ ->
+          acc
+      end
+    end)
+  end
+
+  defp record_aggregate_collector(records, record_type, aggregator, regex) do
+    Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
+      [recordType | _tl] = Map.get(fields, :Record_Type)
+
+      case record_type == recordType do
+        true ->
+          case Regex.run(
+                 regex,
+                 Map.get(fields, :ID)
+               ) do
+            nil ->
+              IO.puts("ERROR: #{inspect(record)}")
+
+            [id] ->
+              {_, dutyholders, duty_actors, duty_types, popimars} = Map.get(aggregator, id)
+
+              fields =
+                Map.merge(
+                  fields,
+                  %{
+                    "Dutyholder Aggregate": dutyholders,
+                    "Duty Actor Aggregate": duty_actors,
+                    "Duty Type Aggregate": duty_types,
+                    "POPIMAR Aggregate": popimars
+                  }
+                )
+
+              [Map.put(record, :fields, fields) | acc]
+          end
+
+        _ ->
+          [record | acc]
+      end
+    end)
   end
 
   def patch(results, opts \\ []) do

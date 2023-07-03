@@ -33,6 +33,8 @@ defmodule DutyholderDefinitions do
         "National Assembly for Wales",
         "Assembly"
       ],
+      "Gvt: Treasury": "[Tt]reasury",
+      "Gvt: Commissioners": "[Cc]ommissioners",
       "Gvt: Agency": [
         "Environment Agency",
         "SEPA",
@@ -76,6 +78,10 @@ defmodule DutyholderDefinitions do
         "[Bb]usinesse?s?",
         "[Ee]nterprises?",
         "[Bb]ody?i?e?s? corporate"
+      ],
+      "Org: Partnership": [
+        "[Pp]artnership",
+        "[Uu]nincorporated body?i?e?s?"
       ],
       Organisation: "[Oo]rganisations?"
     ]
@@ -136,6 +142,8 @@ defmodule DutyholderDefinitions do
       "SC: Distributor": "[Dd]istributor",
       "SC: Seller": "[Ss]eller",
       "SC: Retailer": "[Rr]etailer",
+      "SC: Customer": "[Cc]ustomer",
+      "SC: Consumer": "[Cc]onsumer",
       "SC: Storer": "[Ss]torer",
       "SC: Consignor": "[Cc]onsignor",
       "SC: Handler": "[Hh]andler",

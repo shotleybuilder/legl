@@ -53,7 +53,9 @@ defmodule Legl.Services.Airtable.AtBases do
       # UK 🇬🇧️ E 💚️ - Pollution
       "uk_e_pollution" => "appj4oaimWQfwtUri",
       # UK 🇬🇧️ E 💚️ - Waste
-      "uk_e_waste" => "appfXbCYZmxSFQ6uY"
+      "uk_e_waste" => "appfXbCYZmxSFQ6uY",
+      # 💚️ Finance - 🇬🇧️ UK
+      "uk_e_finance" => "appokFoa6ERUUAIkF"
     }
   end
 end
