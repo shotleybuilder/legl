@@ -26,10 +26,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     {_text, {dutyholders, duty_types}} =
       {text, {dutyholders, duty_types}}
       # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
+      |> process(extent())
       |> process(enaction_citation_commencement())
       |> process(interpretation_definition())
       |> process(application_scope())
-      |> process(extent())
       |> process(exemption())
       |> process(repeal_revocation())
       # |> process("Transitional Arrangement", transitional_arrangement())
@@ -71,24 +71,16 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
         [match] ->
           dutyholder = DutyholderLib.workflow(match, library)
 
-          # if library == :person,
-          # IO.puts(
-          #  "REGEX: #{regex}\nDUTYHOLDER: #{inspect(dutyholder)}\nMATCH TEXT: #{inspect(match)}"
-          # )
-
           duty_type = if is_binary(duty_type), do: [duty_type], else: duty_type
 
           {Regex.replace(~r/#{regex}/m, text, ""),
            {dutyholders ++ dutyholder, duty_types ++ duty_type}}
 
         nil ->
-          # if library == :person and duty_type == "Duty",
-          #  do: IO.puts("#{regex}\n#{text}\nNIL!!")
-
           acc
 
         match ->
-          IO.puts("ERROR: #{text} #{inspect(match)}")
+          IO.puts("ERROR process_dutyholder/3: #{text} #{inspect(match)}")
       end
     end)
   end
@@ -122,28 +114,30 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   """
   def duty(governed, government) do
     [
+      {"#{governed}.*?(?:shall be|is) liable", "Liability"},
+      {"#{governed}shall not be (?:guilty|liable)", "Defence, Appeal"},
+      {"#{governed}[\\s\\S]*?it shall (?:also )?.*?be a defence", "Defence, Appeal"},
       {"[Nn]o#{governed}shall", "Duty"},
       {"(?:[Aa]n?|[Tt]he)#{governed}.*?must", "Duty"},
       {"(?:[Aa]n?|[Tt]he)#{governed}.*?shall", "Duty"},
       {"#{governed}(?:shall notify|shall furnish the authority)", "Duty"},
       {"shall be the duty of any#{governed}", "Duty"},
       {"requiring a#{governed}.*?to", "Duty"},
-      {"[Aa]pplication.*?shall be made to ?(the )?#{government}", "Duty"},
-      {"#{governed}shall not be liable", "Exemption"},
-      {"#{governed}.*?is liable", "Liability"}
+      {"[Aa]pplication.*?shall be made to ?(?:the )?#{government}", "Duty"}
     ]
   end
 
   def right(governed) do
     [
       {"#{governed}may.*?, but may not", ["Duty", "Right"]},
+      {"#{governed}.*?may appeal", ["Right", "Defence, Appeal"]},
       {"[Nn]o#{governed}may", "Duty"},
       {"requested by a#{governed}", "Right"},
       {"shall consult.*?#{governed}", "Right"},
       {"#{governed}may[, ]", "Right"},
       {"#{governed}.*?shall be entitled", "Right"},
       {"permission of that#{governed}", "Right"},
-      {"[Ii]t is a defence for agoverned}", "Defence, Appeal"}
+      {"[Ii]t is a defence for a #{governed}", "Defence, Appeal"}
     ]
   end
 
@@ -154,9 +148,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     [
       {"#{government}[^—\\.]*?(?:must|shall)", "Responsibility"},
       {"#{government}[^—\\.]*?has determined", "Responsibility"},
-      {" ?[Ii]t shall be the duty of[^—\\.]*?#{government}", "Responsibility"},
+      {"[Ii]t shall be the duty of a?n?[^—\\.]*?#{government}", "Responsibility"},
       {"#{government}[^—\\.]*?(?:must|shall)", "Responsibility"},
-      {"it shall be the duty of a?n? ?#{government}", "Responsibility"},
       {"#{government} owes a duty to", "Responsibility"},
       {"is to be.*?by a#{government}", "Responsibility"},
       {"#{government}is to have regard", "Responsibility"}
@@ -200,9 +193,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
 
   def enaction_citation_commencement() do
     [
-      {"(Act|Regulation) may be cited as", "Enactment, Citation, Commencement"},
-      {"(?:Act|Regulation.*?shall have effect)", "Enactment, Citation, Commencement"},
-      {"(Act|Regulation) shall come into force", "Enactment, Citation, Commencement"},
+      {"(?:Act|Regulation) may be cited as", "Enactment, Citation, Commencement"},
+      {"(?:Act|Regulation).*?shall have effect", "Enactment, Citation, Commencement"},
+      {"(?:Act|Regulation) shall come into force", "Enactment, Citation, Commencement"},
       {"comes? into force", "Enactment, Citation, Commencement"},
       {"has effect.*?on or after", "Enactment, Citation, Commencement"}
     ]
@@ -251,8 +244,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   def extent() do
     [
       {" shall have effect ", "Extent"},
-      {"(?:Act|Regulation)(?: does not | )extends? to", "Extent"},
-      {"Section.*?extends? only to", "Extent"},
+      {"(?:Act|Regulation|section)(?: does not | )extends? to", "Extent"},
+      {"(?:Act|Section).*?extends? (?:only )?to", "Extent"},
       {"[R|r]egulations under", "Extent"}
     ]
   end

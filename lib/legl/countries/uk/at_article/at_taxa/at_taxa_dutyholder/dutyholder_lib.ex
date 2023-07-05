@@ -47,6 +47,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     library = process_library(library)
 
     Enum.reduce(library, collector, fn {regex, class}, {text, classes} = acc ->
+      # if class == "Gvt: Authority", do: IO.puts("#{regex}")
+
       case Regex.match?(~r/#{regex}/, text) do
         true ->
           case rm? do
@@ -105,11 +107,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     library
     |> Enum.reduce([], fn
       {_k, v}, acc when is_binary(v) ->
-        ["[ “]#{v}[ \\.,:;”]" | acc]
+        ["[ “]#{v}[ \\.,:;”\\]]" | acc]
 
       {_k, v}, acc when is_list(v) ->
         Enum.reduce(v, [], fn x, accum ->
-          ["[ “]#{x}[ \\.,:;”]" | accum]
+          ["[ “]#{x}[ \\.,:;”\\]]" | accum]
         end)
         |> Enum.join("|")
         |> (&[&1 | acc]).()
@@ -132,11 +134,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     library
     |> Enum.reduce([], fn
       {k, v}, acc when is_binary(v) ->
-        [{"[ “]#{v}[ \\.,:;”]", Atom.to_string(k) |> Legl.Utility.upcaseFirst()} | acc]
+        [{"[ “]#{v}[ \\.,:;”\\]]", Atom.to_string(k) |> Legl.Utility.upcaseFirst()} | acc]
 
       {k, v}, acc when is_list(v) ->
         Enum.reduce(v, [], fn x, accum ->
-          ["[ “]#{x}[ \\.,:;”]" | accum]
+          ["[ “]#{x}[ \\.,:;”\\]]" | accum]
         end)
         |> Enum.join("|")
         |> (fn x -> ~s/(?:#{x})/ end).()

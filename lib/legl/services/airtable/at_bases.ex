@@ -44,8 +44,6 @@ defmodule Legl.Services.Airtable.AtBases do
       "uk_e_climate_change" => "appGv6qmDJK2Kdr3U",
       # UK 🇬🇧️ E 💚️ - Energy
       "uk_e_energy" => "app4L95N2NbK7x4M0",
-      # UK 🇬🇧️ E 💚️ - Finance
-      "uk_e_finance" => "appokFoa6ERUUAIkF",
       # UK 🇬🇧️ E 💚️ - Marine & Riverine
       "uk_e_marine_riverine" => "appLXqkeiiqrOXwWw",
       # UK 🇬🇧️ E 💚️ - Planning
@@ -55,7 +53,15 @@ defmodule Legl.Services.Airtable.AtBases do
       # UK 🇬🇧️ E 💚️ - Waste
       "uk_e_waste" => "appfXbCYZmxSFQ6uY",
       # 💚️ Finance - 🇬🇧️ UK
-      "uk_e_finance" => "appokFoa6ERUUAIkF"
+      "uk_e_finance" => "appokFoa6ERUUAIkF",
+      # 💚️ Water - 🇬🇧️ UK
+      "uk_e_water" => "appCZkMT3VlCLtBjy",
+      # 💚️ W&C - 🇬🇧️ UK - Wildlife & Countryside
+      "uk_e_wildlife_countryside" => "appXXwjSS8KgDySB6",
+      # 💚️ Radiological - 🇬🇧️ UK
+      "uk_e_radiological" => "appozWdOMaGdp77eL",
+      # 💚️ T&CP - 🇬🇧️ UK - Town & Country Planning
+      "uk_e_town_country_planning" => "appPocx8hT0EPCSfh"
     }
   end
 end

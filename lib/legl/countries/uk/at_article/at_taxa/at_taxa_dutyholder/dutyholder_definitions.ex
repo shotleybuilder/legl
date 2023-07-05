@@ -1,7 +1,7 @@
 defmodule DutyholderDefinitions do
   def dutyholder_library() do
     # Adds the separate dutyholder libraries together into a single keyword list
-    governed() ++ government()
+    government() ++ governed()
   end
 
   def governed(),
@@ -22,6 +22,7 @@ defmodule DutyholderDefinitions do
         "[Ll]ocal",
         "[Ww]aste disposal",
         "[Ww]aste collection",
+        "[Dd]isposal",
         "monitoring"
       ]
       |> Enum.join("|")
@@ -54,7 +55,8 @@ defmodule DutyholderDefinitions do
         "(?:#{authority}) [Aa]uthority?i?e?s?"
       ],
       "Gvt: Appropriate Person": "[Aa]ppropriate [Pp]ersons?",
-      Judiciary: ["court", "justice of the peace"]
+      "Gvt: Judiciary": ["court", "justice of the peace"],
+      "Gvt: Police": "[Cc]onstable"
     ]
   end
 
@@ -148,7 +150,7 @@ defmodule DutyholderDefinitions do
       "SC: Consignor": "[Cc]onsignor",
       "SC: Handler": "[Hh]andler",
       "SC: Consignee": "[Cc]onsignee",
-      "SC: Carrier": ["[Tt]ransporter", "person who.*?carries"],
+      "SC: Carrier": ["[Tt]ransporter", "person who.*?carries", "[Cc]arriers?"],
       "SC: Driver": "[Dd]river",
       "SC: Importer": ["[Ii]mporter", "person who.*?imports*?"],
       "SC: Exporter": ["[Ee]xporter", "person who.*?exports*?"]

@@ -95,13 +95,20 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       {:ok, records} <- Popimar.process(records, filesave?: false, field: :POPIMAR),
       IO.puts("POPIMAR complete"),
       {:ok, records} <- aggregate({:Dutyholder, :"Dutyholder Aggregate"}, records),
+      IO.puts("Dutyholder Aggregation Complete"),
       {:ok, records} <- aggregate({:"Duty Actor", :"Duty Actor Aggregate"}, records),
+      IO.puts("Duty Actor Aggregation Complete"),
       {:ok, records} <-
         aggregate({:"Duty Type", :"Duty Type Aggregate"}, records),
+      IO.puts("Duty Type Aggregation Complete"),
       {:ok, records} <- aggregate({:POPIMAR, :"POPIMAR Aggregate"}, records),
+      IO.puts("POPIMAR Aggregation Complete"),
       {:ok, records} <- aggregate_part_chapter(records, "part"),
+      IO.puts("PART Aggregation Complete"),
       {:ok, records} <- aggregate_part_chapter(records, "chapter"),
-      IO.puts("Aggregation Complete")
+      IO.puts("CHAPTER Aggregation Complete"),
+      {:ok, records} <- aggregate_part_chapter(records, "heading"),
+      IO.puts("HEADING Aggregation Complete")
     ) do
       if opts.filesave? == true do
         json = Map.put(%{}, "records", records) |> Jason.encode!()
@@ -184,7 +191,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   defp formula(opts) do
     formula = [
       ~s/{flow}="main"/,
-      ~s/OR({Record_Type}="part", {Record_Type}="chapter", {Record_Type}="section", {Record_Type}="sub-section")/
+      ~s/OR({Record_Type}="part", {Record_Type}="chapter", {Record_Type}="heading", {Record_Type}="section", {Record_Type}="sub-section")/
     ]
 
     formula =
@@ -257,16 +264,18 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   Function aggregates sub-section and sub-article duty type tag at the level of section.
   """
   def aggregate({source, aggregate}, records) do
+    regex = ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]*_\d*[A-Z]*_\d*[A-Z]*_\d+[A-Z]*/
+
     sections =
       Enum.reduce(records, %{}, fn %{fields: fields} = record, acc ->
         case Map.get(fields, :Record_Type) do
           ["section"] ->
             case Regex.run(
-                   ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
+                   regex,
                    Map.get(fields, :ID)
                  ) do
               nil ->
-                IO.puts("ERROR: #{inspect(record)}")
+                IO.puts("ERROR aggregate/2 sections I: #{inspect(record)}")
 
               [id] ->
                 Map.put(acc, id, {Map.get(record, :id), Map.get(fields, source)})
@@ -285,16 +294,23 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
         case Map.get(fields, :Record_Type) do
           ["sub-section"] ->
             case Regex.run(
-                   ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
+                   regex,
                    Map.get(fields, :ID)
                  ) do
               [id] ->
-                {record_id, duty_types} = Map.get(acc, id)
-                duty_types = (duty_types ++ Map.get(fields, source)) |> Enum.uniq()
-                Map.put(acc, id, {record_id, duty_types})
+                case Map.get(acc, id) do
+                  nil ->
+                    IO.puts("ERROR aggregate/2 section IIa:\nID: #{id}")
+                    Enum.each(acc, &IO.inspect(&1))
+
+                  _ ->
+                    {record_id, duty_types} = Map.get(acc, id)
+                    duty_types = (duty_types ++ Map.get(fields, source)) |> Enum.uniq()
+                    Map.put(acc, id, {record_id, duty_types})
+                end
 
               nil ->
-                IO.puts("ERROR: #{inspect(record)}")
+                IO.puts("ERROR aggregate/2 sections IIb: #{inspect(record)}")
             end
 
           _ ->
@@ -310,11 +326,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
         ["section"] ->
           # x when x in [["section"], ["sub-section"]] ->
           case Regex.run(
-                 ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]*_\d+[A-Z]*/,
+                 regex,
                  Map.get(fields, :ID)
                ) do
             nil ->
-              IO.puts("ERROR: #{inspect(record)}")
+              IO.puts("ERROR aggregate/2 collector: #{inspect(record)}")
 
             [id] ->
               {_, duty_types} = Map.get(sections, id)
@@ -336,7 +352,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     |> (&{:ok, &1}).()
   end
 
-  def aggregate_part_chapter(records, record_type) when record_type in ["part", "chapter"] do
+  def aggregate_part_chapter(records, record_type)
+      when record_type in ["part", "chapter", "heading"] do
     regex =
       cond do
         record_type == "part" ->
@@ -344,6 +361,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
         record_type == "chapter" ->
           ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?/
+
+        record_type == "heading" ->
+          ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]?/
       end
 
     aggregator = aggregator(records, record_type, regex)

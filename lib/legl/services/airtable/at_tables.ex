@@ -78,6 +78,26 @@ defmodule Legl.Services.Airtable.AtTables do
       "appfXbCYZmxSFQ6uY" => %{
         "uk_waste" => "tbl8MXQF5pHbzNyHZ",
         "articles" => "tblyEwloJsZj5kojX"
+      },
+      # water
+      "appCZkMT3VlCLtBjy" => %{
+        "uk_water" => "tblWMgpytr8QxT57Z",
+        "articles" => "tblVGFvjN1N3bXT8x"
+      },
+      # wildlife & countryside
+      "appXXwjSS8KgDySB6" => %{
+        "uk_wildlife_countryside" => "tbl5EWCPkNAiHUAof",
+        "articles" => "tblgER2iCecH32aq5"
+      },
+      # radiological
+      "appozWdOMaGdp77eL" => %{
+        "uk_radiological" => "tbleI5O4KmKsQ1zAv",
+        "articles" => "tblHghWewg8EPBp3K"
+      },
+      # town and country planning
+      "appPocx8hT0EPCSfh" => %{
+        "uk_town_country_planning" => "tblq86h5C2hBRwsXk",
+        "articles" => "tbl85xgy1Zs5f6a4g"
       }
     }
   end
