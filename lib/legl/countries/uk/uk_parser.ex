@@ -59,7 +59,7 @@ defmodule UK.Parser do
 
     main =
       main
-      |> get_A_section(:act, "section")
+      |> get_A_section(:act, :section)
       |> get_section_with_period(@components.section, opts)
       |> get_section(:act, @components.section)
       |> get_sub_section(:act, @components.sub_section)
@@ -73,7 +73,7 @@ defmodule UK.Parser do
           schedules
           |> get_annex()
           |> provision_before_schedule()
-          |> get_A_section(:act, "paragraph")
+          |> get_A_section(:act, :paragraph)
           |> get_section_with_period(@components.paragraph, opts)
           |> get_section(:act, @components.paragraph)
           |> get_sub_section(:act, @components.sub_paragraph)
@@ -513,6 +513,12 @@ defmodule UK.Parser do
 
   def get_section_with_period(binary, component, %{"s_.": true} = _opts) do
     binary
+    # Exclude U.K.
+    |> (&Regex.replace(
+          ~r/^(\d{1,3}[A-Z]*?)(#{@geo_regex})[ ]?(.*)/m,
+          &1,
+          "#{component}\\g{1} \\g{1} \\g{3} [::region::] \\g{2}"
+        )).()
     # 6B.(1)Section 2(1) does not entitle
     |> (&Regex.replace(
           ~r/^(\d{1,3}[A-Z]*)\.\((\d{1,3})\)[ ]?(.*)(#{@region_regex})$/m,
@@ -547,13 +553,14 @@ defmodule UK.Parser do
   [::section::]41E [F739 41E References to [F740 CMA] .E+W+S
   """
   def get_A_section(binary, :act, component) do
-    component = Map.get(@components, component)
     r_component = Map.get(@regex_components, component)
+    component = Map.get(@components, component)
 
     binary
     |> String.split("\n")
     |> Enum.reduce([], fn line, acc ->
-      case String.starts_with?(line, "[::section::]") do
+      case String.starts_with?(line, "[::section::]") or
+             String.starts_with?(line, "[::paragraph::]") do
         true ->
           case Regex.match?(~r/\[::region::\]/, line) do
             # region can be set by uk_annotation.ex

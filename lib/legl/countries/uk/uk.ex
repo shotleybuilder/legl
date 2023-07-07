@@ -46,6 +46,7 @@ defmodule UK do
           sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           modification: ~s/^(C)(\\d+)(.*)/,
+          annex_name: "schedule",
           annex: ~s/(\\d*[A-Z]*)[ ]?(.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
         }
 
@@ -91,6 +92,8 @@ defmodule UK do
     # finer control of QA functions
     qa_sched_s_limit?: true,
     qa_sched_s?: true,
+    qa_sched_paras?: true,
+    qa_sched_paras_limit?: true,
     qa_si?: true,
     qa_si_limit?: true,
     qa_sii?: true,

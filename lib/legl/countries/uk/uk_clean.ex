@@ -305,39 +305,48 @@ defmodule Legl.Countries.Uk.UkClean do
   end
 
   def join_repeals(binary) do
-    regex =
-      case Regex.match?(
-             ~r/^Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?(?=\n^[^\t\d\[])/m,
-             binary
-           ) do
-        true ->
-          ~r/^Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?(?=\n^[^\t\d\[])/m
+    regexes = %{
+      in_flow:
+        ~r/^Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?(?=\n^[^\t\d\[])/m,
+      doc_end_one: ~r/Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?$/,
+      doc_end_two: ~r/Chapter[ ]or[ ]number\t[Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?$/
+    }
 
-        false ->
-          ~r/Chapter[ ]*\tShort [Tt]itle[ ]*\tExtent of [Rr]epeal\n[\s\S]*?$/
+    regex =
+      cond do
+        Regex.match?(regexes.in_flow, binary) -> regexes.in_flow
+        Regex.match?(regexes.doc_end_one, binary) -> regexes.doc_end_one
+        Regex.match?(regexes.doc_end_two, binary) -> regexes.doc_end_two
+        true -> nil
       end
 
-    # IO.inspect(regex)
-    # QA.scan_and_print(binary, regex, "Repeal", true)
+    case regex do
+      nil ->
+        binary
 
-    binary
-    |> (&Regex.replace(
-          regex,
-          &1,
-          fn x ->
-            len = String.length(x)
+      _ ->
+        # IO.inspect(regex)
+        # QA.scan_and_print(binary, regex, "Repeal", true)
 
-            case len > 500 do
-              true ->
-                x = String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len)
+        binary
+        |> (&Regex.replace(
+              regex,
+              &1,
+              fn x ->
+                len = String.length(x)
 
-                join("#{@components.table}" <> x) <> " [::region::]"
+                case len > 500 do
+                  true ->
+                    x = String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len)
 
-              _ ->
-                join("#{@components.table}" <> x) <> " [::region::]"
-            end
-          end
-        )).()
+                    join("#{@components.table}" <> x) <> " [::region::]"
+
+                  _ ->
+                    join("#{@components.table}" <> x) <> " [::region::]"
+                end
+              end
+            )).()
+    end
   end
 
   def join_repeals_ii(binary) do

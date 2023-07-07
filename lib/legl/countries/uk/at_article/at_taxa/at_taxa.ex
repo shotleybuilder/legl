@@ -44,7 +44,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     patch?: true,
     source: :file,
     part: nil,
-    workflow: [actor: true, dutyType: true, popimar: true, aggregate: true]
+    workflow: [actor: true, dutyType: true, popimar: true, aggregate: true],
+    # Set to :false for ID with this pattern UK_ukpga_1949_Geo6/12-13-14/74_CPA
+    modern_id?: true
   }
 
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/taxa_source_records.json]
@@ -94,20 +96,22 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       IO.puts("Duty Type complete"),
       {:ok, records} <- Popimar.process(records, filesave?: false, field: :POPIMAR),
       IO.puts("POPIMAR complete"),
-      {:ok, records} <- aggregate({:Dutyholder, :"Dutyholder Aggregate"}, records),
+      {:ok, records} <-
+        aggregate({:Dutyholder, :"Dutyholder Aggregate"}, records, opts.modern_id?),
       IO.puts("Dutyholder Aggregation Complete"),
-      {:ok, records} <- aggregate({:"Duty Actor", :"Duty Actor Aggregate"}, records),
+      {:ok, records} <-
+        aggregate({:"Duty Actor", :"Duty Actor Aggregate"}, records, opts.modern_id?),
       IO.puts("Duty Actor Aggregation Complete"),
       {:ok, records} <-
-        aggregate({:"Duty Type", :"Duty Type Aggregate"}, records),
+        aggregate({:"Duty Type", :"Duty Type Aggregate"}, records, opts.modern_id?),
       IO.puts("Duty Type Aggregation Complete"),
-      {:ok, records} <- aggregate({:POPIMAR, :"POPIMAR Aggregate"}, records),
+      {:ok, records} <- aggregate({:POPIMAR, :"POPIMAR Aggregate"}, records, opts.modern_id?),
       IO.puts("POPIMAR Aggregation Complete"),
-      {:ok, records} <- aggregate_part_chapter(records, "part"),
+      {:ok, records} <- aggregate_part_chapter(records, "part", opts.modern_id?),
       IO.puts("PART Aggregation Complete"),
-      {:ok, records} <- aggregate_part_chapter(records, "chapter"),
+      {:ok, records} <- aggregate_part_chapter(records, "chapter", opts.modern_id?),
       IO.puts("CHAPTER Aggregation Complete"),
-      {:ok, records} <- aggregate_part_chapter(records, "heading"),
+      {:ok, records} <- aggregate_part_chapter(records, "heading", opts.modern_id?),
       IO.puts("HEADING Aggregation Complete")
     ) do
       if opts.filesave? == true do
@@ -263,8 +267,16 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   @doc """
   Function aggregates sub-section and sub-article duty type tag at the level of section.
   """
-  def aggregate({source, aggregate}, records) do
-    regex = ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]*_\d*[A-Z]*_\d*[A-Z]*_\d+[A-Z]*/
+  def aggregate({source, aggregate}, records, modern_id?) do
+    regex =
+      case modern_id? do
+        true ->
+          ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]*_\d*[A-Z]*_\d*[A-Z]*_\d+[A-Z]*/
+
+        false ->
+          # UK_ukpga_1949_Geo6/12-13-14/74_CPA
+          ~r/UK_[a-z]*_\d{4}_.*?_[A-Z]+_\d*[A-Z]*_\d*[A-Z]*_\d*[A-Z]*_\d+[A-Z]*/
+      end
 
     sections =
       Enum.reduce(records, %{}, fn %{fields: fields} = record, acc ->
@@ -352,18 +364,28 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     |> (&{:ok, &1}).()
   end
 
-  def aggregate_part_chapter(records, record_type)
+  def aggregate_part_chapter(records, record_type, modern_id?)
       when record_type in ["part", "chapter", "heading"] do
+    regex =
+      case modern_id? do
+        true ->
+          ~s/UK_[a-z]*_\\d{4}_\\d+_[A-Z]+/
+
+        false ->
+          # UK_ukpga_1949_Geo6/12-13-14/74_CPA
+          ~s/UK_[a-z]*_\\d{4}_.*?_[A-Z]+/
+      end
+
     regex =
       cond do
         record_type == "part" ->
-          ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?/
+          ~r/#{regex}_\d*[A-Z]?/
 
         record_type == "chapter" ->
-          ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?/
+          ~r/#{regex}_\d*[A-Z]?_\d*[A-Z]?/
 
         record_type == "heading" ->
-          ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]?/
+          ~r/#{regex}_\d*[A-Z]?_\d*[A-Z]?_\d*[A-Z]?/
       end
 
     aggregator = aggregator(records, record_type, regex)

@@ -52,7 +52,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           schedules
           |> tag_schedule_range()
           |> tag_schedule_efs(opts)
-          |> tag_schedule_section_efs()
+          |> tag_schedule_section_efs(opts)
           |> tag_sub_section_range(@components.sub_paragraph)
           |> tag_sub_section_efs(@components.sub_paragraph)
       end
@@ -82,7 +82,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
       # multiple schedules and region
       xs_region: ~r/^(SCHEDULES|Schedules)[ ]?(#{@region_regex})/m,
       # multiple schedules and no region
-      xs: ~r/^(SCHEDULES|Schedules)/m,
+      xs: ~r/^(?:F\d*[ ]?)?(SCHEDULES|Schedules)/m,
       # one schedule and region
       "1s_region": ~r/^((?:THE )?SCHEDULE|(?:The)?Schedule)[ ]?(#{@region_regex})/m,
       # one schedule
@@ -694,7 +694,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   @doc """
 
   """
-  def tag_schedule_section_efs(binary) do
+  def tag_schedule_section_efs(binary, opts) do
     # See uk_annotations.exs for examples and test
     # section_number_pattern
 
@@ -705,6 +705,10 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     ef_codes = Optimiser.optimise_ef_codes(ef_codes, "SCHEDULES")
 
     ef_tags = EfCodes.ef_tags(ef_codes)
+
+    if opts.qa_sched_paras? == true do
+      QA.scan_and_print(binary, regex, "SCHEDULE PARA AMEND", opts.qa_sched_paras_limit?)
+    end
 
     # sn - section number
     Enum.reduce(ef_tags, binary, fn {ef, sn, _amd_type, _tag}, acc ->
