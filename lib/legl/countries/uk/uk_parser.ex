@@ -349,7 +349,11 @@ defmodule UK.Parser do
           &1,
           "#{@components.heading}\\g{5} \\g{2}\\g{3} [::region::]\\g{1}\\g{4}\\g{5}\\g{6}"
         )).()
-    # The Local Government (Miscellaneous Provisions) Act 1953 (c. 26)E+W
+    |> (&Regex.replace(
+          ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$(\n#{tag})(\d+[A-Z]?)(-\d*[ ])?/m,
+          &1,
+          "#{@components.heading}\\g{5} \\g{1}\\g{2} [::region::]\\g{3}\\g{4}\\g{5}\\g{6}"
+        )).()
     |> (&Regex.replace(
           ~r/^([A-Z].*?)(etc\.)?(#{@region_regex})$([\s\S]+?#{tag})(\d+[A-Z]?)(-\d*[ ])?/m,
           &1,

@@ -34,13 +34,14 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     main =
       main
-      |> tag_section_range()
+      |> tag_section_range(@components.section)
       |> tag_section_end_efs()
       |> tag_section_efs_i(opts)
       |> tag_section_efs_ii(opts)
       |> section_ss_efs()
       |> tag_sub_section_range(@components.sub_section)
       |> tag_sub_section_efs(@components.sub_section)
+      |> tag_section_wash_up(@components.section)
 
     schedules =
       case schedules do
@@ -51,10 +52,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         _ ->
           schedules
           |> tag_schedule_range()
+          |> tag_section_range(@components.paragraph)
           |> tag_schedule_efs(opts)
           |> tag_schedule_section_efs(opts)
           |> tag_sub_section_range(@components.sub_paragraph)
           |> tag_sub_section_efs(@components.sub_paragraph)
+          |> tag_section_wash_up(@components.paragraph)
       end
 
     binary = ~s/#{main}\n#{schedules}/
@@ -62,7 +65,6 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     binary =
       binary
       |> tag_sub_sub_section_efs()
-      |> tag_section_wash_up()
       |> tag_heading_efs()
       |> tag_txt_amend_efs_wash_up()
       |> space_efs()
@@ -80,16 +82,16 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   def separate_main_and_schedules(binary) do
     patterns = %{
       # multiple schedules and region
-      xs_region: ~r/^(SCHEDULES|Schedules)[ ]?(#{@region_regex})/m,
+      xs_region: ~r/^(?:F\d*[ ]?)?(SCHEDULES|Schedules)[ ]?(#{@region_regex})/m,
       # multiple schedules and no region
       xs: ~r/^(?:F\d*[ ]?)?(SCHEDULES|Schedules)/m,
       # one schedule and region
-      "1s_region": ~r/^((?:THE )?SCHEDULE|(?:The)?Schedule)[ ]?(#{@region_regex})/m,
+      "1s_region": ~r/^((?:THE )?SCHEDULE|(?:The)?Schedule)(.*?)(#{@region_regex})(.*)/m,
       # one schedule
-      "1s": ~r/^(?:(?:THE )?SCHEDULE|(?:The)?Schedule)/m
+      "1s": ~r/^(?:(?:THE )?SCHEDULE|(?:The)?Schedule)(.*?)/m
     }
 
-    s_pattern =
+    key =
       cond do
         Regex.match?(patterns.xs_region, binary) -> :xs_region
         Regex.match?(patterns.xs, binary) -> :xs
@@ -98,32 +100,50 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         true -> :no_schedules
       end
 
-    case s_pattern do
+    regex = Map.get(patterns, key)
+
+    case key do
       :no_schedules ->
         {binary, ""}
+
+      x when x in [:xs_region, :xs] ->
+        [_, main, schedules] =
+          binary
+          |> (&Regex.replace(
+                regex,
+                &1,
+                fn
+                  _match, ef, title, region ->
+                    if region != "" do
+                      "#{@components.annex}#{ef} #{title} [::region::]#{region}"
+                    else
+                      "#{@components.annex}#{ef} #{title} [::region::]"
+                    end
+                end
+              )).()
+          |> (&Regex.run(~r/^([\s\S]+)(\[::annex::\][\s\S]+)$/, &1)).()
+
+        {main, schedules}
 
       _ ->
         [_, main, schedules] =
           binary
           |> (&Regex.replace(
-                Map.get(patterns, s_pattern),
+                regex,
                 &1,
-                fn regex_result ->
-                  separate_main_and_schedules_result(regex_result)
+                fn
+                  _match, title, txt, region, txt2 ->
+                    if region != "" do
+                      "#{@components.annex}#{title} #{txt}#{txt2} [::region::]#{region}"
+                    else
+                      "#{@components.annex}#{title} #{txt}#{txt2} [::region::]"
+                    end
                 end
               )).()
           |> (&Regex.run(~r/^([\s\S]+)(\[::annex::\][\s\S]+)$/, &1)).()
 
         {main, schedules}
     end
-  end
-
-  defp separate_main_and_schedules_result([_, title, region]) do
-    "#{@components.annex}#{title} [::region::]#{region}"
-  end
-
-  defp separate_main_and_schedules_result(match) do
-    "#{@components.annex}#{match} [::region::]"
   end
 
   @doc """
@@ -307,7 +327,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> Enum.reduce(binary, fn [_, ef, txt], acc ->
       acc
       |> (&Regex.replace(
-            ~r/^((?:\[?F\d+)*?)(\[?)#{ef}[ ]?(\[?)[ ]?#{txt}(.*)/m,
+            ~r/^((?:\[?F\d*)*?)(\[?)#{ef}[ ]?(\[?)[ ]?#{txt}(.*)/m,
             &1,
             "#{@components.table}\\g{1}\\g{2}#{ef} \\g{3}#{txt}\\g{4}"
           )).()
@@ -322,7 +342,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   PATTERN.  AMENDED SECTIONS 1A, 6B, 10ZA etc.
   """
   def tag_section_efs_i(binary, opts \\ %{qa_si?: false, qa_si_limit?: false}) do
-    regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+[A-Z]+)[^\(].*/m
+    regex = ~r/^🔻(F\d+)🔻[ ]S\.[ ](\d+[A-Z]*)[^\(].*/m
 
     if opts.qa_si? == true do
       QA.scan_and_print(binary, regex, "S. SECTIONS I", opts.qa_si_limit?)
@@ -360,7 +380,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
         ~r/^((?:\[?F\d+)*?)#{b}#{ef}[ ]?#{b}[ ]?#{sn}[ \.]?([A-Z\[\] ][^\()].*|\((1)\).*)/m,
       sn_b4_ef: ~r/^#{b}[ ]?#{sn}[ ]?#{b}#{ef}[ ]?#{b}([A-Z].*|\((\d+)\).*)/m,
       ef_b4_efs_b4_sn: ~r/^(\[?)#{ef}((?:\[?F\d+)*?)#{sn}[ \.]?(\]?[A-Z].*)/m,
-      x: ~r/^(X\d+)[ ]?(\[?)#{ef}#{sn}/m
+      x: ~r/^🔺(X\d+)🔺[ ]?(\[?)#{ef}#{sn}/m
     }
 
     if ef == "F128" do
@@ -460,11 +480,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   Become
 
   """
-  def tag_section_range(binary) do
-    regex1 = ~r/^F(\d+)(?:-|—|, )(\d+)?([ \.]+)(#{@geo_regex})([\s\S]+?^🔻F(\d+)🔻)/m
+  def tag_section_range(binary, component) do
+    regex1 = ~r/^F(\d+)[ ](\d+)(?:-|–|—|, )(\d+)([ \.]+)(#{@geo_regex})([\s\S]+?^🔻F(\d+)🔻)/m
     # 37—40.. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . F147 U.K.
     # 45,46. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .F16 U.K.
-    regex2 = ~r/^(\d+)(?:-|—|,[ ]?)(\d+)?([ \.]+)F(\d+)[ ]?(#{@geo_regex})([\s\S]+?^🔻?F(\d+)🔻?)/m
+    regex2 = ~r/^(\d+)(?:-|–|—|,[ ]?)(\d+)([ \.]+)F(\d+)[ ]?(#{@geo_regex})([\s\S]+?^🔻?F(\d+)🔻?)/m
 
     QA.scan_and_print(binary, regex1, "Leading Ef SECTION RANGE", true)
     QA.scan_and_print(binary, regex2, "Trailing Ef SECTION RANGE", true)
@@ -473,8 +493,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
     |> (&Regex.replace(
           regex1,
           &1,
-          fn _, from, to, txt, region, amd, ef ->
-            replacement_range_string(ef, amd, from, to, txt, region)
+          fn _, _, from, to, txt, region, amd, ef ->
+            replacement_range_string(ef, amd, from, to, txt, region, component)
           end
         )).()
     # |> QA.qa_print_line("37—40")
@@ -483,18 +503,18 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           &1,
           fn _match, from, to, txt, ef, region, amd, _ef_qa ->
             # account for a range of 1 (to being "")
-            replacement_range_string(ef, amd, from, to, txt, region)
+            replacement_range_string(ef, amd, from, to, txt, region, component)
           end
         )).()
   end
 
-  def replacement_range_string(ef, amd, from, to, txt, region) do
+  def replacement_range_string(ef, amd, from, to, txt, region, component) do
     {from, to} = from_to(String.to_integer(from), String.to_integer(to))
 
     txt = String.slice(txt, 0..10)
 
     for n <- from..to do
-      ~s/[::section::]#{n} F#{ef} #{n} #{txt} [::region::]#{region}/
+      ~s/#{component}#{n} F#{ef} #{n} #{txt} [::region::]#{region}/
     end
     |> Enum.join("\n")
     |> Kernel.<>(amd)
@@ -608,13 +628,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
 
     {acc, io} =
       Enum.reduce(ef_tags, {binary, []}, fn {ef, sn, amd_type, _tag}, {acc, io} ->
-        regex =
-          ~r/^(\[?F?\d*)?(\[?)?#{ef}((?:\[?F?\d*)*)[ ]?(#{sn}[A-Z]{0,2})[ ]?([A-Z \.][A-Za-z \.].*)/m
+        regex = ~r/^(\[?F?\d*)?(\[?)?#{ef}((?:\[?F?\d*)*)[ ]?#{sn}[ ]?([A-Z \.“].*)/m
 
         io =
           case Regex.run(regex, acc) do
             nil -> io
-            [m, _, _, _, _, _] -> [{m, ef, sn, amd_type} | io]
+            [m, _, _, _, _] -> [{m, ef, sn, amd_type} | io]
           end
 
         acc =
@@ -622,7 +641,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           |> (&Regex.replace(
                 regex,
                 &1,
-                "#{@components.section}\\g{4} \\g{1}\\g{2}#{ef}\\g{3} \\g{4} \\g{5}"
+                "#{@components.section}#{sn} \\g{1}\\g{2}#{ef}\\g{3} #{sn} \\g{4}"
               )).()
           |> Legl.Utility.rm_dupe_spaces(@regex_components.section)
 
@@ -863,16 +882,23 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   @doc """
   Manually adjusted in original.txt to EF-sp-SN-sp-Region
   """
-  def tag_section_wash_up(binary) do
-    regex = ~r/^(\[?F\d+)[ ](\d+[A-Z]*)[ \.](?:(#{@geo_regex})(.*)|(.*))/m
+  def tag_section_wash_up(binary, component) do
+    regex = ~r/^(\[?F\d+)[ ](\d+[A-Z]*)[ \.]?(?:(#{@region_regex})(.*)|(.*))/m
+    # F1 1 F1 The Countryside Council for Wales.E+W
+    regex2 = ~r/^(\[?F\d+)[ ](\d+[A-Z]*)[ \.]?(F?\d*)?[ ]?(.*?)(#{@geo_regex})$/m
 
     QA.scan_and_print(binary, regex, "SECTION WASH UP", true)
 
     binary
     |> (&Regex.replace(
+          regex2,
+          &1,
+          "#{component}\\g{2} \\g{1} \\g{2} \\g{3} \\g{4} [::region::]\\g{5}"
+        )).()
+    |> (&Regex.replace(
           regex,
           &1,
-          "#{@components.section}\\g{2} \\g{1} \\g{2} \\g{4}\\g{5} [::region::]\\g{3}"
+          "#{component}\\g{2} \\g{1} \\g{2} \\g{4}\\g{5} [::region::]\\g{3}"
         )).()
   end
 

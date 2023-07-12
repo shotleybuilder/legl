@@ -4,6 +4,7 @@ defmodule Legl.Countries.Uk.UkClean do
   @geo_regex @region_regex <> "|" <> @country_regex
   @components %Types.Component{}
   alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
+  alias Legl.Countries.Uk.AtArticle.Clean.UkBespoke
 
   # def clean_original("CLEANED\n" <> binary, _opts) do
   #  binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
@@ -14,6 +15,7 @@ defmodule Legl.Countries.Uk.UkClean do
     binary =
       binary
       |> rm_between_marks()
+      |> UkBespoke.bespoker(opts.name)
       |> Legl.Parser.rm_empty_lines()
       |> collapse_amendment_text_between_quotes()
       |> collapse_amendment_text_between_quotes()

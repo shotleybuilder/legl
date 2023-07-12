@@ -275,6 +275,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
         false ->
           # UK_ukpga_1949_Geo6/12-13-14/74_CPA
+          # UK_ukpga_1959_Eliz2/7-8/54_WA
           ~r/UK_[a-z]*_\d{4}_.*?_[A-Z]+_\d*[A-Z]*_\d*[A-Z]*_\d*[A-Z]*_\d+[A-Z]*/
       end
 
