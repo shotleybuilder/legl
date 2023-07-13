@@ -56,6 +56,17 @@ defmodule Legl.Utility do
     :ok
   end
 
+  def write_to_csv(binary, "lib" <> _rest = path) do
+    {:ok, file} =
+      path
+      |> Path.absname()
+      |> File.open([:utf8, :write])
+
+    IO.puts(file, binary)
+    File.close(file)
+    :ok
+  end
+
   def write_to_csv(binary, filename) do
     {:ok, file} =
       "lib/#{filename}.csv"

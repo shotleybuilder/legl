@@ -10,7 +10,7 @@ defmodule Legl.Services.Airtable.AtTables do
       _ ->
         case Map.get(table_ids(), base_id) do
           nil ->
-            {:error, "base id not found"}
+            {:error, "Base id <#{base_id}> not found in table map"}
 
           tables ->
             # IO.inspect(tables)
@@ -98,6 +98,10 @@ defmodule Legl.Services.Airtable.AtTables do
       "appPocx8hT0EPCSfh" => %{
         "uk_town_country_planning" => "tblq86h5C2hBRwsXk",
         "articles" => "tbl85xgy1Zs5f6a4g"
+      },
+      # uk s
+      "appRhQoz94zyVh2LR" => %{
+        "uk" => "tbla82bppK8YnScrj"
       }
     }
   end

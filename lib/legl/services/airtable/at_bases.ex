@@ -11,7 +11,9 @@ defmodule Legl.Services.Airtable.AtBases do
         {:ok, base}
 
       _ ->
-        case Map.get(base_ids(), reformat_base_name(base)) do
+        base = reformat_base_name(base)
+
+        case Map.get(base_ids(), base) do
           nil ->
             {:error, "Base not found for #{base}"}
 
@@ -61,7 +63,10 @@ defmodule Legl.Services.Airtable.AtBases do
       # 💚️ Radiological - 🇬🇧️ UK
       "uk_e_radiological" => "appozWdOMaGdp77eL",
       # 💚️ T&CP - 🇬🇧️ UK - Town & Country Planning
-      "uk_e_town_country_planning" => "appPocx8hT0EPCSfh"
+      "uk_e_town_country_planning" => "appPocx8hT0EPCSfh",
+
+      # 💙 Health & Safety - 🇬🇧 ️UK
+      "uk_s" => "appRhQoz94zyVh2LR"
     }
   end
 end
