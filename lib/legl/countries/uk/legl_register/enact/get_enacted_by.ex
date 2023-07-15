@@ -94,7 +94,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
 
   defp urls_to_string(urls) do
     Enum.reduce(urls, %{}, fn {k, v}, acc ->
-      Map.put(acc, k, "#{v}")
+      Enum.map(v, fn url -> "#{url}" end)
+      |> (&Map.put(acc, k, &1)).()
     end)
   end
 
@@ -215,7 +216,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   end
 
   @doc """
-  Function scans the enacting text for ef-codes (fxxxxx) and looks up the url of that ef-code in the map of ef-codes
+  Function scans the enacting text for ef-codes (fxxxxx) and looks up the url of
+  that ef-code in the map of ef-codes
   """
   def enacting_law_in_enacting_text(
         %{"fields" => %{enacting_text: text}, urls: urls, enacting_laws: eLaws} = record
@@ -228,18 +230,58 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   end
 
   defp get_url_refs(urls, text) do
+    with {:ok, url_set} <- get_urls(urls, text),
+         IO.inspect(url_set, label: "url_set"),
+         {:ok, url_matches} <- match_on_year(url_set, text),
+         IO.inspect(url_matches, label: "url_matches"),
+         {:ok, enacting_laws} <- enacting_laws(url_matches),
+         IO.inspect(enacting_laws, label: "enacting_laws") do
+      enacting_laws
+    else
+      {:none, []} ->
+        []
+    end
+  end
+
+  defp get_urls(urls, text) do
     case Regex.scan(~r/f\d{5}/m, text) do
       [] ->
         # there are no ef-codes in the text
-        []
+        {:none, []}
 
       fCodes ->
         # ef-code is the key to the enacting law's url
+        # enumerate the ef-codes found in the text
         Enum.map(fCodes, fn [fCode] ->
-          Map.get(urls, fCode) |> to_string()
+          Map.get(urls, fCode)
         end)
-        # translate the url into the specific params for the enacting law
-        |> enacting_laws()
+        |> Enum.concat()
+        |> (&{:ok, &1}).()
+    end
+  end
+
+  defp match_on_year(url_set, text) do
+    # if there is more than 1 url we need to find the one best matching the text
+    # we'll try to get a match with Year
+
+    case Regex.scan(~r/[ ]\d{4}[ ]/, text) do
+      [] ->
+        {:none, []}
+
+      years ->
+        Enum.reduce(years, [], fn [year], acc ->
+          year = String.trim(year)
+
+          Enum.reduce(url_set, [], fn url, acc ->
+            case String.contains?(url, year) do
+              true -> [url | acc]
+              false -> acc
+            end
+          end)
+          |> (&Kernel.++(acc, &1)).()
+        end)
+        |> Enum.uniq()
+        |> (&{:ok, &1}).()
     end
   end
 
@@ -275,6 +317,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
       end
     end)
     |> Enum.uniq()
+    |> (&{:ok, &1}).()
   end
 
   defp get_title(path) do

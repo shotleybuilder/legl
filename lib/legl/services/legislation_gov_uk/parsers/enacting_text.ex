@@ -6,7 +6,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
               acc: %{
                 enacting_text: "",
                 introductory_text: "",
-                urls: nil
+                urls: []
               },
               footnote_section: false,
               footnote: nil,
@@ -39,15 +39,15 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
   end
 
   def sax_event_handler(
-        {:startElement, _, 'FootnoteRef', _, [{:attribute, _id, [], [], ref}] = _attr},
+        {:startElement, _, 'FootnoteRef', _, [{:attribute, _id, [], [], id}] = _attr},
         state
       ) do
-    footnotes = Map.put_new(state.footnotes, "#{ref}", [])
+    footnotes = Map.put_new(state.footnotes, "#{id}", [])
     state = %{state | footnotes: footnotes}
 
     case state.enacting_text || state.introductory_text do
       true ->
-        %{state | element_acc: "#{state.element_acc} #{ref}"}
+        %{state | element_acc: "#{state.element_acc} #{id}"}
 
       _ ->
         state
@@ -65,10 +65,10 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
   end
 
   def sax_event_handler(
-        {:startElement, _, 'Footnote', _, [{:attribute, _id, [], [], ref}] = _attr},
+        {:startElement, _, 'Footnote', _, [{:attribute, _id, [], [], id}] = _attr},
         state
       ) do
-    %{state | footnote: ref}
+    %{state | footnote: id}
   end
 
   def sax_event_handler({:startElement, _, 'Citation', _, attr}, state) do
