@@ -5,15 +5,22 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
   """
 
   alias Legl.Countries.Uk.UkAirtable, as: AT
+  alias Legl.Countries.Uk.UkTypeClass, as: TypeClass
+  alias Legl.Countries.Uk.UkTypeCode, as: TypeCode
 
-  @new_law_csv ~s[lib/legl/countries/uk/legl_register/enact/new_law.csv]
-  @enacted_by_csv ~s[lib/legl/countries/uk/legl_register/enact/enacting.csv]
+  @new_law_csv ~s[lib/legl/countries/uk/legl_register/enact/new_law.csv] |> Path.absname()
+  @enacted_by_csv ~s[lib/legl/countries/uk/legl_register/enact/enacting.csv] |> Path.absname()
   @source_path ~s[lib/legl/countries/uk/legl_register/enact/enacted_source.json]
   @enacting_path ~s[lib/legl/countries/uk/legl_register/enact/enacting.json]
 
   @default_opts %{
-    base_name: "UK E",
-    type_code: :uksi,
+    # a new value for the Enacted_by field ie the cells are blank
+    new?: true,
+    # target single record Enacted_by field by providing the Name (key/ID)
+    name: "",
+    # set this as an option or get an error!
+    base_name: "",
+    type_code: [""],
     type_class: nil,
     fields: ["Name", "Title_EN", "type_code", "Year", "Number", "Enacted_by"],
     view: "",
@@ -31,52 +38,41 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
   """
   def run(opts \\ []) when is_list(opts) do
     opts = Enum.into(opts, @default_opts)
-    opts = type_code(opts)
-    opts = type_class(opts)
 
-    # save the file instances into opts
-    {new_law_csv, enacted_by_csv} = open_files()
-    opts = Map.put(opts, :new_law_csv, new_law_csv)
-    opts = Map.put(opts, :enacted_by_csv, enacted_by_csv)
-
-    IO.puts("options #{Enum.each(opts, &IO.puts(inspect(&1)))}")
+    opts =
+      with {:ok, type_code} <- TypeCode.type_code(opts.type_code),
+           {:ok, type_class} <- TypeClass.type_class(opts.type_class),
+           {new_law_csv, enacted_by_csv} = open_files() do
+        Map.merge(
+          opts,
+          %{
+            type_class: type_class,
+            type_code: type_code,
+            new_law_csv: new_law_csv,
+            enacted_by_csv: enacted_by_csv
+          }
+        )
+      else
+        {:error, error} ->
+          IO.puts("ERROR: #{error}")
+      end
 
     # %UKTypeCode is a struct with type_code as atom key and type_code as string value
     # Also, bundles type_codes under country key e.g. ni: ["nia", "apni", "nisi", "nisr", "nisro"]
 
-    case opts.sTypeCode do
-      nil ->
-        IO.puts("ERROR with type_code option of value nil")
+    Enum.each(opts.type_code, fn type ->
+      IO.puts(">>>#{type}")
+      formula = formula(type, opts)
+      opts = Map.put(opts, :formula, formula)
+      IO.puts("options #{inspect(opts)}")
+      get_child_process(opts)
+    end)
 
-      types when is_list(types) ->
-        Enum.each(types, fn type ->
-          IO.puts(">>>#{type}")
-          get_child_process(opts)
-        end)
-
-      type when is_binary(type) ->
-        get_child_process(opts)
-    end
-
-    File.close(new_law_csv)
-    File.close(enacted_by_csv)
+    File.close(opts.new_law_csv)
+    File.close(opts.enacted_by_csv)
   end
 
   def get_child_process(opts) do
-    # return Airtable Legal Register records with empty 'Enabled_by' field
-    formula =
-      case opts.sTypeClass do
-        nil ->
-          ~s/AND({type_code}="#{opts.sTypeCode}",{Enacted_by}=BLANK())/
-
-        x ->
-          ~s/AND({type_code}="#{opts.sTypeCode}", {type_class}="#{x}" ,{Enacted_by}=BLANK())/
-      end
-
-    opts = Map.put(opts, :formula, formula)
-
-    # :ok <- dedupe(new_law_csv),
-    # :ok <- dedupe(parents_csv)
     with {:ok, at_records} <- AT.get_records_from_at(opts),
          :ok <- filesave(at_records, @source_path, opts),
          {:ok, results} <-
@@ -94,14 +90,28 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
     end
   end
 
+  def formula(type, %{name: ""} = opts) do
+    f = if opts.new?, do: [~s/{Enacted_by}=BLANK()/], else: []
+    f = if type != "", do: [~s/{type_code}="#{type}"/ | f], else: f
+    f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
+    # f = if opts.view != "", do: [~s/view="#{opts.view}"/ | f], else: f
+    ~s/AND(#{Enum.join(f, ",")})/
+  end
+
+  def formula(_type, %{name: name} = _opts) do
+    ~s/{name}="#{name}"/
+  end
+
   defp open_files() do
-    {:ok, new_law_csv} = @new_law_csv |> Path.absname() |> File.open([:utf8, :write, :read])
+    # path = @new_law_csv |> Path.absname()
+    {:ok, new_law_csv} = File.open(@new_law_csv, [:utf8, :append, :read])
 
-    IO.puts(new_law_csv, "Name,Title_EN,type_code,Year,Number")
+    File.write(@new_law_csv, "Name,Title_EN,type_code,Year,Number\n")
 
-    {:ok, enacted_by_csv} = @enacted_by_csv |> Path.absname() |> File.open([:utf8, :write, :read])
+    # path = @enacted_by_csv |> Path.absname()
+    {:ok, enacted_by_csv} = File.open(@enacted_by_csv, [:utf8, :append, :read])
 
-    IO.puts(enacted_by_csv, "Name,Enacted_by")
+    File.write(@enacted_by_csv, "Name,Enacted_by\n")
     {new_law_csv, enacted_by_csv}
   end
 
@@ -160,8 +170,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
 
   def save_enacted_by_to_csv(results, opts) do
     Enum.each(results, fn
-      %{"id" => id, "fields" => %{Enacted_by: enacted_by}} = _result ->
-        IO.puts(opts.enacted_by_csv, "#{id},#{enacted_by}")
+      %{"fields" => %{"Name" => name, Enacted_by: enacted_by}} = _result ->
+        IO.puts(opts.enacted_by_csv, "#{name},#{enacted_by}")
     end)
   end
 

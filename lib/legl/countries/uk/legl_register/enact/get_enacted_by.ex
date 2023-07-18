@@ -45,9 +45,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
           IO.puts("ERROR get_enacting_laws/1 #{error}")
           acc
 
-        {:no_text, record} ->
+        {:no_text, _record} ->
           # avoids parsing if there is no text
-          [record | acc]
+          acc
+          # [record | acc]
       end
     end)
     |> (&{:ok, &1}).()
@@ -85,7 +86,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
         {:ok, record}
 
       {:ok, :html} ->
-        {:ok, "html"}
+        {:error, "html"}
 
       {:error, _code, error} ->
         {:error, error}
@@ -191,51 +192,70 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   end
 
   def s_regexes() do
-    []
+    acts = [
+      {"Northern Ireland Act", "ukpga", "2000", "1"},
+      {"Northern Ireland Act", "ukpga", "1974", "28"}
+    ]
+
+    Enum.reduce(acts, [], fn {tl, _t, yr, _n} = act, acc ->
+      [
+        {act, ~r/powers conferred by paragraph.*?Schedule.*?to the[ ]+#{tl} #{yr}/}
+      ]
+      |> (&Kernel.++(acc, &1)).()
+    end)
   end
 
   defp enacting_law_in_match(%{urls: urls, text: text, enacting_laws: eLaws} = record) do
     regexes = [
-      ~r/^.*?powers conferred by.*?and now vested in it/,
-      ~r/^.*?power[s]?[ ]conferred[ a-z]*?by.*?[:|\.|—|;]/
+      ~r/powers? conferred.*?by.*?and now vested in/,
+      ~r/powers? conferred.*?by.*?having been designated/,
+      ~r/powers? conferred.*?by.*?the Health and Safety at Work etc\. Act 1974 (?:\(“the 1974 Act”\) )?(?:f\d{5})?/,
+      ~r/powers? conferred.*?by.*?the Health and Safety at Work etc\. Act 1974 (?:f\d{5} )?(?:\(“the 1974 Act”\))?/,
+      ~r/powers? conferred.*?by.*?[\.:;]/,
+      ~r/powers under.*?f\d{5}/
     ]
 
-    eLaws =
-      Enum.reduce(regexes, [], fn regex, acc ->
-        case Regex.run(regex, text) do
+    {e_Laws, _} =
+      Enum.reduce(regexes, {[], text}, fn regex, {acc, txt} ->
+        case Regex.run(regex, txt) do
           nil ->
-            acc
+            {acc, txt}
 
           [match | _] ->
-            acc ++ get_url_refs(urls, match)
+            # let's ensure later regex don't match again
+            txt = Regex.replace(regex, txt, "")
+            acc = acc ++ get_url_refs(urls, match)
+
+            {acc, txt}
         end
       end)
-      |> (&Kernel.++(eLaws, &1)).()
 
-    {:ok, %{record | enacting_laws: eLaws}}
+    {:ok, %{record | enacting_laws: Kernel.++(eLaws, e_Laws)}}
   end
 
   @doc """
   Function scans the enacting text for ef-codes (fxxxxx) and looks up the url of
-  that ef-code in the map of ef-codes
-  """
-  def enacting_law_in_enacting_text(
-        %{"fields" => %{enacting_text: text}, urls: urls, enacting_laws: eLaws} = record
-      ) do
-    eLaws =
-      get_url_refs(urls, text)
-      |> (&Kernel.++(eLaws, &1)).()
+  that ef-code in the map of ef-codes.
 
-    {:ok, %{record | enacting_laws: eLaws}}
+  The function only runs if no enacting laws have been Id'd by mroe specific means
+  """
+
+  def enacting_law_in_enacting_text(
+        %{"fields" => %{enacting_text: text}, urls: urls, enacting_laws: []} = record
+      ) do
+    get_url_refs(urls, text)
+    |> (&{:ok, %{record | enacting_laws: &1}}).()
   end
 
+  def enacting_law_in_enacting_text(record), do: {:ok, record}
+
   defp get_url_refs(urls, text) do
+    # IO.inspect(enacting_laws, label: "enacting_laws")
     with {:ok, url_set} <- get_urls(urls, text),
-         IO.inspect(url_set, label: "url_set"),
+         # IO.inspect(url_set, label: "url_set"),
          {:ok, url_matches} <- match_on_year(url_set, text),
-         IO.inspect(url_matches, label: "url_matches"),
-         {:ok, enacting_laws} <- enacting_laws(url_matches),
-         IO.inspect(enacting_laws, label: "enacting_laws") do
+         # IO.inspect(url_matches, label: "url_matches"),
+         {:ok, enacting_laws} <- enacting_laws(url_matches) do
       enacting_laws
     else
       {:none, []} ->
@@ -311,7 +331,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
 
               case Url.introduction_path(type, year, number) |> get_title() do
                 {:ok, title} -> [make_law_map({title, type, year, number}) | acc]
-                {:error, error} -> [make_law_map({error, type, year, number}) | acc]
+                {:error, _error} -> acc
               end
           end
       end
@@ -326,7 +346,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
         {:ok, title}
 
       {:ok, :html} ->
-        {:ok, "not found"}
+        {:error, "not found"}
 
       {:error, _code, error} ->
         {:error, error}
@@ -348,7 +368,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   end
 
   def dedupe(%{enacting_laws: eLaws} = record) do
-    {:ok, %{record | enacting_laws: Enum.uniq(eLaws)}}
+    {:ok, %{record | enacting_laws: Enum.uniq_by(eLaws, &{&1.id})}}
   end
 
   def enacted_by(%{enacting_laws: eLaws} = record) do

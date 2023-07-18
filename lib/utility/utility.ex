@@ -34,7 +34,9 @@ defmodule Legl.Utility do
   end
 
   def csv_quote_enclosure(string) do
-    if "" != string |> to_string() |> String.trim() do
+    string = string |> to_string() |> String.trim()
+
+    if "" != string do
       ~s/"#{string}"/
     else
       string
@@ -113,7 +115,7 @@ defmodule Legl.Utility do
   end
 
   def resource_path(url) do
-    case Regex.run(~r"^https:\/\/www.legislation.gov.uk(.*)", url) do
+    case Regex.run(~r"^https:\/\/(?:www\.)?legislation\.gov\.uk(.*)", url) do
       [_, path] -> {:ok, path}
       _ -> {:error, "Problem getting path from url: #{url}"}
     end

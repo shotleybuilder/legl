@@ -1,23 +1,35 @@
-defmodule Legl.Countries.Uk.UkAmendClient do
-
+defmodule Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient do
   @moduledoc """
     iex instructions
     1. Copy Name, Title_EN, type, year, number from AT into original.txt
     2. Legl.Countries.Uk.UkAmendClient.amendment_bfs_client()
     3. csv import from amending.csv
 
+    To run against a single record
+
+    Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient.run(base_name: "UK S",
+    name: "UK_uksi_2002_2677_CSHHR", new?: false, filesave?: true, view: "")
+
+    To run and select those records w/o a full set of amending laws use percent?:
+
+    Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient.run(base_name: "UK S",
+    sClass: "Occupational / Personal Safety", percent?: true, type_class:
+    :regulation, type_code: :uksi, new?: false, filesave?: true, view: "")
+
+
   """
   alias Legl.Airtable.AirtableIdField
   alias Legl.Airtable.AirtableTitleField
   alias Legl.Services.LegislationGovUk.Record
+  alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Countries.Uk.UkAirtable, as: AT
 
-  @at_csv "airtable_amending"
+  @at_csv ~s[lib/legl/countries/uk/legl_register/amend/amended_by.csv] |> Path.absname()
 
   @amended_fields ~s[
     Name
     Title_EN
-    Type
+    type_code
     Year
     Number
     Amendments_Checked
@@ -29,68 +41,91 @@ defmodule Legl.Countries.Uk.UkAmendClient do
     stats_amendments_count_per_law
   ] |> String.split() |> Enum.join(",")
 
-  @at_type %{
-    ukpga: ["ukpga"],
-    uksi: ["uksi"],
-    ni: ["nia", "apni", "nisi", "nisr", "nisro"],
-    nisr: ["nisr"],
-    s: ["asp", "ssi"],
-    uk: ["ukpga", "uksi"],
-    w: ["asc", "anaw", "mwa", "wsi"],
-    o: ["ukcm", "ukla", "asc", "ukmo", "apgb", "aep"]
-  }
-
   @default_opts %{
+    name: "",
+    new?: true,
+    base_name: "UK E",
+    type_code: [""],
+    type_class: "",
+    percent?: false,
+    sClass: "",
+    filesave?: false,
     fields: ["Name", "Title_EN", "type_code", "Year", "Number"],
-    view: "AMENDMENT"
+    view: "VS_CODE_AMENDMENT"
   }
 
-  def open_file() do
-    {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
-    IO.puts(file, @amended_fields)
-    file
-  end
-
-  def run(t) when is_atom(t) do
-    case Map.get(@at_type, t) do
-      nil -> IO.puts("ERROR with option")
-      types -> run(types)
-    end
-  end
-  def run(types) when is_list(types) do
-    file = open_file()
-    Enum.each(types, fn type ->
-      IO.puts(">>>#{type}")
-      opts = [formula: ~s/AND({type_code}="#{type}",{Amendments_Checked}=BLANK())/]
-      full_workflow(file, opts)
-    end)
-    File.close(file)
-  end
-
-  def full_workflow(file, opts \\ []) do
-    #formula = ~s/AND({type_code}="#{type}",{Live?}=BLANK())/
-    #formula = ~s/{type_code}="#{type}"/
-
+  @doc """
+  Function sets the optional parameters and gets one or more type_class codes
+  which are used to get records from the AT Legal Register
+  """
+  def run(opts \\ []) do
     opts = Enum.into(opts, @default_opts)
 
-    #func = &__MODULE__.make_csv_workflow/3
-    with(
-      {:ok, records} <- AT.get_records_from_at(opts)
-    ) do
+    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
+    opts = Map.merge(opts, %{base_id: base_id, table_id: table_id})
+
+    with {:ok, type_codes} <- Legl.Countries.Uk.UkTypeCode.type_code(opts.type_code),
+         {:ok, type_classes} <- Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class),
+         {:ok, sClass} <- Legl.Countries.Uk.SClass.sClass(opts.sClass),
+         opts =
+           Map.merge(opts, %{type_code: type_codes, type_class: type_classes, sClass: sClass}),
+         IO.puts("OPTIONS: #{inspect(opts)}"),
+         {:ok, file} <- @at_csv |> File.open([:utf8, :write]),
+         IO.puts(file, @amended_fields) do
+      Enum.each(type_codes, fn type ->
+        IO.puts(">>>#{type}")
+
+        IO.puts("#{formula(type, opts)}")
+
+        opts = Map.put(opts, :formula, formula(type, opts))
+
+        full_workflow(file, opts)
+      end)
+
+      File.close(file)
+    else
+      {:error, msg} ->
+        IO.puts("ERROR: #{msg}")
+    end
+  end
+
+  def formula(type, %{name: ""} = opts) do
+    f = if opts.new?, do: [~s/{Amendments_Checked}=BLANK()/], else: []
+    f = if opts.type_code != [""], do: [~s/{type_code}="#{type}"/ | f], else: f
+    f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
+
+    f =
+      if opts.percent? != false,
+        do: [~s/{% Amended By}<"1.00",{stats_amending_laws_count}>"0"/ | f],
+        else: f
+
+    f = if opts.sClass != "", do: [~s/{sClass}="#{opts.sClass}"/ | f], else: f
+    ~s/AND(#{Enum.join(f, ",")})/
+  end
+
+  def formula(_type, %{name: name} = _opts) do
+    ~s/{name}="#{name}"/
+  end
+
+  def full_workflow(file, opts) do
+    with({:ok, records} <- AT.get_records_from_at(opts)) do
       {records, _} =
-        Enum.reduce(records, [],
-          fn %{"fields" =>
-            %{
-              "Name" => name,
-              "Title_EN" => title,
-              "type_code" => type,
-              "Year" => year,
-              "Number" => number
-            }}, acc ->
+        Enum.reduce(records, [], fn %{
+                                      "fields" => %{
+                                        "Name" => name,
+                                        "Title_EN" => title,
+                                        "type_code" => type,
+                                        "Year" => year,
+                                        "Number" => number
+                                      }
+                                    },
+                                    acc ->
           [[name, title, type, year, number] | acc]
         end)
         |> paths()
-        |> (&(amendment_bfs({[], &1}, file, 0))).()
+        |> IO.inspect()
+        |> (&amendment_bfs({[], &1}, file, 0)).()
+
       records_to_csv(records)
     end
   end
@@ -100,15 +135,18 @@ defmodule Legl.Countries.Uk.UkAmendClient do
   def recover_error() do
     {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
     IO.puts(file, @amended_fields)
+
     records =
       File.read!("lib/amending.csv")
       |> String.split("\n")
+
     Enum.each(records, fn record ->
       [_, title, type, year, number] = Regex.run(~r/,"(.*?)",(.*?),(\d{4}),(.*?),/, record)
       name = AirtableIdField.id(title, type, year, number)
       record = Regex.replace(~r/^(.*?),/, record, "#{name},")
       IO.puts(file, record)
     end)
+
     File.close(file)
   end
 
@@ -118,7 +156,6 @@ defmodule Legl.Countries.Uk.UkAmendClient do
       Name, Title_EN, Type, Year, Number
   """
   def amendment_bfs_client() do
-
     {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
     IO.puts(file, @amended_fields)
 
@@ -127,30 +164,30 @@ defmodule Legl.Countries.Uk.UkAmendClient do
       |> String.split("\n")
       |> Enum.map(&String.split(&1, "\t"))
       |> paths()
-      |> (&(amendment_bfs({[], &1}, file, 0))).()
+      |> (&amendment_bfs({[], &1}, file, 0)).()
+
     records_to_csv(records)
 
     File.close(file)
   end
+
   @doc """
     API for a single piece of law to be processed
   """
   def amendment_bfs_client(title, type, year, number) do
-    path = path(type,year,number)
+    path = path(type, year, number)
     amendment_bfs_client(title, path)
   end
 
   def amendment_bfs_client(title, path) do
-
     {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
     IO.puts(file, @amended_fields)
 
-    {records, _} = amendment_bfs( {[], [{title, path}]}, file, 1)
+    {records, _} = amendment_bfs({[], [{title, path}]}, file, 1)
     records_to_csv(records)
 
     File.close(file)
   end
-
 
   @doc """
     MapSet.new([
@@ -167,27 +204,41 @@ defmodule Legl.Countries.Uk.UkAmendClient do
   end
 
   def paths(amended_by_laws, nlinks) do
-    Enum.reduce(amended_by_laws, nlinks, fn [name, _title, amending_title, _path, type, year, number, _applied?], acc ->
+    Enum.reduce(amended_by_laws, nlinks, fn [
+                                              name,
+                                              _title,
+                                              amending_title,
+                                              _path,
+                                              type,
+                                              year,
+                                              number,
+                                              _applied?
+                                            ],
+                                            acc ->
       MapSet.put(acc, {name, amending_title, path(type, year, number)})
     end)
   end
 
   def path(type, year, number) do
     case String.match?(number, ~r/\//) do
-      :false -> ~s[/changes/affected/#{type}/#{year}/#{number}/data.xml?results-count=1000&&sort=affecting-year-number]
-      :true ->
+      false ->
+        ~s[/changes/affected/#{type}/#{year}/#{number}/data.xml?results-count=1000&&sort=affecting-year-number]
+
+      true ->
         [_, n] = Regex.run(~r/\/(\d+$)/, number)
+
         ~s[/changes/affected/#{type}/#{year}/#{n}/data.xml?results-count=1000&&sort=affecting-year-number]
     end
   end
 
   def records_to_csv([]), do: :ok
+
   def records_to_csv(records) do
     records
     |> Enum.uniq()
-    #|> (&([@amended_fields | &1])).()
+    # |> (&([@amended_fields | &1])).()
     |> Enum.map(fn x -> Enum.join(x, ",") end)
-    |> (&([@amended_fields<>"\n" | &1])).()
+    |> (&[@amended_fields <> "\n" | &1]).()
     |> Enum.join("\n")
     |> save_to_csv()
   end
@@ -216,21 +267,22 @@ defmodule Legl.Countries.Uk.UkAmendClient do
     ]
   """
   def amendment_bfs(data, _file, @enumeration_limit), do: data
-  def amendment_bfs({results, links}, file, enumeration_limit) do
 
+  def amendment_bfs({results, links}, file, enumeration_limit) do
     IO.puts("enumeration #{enumeration_limit}")
 
     case ExPrompt.confirm("There are #{Enum.count(links)} laws in this iteration.  Continue?") do
       false ->
-        #IO.inspect(results)
+        # IO.inspect(results)
         {results, nil}
+
       true ->
         enumeration_limit = enumeration_limit + 1
         IO.puts(file, "ENUMERATION #{enumeration_limit} *******************")
 
         {nresults, nlinks} =
-          Enum.reduce(links, {results, MapSet.new()}, fn {name, title, path}, {nresults, nlinks} ->
-
+          Enum.reduce(links, {results, MapSet.new()}, fn {name, title, path},
+                                                         {nresults, nlinks} ->
             {at_type, at_year, at_number} = Legl.Utility.split_name(name)
 
             at_name = name
@@ -248,69 +300,91 @@ defmodule Legl.Countries.Uk.UkAmendClient do
             # call to legislation.gov.uk to get the amendments
             {:ok, stats, amended_by_laws} = Record.amendments_table(path)
 
+            # IO.inspect(amended_by_laws)
+
             # enumerate the amendments of the law to get the 'Amended_By' field's comma seperated string of ids
             # save into the results list
 
             case amended_by_laws do
               [] ->
-                record =
-                  [
-                    at_name, at_title_en, at_type, at_year, at_number, at_amendments_checked, [], nil, 0, 0, 0, 0
-                  ]
+                record = [
+                  at_name,
+                  at_title_en,
+                  at_type,
+                  at_year,
+                  at_number,
+                  at_amendments_checked,
+                  [],
+                  nil,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
 
-                Enum.join(record, ",") |> (&(IO.puts(file, &1))).()
+                Enum.join(record, ",") |> (&IO.puts(file, &1)).()
 
                 {[record | nresults], nlinks}
 
               _ ->
                 at_amended_by = at_amended_by(amended_by_laws)
                 at_leg_gov_uk_updates = at_leg_gov_uk_updates(amended_by_laws)
-                #stats
+                # stats
                 at_stats_self_amending_count = stats.self
                 at_stats_amendments_count = stats.amendments
                 at_stats_amending_laws_count = count_amending_laws(amended_by_laws)
                 at_stats_amendments_count_per_law = stats.counts
 
-                record =
-                  [
-                    at_name,
-                    at_title_en,
-                    at_type,
-                    at_year,
-                    at_number,
-                    at_amendments_checked,
-                    at_amended_by,
-                    at_leg_gov_uk_updates,
-                    at_stats_self_amending_count,
-                    at_stats_amending_laws_count,
-                    at_stats_amendments_count,
-                    at_stats_amendments_count_per_law
-                  ]
+                record = [
+                  at_name,
+                  at_title_en,
+                  at_type,
+                  at_year,
+                  at_number,
+                  at_amendments_checked,
+                  at_amended_by,
+                  at_leg_gov_uk_updates,
+                  at_stats_self_amending_count,
+                  at_stats_amending_laws_count,
+                  at_stats_amendments_count,
+                  at_stats_amendments_count_per_law
+                ]
 
-                Enum.join(record, ",") |> (&(IO.puts(file, &1))).()
+                Enum.join(record, ",") |> (&IO.puts(file, &1)).()
 
                 nresults = [record | nresults]
 
-                #Using a MapSet means we eliminate any duplicate amending law links
+                # Using a MapSet means we eliminate any duplicate amending law links
                 nlinks =
-                  Enum.reduce(amended_by_laws, nlinks, fn [_title, amending_title, _path, type, year, number, _applied?], acc ->
-                      name = AirtableIdField.id(amending_title, at_type, at_year, at_number)
-                      path = path(type, year, number)
-                      MapSet.put(acc, {name, amending_title, path})
+                  Enum.reduce(amended_by_laws, nlinks, fn [
+                                                            _title,
+                                                            amending_title,
+                                                            _path,
+                                                            type,
+                                                            year,
+                                                            number,
+                                                            _applied?
+                                                          ],
+                                                          acc ->
+                    name = AirtableIdField.id(amending_title, type, year, number)
+                    path = path(type, year, number)
+                    MapSet.put(acc, {name, amending_title, path})
                   end)
-                #IO.inspect(nlinks)
-                #IO.inspect(nresults)
+
+                # IO.inspect(nlinks)
+                # IO.inspect(nresults)
                 {nresults, nlinks}
             end
           end)
 
-        #IO.inspect(nlinks, limit: :infinity)
-        #IO.inspect(nresults, limit: :infinity)
+        # IO.inspect(nlinks, limit: :infinity)
+        # IO.inspect(nresults, limit: :infinity)
 
-        #Let's not process laws that might have been already processed
+        # Let's not process laws that might have been already processed
         nlinks = MapSet.difference(nlinks, MapSet.new(links))
-        #IO.inspect(nlinks, limit: :infinity)
+        # IO.inspect(nlinks, limit: :infinity)
 
+        # IO.inspect(nlinks)
         params = {nresults, nlinks}
 
         amendment_bfs(params, file, enumeration_limit)
@@ -337,7 +411,15 @@ defmodule Legl.Countries.Uk.UkAmendClient do
     "Yes, No, See Notes"
   """
   def at_leg_gov_uk_updates(amended_by_laws) do
-    Enum.flat_map(amended_by_laws, fn [_title, _amending_title, _path, _type, _year, _number, applied?] ->
+    Enum.flat_map(amended_by_laws, fn [
+                                        _title,
+                                        _amending_title,
+                                        _path,
+                                        _type,
+                                        _year,
+                                        _number,
+                                        applied?
+                                      ] ->
       applied?
     end)
     |> Enum.uniq()
@@ -349,6 +431,7 @@ defmodule Legl.Countries.Uk.UkAmendClient do
     "lib/amending.csv"
     |> Path.absname()
     |> File.write(binary)
+
     :ok
   end
 
@@ -359,22 +442,20 @@ defmodule Legl.Countries.Uk.UkAmendClient do
   def pre_uniq_summary_amendment_stats(records) do
     stats =
       count_amendments(records)
-      |> (&(%{%AmendmentStats{} | amendments: &1})).()
+      |> (&%{%AmendmentStats{} | amendments: &1}).()
 
     stats =
       count_self_amendments(records)
-      |> (&(%{stats | self: &1})).()
+      |> (&%{stats | self: &1}).()
 
     stats =
       amendment_ids(records)
       |> count_amendments_for_each_law(records)
-      |> (&(%{stats | counts: &1})).()
+      |> (&%{stats | counts: &1}).()
 
-    counts =
-      at_stats_amendments_count_per_law(stats)
+    counts = at_stats_amendments_count_per_law(stats)
 
     %{stats | counts: counts}
-
   end
 
   @doc """
@@ -382,8 +463,8 @@ defmodule Legl.Countries.Uk.UkAmendClient do
     <anme> <count>
   """
   def at_stats_amendments_count_per_law(nil), do: "no amendments"
-  def at_stats_amendments_count_per_law(stats) do
 
+  def at_stats_amendments_count_per_law(stats) do
     counts =
       Enum.map(stats.counts, fn {linked_record_name, count} ->
         "#{linked_record_name} - #{count}"
@@ -402,7 +483,11 @@ defmodule Legl.Countries.Uk.UkAmendClient do
 
   def count_self_amendments(records) do
     Enum.reduce(records, 0, fn [title, amending_title, _, _, _, _, _], acc ->
-      if title == amending_title do acc + 1 else acc end
+      if title == amending_title do
+        acc + 1
+      else
+        acc
+      end
     end)
   end
 
@@ -416,7 +501,6 @@ defmodule Legl.Countries.Uk.UkAmendClient do
   end
 
   def count_amendments_for_each_law(ids, records) do
-
     counts =
       group_by_amending_title(records)
       |> Enum.map(fn x ->
@@ -429,19 +513,27 @@ defmodule Legl.Countries.Uk.UkAmendClient do
   end
 
   def uniq_by_amending_title(records) do
-    Enum.uniq_by(records,
-      fn [_title, amending_title, _path, _type, _year, _number, _applied?] -> amending_title
-    end)
+    Enum.uniq_by(
+      records,
+      fn [_title, amending_title, _path, _type, _year, _number, _applied?] -> amending_title end
+    )
   end
 
   def group_by_amending_title(records) do
-
-    #create a list of the uniq titles in the records
+    # create a list of the uniq titles in the records
     uniq_titles = uniq_by_amending_title(records)
 
     Enum.map(uniq_titles, fn [_title, amending_title, _path, _type, _year, _number, _applied?] ->
-      Enum.reduce(records, [],
-      fn [_title, amending_title2, _path, _type, _year, _number, _applied?] = x, acc ->
+      Enum.reduce(records, [], fn [
+                                    _title,
+                                    amending_title2,
+                                    _path,
+                                    _type,
+                                    _year,
+                                    _number,
+                                    _applied?
+                                  ] = x,
+                                  acc ->
         if amending_title == amending_title2 do
           [x | acc]
         else
@@ -450,5 +542,4 @@ defmodule Legl.Countries.Uk.UkAmendClient do
       end)
     end)
   end
-
 end

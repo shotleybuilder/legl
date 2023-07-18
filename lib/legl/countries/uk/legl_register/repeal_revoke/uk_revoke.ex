@@ -58,31 +58,36 @@ defmodule Legl.Countries.Uk.UkRevoke do
       types -> run(types)
     end
   end
+
   def run(types) when is_list(types) do
     file = open_file()
+
     Enum.each(types, fn type ->
       IO.puts(">>>#{type}")
       opts = [formula: ~s/AND({type_code}="#{type}",{Live?}="#{@code_live}")/]
       full_workflow(file, opts)
     end)
+
     File.close(file)
   end
 
   @default_opts %{
+    base_name: "UK S",
     fields: ["Name", "Title_EN", "leg.gov.uk resources xml"],
-    view: "REPEALED_REVOKED"
+    view: "VS_CODE_REPEALED_REVOKED"
   }
 
   def full_workflow(file, opts \\ []) do
-    #formula = ~s/AND({type_code}="#{type}",{Live?}=BLANK())/
-    #formula = ~s/{type_code}="#{type}"/
+    # formula = ~s/AND({type_code}="#{type}",{Live?}=BLANK())/
+    # formula = ~s/{type_code}="#{type}"/
 
     opts = Enum.into(opts, @default_opts)
 
     func = &__MODULE__.make_csv_workflow/3
+
     with(
       {:ok, records} <- AT.get_records_from_at(opts),
-      #IO.inspect(records),
+      # IO.inspect(records),
       {:ok, msg} <- AT.enumerate_at_records({file, records}, @at_url_field, func)
     ) do
       IO.puts(msg)
@@ -93,6 +98,7 @@ defmodule Legl.Countries.Uk.UkRevoke do
     case Legl.Utility.split_name(name) do
       {type, year, number} ->
         ~s[/#{type}/#{year}/#{number}/resources/data.xml]
+
       {type, number} ->
         ~s[/#{type}/#{number}/resources/data.xml]
     end
@@ -100,7 +106,7 @@ defmodule Legl.Countries.Uk.UkRevoke do
 
   def make_csv_workflow(file, name, url) do
     with(
-     %{
+      %{
         dct_valid: valid,
         restrict_extent: extent,
         restrict_start_date: date,
@@ -109,7 +115,7 @@ defmodule Legl.Countries.Uk.UkRevoke do
       } <- get_revocation_leg_gov_uk(url)
     ) do
       ~s/#{name},#{revocation_type(revoked?)},#{date},#{valid},"#{make_geo_region_list(extent)}"/
-      |> (&(IO.puts(file, &1))).()
+      |> (&IO.puts(file, &1)).()
     else
       :ok -> :ok
       {:error, error} -> {:error, error}
@@ -123,14 +129,14 @@ defmodule Legl.Countries.Uk.UkRevoke do
     Legl.Countries.Uk.UkRevoke.get_revocation_leg_gov_uk("/ukpga/1964/40/resources/data.xml")
   """
   def get_revocation_leg_gov_uk(url) do
-    with(
-      {:ok, :xml, data} <- RecordGeneric.revoke(url)
-    ) do
+    with({:ok, :xml, data} <- RecordGeneric.revoke(url)) do
       data
     else
-      #{:error, 307, _error} ->
+      # {:error, 307, _error} ->
       #  adjust_url(url)
-      {:error, code, error} -> {:error, "#{code}: #{error}"}
+      {:error, code, error} ->
+        {:error, "#{code}: #{error}"}
+
       {:ok, :html} ->
         IO.puts("#{url}")
         {:error, :html}
@@ -139,6 +145,7 @@ defmodule Legl.Countries.Uk.UkRevoke do
 
   def make_geo_region_list(nil), do: ""
   def make_geo_region_list(""), do: ""
+
   def make_geo_region_list(code) do
     String.split(code, "+")
     |> Enum.reduce([], fn x, acc ->
@@ -152,5 +159,4 @@ defmodule Legl.Countries.Uk.UkRevoke do
     |> Legl.Countries.Uk.UkExtent.ordered_regions()
     |> Enum.join(",")
   end
-
 end

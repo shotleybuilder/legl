@@ -29,6 +29,28 @@ defmodule UK do
   def country(), do: @country_regex
   def geo(), do: @geo_regex
 
+  @doc """
+  Function provides a shortcut to list all the members of the Dutyholders taxonomy
+  """
+  def dutyholders(),
+    do:
+      Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib.print_dutyholders_to_console()
+
+  def dutyTypes(),
+    do: Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.print_duty_types_to_console()
+
+  def enact(opts),
+    do: Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run(opts)
+
+  def amend(opts),
+    do: Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient.run(opts)
+
+  def revoke(opts),
+    do: Legl.Countries.Uk.RepealRevoke.RepealRevoke.run(opts)
+
+  def metadata(opts),
+    do: Legl.Countries.Uk.Metadata.run(opts)
+
   # @impl true
   def schema(type) do
     case type do
@@ -292,14 +314,4 @@ defmodule UK do
 
     :ok
   end
-
-  @doc """
-  Function provides a shortcut to list all the members of the Dutyholders taxonomy
-  """
-  def dutyholders(),
-    do:
-      Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib.print_dutyholders_to_console()
-
-  def dutyTypes(),
-    do: Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.print_duty_types_to_console()
 end

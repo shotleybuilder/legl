@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.UkLegGovUkMetadata do
+defmodule Legl.Countries.Uk.Metadata do
   @moduledoc """
     This module gets the following properties from legislation.gov.uk
     and creates a .csv file for upload into Airtable
@@ -76,13 +76,10 @@ defmodule Legl.Countries.Uk.UkLegGovUkMetadata do
   @api_results_path ~s[lib/legl/countries/uk/legl_register/metadata/api_metadata_results.json]
   @csv_path ~s[lib/legl/countries/uk/legl_register/metadata/metadata.csv]
 
-  @at_types ["nisro"]
-  @at_csv "airtable_metadata"
-
   @default_opts %{
-    types: @at_types,
-    csv: @at_csv,
-    base: "UK E",
+    type_code: [""],
+    type_class: "",
+    base_name: "UK E",
     table: "UK",
     filesave?: true,
     csv?: true,
@@ -92,12 +89,17 @@ defmodule Legl.Countries.Uk.UkLegGovUkMetadata do
   @doc """
     Legl.Countries.Uk.UkLegGovUkMetadata.workflow()
   """
-  def workflow(opts \\ []) do
+  def run(opts \\ []) do
     opts = Enum.into(opts, @default_opts)
-    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base)
-    opts = Map.merge(opts, %{base_id: base_id, table_id: table_id})
-    IO.inspect(opts, label: "\nOptions: ")
-    Enum.each(opts.types, fn type -> workflow(opts, type) end)
+
+    with {:ok, type_codes} <- Legl.Countries.Uk.UkTypeCode.type_code(opts.type_code),
+         {:ok, type_classes} <- Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class),
+         opts = Map.merge(opts, %{type_code: type_codes, type_class: type_classes}),
+         {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name),
+         opts = Map.merge(opts, %{base_id: base_id, table_id: table_id}),
+         IO.inspect(opts, label: "\nOptions: ") do
+      Enum.each(opts.type_code, fn type -> workflow(opts, type) end)
+    end
   end
 
   defp workflow(opts, type) do
@@ -135,7 +137,7 @@ defmodule Legl.Countries.Uk.UkLegGovUkMetadata do
         table: opts.table_id,
         options: %{
           fields: ["Name", "Title_EN", "leg.gov.uk intro text"],
-          formula: ~s/{type_code}="#{type}"/
+          formula: ~s/AND({type_code}="#{type}", {md_modified}=BLANK())/
         }
       },
       {:ok, {jsonset, _recordset}} <- Records.get_records({[], []}, params)

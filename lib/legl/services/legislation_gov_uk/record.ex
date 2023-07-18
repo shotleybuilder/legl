@@ -153,7 +153,7 @@ defmodule Legl.Services.LegislationGovUk.Record do
   end
 
   def stats(records) do
-    Legl.Countries.Uk.UkAmendClient.pre_uniq_summary_amendment_stats(records)
+    Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient.pre_uniq_summary_amendment_stats(records)
   end
 
   defp uniq_by_amending_title(records) do
