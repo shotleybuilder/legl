@@ -16,6 +16,7 @@ defmodule Legl.Countries.Uk.RepealRevoke.RepealRevoke do
   alias Legl.Services.LegislationGovUk.RecordGeneric
   alias Legl.Countries.Uk.UkAirtable, as: AT
   alias Legl.Airtable.AirtableIdField, as: ID
+  alias Legl.Airtable.AirtableTitleField, as: Title
   alias Legl.Services.Airtable.AtBasesTables
 
   defstruct [
@@ -396,11 +397,16 @@ defmodule Legl.Countries.Uk.RepealRevoke.RepealRevoke do
             end
         end
 
+      title =
+        title
+        |> Title.title_clean()
+        |> (fn x -> ~s/"#{x}"/ end).()
+
       [_, type, year, number] = Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d*)/, x)
 
       id = ID.id(title, type, year, number)
 
-      [id, ~s/"#{title}"/, type, year, number]
+      [id, title, type, year, number]
       |> Enum.join(",")
       # |> (fn x -> ~s/"#{x}"/ end).()
       |> (&[&1 | acc]).()

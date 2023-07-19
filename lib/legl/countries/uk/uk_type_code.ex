@@ -37,21 +37,27 @@ defmodule Legl.Countries.Uk.UkTypeCode do
 end
 
 defmodule Legl.Countries.Uk.UkTypeClass do
+  @type_classes ~w[Act Regulations Order Rules Byelaws]
   defstruct act: "Act",
             regulation: "Regulations",
             order: "Order",
             rule: "Rules",
-            byelaw: "Byelaws"
+            byelaw: "Byelaws",
+            measure: "Measure"
 
   def type_class(type_class) when is_atom(type_class) do
     case Map.get(%__MODULE__{}, type_class) do
       nil -> {:error, "No result for #{type_class}"}
-      result when is_list(result) -> {:ok, result}
-      result -> {:ok, [result]}
+      result -> {:ok, result}
     end
   end
 
-  def type_class(type_class) when is_binary(type_class), do: {:ok, type_class}
+  def type_class(type_class)
+      when is_binary(type_class) and type_class in @type_classes,
+      do: {:ok, type_class}
+
+  def type_class(type_class) when is_binary(type_class),
+    do: {:error, "No result for #{type_class}"}
 
   def type_class(""), do: {:ok, ""}
 end

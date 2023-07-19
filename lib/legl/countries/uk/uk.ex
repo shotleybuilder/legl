@@ -51,6 +51,9 @@ defmodule UK do
   def metadata(opts),
     do: Legl.Countries.Uk.Metadata.run(opts)
 
+  def extent(opts),
+    do: Legl.Countries.Uk.LeglRegister.Extent.run(opts)
+
   # @impl true
   def schema(type) do
     case type do
