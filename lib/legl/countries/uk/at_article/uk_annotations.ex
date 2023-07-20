@@ -736,6 +736,17 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   end
 
   def tag_sub_section_efs(binary, component) do
+    # Move Efs at the end of the line to the beginning
+    regex = ~r/^(\([ ]*[A-Z]*\d+[A-Z]*[ ]?\).*?)(\[?F\d+)$/m
+
+    binary =
+      binary
+      |> (&Regex.replace(
+            regex,
+            &1,
+            "\\g{2} \\g{1}"
+          )).()
+
     # See uk_annotations.exs for examples and test
     regex = ~r/^(\[?F\d+)[ ]?(\[?F?\d*)?[ ]*(\[)?\([ ]*([A-Z]*\d+[A-Z]*)[ ]?\)[ ]?(.*)/m
 
@@ -757,6 +768,21 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
           ~r/^(F\d+)\((\d+)\)(?:-|—)\((\d+)\)([ \.]*)/m,
           &1,
           fn _, ef, from, to, txt ->
+            f = String.to_integer(from)
+            t = String.to_integer(to)
+
+            for n <- f..t do
+              ~s/#{component}#{n} #{ef} (#{n}) #{txt}/
+            end
+            |> Enum.join("\n")
+          end
+        )).()
+    # (1)—(3) . . . Fxx
+    # (1)(2) . . .Fxx
+    |> (&Regex.replace(
+          ~r/^\((\d+)\)(?:-|—)?\((\d+)\)([ \.]*)(F\d+)/m,
+          &1,
+          fn _, from, to, txt, ef ->
             f = String.to_integer(from)
             t = String.to_integer(to)
 

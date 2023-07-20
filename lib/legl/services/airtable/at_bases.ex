@@ -66,7 +66,9 @@ defmodule Legl.Services.Airtable.AtBases do
       "uk_e_town_country_planning" => "appPocx8hT0EPCSfh",
 
       # 💙 Health & Safety - 🇬🇧 ️UK
-      "uk_s" => "appRhQoz94zyVh2LR"
+      "uk_s" => "appRhQoz94zyVh2LR",
+      # 💙 OH&S - 🇬🇧 ️UK - Occupational / Personal Health and Safety
+      "uk_s_ohs" => "appiwDnCNQaZOSaVR"
     }
   end
 end

@@ -102,6 +102,12 @@ defmodule Legl.Services.Airtable.AtTables do
       # uk s
       "appRhQoz94zyVh2LR" => %{
         "uk" => "tbla82bppK8YnScrj"
+      },
+
+      # uk ohs
+      "appiwDnCNQaZOSaVR" => %{
+        "uk" => "tblpRCKGTUOQXRFeT",
+        "articles" => "tblBdY62xWCqemsKQ"
       }
     }
   end

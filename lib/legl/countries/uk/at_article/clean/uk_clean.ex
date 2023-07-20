@@ -483,7 +483,7 @@ defmodule Legl.Countries.Uk.UkClean do
     # space after closing )
     |> (&Regex.replace(~r/\)([\S])/m, &1, ") \\g{1}")).()
     # correct ) ,
-    |> (&Regex.replace(~r/\)[ ](,)/m, &1, ")\\g{1}")).()
+    |> (&Regex.replace(~r/\)[ ]([,—\(])/m, &1, ")\\g{1}")).()
   end
 
   def period_para(binary) do

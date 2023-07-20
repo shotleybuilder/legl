@@ -333,6 +333,83 @@ defmodule Legl.Countries.Uk.AtArticle.Clean.UkBespoke do
     |> (&{:ok, &1}).()
   end
 
+  def uk_ukpga_2007_19_cmcha(binary) do
+    changes = [
+      {~r/^17DPP/m, ~s/17 DPP/}
+    ]
+
+    replace(binary, changes)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_ukpga_1972_28_emasa(binary) do
+    changes = [
+      {~r/^C81.2.1973/m, ~s/C8 1.2.1973/}
+    ]
+
+    replace(binary, changes)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_ukpga_1920_65_ewypca(binary) do
+    changes = [
+      {~r/^Part III. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . F23U.K.$/m,
+       ~s/Part IIIU.K.. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . F23/},
+      {~r/^F24Part IV repealed/m, ~s/F24Sch. Part IV repealed/},
+      {~r/^Article[ ]/m, ~s//}
+    ]
+
+    replace(binary, changes)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_ukpga_1984_3_ola(binary) do
+    changes = [
+      {~r/^F11 Duty of occupier/m, ~s/F1 1 Duty of occupier/}
+    ]
+
+    replace(binary, changes)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_ukpga_1963_41_osrpa(binary) do
+    changes = [
+      {~r/^F4227\(1\)\(2\)/m, ~s/F42Ss. 27(1)(2)/},
+      {~r/^F4428/m, ~s/F44Ss. 28/},
+      {~r/^F6128/m, ~s/F61Ss. 28/},
+      {~r/^F7328/m, ~s/F73Ss. 28/},
+      {~r/^F7828/m, ~s/F78Ss. 28/},
+      {~r/^F5352\(1\)/m, ~s/F53Ss. 52(1)/}
+    ]
+
+    replace(binary, changes)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_ukpga_1974_37_hswea(binary) do
+    changes = [
+      {~r/^\[F11\(1\)\[F12Subject/m, ~s/[::sub_section::]1 F11 (1) [F12 Subject/},
+      {~r/^F15429/m, ~s/F154 29/},
+      {~r/^F15631/m, ~s/F156 31/}
+    ]
+
+    regexes = [
+      start: ~r/^Health and Safety at Work etc\. Act 1974/m,
+      end: ~r/^The Health and Safety Commission and the Health and Safety ExecutiveU\.K\./m,
+      start: ~r/^EnforcementU\.K\./m,
+      end: ~r/^Financial provisionsU\.K\./m,
+      start: ~r/^Part IVU\.K\. Miscellaneous and General/m,
+      end: ~r/^X177 Amendment of Radiological Protection Act 1970\.U\.K\./m,
+      start: ~r/^84 Extent, and application of Act\.U\.K\./m,
+      end: ~r/^SCHEDULES/m
+    ]
+
+    binary
+    |> include(regexes)
+    |> replace(changes)
+    |> (&{:ok, &1}).()
+  end
+
   defp include(binary, regexes) do
     binary =
       Enum.reduce(regexes, binary, fn {pos, regex}, acc ->
