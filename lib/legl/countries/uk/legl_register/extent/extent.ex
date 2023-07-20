@@ -123,11 +123,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     # |> (&{:ok, &1}).()
   end
 
-  @fields_update ~w[
-    Name
-    Geo_Region
-    Geo_Extent
-  ]
+  # @fields_update ~w[
+  #  Name
+  #  Geo_Region
+  #  Geo_Extent
+  # ]
 
   def make_csv_workflow(name, url, opts) do
     with(

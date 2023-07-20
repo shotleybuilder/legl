@@ -56,10 +56,10 @@ defmodule Legl.Countries.Uk.UkTypeClass do
       when is_binary(type_class) and type_class in @type_classes,
       do: {:ok, type_class}
 
+  def type_class(""), do: {:ok, ""}
+
   def type_class(type_class) when is_binary(type_class),
     do: {:error, "No result for #{type_class}"}
-
-  def type_class(""), do: {:ok, ""}
 end
 
 defmodule Legl.Countries.Uk.SClass do
