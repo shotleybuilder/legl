@@ -42,11 +42,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     fields: ["ID", "Record_Type", "Text"],
     filesave?: true,
     patch?: true,
-    source: :file,
+    source: :web,
     part: nil,
     workflow: [actor: true, dutyType: true, popimar: true, aggregate: true],
     # Set to :false for ID with this pattern UK_ukpga_1949_Geo6/12-13-14/74_CPA
-    modern_id?: true
+    old_id?: false
   }
 
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/taxa_source_records.json]
@@ -97,21 +97,21 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       {:ok, records} <- Popimar.process(records, filesave?: false, field: :POPIMAR),
       IO.puts("POPIMAR complete"),
       {:ok, records} <-
-        aggregate({:Dutyholder, :"Dutyholder Aggregate"}, records, opts.modern_id?),
+        aggregate({:Dutyholder, :"Dutyholder Aggregate"}, records, opts.old_id?),
       IO.puts("Dutyholder Aggregation Complete"),
       {:ok, records} <-
-        aggregate({:"Duty Actor", :"Duty Actor Aggregate"}, records, opts.modern_id?),
+        aggregate({:"Duty Actor", :"Duty Actor Aggregate"}, records, opts.old_id?),
       IO.puts("Duty Actor Aggregation Complete"),
       {:ok, records} <-
-        aggregate({:"Duty Type", :"Duty Type Aggregate"}, records, opts.modern_id?),
+        aggregate({:"Duty Type", :"Duty Type Aggregate"}, records, opts.old_id?),
       IO.puts("Duty Type Aggregation Complete"),
-      {:ok, records} <- aggregate({:POPIMAR, :"POPIMAR Aggregate"}, records, opts.modern_id?),
+      {:ok, records} <- aggregate({:POPIMAR, :"POPIMAR Aggregate"}, records, opts.old_id?),
       IO.puts("POPIMAR Aggregation Complete"),
-      {:ok, records} <- aggregate_part_chapter(records, "part", opts.modern_id?),
+      {:ok, records} <- aggregate_part_chapter(records, "part", opts.old_id?),
       IO.puts("PART Aggregation Complete"),
-      {:ok, records} <- aggregate_part_chapter(records, "chapter", opts.modern_id?),
+      {:ok, records} <- aggregate_part_chapter(records, "chapter", opts.old_id?),
       IO.puts("CHAPTER Aggregation Complete"),
-      {:ok, records} <- aggregate_part_chapter(records, "heading", opts.modern_id?),
+      {:ok, records} <- aggregate_part_chapter(records, "heading", opts.old_id?),
       IO.puts("HEADING Aggregation Complete")
     ) do
       if opts.filesave? == true do
@@ -267,13 +267,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   @doc """
   Function aggregates sub-section and sub-article duty type tag at the level of section.
   """
-  def aggregate({source, aggregate}, records, modern_id?) do
+  def aggregate({source, aggregate}, records, old_id?) do
     regex =
-      case modern_id? do
-        true ->
+      case old_id? do
+        false ->
           ~r/UK_[a-z]*_\d{4}_\d+_[A-Z]+_\d*[A-Z]*_\d*[A-Z]*_\d*[A-Z]*_\d+[A-Z]*/
 
-        false ->
+        true ->
           # UK_ukpga_1949_Geo6/12-13-14/74_CPA
           # UK_ukpga_1959_Eliz2/7-8/54_WA
           ~r/UK_[a-z]*_\d{4}_.*?_[A-Z]+_\d*[A-Z]*_\d*[A-Z]*_\d*[A-Z]*_\d+[A-Z]*/
@@ -365,14 +365,14 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
     |> (&{:ok, &1}).()
   end
 
-  def aggregate_part_chapter(records, record_type, modern_id?)
+  def aggregate_part_chapter(records, record_type, old_id?)
       when record_type in ["part", "chapter", "heading"] do
     regex =
-      case modern_id? do
-        true ->
+      case old_id? do
+        false ->
           ~s/UK_[a-z]*_\\d{4}_\\d+_[A-Z]+/
 
-        false ->
+        true ->
           # UK_ukpga_1949_Geo6/12-13-14/74_CPA
           ~s/UK_[a-z]*_\\d{4}_.*?_[A-Z]+/
       end
