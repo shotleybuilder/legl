@@ -15,6 +15,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkAnnotations do
   alias Legl.Countries.Uk.AirtableArticle.UkEfCodes, as: EfCodes
   alias Legl.Countries.Uk.AirtableArticle.UkArticleSectionsOptimisation, as: Optimiser
 
+  def annotations(binary, %{type: :regulation}), do: binary
+
   def annotations(binary, %{type: :act} = opts) do
     binary =
       binary

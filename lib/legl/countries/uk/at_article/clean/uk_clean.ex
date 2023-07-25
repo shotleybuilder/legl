@@ -50,31 +50,35 @@ defmodule Legl.Countries.Uk.UkClean do
     else
       :ok
     end
-
-    # clean_original(binary, opts)
   end
 
-  def clean_original(binary, _opts) do
+  def clean_original(binary, opts) do
     binary =
       binary
-      |> (&Kernel.<>("CLEANED\n", &1)).()
+      |> rm_carriage_return()
       |> Legl.Parser.rm_empty_lines()
       |> collapse_amendment_text_between_quotes()
       # |> separate_part_chapter_schedule()
-      |> separate_part()
-      |> separate_chapter()
-      |> separate_schedule()
-      |> join_empty_numbered()
+      # |> separate_part()
+      # |> separate_chapter()
+      # |> separate_schedule()
+      # |> join_empty_numbered()
       # |> rm_overview()
       # |> rm_footer()
-      |> Legl.Parser.rm_leading_tabs()
+      |> opening_quotes()
       |> closing_quotes()
 
     Legl.txt("clean")
     |> Path.absname()
     |> File.write(binary)
 
-    # clean_original(binary, opts)
+    binary |> (&IO.puts("\n\ncleaned: #{String.slice(&1, 0, 100)}...")).()
+
+    if opts.clean == true do
+      binary
+    else
+      :ok
+    end
   end
 
   @doc """
@@ -533,5 +537,11 @@ defmodule Legl.Countries.Uk.UkClean do
         end
       )
     end)
+  end
+
+  def rm_carriage_return(binary) do
+    binary
+    |> (&Regex.replace(~r/\r/m, &1, "\n")).()
+    |> (&Regex.replace(~r/\n{2,}/m, &1, "\n")).()
   end
 end

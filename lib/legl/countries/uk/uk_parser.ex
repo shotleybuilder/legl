@@ -102,18 +102,18 @@ defmodule UK.Parser do
 
   def parser(binary, %{type: :regulation} = _opts) do
     binary
-    |> rm_header()
-    |> rm_explanatory_note
+    # |> rm_header()
+    # |> rm_explanatory_note
     # |> join_empty_numbered()
     |> get_title()
     |> get_part_chapter(:part)
     |> get_part_chapter(:chapter)
     |> get_article()
     |> get_sub_article()
-    |> get_amendments(:regulation)
-    |> get_commencements(:regulation)
-    |> get_signed_section()
-    |> get_annex()
+    # |> get_amendments(:regulation)
+    # |> get_commencements(:regulation)
+    # |> get_signed_section()
+    # |> get_annex()
     |> provision_before_schedule()
     # Has to come before table
     |> get_sub_table()
@@ -123,9 +123,13 @@ defmodule UK.Parser do
     |> get_heading(:regulation)
     |> Legl.Parser.join()
     |> Legl.Parser.rm_tabs()
-    |> move_region_to_end(:regulation)
-    |> add_missing_region()
-    |> rm_emoji(["🇨", "🇪", "🇲", "🇽", "🔺", "🔻"])
+    |> rm_emoji(["⭕"])
+    |> clean_pins()
+
+    # |> move_region_to_end(:regulation)
+
+    # |> add_missing_region()
+    # |> rm_emoji(["🇨", "🇪", "🇲", "🇽", "🔺", "🔻"])
   end
 
   def separate_main_and_schedules(binary) do
@@ -395,13 +399,18 @@ defmodule UK.Parser do
         )).()
   end
 
-  def get_A_heading(binary, :regulation),
-    do:
-      Regex.replace(
-        ~r/^(\[F\d+[A-Z].*?)(#{@region_regex})(\n#{@regex_components.article}|\n#{@regex_components.amendment})(\d+[A-Z]?)/m,
-        binary,
-        "#{@components.heading}\\g{4} \\g{1} [::region::]\\g{2}\\g{3}\\g{4}"
-      )
+  def get_A_heading(binary, :regulation) do
+    tag = ~s/(?:#{@regex_components.article}|#{@regex_components.paragraph})/
+
+    regex = ~r/^#{@regex_components.heading}([^\d].*)$([\s\S]+?#{tag})(\d+[A-Z]*)(-?\d*[ ])/m
+
+    binary
+    |> (&Regex.replace(
+          regex,
+          &1,
+          "#{@components.heading}\\g{3} \\g{1} \\g{2}\\g{3}\\g{4}"
+        )).()
+  end
 
   @doc """
   Parse sections of Acts.  The equivalent of Regulation articles.
@@ -736,14 +745,17 @@ defmodule UK.Parser do
             fn _, x -> String.replace(x, ~r/[ ]{2,4}/, " ") end
           )).()
 
-  def provision_before_schedule(binary),
-    do:
-      binary
-      |> (&Regex.replace(
-            ~r/^(Regulation.*|Article.*|Section.*)\n(\[::annex::].*)/m,
-            &1,
-            "\\g{2} 📌\\g{1}"
-          )).()
+  def provision_before_schedule(binary) do
+    IO.puts("PROVISION BEFORE SCHEDULE")
+    regex = ~r/(Regulation.*|Article.*|Section.*)\n(\[::annex::\].*)/m
+
+    binary
+    |> (&Regex.replace(
+          regex,
+          &1,
+          "\\g{2} 📌\\g{1}"
+        )).()
+  end
 
   def get_table(binary),
     do:
@@ -1083,5 +1095,13 @@ defmodule UK.Parser do
         ~r/^Explanatory Note[\s\S]+|EXPLANATORY NOTE[\s\S]+/m,
         binary,
         ""
+      )
+
+  def clean_pins(binary),
+    do:
+      Regex.replace(
+        ~r/📌[ ]/m,
+        binary,
+        "📌"
       )
 end

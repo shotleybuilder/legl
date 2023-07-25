@@ -210,6 +210,15 @@ defmodule Legl.Airtable.Schema do
               region: region
           }
 
+        [_, chap_num, txt] ->
+          %{
+            last_record
+            | flow: flow(last_record),
+              type: regex.chapter_name,
+              chapter: chap_num,
+              text: txt
+          }
+
         [_, chap_num] ->
           %{
             last_record
@@ -342,6 +351,27 @@ defmodule Legl.Airtable.Schema do
             sub_section: nn,
             text: text,
             region: region
+        }
+        |> fields_reset(:sub_section, regex)
+
+      [_, n, "", text] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: type,
+            section: n,
+            text: text
+        }
+        |> fields_reset(:section, regex)
+
+      [_, n, nn, text] ->
+        %{
+          last_record
+          | flow: flow(last_record),
+            type: type,
+            section: n,
+            sub_section: nn,
+            text: text
         }
         |> fields_reset(:sub_section, regex)
 

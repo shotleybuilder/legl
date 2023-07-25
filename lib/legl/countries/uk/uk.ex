@@ -54,6 +54,10 @@ defmodule UK do
   def extent(opts),
     do: Legl.Countries.Uk.LeglRegister.Extent.run(opts)
 
+  def regulation(url) do
+    Legl.Countries.Uk.AtArticle.Original.Original.run(url)
+  end
+
   # @impl true
   def schema(type) do
     case type do
@@ -80,22 +84,23 @@ defmodule UK do
           country: :UK,
           fields: UK.Regulation.fields(),
           number_fields: UK.Regulation.number_fields(),
-          part: ~s/^(\\d+|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          part: ~s/^(\\d+|[A-Z])[ ](.*)/,
           chapter_name: "chapter",
           chapter: ~s/^(\\d+)[ ](.*)/,
-          heading: ~s/^(\\d+[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^(\\d+[A-Z]?)[ ](.*)/,
           heading_name: "heading",
-          article: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          article: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)/,
           article_name: "article",
           sub_article: ~s/^(\\d+)[ ](.*)/,
           sub_article_name: "sub-article",
           para: ~s/^(\\d+)[ ](.*)/,
           para_name: "sub-article",
           signed_name: "signed",
-          annex: ~s/^(\\d*[A-Z]?)[ ](.*)[ ]\\[::region::\\](.*)/,
+          annex: ~s/^(\\d*[A-Z]?)[ ](.*)/,
           annex_name: "schedule",
           footnote_name: "footnote",
-          amendment: ~s/^([A-Z])(\\d+)(.*)/
+          amendment: ~s/^([A-Z])(\\d+)(.*)/,
+          paragraph: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)/
         }
     end
   end
@@ -294,26 +299,31 @@ defmodule UK do
   """
   def airtable(opts \\ []) do
     opts = Enum.into(opts, @airtable_default_opts)
-    # |> Map.put(:name, name)
+    type = opts.type
 
     IO.inspect(opts, label: "Options: ")
 
     # fields as a list
     # [:flow, :type, :part, :chapter, :heading, :section, :sub_section, :article, :para, :text, :region]
     fields =
-      case opts.type do
+      case type do
         :act -> UK.Act.fields()
         :regulation -> UK.Regulation.fields()
       end
 
-    schema = schema(opts.type)
+    schema = schema(type)
 
     opts = Keyword.merge(Map.to_list(opts), fields: fields, schema: schema)
 
     # IO.inspect(opts)
+    case type do
+      :act ->
+        Legl.airtable(schema, opts)
+        |> Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(opts)
 
-    Legl.airtable(schema, opts)
-    |> Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(opts)
+      :regulation ->
+        Legl.airtable(schema, opts)
+    end
 
     :ok
   end

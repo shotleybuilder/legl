@@ -63,11 +63,7 @@ defmodule Legl.Legl.LeglPrint do
            changes: changes
          } = _record
        ) do
-    changes =
-      changes
-      |> Enum.reverse()
-      |> Enum.join(",")
-      |> Legl.Utility.csv_quote_enclosure()
+    changes = changes(changes)
 
     [
       id,
@@ -90,5 +86,14 @@ defmodule Legl.Legl.LeglPrint do
     # |> IO.inspect()
     |> Enum.join(",")
     |> (&IO.puts(file, &1)).()
+  end
+
+  defp changes(changes) when is_binary(changes), do: changes
+
+  defp changes(changes) when is_list(changes) do
+    changes
+    |> Enum.reverse()
+    |> Enum.join(",")
+    |> Legl.Utility.csv_quote_enclosure()
   end
 end

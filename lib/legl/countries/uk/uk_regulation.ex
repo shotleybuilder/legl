@@ -1,5 +1,7 @@
 defmodule UK.Regulation do
   @fields [
+    :id,
+    :name,
     :flow,
     :type,
     :part,
@@ -7,12 +9,19 @@ defmodule UK.Regulation do
     :heading,
     :section,
     :sub_section,
-    :article,
     :para,
     :sub_para,
     :amendment,
-    :text,
-    :region
+    :changes,
+    :region,
+    :max_amendments,
+    :max_modifications,
+    :max_commencements,
+    :max_extents,
+    :max_editorials,
+    :heading?,
+    :table_counter,
+    :text
   ]
   @number_fields [
     :part,
@@ -26,6 +35,7 @@ defmodule UK.Regulation do
   ]
 
   defstruct @fields
+
   @doc """
     %UK.Regulation{
       flow: "",
@@ -42,8 +52,7 @@ defmodule UK.Regulation do
       region: ""
     }
   """
-  def regulation, do:
-    struct(__MODULE__, Enum.into(@fields, %{}, fn k -> {k, ""} end))
+  def regulation, do: struct(__MODULE__, Enum.into(@fields, %{}, fn k -> {k, ""} end))
 
   def fields(), do: @fields
 
