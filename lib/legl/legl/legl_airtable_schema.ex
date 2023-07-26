@@ -8,8 +8,6 @@ defmodule Legl.Airtable.Schema do
     dedupe: true
   }
 
-  alias Legl.Legl.LeglPrint
-
   # alias __MODULE__
 
   @spec schema(
@@ -30,8 +28,6 @@ defmodule Legl.Airtable.Schema do
          # Check the deduping worked
          dupes(records, "\nDuplicates after Codification") do
       Enum.count(records) |> (&IO.puts("\nnumber of records = #{&1}")).()
-
-      LeglPrint.to_csv(records, opts)
 
       records
     end
@@ -70,16 +66,20 @@ defmodule Legl.Airtable.Schema do
 
           case Regex.run(~r/^\[::([a-z_]+)::\]$/, tag) do
             [_m, tag] ->
+              function = String.to_atom(tag)
+
               this_record =
                 try do
-                  Kernel.apply(__MODULE__, String.to_atom(tag), [
+                  Kernel.apply(__MODULE__, function, [
                     regex,
                     str,
                     last_record,
                     opts.type
                   ])
                 rescue
-                  _error -> field(regex, str, last_record, opts.type)
+                  _error ->
+                    # IO.puts("ERROR: Function not found for #{inspect(function)}")
+                    this_record_(regex, str, last_record, opts.type)
                 end
 
               [this_record | acc]
@@ -307,16 +307,52 @@ defmodule Legl.Airtable.Schema do
     end
   end
 
-  def field(regex, "[::heading::]" <> str, last_record, _type) do
+  def this_record_(regex, "[::heading::]" <> str, last_record, _type) do
     heading(regex, "[::heading::]" <> str, last_record, nil)
   end
 
-  def field(regex, "[::paragraph::]" <> str, last_record, _type) do
+  def this_record_(regex, "[::article::]" <> str, last_record, _type) do
+    article(regex, "[::article::]" <> str, last_record, nil)
+  end
+
+  def this_record_(regex, "[::sub_article::]" <> str, last_record, _type) do
+    sub_article(regex, "[::sub_article::]" <> str, last_record, nil)
+  end
+
+  def this_record_(regex, "[::paragraph::]" <> str, last_record, _type) do
     clause(:paragraph, regex, str, last_record)
   end
 
-  def field(regex, "[::sub_paragraph::]" <> str, last_record, _type) do
+  def this_record_(regex, "[::sub_paragraph::]" <> str, last_record, _type) do
     sub_clause(:sub_paragraph, regex, str, last_record)
+  end
+
+  def this_record_(regex, "[::table::]" <> str, last_record, _type) do
+    table(regex, "[::table::]" <> str, last_record, nil)
+  end
+
+  def this_record_(
+        %{country: :UK} = regex,
+        "[::amendment_heading::]" <> str,
+        last_record,
+        _type
+      ) do
+    case Regex.run(~r/#{regex.amendment_heading}/, str) do
+      [amd_hd] ->
+        %{
+          last_record
+          | type:
+              Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},#{regex.heading_name}"),
+            text: amd_hd
+        }
+
+        # |> fields_reset(:section, regex)
+    end
+  end
+
+  def this_record_(_schema, record, last_record, _) do
+    IO.puts("ERROR: this_record_/4 #{record}\n#{inspect(last_record)}")
+    last_record
   end
 
   @doc """
@@ -377,7 +413,7 @@ defmodule Legl.Airtable.Schema do
 
       nil ->
         IO.puts("ERROR: clause/4 => regex: #{s_regex} str: #{str}")
-        # last_record
+        last_record
     end
   end
 
@@ -446,7 +482,8 @@ defmodule Legl.Airtable.Schema do
   also used for : sub_paragraphs for Schedules
   """
 
-  def sub_clause(name, regex, str, last_record) when name in [:sub_paragraph] do
+  def sub_clause(name, regex, str, last_record)
+      when name in [:sub_paragraph] and is_map(last_record) do
     fields_reset(last_record, :sub_section, regex)
     s_regex = Map.get(regex, name)
 
@@ -468,6 +505,11 @@ defmodule Legl.Airtable.Schema do
       end
 
     fields_reset(record, :sub_section, regex)
+  end
+
+  def sub_clause(name, _regex, str, last_record) do
+    IO.puts("ERROR: #{name}\n#{str}\n#{inspect(last_record)}")
+    last_record
   end
 
   def sub_section(regex, "[::sub_section::]" <> str, last_record, _type) do
@@ -513,7 +555,7 @@ defmodule Legl.Airtable.Schema do
 
           _ ->
             %{last_record | type: regex.article_name, text: str}
-            |> fields_reset(:article, regex)
+            |> fields_reset(:section, regex)
         end
 
       [_, article, "", text, region] ->
@@ -680,25 +722,6 @@ defmodule Legl.Airtable.Schema do
         text: form
     }
     |> fields_reset(:part, regex)
-  end
-
-  def amendment_heading(
-        %{country: :UK} = regex,
-        "[::amendment_heading::]" <> str,
-        last_record,
-        _type
-      ) do
-    case Regex.run(~r/#{regex.amendment_heading}/, str) do
-      [amd_hd] ->
-        %{
-          last_record
-          | type:
-              Legl.Utility.csv_quote_enclosure("#{regex.amendment_name},#{regex.heading_name}"),
-            text: amd_hd
-        }
-
-        # |> fields_reset(:section, regex)
-    end
   end
 
   def amendment(%{country: :UK} = regex, "[::amendment::]" <> str, last_record, _type) do

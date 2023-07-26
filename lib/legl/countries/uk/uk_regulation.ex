@@ -52,7 +52,21 @@ defmodule UK.Regulation do
       region: ""
     }
   """
-  def regulation, do: struct(__MODULE__, Enum.into(@fields, %{}, fn k -> {k, ""} end))
+  def regulation,
+    do:
+      struct(
+        __MODULE__,
+        Enum.into(@fields, %{}, fn
+          :max_amendments -> {:max_amendments, 0}
+          :max_modifications -> {:max_modifications, 0}
+          :max_commencements -> {:max_commencements, 0}
+          :max_extents -> {:max_extents, 0}
+          :max_editorials -> {:max_editorials, 0}
+          :table_counter -> {:table_counter, 0}
+          :changes -> {:changes, []}
+          k -> {k, ""}
+        end)
+      )
 
   def fields(), do: @fields
 

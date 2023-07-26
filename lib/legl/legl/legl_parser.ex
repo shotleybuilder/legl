@@ -34,11 +34,17 @@ defmodule Legl.Parser do
   def join(binary, country \\ nil)
 
   def join(binary, "UK") do
-    Regex.replace(
-      ~r/(?:\r\n|\n)(?!#{Component.components_for_regex_or()})/mu,
-      binary,
-      "#{Legl.pushpin_emoji()}"
-    )
+    IO.write("Legl.Parser.join/2")
+
+    binary =
+      Regex.replace(
+        ~r/(?:\r\n|\n)(?!\[::)/m,
+        binary,
+        "#{Legl.pushpin_emoji()}"
+      )
+
+    IO.puts("...complete")
+    binary
   end
 
   def join(binary, _country) do

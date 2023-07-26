@@ -6,8 +6,17 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
 
   alias Legl.Countries.Uk.AtArticle.Original.AsMade
   alias Legl.Countries.Uk.AtArticle.Original.Latest
+  # The original downloaded from leg.gov.uk
+  @original ~s[lib/legl/data_files/html/original.html] |> Path.absname()
+  @ex ~s[lib/legl/data_files/ex/original.ex] |> Path.absname()
 
-  def run(url) do
+  @default_opts %{
+    saveBody?: false
+  }
+
+  def run(url, opts \\ []) do
+    opts = Enum.into(opts, @default_opts)
+
     with %HTTPoison.Response{
            status_code: 200,
            body: body,
@@ -16,7 +25,18 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
          {:ok, status} <- latest?(headers),
          {:ok, document} <-
            Floki.parse_document(body) do
-      #
+      # Write body to file
+      if opts.saveBody? do
+        File.write(@original, body)
+        IO.puts("Original .html saved to file")
+      end
+
+      # Write the parsed html to file
+      case File.write(@ex, inspect(document, limit: :infinity)) do
+        :ok -> IO.puts("Parsed html saved to file")
+        _ -> IO.puts("Error saving parsed html")
+      end
+
       case status do
         :as_made -> AsMade.process(document)
         :latest -> Latest.process(document)
@@ -32,7 +52,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
 
     case String.contains?(content_location, "made") do
       true ->
-        IO.puts("Redirected")
+        IO.puts("As Made")
         {:ok, :as_made}
 
       _ ->

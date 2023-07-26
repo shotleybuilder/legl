@@ -3,10 +3,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.AsMade do
   Functions to process Regulations from legislation.gov.uk in their 'as made' form
   """
   @txt ~s[lib/legl/data_files/txt/original.txt] |> Path.absname()
-  @ex ~s[lib/legl/data_files/ex/original.ex] |> Path.absname()
 
-  # The original downloaded from leg.gov.uk
-  @original ~s[lib/legl/data_files/html/original.html] |> Path.absname()
   # Unwanted HTML Nodes removed from the original
   @snippet ~s[lib/legl/data_files/html/snippet.html] |> Path.absname()
 
@@ -20,8 +17,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.AsMade do
         [] -> document
         content -> content
       end
-
-    File.write(@original, Floki.raw_html(content, pretty: true))
 
     snippet =
       content
@@ -94,8 +89,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.AsMade do
             &1,
             "\\g{1}\\g{2}-1 \\g{3}"
           )).()
-
-    File.write(@ex, inspect(snippet, limit: :infinity))
 
     File.write(@txt, text)
   end

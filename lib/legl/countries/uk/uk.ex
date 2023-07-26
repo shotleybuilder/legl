@@ -84,23 +84,24 @@ defmodule UK do
           country: :UK,
           fields: UK.Regulation.fields(),
           number_fields: UK.Regulation.number_fields(),
-          part: ~s/^(\\d+|[A-Z])[ ](.*)/,
+          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
           chapter_name: "chapter",
-          chapter: ~s/^(\\d+)[ ](.*)/,
-          heading: ~s/^(\\d+[A-Z]?)[ ](.*)/,
+          chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^([A-Z]?\\d*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
           heading_name: "heading",
-          article: ~s/^(\\d+[a-zA-Z]*)-?(\\d+)?[ ](.*)/,
+          article: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?([A-Z]?\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           article_name: "article",
-          sub_article: ~s/^(\\d+)[ ](.*)/,
+          sub_article: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
           sub_article_name: "sub-article",
           para: ~s/^(\\d+)[ ](.*)/,
           para_name: "sub-article",
           signed_name: "signed",
-          annex: ~s/^(\\d*[A-Z]?)[ ](.*)/,
+          annex: ~s/(\\d*[A-Z]*)[ ]?(.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/,
           annex_name: "schedule",
           footnote_name: "footnote",
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
-          paragraph: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)/
+          paragraph: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/
         }
     end
   end
@@ -147,37 +148,10 @@ defmodule UK do
 
   @doc """
   Creates an annotated text file that can be quality checked by a human.
-
-  UK Acts and Regulations (primary and secondary legislation) have to be parsed
-  differently and this is set with the `:type` option.
-
-  Laws often have 2 parts: a main content section and a section of schedules.
-  Save text copied from the main content section  as `original.txt` & that copied from
-  the schedules as `original_annex.txt`.  Use the `:part` option to use `:both` (which is also the default) files,
-  or just `:main` for laws without schedules.
-
-  ## Options
-
-  :clean -> true = clean before parsing or false = use clean.txt
-
-  Type can be `:act` or `:regulation`, defaults to `:regulation`
-
-  Part can be `:both`, `:main` or `:annex`, defaults to `:both`
-
-  ## Running
-
-  `>iex -S mix`
-
-  `iex(1)>UK.parse()`
-
-  or with Options
-
-  `iex(2)>UK.parse(part: :annex, type: :regulation)`
-
-  `iex(3)>UK.parse(:main, :regulation)`
-
-  `iex(4)>UK.parse(:annex)`
   """
+  @clean ~s[lib/legl/data_files/txt/clean.txt] |> Path.absname()
+  @annotated ~s[lib/legl/data_files/txt/annotated.txt] |> Path.absname()
+  @parsed ~s[lib/legl/data_files/txt/parsed.txt] |> Path.absname()
   def parse(opts \\ []) do
     opts = Enum.into(opts, @parse_default_opts)
 
@@ -189,34 +163,33 @@ defmodule UK do
           clean(opts)
 
         _ ->
-          Legl.txt("clean")
-          |> Path.absname()
-          |> File.read!()
+          File.read!(@clean)
       end
 
     binary =
-      case opts.annotation do
-        true ->
-          IO.puts("\n\n***********ANNOTATION***********\n")
-          Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
+      if opts.type == :regulation do
+        binary
+      else
+        case opts.annotation do
+          true ->
+            IO.puts("\n\n***********ANNOTATION***********\n")
+            Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
 
-        _ ->
-          Legl.txt("tagged")
-          |> Path.absname()
-          |> File.read!()
+          _ ->
+            File.read!(@annotated)
+        end
       end
 
-    if opts.annotation, do: Legl.txt("tagged") |> Path.absname() |> File.write(binary)
+    if opts.type == :act and opts.annotation, do: File.write(@annotated, binary)
 
     case opts.parse do
       true ->
-        IO.puts("\n\n***********PARSER***********\n")
+        IO.write("\n\n***********PARSER***********\n")
 
-        Legl.txt("annotated")
-        |> Path.absname()
-        |> File.write("#{UK.Parser.parser(binary, opts)}")
+        binary = UK.Parser.parser(binary, opts)
+        IO.puts("...complete")
 
-        :ok
+        File.write(@parsed, binary)
 
       _ ->
         :ok
@@ -246,6 +219,7 @@ defmodule UK do
     name: "default",
     country: :uk,
     type: :regulation,
+    made?: false,
     csv: true,
     # tab delimited list
     tdl: false,
@@ -299,30 +273,36 @@ defmodule UK do
   """
   def airtable(opts \\ []) do
     opts = Enum.into(opts, @airtable_default_opts)
-    type = opts.type
 
     IO.inspect(opts, label: "Options: ")
+
+    {:ok, binary} = File.read(@parsed)
 
     # fields as a list
     # [:flow, :type, :part, :chapter, :heading, :section, :sub_section, :article, :para, :text, :region]
     fields =
-      case type do
+      case opts.type do
         :act -> UK.Act.fields()
         :regulation -> UK.Regulation.fields()
       end
 
-    schema = schema(type)
+    schema = schema(opts.type)
 
-    opts = Keyword.merge(Map.to_list(opts), fields: fields, schema: schema)
+    opts_at = Keyword.merge(Map.to_list(opts), fields: fields, schema: schema)
 
     # IO.inspect(opts)
-    case type do
-      :act ->
-        Legl.airtable(schema, opts)
-        |> Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(opts)
+    case opts do
+      %{type: :act} ->
+        Legl.airtable(binary, schema, opts_at)
+        |> Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(opts_at)
 
-      :regulation ->
-        Legl.airtable(schema, opts)
+      %{type: :regulation, made?: false} ->
+        Legl.airtable(binary, schema, opts_at)
+        |> Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess.process(opts_at)
+
+      %{type: :regulation} ->
+        records = Legl.airtable(binary, schema, opts_at)
+        Legl.Legl.LeglPrint.to_csv(records, opts)
     end
 
     :ok

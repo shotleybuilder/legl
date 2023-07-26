@@ -251,10 +251,7 @@ defmodule Legl do
     do:
       ~s/#{chapter_emoji()}#{sub_chapter_emoji()}#{article_emoji()}#{sub_article_emoji()}#{numbered_para_emoji()}#{annex_emoji()}/
 
-  @spec airtable(atom | %{:title_name => any, optional(any) => any}, keyword) :: :ok
-  def airtable(country_schema, opts \\ []) when is_list(opts) do
-    {:ok, binary} = File.read(@annotated)
-
+  def airtable(binary, country_schema, opts \\ []) when is_list(opts) do
     records = Legl.Airtable.Schema.schema(binary, country_schema, opts)
 
     # tdl = tab delimited list

@@ -30,7 +30,7 @@ defmodule Legl.Legl.LeglPrint do
   end
 
   defp open_file(opts) do
-    filename = ~s/airtable_#{Atom.to_string(opts.type)}.csv/
+    filename = ~s/airtable_#{Atom.to_string(opts.filename)}.csv/
 
     {:ok, csv} =
       "lib/legl/data_files/csv/#{filename}" |> Path.absname() |> File.open([:utf8, :write])

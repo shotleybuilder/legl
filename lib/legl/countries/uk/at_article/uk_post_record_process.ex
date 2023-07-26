@@ -36,9 +36,8 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess do
          {:ok, records} <- Amendments.find_changes(records, opts),
          Amendments.amendments(records, opts),
          records <- rm_amendments(records) do
-      # A proxy of the Airtable table useful for debugging 'at_tabulated.txt'
       IO.puts("number of records w/o amendments #{Enum.count(records)}")
-
+      # A proxy of the Airtable table useful for debugging 'at_tabulated.txt'
       UkArticlePrint.make_tabular_txtfile(records, opts)
       |> IO.puts()
 
@@ -56,7 +55,12 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkPostRecordProcess do
   end
 
   def to_csv(records, opts) do
-    opts = Map.put(opts, :type, :act_)
+    opts =
+      case opts do
+        %{type: :act} -> Map.put(opts, :filename, :act_)
+        %{type: :regulation} -> Map.put(opts, :filename, :regulation_)
+      end
+
     Legl.Legl.LeglPrint.to_csv(records, opts)
   end
 
