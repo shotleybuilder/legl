@@ -110,7 +110,7 @@ defmodule UK.Parser do
     |> add_missing_region()
     |> rm_emoji(["⭕"])
     |> clean_pins()
-    |> rm_pin_at_end_of_line()
+    |> rm_pins()
   end
 
   def separate_main_and_schedules(binary) do
@@ -391,7 +391,7 @@ defmodule UK.Parser do
       Regex.replace(
         regex,
         binary,
-        "#{@components.heading}\\g{3}\\g{1} \\g{2}\\g{3}\\g{4}"
+        "#{@components.heading}\\g{3} \\g{1} \\g{2}\\g{3}\\g{4}"
       )
 
     IO.puts("...complete")
@@ -951,7 +951,7 @@ defmodule UK.Parser do
   end
 
   def move_region_to_end(binary) do
-    Regex.replace(~r/(.*)([ ]\[::region::\].*?)([ ].*)/m, binary, "\\g{1}\\g{3}\\g{2}")
+    Regex.replace(~r/(.*)([ ]\[::region::\].*?)([ 📌].*)/m, binary, "\\g{1}\\g{3}\\g{2}")
   end
 
   def add_missing_region(binary) do
@@ -1104,15 +1104,23 @@ defmodule UK.Parser do
     binary
   end
 
-  defp rm_pin_at_end_of_line(binary) do
+  defp rm_pins(binary) do
     IO.write("UK.Parser.rm_pin_at_end_of_line/1")
 
     binary =
-      Regex.replace(
-        ~r/📌\n/m,
-        binary,
-        "\n"
-      )
+      binary
+      # at the end of a line
+      |> (&Regex.replace(
+            ~r/📌$/m,
+            &1,
+            ""
+          )).()
+      # before region tag
+      |> (&Regex.replace(
+            ~r/📌\[::region::\]/,
+            &1,
+            " [::region::]"
+          )).()
 
     IO.puts("...complete")
     binary

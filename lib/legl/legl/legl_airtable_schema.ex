@@ -368,6 +368,9 @@ defmodule Legl.Airtable.Schema do
 
     case Regex.run(~r/#{s_regex}/m, str) do
       [_, n, "", text, region] ->
+        # inherit region
+        region = if region == "", do: last_record.region, else: region
+
         %{
           last_record
           | flow: flow(last_record),
@@ -379,6 +382,9 @@ defmodule Legl.Airtable.Schema do
         |> fields_reset(:section, regex)
 
       [_, n, nn, text, region] ->
+        # inherit region
+        region = if region == "", do: last_record.region, else: region
+
         %{
           last_record
           | flow: flow(last_record),
@@ -497,7 +503,9 @@ defmodule Legl.Airtable.Schema do
             | flow: flow(last_record),
               type: type,
               sub_section: n,
-              text: t
+              text: t,
+              # inherit region from last record
+              region: last_record.region
           }
 
         nil ->
@@ -559,6 +567,8 @@ defmodule Legl.Airtable.Schema do
         end
 
       [_, article, "", text, region] ->
+        region = if region == "", do: last_record.region, else: region
+
         %{
           last_record
           | flow: flow(last_record),
@@ -570,6 +580,8 @@ defmodule Legl.Airtable.Schema do
         |> fields_reset(:section, regex)
 
       [_, article, sub_article, text, region] ->
+        region = if region == "", do: last_record.region, else: region
+
         %{
           last_record
           | type: "#{regex.article_name}",
@@ -606,7 +618,8 @@ defmodule Legl.Airtable.Schema do
             | flow: flow(last_record),
               type: regex.sub_article_name,
               sub_section: n,
-              text: t
+              text: t,
+              region: last_record.region
           }
       end
 
