@@ -30,6 +30,8 @@ defmodule Types.Component do
   sub_paragraph
   sub_section
   sub_table
+  subordinate_heading
+  subordinate
   table
   table_heading
   table_row

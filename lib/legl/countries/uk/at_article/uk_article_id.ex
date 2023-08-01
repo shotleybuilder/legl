@@ -53,6 +53,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleId do
   defp annotation_code(%{type: ~s/"editorial,content"/, amendment: x} = _record),
     do: "_xx_" <> x
 
+  defp annotation_code(%{type: ~s/"subordinate,heading"/} = _record), do: "_p"
+
+  defp annotation_code(%{type: ~s/"subordinate,content"/, amendment: p} = _record),
+    do: "_px_" <> p
+
   defp annotation_code(%{type: "table"} = _record), do: "_tbl"
   defp annotation_code(%{type: ~s/note/} = _record), do: "_nt"
 

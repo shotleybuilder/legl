@@ -350,8 +350,38 @@ defmodule Legl.Airtable.Schema do
     end
   end
 
+  def this_record_(regex, "[::subordinate_heading::]" <> str, last_record, _type) do
+    case Regex.run(~r/#{regex.subordinate_heading}/, str) do
+      [txt] ->
+        %{
+          last_record
+          | type:
+              Legl.Utility.csv_quote_enclosure("#{regex.subordinate_name},#{regex.heading_name}"),
+            text: txt
+        }
+
+        # |> fields_reset(:section, regex)
+    end
+  end
+
+  def this_record_(%{country: :UK} = regex, "[::subordinate::]" <> str, last_record, _type) do
+    case Regex.run(~r/#{regex.subordinate}/, str) do
+      [_, code, num, str] ->
+        %{
+          last_record
+          | type: Legl.Utility.csv_quote_enclosure("#{regex.subordinate_name},content"),
+            text: code <> num <> str,
+            amendment: num,
+            sub_section: ""
+        }
+
+      nil ->
+        IO.puts("ERROR amendment/4 regex: #{regex.amendment} string: #{str}")
+    end
+  end
+
   def this_record_(_schema, record, last_record, _) do
-    IO.puts("ERROR: this_record_/4 #{record}\n#{inspect(last_record)}")
+    IO.puts("ERROR: this_record_/4 #{record}\nLast Record: #{inspect(last_record)}")
     last_record
   end
 

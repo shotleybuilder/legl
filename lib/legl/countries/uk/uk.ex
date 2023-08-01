@@ -54,8 +54,10 @@ defmodule UK do
   def extent(opts),
     do: Legl.Countries.Uk.LeglRegister.Extent.run(opts)
 
-  def regulation(url) do
-    Legl.Countries.Uk.AtArticle.Original.Original.run(url)
+  def legl_content(opts) do
+    Legl.Countries.Uk.AtArticle.Original.Original.run(opts)
+    parse(opts)
+    airtable(opts)
   end
 
   # @impl true
@@ -84,10 +86,10 @@ defmodule UK do
           country: :UK,
           fields: UK.Regulation.fields(),
           number_fields: UK.Regulation.number_fields(),
-          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]?\\[::region::\\](.*)/,
           chapter_name: "chapter",
           chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
-          heading: ~s/^([A-Z]?\\d*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^([A-Z]?[\\d\.]*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
           heading_name: "heading",
           article: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?([A-Z]?\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           article_name: "article",
@@ -100,7 +102,7 @@ defmodule UK do
           annex_name: "schedule",
           footnote_name: "footnote",
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
-          paragraph: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          paragraph: ~s/^([A-Z]?[\\.\\d]+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
           sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/
         }
     end
@@ -108,9 +110,16 @@ defmodule UK do
 
   @parse_default_opts %{
     type: :regulation,
-    clean: false,
+    html?: true,
+    clean: true,
     annotation: true,
     parse: true,
+
+    # parse Acts with Ordinal schedules eg First Schedule
+    numericalise_schedules: false,
+
+    # Sections with rare acronyms as text rather than amendment suffix
+    split_acronymed_sections: false,
 
     # switch for Acts with period after number
     "s_.": false,
@@ -149,6 +158,7 @@ defmodule UK do
   @doc """
   Creates an annotated text file that can be quality checked by a human.
   """
+  @original ~s[lib/legl/data_files/txt/original.txt] |> Path.absname()
   @clean ~s[lib/legl/data_files/txt/clean.txt] |> Path.absname()
   @annotated ~s[lib/legl/data_files/txt/annotated.txt] |> Path.absname()
   @parsed ~s[lib/legl/data_files/txt/parsed.txt] |> Path.absname()
@@ -160,19 +170,22 @@ defmodule UK do
     binary =
       case opts.clean do
         true ->
-          clean(opts)
+          IO.puts("\n***********CLEAN***********\n")
+
+          File.read!(@original)
+          |> Legl.Countries.Uk.UkClean.clean_original(opts)
 
         _ ->
           File.read!(@clean)
       end
 
     binary =
-      if opts.type == :regulation do
+      if opts.html? do
         binary
       else
         case opts.annotation do
           true ->
-            IO.puts("\n\n***********ANNOTATION***********\n")
+            IO.puts("\n***********ANNOTATION***********\n")
             Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
 
           _ ->
@@ -184,7 +197,7 @@ defmodule UK do
 
     case opts.parse do
       true ->
-        IO.write("\n\n***********PARSER***********\n")
+        IO.write("\n***********PARSER***********\n")
 
         binary = UK.Parser.parser(binary, opts)
         IO.puts("...complete")
@@ -194,25 +207,6 @@ defmodule UK do
       _ ->
         :ok
     end
-  end
-
-  @clean_default_opts %{
-    type: :regulation,
-    # parse Acts with Ordinal schedules eg First Schedule
-    numericalise_schedules: false,
-
-    # Sections with rare acronyms as text rather than amendment suffix
-    split_acronymed_sections: false
-  }
-
-  def clean(opts \\ []) do
-    opts = Enum.into(opts, @clean_default_opts)
-    IO.puts("\n***********CLEAN***********\n")
-
-    Legl.txt("original")
-    |> Path.absname()
-    |> File.read!()
-    |> Legl.Countries.Uk.UkClean.clean_original(opts)
   end
 
   @airtable_default_opts %{

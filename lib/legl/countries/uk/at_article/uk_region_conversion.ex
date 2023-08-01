@@ -21,6 +21,11 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkRegionConversion do
     %{record | region: region}
   end
 
+  defp convert_region_code(%{region: "E.W.S."} = record) do
+    region = Legl.Utility.csv_quote_enclosure("GB,England,Wales,Scotland")
+    %{record | region: region}
+  end
+
   defp convert_region_code(%{region: "E"} = record), do: %{record | region: "England"}
 
   defp convert_region_code(%{region: "S"} = record), do: %{record | region: "Scotland"}

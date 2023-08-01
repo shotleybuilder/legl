@@ -12,9 +12,9 @@ defmodule Legl.Countries.Uk.AtArticle.Original.AsMade do
   # Processed after changes to the Text
   @processed ~s[lib/legl/data_files/html/processed.html] |> Path.absname()
   def process(document) do
-    IO.write("Legl.Countries.Uk.AtArticle.Original.AsMade.process/1")
+    IO.puts("Legl.Countries.Uk.AtArticle.Original.AsMade.process/1")
 
-    content =
+    document =
       cond do
         # <div xmlns:atom="http://www.w3.org/2005/Atom" class="DocContainer">
         Floki.find(document, ".DocContainer") != [] ->
@@ -26,37 +26,35 @@ defmodule Legl.Countries.Uk.AtArticle.Original.AsMade do
           children
       end
 
-    snippet =
-      content
+    document =
+      document
       # Filter out the footnotes
       # <div class="LegFootnotes">
       |> Floki.traverse_and_update(fn
         # rm Footnotes
         {"div", [{"class", "LegFootnotes"}], _child} -> nil
-        # rm Explanatory Notes
-        {"p", [{"class", "LegExpNote" <> _c}], _child} -> nil
-        {"h" <> _h, [{"class", "LegExpNote" <> _c}], _child} -> nil
-        {"p", [{"class", "LegCommentText"}], _child} -> nil
-        {"a", [{"class", "LegAnchorID"}, {"id", "Legislation-ExNote"}], _child} -> nil
         # Keep all else
         other -> other
       end)
 
-    # |> List.first()
-    # Filter out the enclosing DIV <div class="LegSnippet hasBlockAmends" id="viewLegSnippet">
-    # |> Floki.children()
+    # Remove Explantory Notes
+    document =
+      Enum.take_while(document, fn x ->
+        # <a class="LegAnchorID" id="Legislation-ExNote">
+        x != {"a", [{"class", "LegAnchorID"}, {"id", "Legislation-ExNote"}], []}
+      end)
 
-    File.write(@snippet, Floki.raw_html(snippet, pretty: true))
+    File.write(@snippet, Floki.raw_html(document, pretty: true))
 
     # Split the HTML between MAIN and SCHEDULE
     main =
-      Enum.take_while(snippet, fn x ->
+      Enum.take_while(document, fn x ->
         schedule_markers(x)
       end)
 
     # Floki.find(snippet, "div#viewLegSnippet")
     schedules =
-      Enum.drop_while(snippet, fn x ->
+      Enum.drop_while(document, fn x ->
         schedule_markers(x)
       end)
 

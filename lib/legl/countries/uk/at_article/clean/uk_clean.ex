@@ -11,6 +11,29 @@ defmodule Legl.Countries.Uk.UkClean do
   #  binary
   # end
 
+  def clean_original(binary, %{type: :act, html?: true} = opts) do
+    binary =
+      binary
+      |> rm_carriage_return()
+      |> UkBespoke.bespoker(opts.name)
+      |> Legl.Parser.rm_empty_lines()
+      |> collapse_amendment_text_between_quotes()
+      |> opening_quotes()
+      |> closing_quotes()
+
+    Legl.txt("clean")
+    |> Path.absname()
+    |> File.write(binary)
+
+    binary |> (&IO.puts("\n\ncleaned: #{String.slice(&1, 0, 100)}...")).()
+
+    if opts.clean == true do
+      binary
+    else
+      :ok
+    end
+  end
+
   def clean_original(binary, %{type: :act} = opts) do
     binary =
       binary
@@ -56,6 +79,7 @@ defmodule Legl.Countries.Uk.UkClean do
     binary =
       binary
       |> rm_carriage_return()
+      |> UkBespoke.bespoker(opts.name)
       |> Legl.Parser.rm_empty_lines()
       |> collapse_amendment_text_between_quotes()
       # |> separate_part_chapter_schedule()

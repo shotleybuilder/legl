@@ -410,6 +410,110 @@ defmodule Legl.Countries.Uk.AtArticle.Clean.UkBespoke do
     |> (&{:ok, &1}).()
   end
 
+  def uk_uksi_2000_128_pssr(binary) do
+    changes = [
+      {~r/\[::paragraph::\]1 1\. The manufacturer’s name\./, ~s/1. The manufacturer’s name./},
+      {~r/\[::paragraph::\]2 2\. A serial number to identify the vessel\./,
+       ~s/2. A serial number to identify the vessel./},
+      {~r/\[::paragraph::\]3 3\. The date of manufacture of the vessel\./,
+       ~s/3. The date of manufacture of the vessel./},
+      {~r/\[::paragraph::\]4 4\. The standard to which the vessel was built\./,
+       ~s/4. The standard to which the vessel was built./},
+      {~r/\[::paragraph::\]5 5\. The maximum allowable pressure of the vessel\./,
+       ~s/5. The maximum allowable pressure of the vessel./},
+      {~r/\[::paragraph::\]6 6\. The minimum allowable pressure of the vessel where it is other than atmospheric\./,
+       ~s/[::paragraph::]6 6. The minimum allowable pressure of the vessel where it is other than atmospheric./},
+      {~r/\[::paragraph::\]7 7\. The design temperature\./,
+       ~s/[::paragraph::]7 7. The design temperature./},
+      {~r/60 �C and having a total mass not exceeding 23 kilogrammes/,
+       ~s/60°C and having a total mass not exceeding 23 kilogrammes/}
+    ]
+
+    binary
+    # |> include(regexes)
+    |> replace(changes)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_uksi_2016_1105_pesr(binary) do
+    changes = [
+      {~r/ �C/, ~s/°C/}
+    ]
+
+    changes_mid = [
+      {~r/(^\[::article::\]41.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E23)/m,
+       ~s/[::region::]E+W+S/},
+      {~r/(^\[::amendment::\]F91.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E24)/m,
+       ~s/[::region::]E+W+S/},
+      {~r/(^\[::article::\]44.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E25)/m,
+       ~s/[::region::]E+W+S/},
+      {~r/(^\[::article::\]46.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E26)/m,
+       ~s/[::region::]E+W+S/},
+      {~r/(^\[::amendment::\]F150.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E35)/m,
+       ~s/[::region::]E+W+S/},
+      {~r/(^\[::amendment::\]F90.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E89)/m,
+       ~s/[::region::]N.I./},
+      {~r/(^\[::amendment::\]F92.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E90)/m,
+       ~s/[::region::]N.I./},
+      {~r/(^\[::amendment::\]F93.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E91)/m,
+       ~s/[::region::]N.I./},
+      {~r/(^\[::amendment::\]F94.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E92)/m,
+       ~s/[::region::]N.I./},
+      {~r/(^\[::amendment::\]F151.*\n\[::heading::\])(\n[\s\S]+^\[::extent::\]E101)/m,
+       ~s/[::region::]N.I./}
+    ]
+
+    binary
+    # |> include(regexes)
+    |> replace(changes)
+    |> replace_mid(changes_mid)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_nisr_1999_13_csrni(binary) do
+    changes = [
+      {~r/currently �5,000/m, ~s/currently £5,000/}
+    ]
+
+    binary
+    # |> include(regexes)
+    |> replace(changes)
+    # |> replace_mid(changes_mid)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_nisr_1996_119_hssssrni(binary) do
+    changes = [
+      {~r/The following set of coded signals are without prejudice to other codes applicable at Community level/m,
+       ~s/[::paragraph::]3.1 3.1. The following set of coded signals are without prejudice to other codes applicable at Community level/}
+    ]
+
+    binary
+    # |> include(regexes)
+    |> replace(changes)
+    # |> replace_mid(changes_mid)
+    |> (&{:ok, &1}).()
+  end
+
+  def uk_nisr_2004_222_pssrni(binary) do
+    # {"\uFFFD"} == �
+    # "\u{B0}" == °
+    # "\u{B7}" == ·
+    IO.inspect(Regex.scan(~r/[#{"\u{B7}"}]/m, binary), label: "points")
+    IO.inspect(Regex.scan(~r/[#{"\u{B0}"}]/m, binary), label: "degs")
+
+    changes = [
+      {~r/[#{"\u{B7}"}]/m, ~s/./},
+      {~r/[#{"\u{B0}"}]C/m, ~s/degrees Celsius/}
+    ]
+
+    binary
+    # |> include(regexes)
+    |> replace(changes)
+    # |> replace_mid(changes_mid)
+    |> (&{:ok, &1}).()
+  end
+
   defp include(binary, regexes) do
     binary =
       Enum.reduce(regexes, binary, fn {pos, regex}, acc ->
@@ -435,6 +539,12 @@ defmodule Legl.Countries.Uk.AtArticle.Clean.UkBespoke do
   defp replace(binary, changes) do
     Enum.reduce(changes, binary, fn {from, to}, acc ->
       Regex.replace(from, acc, to)
+    end)
+  end
+
+  defp replace_mid(binary, changes) do
+    Enum.reduce(changes, binary, fn {from, to}, acc ->
+      Regex.replace(from, acc, "\\g{1} #{to}\\g{2}")
     end)
   end
 end

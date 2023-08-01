@@ -8,35 +8,60 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
   alias Legl.Countries.Uk.AtArticle.Original.Latest
   # The original downloaded from leg.gov.uk
   @original ~s[lib/legl/data_files/html/original.html] |> Path.absname()
+  @pretty ~s[lib/legl/data_files/html/original_pretty.html] |> Path.absname()
   @ex ~s[lib/legl/data_files/ex/original.ex] |> Path.absname()
   @txt ~s[lib/legl/data_files/txt/original.txt] |> Path.absname()
 
   @default_opts %{
-    saveBody?: true
+    saveBody?: true,
+    recv_timeout: 20000,
+    source: :web,
+    status: :latest
   }
+  def run(opts) when is_list(opts) do
+    opts = Enum.into(opts, @default_opts)
+    run(opts)
+  end
 
-  def run(url, opts \\ []) do
+  def run(%{source: :file} = opts) do
+    with {:ok, body} <- File.read(@original),
+         {:ok, document} <- Floki.parse_document(body) do
+      text =
+        case opts.status do
+          :as_made -> AsMade.process(document)
+          :latest -> Latest.process(document)
+        end
+
+      # post-process and save text
+      text = post_process(text)
+      File.write(@txt, text)
+    end
+  end
+
+  def run(%{source: :web} = opts) do
     opts = Enum.into(opts, @default_opts)
 
     with %HTTPoison.Response{
            status_code: 200,
            body: body,
            headers: headers
-         } <- HTTPoison.get!(url, [], follow_redirect: true),
+         } <-
+           HTTPoison.get!(opts.url, [], follow_redirect: true, recv_timeout: opts.recv_timeout),
          {:ok, status} <- latest?(headers),
          {:ok, document} <-
            Floki.parse_document(body) do
       # Write body to file
       if opts.saveBody? do
-        File.write(@original, Floki.raw_html(document, pretty: true))
+        File.write(@pretty, Floki.raw_html(document, pretty: true))
+        File.write(@original, Floki.raw_html(document))
         IO.puts("Original .html saved to file")
       end
 
       # Write the parsed html to file
-      case File.write(@ex, inspect(document, limit: :infinity)) do
-        :ok -> IO.puts("Parsed html saved to file")
-        _ -> IO.puts("Error saving parsed html")
-      end
+      # case File.write(@ex, inspect(document, limit: :infinity)) do
+      #  :ok -> IO.puts("Parsed html saved to file")
+      #  _ -> IO.puts("Error saving parsed html")
+      # end
 
       text =
         case status do
@@ -68,7 +93,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
   end
 
   defp post_process(text) do
-    IO.write("post_process/1")
+    IO.puts("post_process/1")
 
     text =
       text
@@ -108,6 +133,20 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
       |> (&Regex.replace(~r/^[ ]/m, &1, "")).()
       # rm any space after end of tag
       |> (&Regex.replace(~r/(\[::[a-z]+::\])[ ]/m, &1, "\\g{1}")).()
+      # join chapter
+      |> (&Regex.replace(~r/(\[::chapter::\].*)\n(.*\[::region::\].*)/m, &1, "\\g{1} \\g{2}")).()
+      # "\u{B7}" == ·
+      |> (&Regex.replace(~r/[#{"\u{B7}"}]/m, &1, ~s/./)).()
+      # "\u{B0}" == °
+      |> (&Regex.replace(~r/[#{"\u{B0}"}]C/m, &1, ~s/degrees Celsius/)).()
+      # "\u00E0" == à
+      |> (&Regex.replace(~r/[#{"\u00E0"}][ ]?/m, &1, ~s/a/)).()
+      # "\u00A3" == £
+      |> (&Regex.replace(~r/[#{"\u00A3"}]/m, &1, ~s/GBP/)).()
+      # Concatenate [::section::] with next line
+      |> (&Regex.replace(~r/(\[::section::\].*)\n(.*)/m, &1, "\\g{1} \\g{2}")).()
+      # rm empty headings
+      |> (&Regex.replace(~r/^\[::heading::\]\[::region::\].+?\n/m, &1, "")).()
 
     IO.puts("...complete")
     text

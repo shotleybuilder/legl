@@ -37,6 +37,20 @@ defmodule UK.Parser do
 
   @cols Legl.Utility.cols()
 
+  def parser(binary, %{type: :act, html?: true} = _opts) do
+    binary
+    |> get_title()
+    |> provision_before_schedule()
+    # |> get_dbl_A_heading(:act)
+    |> get_A_heading(:act)
+    |> Legl.Parser.join("UK")
+    |> move_region_to_end()
+    |> add_missing_region()
+    |> rm_emoji(["⭕"])
+    |> clean_pins()
+    |> rm_pins()
+  end
+
   def parser(binary, %{type: :act} = opts) do
     binary =
       binary
@@ -104,6 +118,7 @@ defmodule UK.Parser do
     binary
     |> get_title()
     |> provision_before_schedule()
+    |> get_dbl_A_heading(:regulation)
     |> get_A_heading(:regulation)
     |> Legl.Parser.join("UK")
     |> move_region_to_end()
@@ -385,13 +400,40 @@ defmodule UK.Parser do
     IO.write("GET_A_HEADING/2")
     tag = ~s/(?:#{@regex_components.article}|#{@regex_components.paragraph})/
 
-    regex = ~r/^#{@regex_components.heading}(.*)$([\s\S]+?#{tag})(\d+[A-Z]*)/m
+    regex = ~r/^#{@regex_components.heading}([^\d].*)$([\s\S]+?#{tag})(\d+[A-Z]*\.?\d?)/m
 
     binary =
       Regex.replace(
         regex,
         binary,
         "#{@components.heading}\\g{3} \\g{1} \\g{2}\\g{3}\\g{4}"
+      )
+
+    IO.puts("...complete")
+
+    binary
+  end
+
+  def get_dbl_A_heading(binary, :regulation) do
+    IO.write("GET_DBL_A_HEADING/2")
+    tag = ~s/(?:#{@regex_components.paragraph})/
+
+    regex =
+      ~r/^#{@regex_components.heading}(.*)\n^#{@regex_components.heading}(.*)$([\s\S]+?#{tag})(.+?)[ ]/m
+
+    binary =
+      Regex.replace(
+        regex,
+        binary,
+        fn _, hdg1, hdg2, para_txt, hdg_id ->
+          {hdg2_id, hdg1_id} =
+            case hdg_id |> String.graphemes() |> Enum.frequencies() do
+              %{"." => 2} -> {Regex.run(~r/^\d+\.\d+/, hdg_id), Regex.run(~r/^\d+/, hdg_id)}
+              %{"." => 1} -> {Regex.run(~r/^\d+\.\d+/, hdg_id), Regex.run(~r/^\d+/, hdg_id)}
+            end
+
+          "#{@components.heading}#{hdg1_id} #{hdg1}\n#{@components.heading}#{hdg2_id} #{hdg2} #{para_txt}#{hdg_id} "
+        end
       )
 
     IO.puts("...complete")
