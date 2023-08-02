@@ -96,18 +96,27 @@ defmodule Legl do
       _ ->
         case Map.get(@roman_numerals, numeral) do
           nil -> numeral
-          x -> x
+          x -> x |> Integer.to_string()
         end
     end
   end
 
   @alphabet "abcdefghijklmnopqrstuvwyyz" |> String.split("", trim: true)
 
-  def conv_alphabetic_classes(letter) do
-    letter = String.downcase(letter)
+  def conv_alphabetic_classes(i) when is_integer(i), do: Integer.to_string(i)
 
-    Enum.find_index(@alphabet, fn x -> x == letter end)
-    |> (&(&1 + 1)).()
+  def conv_alphabetic_classes(letter) when is_binary(letter) do
+    case Regex.match?(~r/[0-9]/, letter) do
+      true ->
+        letter
+
+      _ ->
+        letter = String.downcase(letter)
+
+        Enum.find_index(@alphabet, fn x -> x == letter end)
+        |> (&(&1 + 1)).()
+        |> Integer.to_string()
+    end
   end
 
   @spec txt(any) :: <<_::64, _::_*8>>

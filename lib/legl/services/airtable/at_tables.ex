@@ -108,6 +108,12 @@ defmodule Legl.Services.Airtable.AtTables do
       "appiwDnCNQaZOSaVR" => %{
         "uk" => "tblpRCKGTUOQXRFeT",
         "articles" => "tblBdY62xWCqemsKQ"
+      },
+
+      # 💙 Fire Safety - 🇬🇧 ️UK
+      "app0bGzy4uDbKrCF5" => %{
+        "uk" => "tbl7wFWCayh2Tq7Y7",
+        "articles" => "tbljS1iYOA5CaVUu4"
       }
     }
   end

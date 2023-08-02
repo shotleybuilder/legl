@@ -514,6 +514,15 @@ defmodule Legl.Countries.Uk.AtArticle.Clean.UkBespoke do
     |> (&{:ok, &1}).()
   end
 
+  def uk_ukpga_1875_vict_38_39_17_ea(binary) do
+    changes = [
+      {~r/^\[::section::\]\.\.\. F2 \.\.\./m, ~s/[::section::]5 F2 5/},
+      {~r/^\[::section::\] F36/m, "[::section::]65 F36 65 . . .\n[::section::]66 F36 66 . . ."}
+    ]
+
+    binary |> replace(changes) |> (&{:ok, &1}).()
+  end
+
   defp include(binary, regexes) do
     binary =
       Enum.reduce(regexes, binary, fn {pos, regex}, acc ->

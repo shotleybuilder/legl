@@ -185,6 +185,17 @@ defmodule Legl.Utility do
   end
 
   @doc """
+  %{"A": 1, "B": 2, ...}
+  """
+  def alphabet_to_numeric_map_base() do
+    Enum.reduce(
+      Enum.zip(String.split("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "", trim: true), 1..26),
+      %{},
+      fn {x, y}, acc -> Map.put(acc, :"#{x}", y) end
+    )
+  end
+
+  @doc """
   %{"A" => 65, "B" => 66, ...}
   """
   def alphabet_to_numeric_map() do

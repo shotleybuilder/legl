@@ -68,7 +68,9 @@ defmodule Legl.Services.Airtable.AtBases do
       # 💙 Health & Safety - 🇬🇧 ️UK
       "uk_s" => "appRhQoz94zyVh2LR",
       # 💙 OH&S - 🇬🇧 ️UK - Occupational / Personal Health and Safety
-      "uk_s_ohs" => "appiwDnCNQaZOSaVR"
+      "uk_s_ohs" => "appiwDnCNQaZOSaVR",
+      # 💙 Fire Safety - 🇬🇧 ️UK
+      "uk_fire" => "app0bGzy4uDbKrCF5"
     }
   end
 end

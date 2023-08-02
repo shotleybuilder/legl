@@ -139,14 +139,43 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
       |> (&Regex.replace(~r/[#{"\u{B7}"}]/m, &1, ~s/./)).()
       # "\u{B0}" == °
       |> (&Regex.replace(~r/[#{"\u{B0}"}]C/m, &1, ~s/degrees Celsius/)).()
+      # "\u00B0" == °
+      |> (&Regex.replace(~r/[#{"\u{00B0}"}]C/m, &1, ~s/degrees/)).()
       # "\u00E0" == à
       |> (&Regex.replace(~r/[#{"\u00E0"}][ ]?/m, &1, ~s/a/)).()
+      # "\u00E2" == â
+      |> (&Regex.replace(~r/[#{"\u00E2"}][ ]?/m, &1, ~s/a/)).()
+      # "\u00E8" == è
+      |> (&Regex.replace(~r/[#{"\u00E8"}][ ]?/m, &1, ~s/e/)).()
+      # "\u00F4" == ô
+      |> (&Regex.replace(~r/[#{"\u00F4"}][ ]?/m, &1, ~s/o/)).()
       # "\u00A3" == £
       |> (&Regex.replace(~r/[#{"\u00A3"}]/m, &1, ~s/GBP/)).()
+      # "\u00B1" == ±
+      |> (&Regex.replace(~r/[#{"\u00B1"}]/m, &1, ~s/+-/)).()
+      # "\u00D7" == ×
+      |> (&Regex.replace(~r/[#{"\u00D7"}]/m, &1, ~s/*/)).()
+      # "\u2020" == †
+      # |> (&Regex.replace(~r/[†]/m, &1, ~s//)).()
+      # "\u00BD" == ½
+      |> (&Regex.replace(~r/[#{"\u00BD"}]/m, &1, ~s/.5/)).()
+      # "\u00BF" == ¿
+      |> (&Regex.replace(~r/[#{"\u00BF"}]/m, &1, ~s//)).()
+      # "\u00EF" == ï
+      |> (&Regex.replace(~r/[#{"\u00EF"}]/m, &1, ~s//)).()
+      # "\u00B5" == µ
+      |> (&Regex.replace(~r/[#{"\u00B5"}]/m, &1, ~s/micro/)).()
+      # Concatenate [::part::] with next line
+      |> (&Regex.replace(~r/(\[::part::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
+      # Concatenate [::chapter::] with next line
+      |> (&Regex.replace(~r/(\[::chapter::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
       # Concatenate [::section::] with next line
-      |> (&Regex.replace(~r/(\[::section::\].*)\n(.*)/m, &1, "\\g{1} \\g{2}")).()
+      |> (&Regex.replace(~r/(\[::section::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
       # rm empty headings
       |> (&Regex.replace(~r/^\[::heading::\]\[::region::\].+?\n/m, &1, "")).()
+      |> (&Regex.replace(~r/^\[::heading::\]\n/m, &1, "")).()
+      # Join empty paragraphs
+      |> (&Regex.replace(~r/^(\[::paragraph::\][\d\.]+)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
 
     IO.puts("...complete")
     text

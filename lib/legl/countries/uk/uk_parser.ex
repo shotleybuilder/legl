@@ -430,6 +430,7 @@ defmodule UK.Parser do
             case hdg_id |> String.graphemes() |> Enum.frequencies() do
               %{"." => 2} -> {Regex.run(~r/^\d+\.\d+/, hdg_id), Regex.run(~r/^\d+/, hdg_id)}
               %{"." => 1} -> {Regex.run(~r/^\d+\.\d+/, hdg_id), Regex.run(~r/^\d+/, hdg_id)}
+              _ -> {hdg_id, hdg_id}
             end
 
           "#{@components.heading}#{hdg1_id} #{hdg1}\n#{@components.heading}#{hdg2_id} #{hdg2} #{para_txt}#{hdg_id} "
@@ -776,13 +777,13 @@ defmodule UK.Parser do
 
   def provision_before_schedule(binary) do
     IO.puts("PROVISION BEFORE SCHEDULE/1")
-    regex = ~r/(Regulation.*|Article.*|Section.*)\n(\[::annex::\].*)/m
+    regex = ~r/(\[F\d+ )?(Regulation.*|Article.*|Section.*)\n(\[::annex::\].*)/m
 
     binary
     |> (&Regex.replace(
           regex,
           &1,
-          "\\g{2} 📌\\g{1}"
+          "\\g{3} 📌\\g{1}\\g{2}"
         )).()
   end
 
@@ -1027,6 +1028,12 @@ defmodule UK.Parser do
         case String.match?(x, ~r/\[::region::\]/) do
           true -> ["[::part::]#{x}" | acc]
           _ -> [~s/[::part::]#{x} [::region::]/ | acc]
+        end
+
+      "[::chapter::]" <> x, acc ->
+        case String.match?(x, ~r/\[::region::\]/) do
+          true -> ["[::chapter::]#{x}" | acc]
+          _ -> [~s/[::chapter::]#{x} [::region::]/ | acc]
         end
 
       "[::paragraph::]" <> x, acc ->
