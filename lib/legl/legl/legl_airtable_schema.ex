@@ -331,6 +331,10 @@ defmodule Legl.Airtable.Schema do
     table(regex, "[::table::]" <> str, last_record, nil)
   end
 
+  def this_record_(regex, "[::figure::]" <> str, last_record, _type) do
+    figure(regex, "[::figure::]" <> str, last_record, nil)
+  end
+
   def this_record_(
         %{country: :UK} = regex,
         "[::amendment_heading::]" <> str,
@@ -984,7 +988,7 @@ defmodule Legl.Airtable.Schema do
   def signed(regex, "[::signed::]" <> str, last_record, _type) do
     %{
       last_record
-      | flow: flow(last_record),
+      | flow: "signed",
         type: "#{regex.signed_name}",
         text: str
     }
@@ -1008,6 +1012,21 @@ defmodule Legl.Airtable.Schema do
         }
 
         # |> IO.inspect()
+    end
+  end
+
+  def figure(regex, "[::figure::]" <> str, last_record, _type) do
+    case Regex.run(~r/#{regex.figure}/, str) do
+      [txt] ->
+        figure_num = last_record.figure_counter + 1
+
+        %{
+          last_record
+          | type: regex.figure_name,
+            text: txt,
+            para: figure_num,
+            table_counter: figure_num
+        }
     end
   end
 

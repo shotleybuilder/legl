@@ -111,7 +111,7 @@ defmodule UK do
   @parse_default_opts %{
     type: :regulation,
     html?: true,
-    clean: true,
+    clean?: true,
     annotation: true,
     parse: true,
 
@@ -168,16 +168,25 @@ defmodule UK do
     IO.inspect(opts, label: "\nOptions: ")
 
     binary =
-      case opts.clean do
+      case opts.clean? do
         true ->
-          IO.puts("\n***********CLEAN***********\n")
+          IO.puts("***********CLEAN***********")
 
-          File.read!(@original)
-          |> Legl.Countries.Uk.UkClean.clean_original(opts)
+          text =
+            File.read!(@original)
+            |> Legl.Countries.Uk.UkClean.clean_original(opts)
+
+          File.open(@clean, [:write, :utf8])
+          |> elem(1)
+          |> IO.write(text)
+
+          text
 
         _ ->
           File.read!(@clean)
       end
+
+    binary |> (&IO.puts("\nLAW: #{String.slice(&1, 0, 300)}...")).()
 
     binary =
       if opts.html? do
@@ -200,9 +209,12 @@ defmodule UK do
         IO.write("\n***********PARSER***********\n")
 
         binary = UK.Parser.parser(binary, opts)
+
         IO.puts("...complete")
 
-        File.write(@parsed, binary)
+        File.open(@parsed, [:write, :utf8])
+        |> elem(1)
+        |> IO.write(binary)
 
       _ ->
         :ok

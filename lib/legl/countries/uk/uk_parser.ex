@@ -46,7 +46,7 @@ defmodule UK.Parser do
     |> Legl.Parser.join("UK")
     |> move_region_to_end()
     |> add_missing_region()
-    |> rm_emoji(["⭕"])
+    |> rm_emoji(["⭕", "❌"])
     |> clean_pins()
     |> rm_pins()
   end
@@ -117,13 +117,15 @@ defmodule UK.Parser do
   def parser(binary, %{type: :regulation} = _opts) do
     binary
     |> get_title()
-    |> provision_before_schedule()
-    |> get_dbl_A_heading(:regulation)
+    # |> provision_before_schedule()
+    # |> get_dbl_A_heading(:regulation)
+    |> get_A_heading(:regulation)
+    # for double headng
     |> get_A_heading(:regulation)
     |> Legl.Parser.join("UK")
     |> move_region_to_end()
     |> add_missing_region()
-    |> rm_emoji(["⭕"])
+    |> rm_emoji(["⭕", "❌"])
     |> clean_pins()
     |> rm_pins()
   end
@@ -1143,11 +1145,11 @@ defmodule UK.Parser do
     IO.write("CLEAN_PINS/1")
 
     binary =
-      Regex.replace(
-        ~r/📌[ ]/m,
-        binary,
-        "📌"
-      )
+      binary
+      |> (&Regex.replace(~r/📌[ ]/, &1, "📌")).()
+      |> (&Regex.replace(~r/📌”/, &1, "”")).()
+      |> (&Regex.replace(~r/📌;/, &1, "”")).()
+      |> (&Regex.replace(~r/“[ ]+📌/, &1, "“")).()
 
     IO.puts("...complete")
     binary

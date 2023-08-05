@@ -3,106 +3,160 @@ defmodule Legl.Countries.Uk.UkClean do
   @country_regex UK.country()
   @geo_regex @region_regex <> "|" <> @country_regex
   @components %Types.Component{}
+  @debug ~s[lib/legl/data_files/txt/debug.txt] |> Path.absname()
   alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
   alias Legl.Countries.Uk.AtArticle.Clean.UkBespoke
 
-  # def clean_original("CLEANED\n" <> binary, _opts) do
-  #  binary |> (&IO.puts("cleaned: #{String.slice(&1, 0, 100)}...")).()
-  #  binary
-  # end
-
   def clean_original(binary, %{type: :act, html?: true} = opts) do
-    binary =
-      binary
-      |> rm_carriage_return()
-      |> UkBespoke.bespoker(opts.name)
-      |> Legl.Parser.rm_empty_lines()
-      |> collapse_amendment_text_between_quotes()
-      |> opening_quotes()
-      |> closing_quotes()
-
-    Legl.txt("clean")
-    |> Path.absname()
-    |> File.write(binary)
-
-    binary |> (&IO.puts("\n\ncleaned: #{String.slice(&1, 0, 100)}...")).()
-
-    if opts.clean == true do
-      binary
-    else
-      :ok
-    end
+    binary
+    |> post_process()
+    |> rm_carriage_return()
+    |> UkBespoke.bespoker(opts.name)
+    |> Legl.Parser.rm_empty_lines()
+    |> collapse_amendment_text_between_quotes()
+    |> opening_quotes()
+    |> closing_quotes()
   end
 
   def clean_original(binary, %{type: :act} = opts) do
-    binary =
-      binary
-      |> rm_between_marks()
-      |> UkBespoke.bespoker(opts.name)
-      |> Legl.Parser.rm_empty_lines()
-      |> collapse_amendment_text_between_quotes()
-      |> collapse_amendment_text_between_quotes()
-      |> close_parentheses()
-      |> rm_marginal_citations()
-      |> separate_part()
-      ## |> separate_chapter()
-      ## |> separate_schedule()
-      ## |> Legl.Parser.rm_leading_tabs()
-      |> join_empty_numbered()
-      |> opening_quotes()
-      |> closing_quotes()
-      |> chapter_style()
-      |> split_acronymed_sections(opts)
-      |> numericalise_schedules(opts)
-      |> rem_quotes()
-      |> join_repeals()
-      |> join_repeals_ii()
-      |> join_derivations()
-      |> collapse_table_text()
-      |> rm_multi_space()
-      |> period_para()
-
-    Legl.txt("clean")
-    |> Path.absname()
-    |> File.write(binary)
-
-    binary |> (&IO.puts("\n\ncleaned: #{String.slice(&1, 0, 100)}...")).()
-
-    if opts.clean == true do
-      binary
-    else
-      :ok
-    end
+    binary
+    |> rm_between_marks()
+    |> UkBespoke.bespoker(opts.name)
+    |> Legl.Parser.rm_empty_lines()
+    |> collapse_amendment_text_between_quotes()
+    |> collapse_amendment_text_between_quotes()
+    |> close_parentheses()
+    |> rm_marginal_citations()
+    |> separate_part()
+    |> join_empty_numbered()
+    |> opening_quotes()
+    |> closing_quotes()
+    |> chapter_style()
+    |> split_acronymed_sections(opts)
+    |> numericalise_schedules(opts)
+    |> rem_quotes()
+    |> join_repeals()
+    |> join_repeals_ii()
+    |> join_derivations()
+    |> collapse_table_text()
+    |> rm_multi_space()
+    |> period_para()
   end
 
   def clean_original(binary, opts) do
-    binary =
+    binary
+    |> post_process()
+    |> rm_carriage_return()
+    |> UkBespoke.bespoker(opts.name)
+    |> Legl.Parser.rm_empty_lines()
+    |> collapse_amendment_text_between_quotes()
+    |> opening_quotes()
+    |> closing_quotes()
+  end
+
+  defp post_process(binary) do
+    IO.puts("post_process/1")
+
+    text =
       binary
-      |> rm_carriage_return()
-      |> UkBespoke.bespoker(opts.name)
-      |> Legl.Parser.rm_empty_lines()
-      |> collapse_amendment_text_between_quotes()
-      # |> separate_part_chapter_schedule()
-      # |> separate_part()
-      # |> separate_chapter()
-      # |> separate_schedule()
-      # |> join_empty_numbered()
-      # |> rm_overview()
-      # |> rm_footer()
-      |> opening_quotes()
-      |> closing_quotes()
+      # DEAL WITH SPACES
+      # rm multi-spaces
+      |> (&Regex.replace(~r/[ ]{2,}/m, &1, " ")).()
+      # rm space at end of line
+      |> (&Regex.replace(~r/[ ]$/m, &1, "")).()
+      # rm space at start of line
+      |> (&Regex.replace(~r/^[ ]+/m, &1, "")).()
+      # rm any space after end of tag
+      |> (&Regex.replace(~r/(\[::[a-z]+::\])[ ]/m, &1, "\\g{1}")).()
+      # rm <<194, 160>> and replace with space - putting [] around introduces a hard bug to fix!
+      |> (&Regex.replace(~r/#{<<194, 160>>}+/m, &1, " ")).()
+      # rm space before period and other punc marks at end of line
+      |> (&Regex.replace(~r/[ ]+([\.\];])$/m, &1, "\\g{1}")).()
+      # rm space after ef bracket
+      |> (&Regex.replace(~r/\[[ ]F/m, &1, "[F")).()
+      # rm spaces before and after quotes
+      |> (&Regex.replace(~r/“[ ]/m, &1, "“")).()
+      |> (&Regex.replace(~r/[ ]”/m, &1, "”")).()
+      # rm spaces before or after sub-para hyphen
+      |> (&Regex.replace(~r/\.[ ]*—\(/m, &1, ".—(")).()
+      |> (&Regex.replace(~r/\.—[ ]*\(/m, &1, ".—(")).()
+      |> (&Regex.replace(~r/\.[ ]*—[ ]*\(/m, &1, ".—(")).()
 
-    Legl.txt("clean")
-    |> Path.absname()
-    |> File.write(binary)
+      # replace carriage returns
+      |> (&Regex.replace(~r/\r/m, &1, "\n")).()
+      |> (&Regex.replace(~r/\n{2,}/m, &1, "\n")).()
+      # rm spaces new lines around parenthatised numbers
+      # |> (&Regex.replace(~r/\(\n\d+\n\)(.*)/m, &1, "\\g{1}")).()
+      # |> (&Regex.replace(~r/\([ ]\d+[ ]\)/m, &1, "")).()
+      # join sub with empty line
+      |> (&Regex.replace(~r/^(\([a-z]+\))\n/m, &1, "\\g{1} ")).()
+      # rm space after [::region::]
+      |> (&Regex.replace(~r/\[::region::\][ ]/m, &1, "[::region::]")).()
+      # rm duped [::region::]
+      |> (&Regex.replace(~r/(\[::region::\]\[::region::\])/m, &1, "[::region::]")).()
 
-    binary |> (&IO.puts("\n\ncleaned: #{String.slice(&1, 0, 100)}...")).()
+      # concatenate [::region::] above [::article::]
+      |> (&Regex.replace(~r/(^\[::region::\].*)\n(^\[::article::\].*)/m, &1, "\\g{2} \\g{1}")).()
 
-    if opts.clean == true do
-      binary
-    else
-      :ok
-    end
+      # put in -1 for those articles & paras
+      |> (&Regex.replace(
+            ~r/(\[::article::\]|\[::paragraph::\])(\d+[A-Z]*)([^-\d].*?—.*?\(([A-Z]?1)\))/m,
+            &1,
+            "\\g{1}\\g{2}-\\g{4}\\g{3}"
+          )).()
+
+      # Concatenate [::part::] with next line
+      |> (&Regex.replace(
+            ~r/(\[::part::\].*)\n((?!\[::).*)\n((?!\[::).*)?/m,
+            &1,
+            "\\g{1} \\g{2} \\g{3}\n"
+          )).()
+      # join chapter
+      |> (&Regex.replace(~r/(\[::chapter::\].*)\n(.*\[::region::\].*)/m, &1, "\\g{1} \\g{2}")).()
+      # Concatenate [::chapter::] with next line
+      |> (&Regex.replace(~r/(\[::chapter::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
+      # Concatenate [::section::] with next line
+      |> (&Regex.replace(~r/(\[::section::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
+
+    File.open(@debug, [:write, :utf8])
+
+    File.write!(@debug, text)
+
+    text =
+      text
+      # Concatenate [::annex::] with next line
+      # [::annex::]3
+      # [::sRef::]Regulation 8(2)
+      # SCHEDULE 3
+      # Ignition resistance test for interliner.
+      |> (&Regex.replace(
+            ~r/(\[::annex::\].*)\n(?:\[::sRef::\](.*)\n)?((?!\[::).*)\n((?!\[::).*)?/m,
+            &1,
+            "\\g{1} \\g{3} \\g{4}\n\\g{2}\n"
+          )).()
+      # [::annex::]2
+      # [::sRef::]Regulations 3, 6 and 7
+      # SCHEDULE 2
+      # |> (&Regex.replace(
+      #     ~r/(\[::annex::\].*)\n(?:\[::sRef::\](.*)\n)?((?!\[::).*)/m,
+      #      &1,
+      #      "\\g{1} \\g{3} \\g{4}\n\\g{2}"
+      #    )).()
+
+      # rm duped [::heading::]
+      |> (&Regex.replace(~r/(\[::heading::\]\[::heading::\])/m, &1, "[::heading::]")).()
+      # rm empty headings
+      |> (&Regex.replace(~r/^\[::heading::\]\[::region::\].+?\n/m, &1, "")).()
+      |> (&Regex.replace(~r/^\[::heading::\]\n/m, &1, "")).()
+      # Join empty paragraphs
+      |> (&Regex.replace(~r/^(\[::paragraph::\][\d\.]+)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
+      # Rm orphan paragraphs
+      |> (&Regex.replace(~r/\[::paragraph::\][\d\.]*\n/, &1, "")).()
+      # Rm Marginal Citations
+      |> (&Regex.replace(~r/^Marginal Citations\n/m, &1, "")).()
+
+    IO.puts("...complete")
+    text
   end
 
   @doc """
@@ -295,13 +349,21 @@ defmodule Legl.Countries.Uk.UkClean do
     regex = ~s/([ \\(“]|F\\d+\\(?\\d*\\)?)\\"(\\w)/
     QA.scan_and_print(binary, regex, "Opening Quotes", true)
 
-    Regex.replace(
-      ~r/#{regex}/m,
-      binary,
-      fn _, prefix, suffix ->
-        ~s/#{prefix}\u201C#{suffix}/
-      end
-    )
+    binary =
+      Regex.replace(
+        ~r/#{regex}/m,
+        binary,
+        fn _, prefix, suffix ->
+          ~s/#{prefix}\u201C#{suffix}/
+        end
+      )
+
+    regex = ~r/^"[ ]?/m
+
+    QA.scan_and_print(binary, regex, "Opening Quotes @ Line Start", true)
+    # And opening quotes at start of line
+    binary
+    |> (&Regex.replace(regex, &1, "\u201C")).()
   end
 
   defp closing_quotes(binary) do

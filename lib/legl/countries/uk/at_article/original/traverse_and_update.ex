@@ -47,10 +47,15 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
             |> (&{"h" <> h, attr, [&1]}).()
         end
 
+      # Encloses amending clauses
+      {"h4", [{"class", "LegPartFirst"}] = attr, children} ->
+        concat(children, "")
+        |> (&{"h4", attr, [&1]}).()
+
       {"span", [{"class", "LegExtentRestriction"}, {"title", "Applies to " <> _t}] = attr,
        children} ->
         concat(children, "")
-        |> (&{"span", attr, ["[::region::] " <> &1]}).()
+        |> (&{"span", attr, ["[::region::]" <> &1]}).()
 
       # CHAPTER.  Includes a Region
       {"h" <> h, [{"class", "LegChapter" <> _c}] = attr, children} ->
@@ -104,23 +109,25 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{ele, attr, ["[::heading::] " <> &1 <> "\r"]}).()
 
-      {"h" <> h, [{"class", "LegP1GroupTitleFirst LegAmend"}] = attr, child} ->
-        {"h" <> h, attr, child}
+      {"h" <> h = ele, [{"class", "LegP1GroupTitleFirst"}], children}
+      when h in ["1", "2", "3", "4"] ->
+        traverse_and_update({ele, [{"class", "LegP1GroupTitle"}], children})
 
-      {"h" <> _h = ele, [{"class", "LegP1GroupTitle"}, {"id", _id}] = attr, children} ->
-        concat(children, " ")
-        |> (&{ele, attr, ["[::heading::] " <> &1 <> "\r"]}).()
+      {"h" <> h = ele, [{"class", "LegP1GroupTitle"}, {"id", _id}], children}
+      when h in ["1", "2", "3", "4"] ->
+        traverse_and_update({ele, [{"class", "LegP1GroupTitle"}], children})
 
-      {"h" <> _h = ele, [{"class", "LegP1GroupTitle" <> c}] = attr, children} ->
-        txt = concat(children, " ")
+      {"h" <> h = ele, [{"class", "LegP1GroupTitle"}] = attr, children}
+      when h in ["1", "2", "3", "4"] ->
+        ("[::heading::]" <> String.trim(concat(children, " ")))
+        # 'heading' with no text prefixes region for an article
+        |> (&Regex.replace(~r/\[::heading::\][ ]*\[::region::\]/, &1, "[::region::]")).()
+        |> (&{ele, attr, [&1]}).()
 
-        cond do
-          c == "BelowFirstC1Amend" ->
-            txt |> (&{ele, attr, [&1]}).()
-
-          true ->
-            txt |> (&{ele, attr, ["[::heading::] " <> &1 <> "\r"]}).()
-        end
+      # {"h4", [{"class", "LegP1GroupTitle"}] = attr, children} ->
+      #  concat(children, "")
+      #  |> String.trim()
+      #  |> (&{"h4", attr, [&1]}).()
 
       # AMENDMENT
 
@@ -134,6 +141,9 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
         (amendment_heading(txt) <> txt)
         |> (&{"div", attr, [&1]}).()
+
+      {"a", [{"class", "LegCommentaryLink"}, {"href", _href}, {"title", _title}, {"id", _id}], _} ->
+        nil
 
       {"div", [{"class", "LegCommentaryItem"}, {"id", "commentary" <> _id}] = attr, children} ->
         txt = concat(children, " ")
@@ -165,29 +175,48 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
               IO.puts("ERROR: amendment_type/1 no matching condition for #{inspect(txt)}")
           end
 
-        if tag != "[::marginal_citation]", do: {"div", attr, [tag <> " " <> txt]}, else: nil
+        if tag != nil, do: {"div", attr, [tag <> " " <> txt]}, else: nil
 
       # Amendings
+
+      {"h" <> _h = ele, [{"class", "LegP1GroupTitleFirst LegAmend"}] = attr, children} ->
+        concat(children, " ")
+        |> (&Regex.replace(~r/\[::.*?::\]/m, &1, "")).()
+        |> (&{ele, attr, [&1 <> "\r"]}).()
+
+      {"h" <> _h = ele, [{"class", "LegP1GroupTitle LegAmend"}] = attr, children} ->
+        concat(children, " ")
+        |> (&Regex.replace(~r/\[::.*?::\]/m, &1, "")).()
+        |> (&{ele, attr, [&1 <> "\r"]}).()
+
+      {"p", [{"class", "LegClearFix LegP2Container LegAmend"}] = attr, children} ->
+        concat(children, " ")
+        |> (&{"p", attr, [&1 <> "\r"]}).()
 
       {"p", [{"class", "LegClearFix LegP3Container LegAmend"}] = attr, children} ->
         concat(children, " ")
         |> (&{"p", attr, [&1 <> "\r"]}).()
 
-      {"h" <> h, [{"class", "LegP1GroupTitleFirst LegAmend"}] = attr, children} ->
+      {"p", [{"class", "LegClearFix LegSP2Container LegAmend"}] = attr, children} ->
         concat(children, " ")
-        |> (&{"h" <> h, attr, [&1 <> "\r"]}).()
+        |> (&{"p", attr, [&1 <> "\r"]}).()
 
       {"p", [{"class", "LegP1ParaText LegAmend"}] = attr, children} ->
         concat(children, " ")
+        |> (&Regex.replace(~r/\[::.*?::\]/m, &1, "")).()
         |> (&{"p", attr, [&1 <> "\r"]}).()
 
       {"p", [{"class", "LegP2ParaText LegAmend"}] = attr, children} ->
         concat(children, " ")
         |> (&{"p", attr, [&1 <> "\r"]}).()
 
-      {"span", [{"class", "LegAmendingText"}] = attr, children} ->
+      {"p", [{"class", "LegListTextStandard LegLevel3Amend"}] = attr, children} ->
         concat(children, "")
-        |> (&{"span", attr, [&1]}).()
+        |> (&{"p", attr, [&1]}).()
+
+      # {"span", [{"class", "LegDS LegRHS LegP3TextAmend"}] = attr, children} ->
+      #  concat(children, "")
+      #  |> (&{"span", attr, [&1]}).()
 
       # LIST ITEM
 
@@ -218,6 +247,10 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{ele, attr, [&1]}).()
 
+      {"p", [{"class", "LegClearFix LegP1Container"}] = attr, children} ->
+        concat(children, " ")
+        |> (&{"p", attr, [&1]}).()
+
       {"p", [{"class", "LegClearFix LegP2Container"}] = attr, children} ->
         concat(children, " ")
         |> (&{"p", attr, [&1]}).()
@@ -234,9 +267,9 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{"p", attr, [&1]}).()
 
-      {"p", [{"class", "LegText"}] = attr, children} ->
-        concat(children, "")
-        |> (&{"p", attr, [&1]}).()
+      {"div", [{"id", "Legislation" <> _}] = attr, children} ->
+        concat(children, " ")
+        |> (&{"div", attr, [&1]}).()
 
       # NOT SURE
 
@@ -249,7 +282,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
       {"div", [{"id", "fig" <> _fig}] = attr, children} ->
         concat(children, " ")
         |> (&Regex.replace(~r/\[::.*?::\].*?[ ]/, &1, "")).()
-        |> (&{"div", attr, [&1]}).()
+        |> (&{"div", attr, [~s/[::figure::]#{&1}/]}).()
 
       {"a", [{"href", href}, {"target", _target}, {"class", "previewImg"}] = attr, _children} ->
         {"a", attr, ["#{href}"]}
@@ -278,6 +311,8 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
   end
 
   def traverse_and_update(content, :main) do
+    IO.write("t&u/2 :main")
+
     Floki.traverse_and_update(content, fn
       # Enacting text
 
@@ -294,8 +329,14 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         |> (&{"p", attr, [&1]}).()
 
       # Regulation
+
+      {"p", [{"class", "LegP1ParaText LegExtentContainer"}, {"id", _}] = attr, children} ->
+        concat(children, " ")
+        |> (&{"p", attr, [&1]}).()
+
       {"p", [{"class", "LegP1ParaText"}] = attr, children} ->
         concat(children, " ")
+        |> String.trim()
         |> (&{"p", attr, [&1]}).()
 
       {"span", [{"class", "LegP1No"}, {"id", id}] = attr, children} ->
@@ -304,22 +345,32 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{"span", attr, [~s/#{x} #{&1}/]}).()
 
+      {"span", [{"class", "LegP1No"}] = attr, children} ->
+        txt = concat(children, " ")
+        x = Regex.run(~r/\d+[A-Z]*/, txt)
+
+        {"span", attr, [~s/#{x} #{txt}/]}
+
       # Sub-Section || Sub-Regulation
 
       {"p", [{"class", "LegP2ParaText"}] = attr, children} ->
         concat(children, " ")
         |> (&Regex.replace(
-              ~r/(.*?)\((\d+[A-Z]*)\)(.*)/,
+              ~r/(.*?)\(([A-Z]?\d+[A-Z]*)\)(.*)/,
               &1,
               "[::sub_article::]\\g{2} \\g{1} (\\g{2}) \\g{3}"
             )).()
         |> (&{"p", attr, [&1]}).()
 
+      # {"span", [{"class", "LegDS LegLHS LegP2No"}, {"id", "section-1-1"}], ["(1)"]}
       {"span", [{"class", "LegDS LegLHS LegP2No"}, {"id", id}] = attr, children} ->
-        id = Regex.run(~r/\d[A-Z]?$/, id)
+        x = String.split(id, "-") |> anchorID()
 
         concat(children, " ")
-        |> (&{"span", attr, [~s/[::sub_section::]#{id} #{&1}/]}).()
+        |> (&{"span", attr, [~s/#{x} #{&1}/]}).()
+
+      # {"span", [{"class", "LegDS LegRHS LegP2Text"}] = attr, children} ->
+      #  {"span", attr, children}
 
       # Signed Section
 
@@ -347,6 +398,10 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
     Floki.traverse_and_update(content, fn
       # Schedules
       # Works with SCHEDULE and SCHEDULE 1 ...
+
+      {"h" <> _h = ele, [{"class", "LegSchedulesTitle"}] = attr, [child]} ->
+        {ele, attr, ["[::annex::]" <> child]}
+
       {"h" <> h = ele, [{"class", "LegScheduleFirst"}], children} when h in ["1", "2", "3"] ->
         traverse_and_update({ele, [{"class", "LegSchedule"}], children}, :schedules)
 
@@ -358,19 +413,9 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         txt =
           case h do
             x when x in ["1", "2"] ->
-              case Regex.run(~r/(?:SCHEDULE.+?)(\d+[A-Z]?)/, txt) do
-                [_, n] ->
-                  ~s/#{n} #{txt}/
-                  |> move_region_to_end(upcase: true)
-                  |> (&Kernel.<>("[::annex::]", &1)).()
-                  |> (&Kernel.<>(&1, "\r")).()
-
-                nil ->
-                  txt
-                  |> move_region_to_end(upcase: true)
-                  |> (&Kernel.<>("[::annex::]", &1)).()
-                  |> (&Kernel.<>(&1, "\r")).()
-              end
+              txt
+              |> move_region_to_end(upcase: true)
+              |> (&Kernel.<>(&1, "\r")).()
 
             _ ->
               txt
@@ -378,6 +423,21 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
         IO.puts("#{txt}")
         {ele, attr, [txt]}
+
+      {"h4", [{"class", "LegScheduleFirst"}], children} ->
+        traverse_and_update({"h4", [{"class", "LegSchedule"}], children}, :schedules)
+
+      {"h4", [{"class", "LegSchedule"}] = attr, children} ->
+        concat(children, " ")
+        |> (&Regex.replace(~r/\[::region::\][ ]?/, &1, "")).()
+        |> (&{"p", attr, [&1]}).()
+
+      {"h" <> _h = ele, [{"class", "LegSchedulePblockFirst"}], children} ->
+        traverse_and_update([{ele, [{"class", "LegSchedulePblock"}], children}])
+
+      {"h" <> _h = ele, [{"class", "LegSchedulePblock"}] = attr, children} ->
+        concat(children, " ")
+        |> (&{ele, attr, [&1]}).()
 
       # Paragraph
 
@@ -388,6 +448,10 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
       {"p", [{"class", "LegClearFix LegSP2Container LegExtentContainer"}] = attr, children} ->
         concat(children, " ")
         |> (&{"p", attr, [~s/#{&1}/]}).()
+
+      {"p", [{"class", "LegClearFix LegSP1Container"}] = attr, children} ->
+        concat(children, " ")
+        |> (&{"p", attr, [&1]}).()
 
       {"p", [{"class", "LegClearFix LegSP2Container"}] = attr, children} ->
         concat(children, " ")
@@ -411,6 +475,13 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       {"p", [{"class", "LegP1ParaText"}] = attr, children} ->
         concat(children, " ")
+        |> (&{"p", attr, [&1]}).()
+
+      # This will find unnumbered paragraphs that need to be concated into the
+      # flow, but sometimes ...
+
+      {"p", [{"class", "LegText"}] = attr, children} ->
+        concat(children, "")
         |> (&{"p", attr, [&1]}).()
 
       {"span", [{"class", "LegDS LegP1No"}, {"id", id}] = attr, children} ->
@@ -460,8 +531,8 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
       # Schedule Reference
 
       {"p", [{"class", "LegArticleRef"}] = attr, children} ->
-        concat(children, " ")
-        |> (&{"p", attr, [~s/\r#{&1}\r/]}).()
+        concat(children, "")
+        |> (&{"p", attr, ["[::sRef::]" <> &1]}).()
 
       other ->
         other
@@ -526,6 +597,8 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
     end
   end
 
+  defp amendment_type(_, _, "[::marginal_citation::]"), do: nil
+
   defp amendment_type(regex, text, tag) do
     [match] = Regex.run(regex, text)
     tag <> match
@@ -543,7 +616,20 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
   defp anchorID(["part", id]) do
     id = if id == "Preliminary", do: "1", else: id
-    id = Legl.conv_roman_numeral(id)
+
+    # Capture Part ID patterns such as VA
+    id =
+      case String.split_at(id, -1) do
+        {"", x} ->
+          Legl.conv_roman_numeral(x)
+
+        {n, x} when x in ["A", "B", "C", "D"] ->
+          Legl.conv_roman_numeral(n) <> x
+
+        # eg {I, I}, {I, X}, {1, 0}
+        {x, y} ->
+          Legl.conv_roman_numeral(x <> y)
+      end
 
     ~s/[::part::]#{id}/
   end
@@ -551,8 +637,22 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
   defp anchorID(["part", _, "chapter", id]), do: anchorID(["chapter", id])
 
   defp anchorID(["chapter", id]) do
+    id =
+      case String.split(id, "n") do
+        ["", y] -> y
+        [x, "1"] -> ~s/#{x}-#{1}/
+        [x, y] -> ~s/#{x}.#{y}/
+        [x] -> x
+      end
+
+    id = Legl.Utility.numericalise_ordinal(id)
+
     id = Legl.conv_alphabetic_classes(id)
     ~s/[::chapter::]#{id}/
+  end
+
+  defp anchorID(["section", _, id]) do
+    ~s/[::sub_section::]#{id}/
   end
 
   defp anchorID(["section", id]) do
@@ -570,6 +670,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
     id =
       case String.split(id, "n") do
         ["", y] -> y
+        [x, "1"] -> ~s/#{x}-#{1}/
         [x, y] -> ~s/#{x}.#{y}/
         [x] -> x
       end
@@ -581,6 +682,11 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
   end
 
   # SCHEDULE
+
+  defp anchorID(["schedule", id]) do
+    id = Legl.Utility.numericalise_ordinal(id)
+    ~s/[::annex::]#{id}/
+  end
 
   defp anchorID(["schedule", _, "part", ""]), do: nil
 
@@ -620,6 +726,8 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
   defp anchorID(["schedule", _, "paragraph", ""]), do: nil
 
   defp anchorID(["schedule", _, "paragraph", id]), do: anchorID(["paragraph", id])
+
+  defp anchorID(["paragraph", id]) when id in [nil, ""], do: nil
 
   defp anchorID(["paragraph", id]) do
     id = String.split(id, "_") |> List.first()

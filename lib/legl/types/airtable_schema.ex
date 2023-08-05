@@ -114,6 +114,8 @@ defmodule Types.AirtableSchema do
             subordinate_heading: ~s/.*/,
             subordinate_name: "subordinate",
             amending_sub_article_name: "",
+            figure: ~s/.*/,
+            figure_name: "figure",
             form: "",
             form_name: "form",
             approval_name: "approval",

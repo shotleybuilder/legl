@@ -14,7 +14,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleId do
   def make_id(%{flow: "post", name: name} = r),
     do: %{r | id: ~s/#{name}-#{make_numeric_id(r)}#{region_code(r)}#{annotation_code(r)}/}
 
-  def make_id(%{flow: "signed"} = r), do: r
+  def make_id(%{flow: "signed", name: name} = r), do: %{r | id: name}
 
   # Schedules flow name is the number of the schedule
   def make_id(%{flow: flow, name: name} = r),

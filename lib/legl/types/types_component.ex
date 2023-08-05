@@ -12,6 +12,7 @@ defmodule Types.Component do
   editorial_heading
   extent
   extent_heading
+  figure
   footnote
   form
   forms

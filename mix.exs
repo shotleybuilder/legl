@@ -40,6 +40,7 @@ defmodule Legl.MixProject do
       {:jason, "~> 1.2"},
       {:erlsom, git: "https://github.com/willemdj/erlsom.git"},
       {:floki, "~> 0.34.0"},
+      {:html5ever, "~> 0.14.0"},
       {:natural_order, "~> 0.2.0"},
       {:csv, "~> 3.0"}
       # {:dep_from_hexpm, "~> 0.3.0"},

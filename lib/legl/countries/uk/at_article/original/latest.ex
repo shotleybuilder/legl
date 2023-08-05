@@ -6,7 +6,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
   @processed ~s[lib/legl/data_files/html/processed.html] |> Path.absname()
 
   def process(document) do
-    IO.write("Legl.Countries.Uk.AtArticle.Original.Latest.process/1")
+    IO.puts("Legl.Countries.Uk.AtArticle.Original.Latest.process/1")
     #
     # Container DIVs need removing so that we have a flat list of nodes
 
@@ -20,6 +20,10 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
         # <div xmlns:atom="http://www.w3.org/2005/Atom" class="DocContainer">
         Floki.find(document, ".DocContainer") != [] ->
           [{_ele, _attr, children}] = Floki.find(document, ".DocContainer")
+          children
+
+        Floki.find(document, "div#viewLegSnippet") != [] ->
+          [{_ele, _attr, children}] = Floki.find(document, "div#viewLegSnippet")
           children
       end
 
@@ -38,7 +42,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
         schedule_markers(x)
       end)
 
-    # Floki.find(snippet, "div#viewLegSnippet")
     schedules =
       Enum.drop_while(document, fn x ->
         schedule_markers(x)
@@ -47,18 +50,17 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
     File.write(@main, Floki.raw_html(main, pretty: true))
     File.write(@schedules, Floki.raw_html(schedules, pretty: true))
 
-    main = TU.traverse_and_update(main) |> TU.traverse_and_update(:main)
+    main = TU.traverse_and_update(main, :main) |> TU.traverse_and_update()
 
-    schedules = TU.traverse_and_update(schedules) |> TU.traverse_and_update(:schedules)
+    schedules = TU.traverse_and_update(schedules, :schedules) |> TU.traverse_and_update()
 
-    # ++ schedules
     processed = main ++ schedules
 
     File.write(@processed, Floki.raw_html(processed, pretty: true))
 
     IO.puts("...complete")
 
-    Floki.text(processed, sep: "\n")
+    Floki.text(main, sep: "\n") <> "\n" <> Floki.text(schedules, sep: "\n")
   end
 
   defp schedule_markers(x) do
@@ -67,6 +69,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
     case x do
       x
       when x in [
+             {"h1", [{"class", "LegSchedulesTitle"}], [" SCHEDULES"]},
              {"a", [{"class", "LegAnchorID"}, {"id", "schedule-1"}], []},
              {"a", [{"class", "LegAnchorID"}, {"id", "schedule"}], []}
            ] ->
