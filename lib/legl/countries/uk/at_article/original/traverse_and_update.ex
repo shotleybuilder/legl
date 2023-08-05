@@ -142,8 +142,8 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         (amendment_heading(txt) <> txt)
         |> (&{"div", attr, [&1]}).()
 
-      {"a", [{"class", "LegCommentaryLink"}, {"href", _href}, {"title", _title}, {"id", _id}], _} ->
-        nil
+      # {"a", [{"class", "LegCommentaryLink"}, {"href", _href}, {"title", _title}, {"id", _id}], _} ->
+      #  nil
 
       {"div", [{"class", "LegCommentaryItem"}, {"id", "commentary" <> _id}] = attr, children} ->
         txt = concat(children, " ")
@@ -214,6 +214,14 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, "")
         |> (&{"p", attr, [&1]}).()
 
+      # {"p", [{"class", "LegTextAmend"}] = attr, children} ->
+      #  concat(children, "")
+      #  |> (&{"p", attr, [&1]}).()
+
+      {"span", [{"class", "LegAmendingText"}] = attr, children} ->
+        concat(children, "")
+        |> (&{"span", attr, [&1]}).()
+
       # {"span", [{"class", "LegDS LegRHS LegP3TextAmend"}] = attr, children} ->
       #  concat(children, "")
       #  |> (&{"span", attr, [&1]}).()
@@ -222,6 +230,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       {"div", [{"class", "LegListItem"}] = attr, children} ->
         concat(children, " ")
+        |> String.replace("\r", "\n")
         |> (&{"div", attr, [&1]}).()
 
       # P NODE with SPANS
@@ -289,7 +298,15 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       # TABLE
 
-      {"div", [{"class", "LegTabular"}, {"id", _id}] = attr, children} ->
+      # {"div", [{"class", "LegTabular"}, {"id", _id}] = attr, children} ->
+      #  concat(children, "\n")
+      #  |> (&{"div", attr, ["[::table::]" <> &1]}).()
+
+      {"div", [{"class", "LegClearFix LegTableContainer LegAmend"}] = attr, children} ->
+        concat(children, "\n")
+        |> (&{"div", attr, [&1]}).()
+
+      {"div", [{"class", "LegClearFix LegTableContainer"}] = attr, children} ->
         concat(children, "\n")
         |> (&{"div", attr, ["[::table::]" <> &1]}).()
 
@@ -297,23 +314,27 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, "\n")
         |> (&{"tbody", attr, [&1]}).()
 
+      {"thead", attr, children} ->
+        concat(children, "\n")
+        |> (&{"thead", attr, [&1 <> "\n"]}).()
+
+      {"th", attr, children} ->
+        concat(children, " ") |> String.replace("\r", "") |> (&{"th", attr, [&1]}).()
+
       {"td", attr, children} ->
-        concat(children, " ")
-        |> (&{"tr", attr, [&1]}).()
+        concat(children, " ") |> String.replace("\r", "") |> (&{"td", attr, [&1]}).()
 
       {"tr", attr, children} ->
         concat(children, "\t")
         |> (&{"tr", attr, [&1]}).()
 
-      other ->
-        other
-    end)
-  end
+      # NOT YET IN FORCE
 
-  def traverse_and_update(content, :main) do
-    IO.write("t&u/2 :main")
+      {_ele, [{"class", "LegBlockNotYetInForce"}], _} ->
+        nil
 
-    Floki.traverse_and_update(content, fn
+      # *********MAIN BODY***********
+
       # Enacting text
 
       {"h1", [{"class", "LegNo"}] = attr, children} ->
@@ -322,6 +343,8 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       {"div", [{"class", "LegEnactingText"}] = attr, children} ->
         concat(children, " ")
+        |> String.replace("\r ", "\n")
+        |> String.replace("\n ", "\n")
         |> (&{"div", attr, [&1]}).()
 
       {"p", [{"class", "LegLongTitleScottish"}] = attr, children} ->
@@ -334,9 +357,12 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{"p", attr, [&1]}).()
 
+      {"p", [{"class", "LegP1ParaText"}, {"id", _id}] = attr, children} ->
+        concat(children, " ")
+        |> (&{"p", attr, [&1]}).()
+
       {"p", [{"class", "LegP1ParaText"}] = attr, children} ->
         concat(children, " ")
-        |> String.trim()
         |> (&{"p", attr, [&1]}).()
 
       {"span", [{"class", "LegP1No"}, {"id", id}] = attr, children} ->
@@ -351,14 +377,14 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
         {"span", attr, [~s/#{x} #{txt}/]}
 
-      # Sub-Section || Sub-Regulation
+      # Sub-Section || Sub-Regulation || Sub-Paragraph
 
       {"p", [{"class", "LegP2ParaText"}] = attr, children} ->
         concat(children, " ")
         |> (&Regex.replace(
               ~r/(.*?)\(([A-Z]?\d+[A-Z]*)\)(.*)/,
               &1,
-              "[::sub_article::]\\g{2} \\g{1} (\\g{2}) \\g{3}"
+              "[::sub::]\\g{2} \\g{1} (\\g{2}) \\g{3}"
             )).()
         |> (&{"p", attr, [&1]}).()
 
@@ -376,39 +402,32 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       {"div", [{"class", "LegClearFix LegSignedSection"}] = attr, children} ->
         concat(children, "\n")
+        |> String.replace("\r", "\n")
+        |> String.replace("\n ", "\n")
         |> (&Kernel.<>("[::signed::]", &1)).()
         |> (&{"div", attr, [&1]}).()
 
       {"div", [{"class", "LegClearFix LegSignee"}] = attr, children} ->
         concat(children, "\n")
+        # SHAPE "Signed by authority of the Secretary of State for Work and
+        # Pensions\n Justin Tomlinson\nParliamentary Under Secretary of
+        # State,\nDepartment for Work and Pensions\n23rd June 2015"
         |> (&{"div", attr, [&1]}).()
 
-      # {"div", [{"class", "LegClearFix LegSignatory"}], children} ->
-      #  x = Floki.children({"div", [{"class", "LegClearFix LegSignatory"}], children})
-      #
-      #  concat(x, "")
-      #  |> (&{"div", [{"class", "LegClearFix LegSignatory"}], [&1]}).()
+      # **********SCHEDULES**********
 
-      other ->
-        other
-    end)
-  end
-
-  def traverse_and_update(content, :schedules) do
-    Floki.traverse_and_update(content, fn
       # Schedules
       # Works with SCHEDULE and SCHEDULE 1 ...
 
-      {"h" <> _h = ele, [{"class", "LegSchedulesTitle"}] = attr, [child]} ->
-        {ele, attr, ["[::annex::]" <> child]}
+      # "SCHEDULES" title
+      {"h" <> _h = ele, [{"class", "LegSchedulesTitle"}] = attr, _} ->
+        {ele, attr, ["[::annex::]SCHEDULES"]}
 
       {"h" <> h = ele, [{"class", "LegScheduleFirst"}], children} when h in ["1", "2", "3"] ->
-        traverse_and_update({ele, [{"class", "LegSchedule"}], children}, :schedules)
+        traverse_and_update({ele, [{"class", "LegSchedule"}], children})
 
       {"h" <> h = ele, [{"class", "LegSchedule"}] = attr, children} when h in ["1", "2", "3"] ->
-        txt =
-          concat(children, " ")
-          |> (&Regex.replace(~r/ /, &1, " ")).()
+        txt = concat(children, " ")
 
         txt =
           case h do
@@ -425,7 +444,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         {ele, attr, [txt]}
 
       {"h4", [{"class", "LegScheduleFirst"}], children} ->
-        traverse_and_update({"h4", [{"class", "LegSchedule"}], children}, :schedules)
+        traverse_and_update({"h4", [{"class", "LegSchedule"}], children})
 
       {"h4", [{"class", "LegSchedule"}] = attr, children} ->
         concat(children, " ")
@@ -465,23 +484,11 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{"p", attr, [~s/#{&1}/]}).()
 
-      {"p", [{"class", "LegP1ParaText LegExtentContainer"}, {"id", _id}] = attr, children} ->
-        concat(children, " ")
-        |> (&{"p", attr, [&1]}).()
-
-      {"p", [{"class", "LegP1ParaText"}, {"id", _id}] = attr, children} ->
-        concat(children, " ")
-        |> (&{"p", attr, [&1]}).()
-
-      {"p", [{"class", "LegP1ParaText"}] = attr, children} ->
-        concat(children, " ")
-        |> (&{"p", attr, [&1]}).()
-
       # This will find unnumbered paragraphs that need to be concated into the
       # flow, but sometimes ...
 
       {"p", [{"class", "LegText"}] = attr, children} ->
-        concat(children, "")
+        concat(children, " ")
         |> (&{"p", attr, [&1]}).()
 
       {"span", [{"class", "LegDS LegP1No"}, {"id", id}] = attr, children} ->
@@ -489,18 +496,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
         concat(children, " ")
         |> (&{"span", attr, [~s/#{id} #{&1}/]}).()
-
-      {"span", [{"class", "LegP1No"}, {"id", id}] = attr, children} ->
-        id = String.split(id, "-") |> anchorID()
-
-        concat(children, " ")
-        |> (&{"span", attr, [~s/#{id} #{&1}/]}).()
-
-      {"span", [{"class", "LegP1No"}] = attr, children} ->
-        txt = concat(children, " ")
-        x = Regex.run(~r/\d+[A-Z]*/, txt)
-
-        {"span", attr, [~s/#{x} #{txt}/]}
 
       # Sub-Paragraph
 
@@ -512,21 +507,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
         concat(children, " ")
         |> (&{"span", attr, [~s/[::paragraph::]#{para}-#{sub} #{para} #{&1}/]}).()
-
-      {"span", [{"class", "LegDS LegLHS LegP2No"}, {"id", id}] = attr, children} ->
-        {_, sub} = String.split(id, "-") |> anchorID()
-
-        concat(children, " ")
-        |> (&{"span", attr, [~s/[::sub_paragraph::]#{sub} #{&1}/]}).()
-
-      {"p", [{"class", "LegP2ParaText"}] = attr, children} ->
-        concat(children, " ")
-        |> (&Regex.replace(
-              ~r/^\((\d+[A-Z]?)\)/,
-              &1,
-              "[::sub_paragraph::]\\g{1} (\\g{1})"
-            )).()
-        |> (&{"p", attr, [&1]}).()
 
       # Schedule Reference
 
@@ -547,16 +527,12 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
     end)
     |> Enum.reverse()
     |> Enum.join(joiner)
+    |> String.trim(" ")
   end
 
-  @default_opts %{
-    upcase: false
-  }
-
-  defp move_region_to_end(text, opts \\ []) do
+  defp move_region_to_end(text, opts) do
     case text =~ "[::region::]" do
       true ->
-        opts = Enum.into(opts, @default_opts)
         regex = ~r/^(.*?)[ ](\d+[A-Z]?)[ ](\[::region::\][ ].*?)[ ](.*)/
 
         text
@@ -686,6 +662,10 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
   defp anchorID(["schedule", id]) do
     id = Legl.Utility.numericalise_ordinal(id)
     ~s/[::annex::]#{id}/
+  end
+
+  defp anchorID(["schedule"]) do
+    ~s/[::annex::]1/
   end
 
   defp anchorID(["schedule", _, "part", ""]), do: nil

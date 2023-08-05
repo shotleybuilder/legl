@@ -524,73 +524,27 @@ defmodule Legl.Countries.Uk.AtArticle.Clean.UkBespoke do
   end
 
   def uk_ukpga_1992_15_osa(binary) do
+    # OSA schedule has unnumbered / untagged paragraphs
     binary
-    |> (&Regex.replace(
-          ~r/(The clause entitled “Health and safety of workers and employees” in the model clauses set out in Part I of Schedule 2 to the Petroleum \(Production\) Regulations 1935\.)/m,
-          &1,
-          "1 1. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 24 of the model clauses set out in Part II of Schedule 2 to the Petroleum and Submarine Pipe-lines Act 1975 \(Schedule 4 to the Petroleum \(Production\) Regulations 1966 as amended\)\.)/m,
-          &1,
-          "2 2. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 24 of the model clauses set out in Part II of Schedule 3 to that Act \(Schedule 3 to those regulations as amended\)\.)/m,
-          &1,
-          "3 3. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 24 of the model clauses set out in Schedule 4 to the Petroleum \(Production\) Regulations 1976\.)/m,
-          &1,
-          "4 4. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 24 of the model clauses set out in Schedule 5 to those regulations\.)/m,
-          &1,
-          "5 5. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 24 of the model clauses set out in Schedule 4 to the Petroleum \(Production\) Regulations 1982\.)/m,
-          &1,
-          "6 6. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 23 of the model clauses set out in Schedule 5 to those regulations\.)/m,
-          &1,
-          "7 7. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 11 of the model clauses set out in Schedule 7 to those regulations\.)/m,
-          &1,
-          "8 8. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 15 of the model clauses set out in Schedule 3 to the Petroleum \(Production\) \(Landward Areas\) Regulations 1984\.)/m,
-          &1,
-          "9 9. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 21 of the model clauses set out in Schedule 4 to those regulations\.)/m,
-          &1,
-          "10 10. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 22 of the model clauses set out in Schedule 5 to those regulations\.)/m,
-          &1,
-          "11 11. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 26 of the model clauses set out in Schedule 4 to the Petroleum \(Production\) \(Seaward Areas\) Regulations 1988\.)/m,
-          &1,
-          "12 12. \\g{1}"
-        )).()
-    |> (&Regex.replace(
-          ~r/(Clause 11 of the model clauses set out in Schedule 5 to those regulations\.)/m,
-          &1,
-          "13 13. \\g{1}"
-        )).()
+    |> String.split("\n")
+    |> Enum.reduce({[], nil, 0}, fn
+      "[::heading::]" <> _ = ln, {acc, _state, c} -> {[ln | acc], :heading, c}
+      "[::" <> _ = ln, {acc, _state, c} -> {[ln | acc], nil, c}
+      ln, {acc, :heading, c} -> {[~s/[::paragraph::]#{c + 1} #{ln}/ | acc], :heading, c + 1}
+      ln, {acc, _, c} -> {[ln | acc], nil, c}
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+    |> Enum.join("\n")
     |> (&{:ok, &1}).()
+  end
+
+  def uk_nisi_1992_1728_opsnio(binary) do
+    changes = [
+      {~r/^Article 8—Repeals/m, ~s/[::article::]8 8 Article 8—Repeals/}
+    ]
+
+    binary |> replace(changes) |> (&{:ok, &1}).()
   end
 
   defp include(binary, regexes) do

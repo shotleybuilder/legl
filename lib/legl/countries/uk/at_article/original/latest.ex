@@ -50,9 +50,9 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
     File.write(@main, Floki.raw_html(main, pretty: true))
     File.write(@schedules, Floki.raw_html(schedules, pretty: true))
 
-    main = TU.traverse_and_update(main, :main) |> TU.traverse_and_update()
+    main = TU.traverse_and_update(main)
 
-    schedules = TU.traverse_and_update(schedules, :schedules) |> TU.traverse_and_update()
+    schedules = TU.traverse_and_update(schedules)
 
     processed = main ++ schedules
 
@@ -69,7 +69,9 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
     case x do
       x
       when x in [
+             {"h1", [{"class", "LegSchedulesTitle"}], ["SCHEDULES"]},
              {"h1", [{"class", "LegSchedulesTitle"}], [" SCHEDULES"]},
+             {"h1", [{"class", "LegSchedulesTitle"}], ["SCHEDULE S"]},
              {"a", [{"class", "LegAnchorID"}, {"id", "schedule-1"}], []},
              {"a", [{"class", "LegAnchorID"}, {"id", "schedule"}], []}
            ] ->

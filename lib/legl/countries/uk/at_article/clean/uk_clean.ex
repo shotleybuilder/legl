@@ -49,6 +49,7 @@ defmodule Legl.Countries.Uk.UkClean do
     |> rm_carriage_return()
     |> UkBespoke.bespoker(opts.name)
     |> Legl.Parser.rm_empty_lines()
+    |> set_sub_clauses()
     |> collapse_amendment_text_between_quotes()
     |> opening_quotes()
     |> closing_quotes()
@@ -60,16 +61,16 @@ defmodule Legl.Countries.Uk.UkClean do
     text =
       binary
       # DEAL WITH SPACES
-      # rm multi-spaces
-      |> (&Regex.replace(~r/[ ]{2,}/m, &1, " ")).()
-      # rm space at end of line
-      |> (&Regex.replace(~r/[ ]$/m, &1, "")).()
-      # rm space at start of line
-      |> (&Regex.replace(~r/^[ ]+/m, &1, "")).()
-      # rm any space after end of tag
-      |> (&Regex.replace(~r/(\[::[a-z]+::\])[ ]/m, &1, "\\g{1}")).()
       # rm <<194, 160>> and replace with space - putting [] around introduces a hard bug to fix!
       |> (&Regex.replace(~r/#{<<194, 160>>}+/m, &1, " ")).()
+      # rm multi-spaces
+      |> (&Regex.replace(~r/[ ]{2,}/m, &1, " ")).()
+      # rm space at start of line
+      |> String.replace(~r/\n[ ]+/, "\n")
+      # rm space at end of line
+      |> (&Regex.replace(~r/[ ]$/m, &1, "")).()
+      # rm any space after end of tag
+      |> (&Regex.replace(~r/(\[::[a-z]+::\])[ ]/m, &1, "\\g{1}")).()
       # rm space before period and other punc marks at end of line
       |> (&Regex.replace(~r/[ ]+([\.\];])$/m, &1, "\\g{1}")).()
       # rm space after ef bracket
@@ -82,12 +83,14 @@ defmodule Legl.Countries.Uk.UkClean do
       |> (&Regex.replace(~r/\.—[ ]*\(/m, &1, ".—(")).()
       |> (&Regex.replace(~r/\.[ ]*—[ ]*\(/m, &1, ".—(")).()
 
+      # rm spaces new lines around parenthatised numbers
+      |> (&Regex.replace(~r/(.)\([ ](\d+)[ ]\)/m, &1, "\\g{1} (fn\\g{2})")).()
+      # |> (&Regex.replace(~r/\([ ]\d+[ ]\)/m, &1, "")).()
+
       # replace carriage returns
       |> (&Regex.replace(~r/\r/m, &1, "\n")).()
       |> (&Regex.replace(~r/\n{2,}/m, &1, "\n")).()
-      # rm spaces new lines around parenthatised numbers
-      # |> (&Regex.replace(~r/\(\n\d+\n\)(.*)/m, &1, "\\g{1}")).()
-      # |> (&Regex.replace(~r/\([ ]\d+[ ]\)/m, &1, "")).()
+
       # join sub with empty line
       |> (&Regex.replace(~r/^(\([a-z]+\))\n/m, &1, "\\g{1} ")).()
       # rm space after [::region::]
@@ -134,14 +137,6 @@ defmodule Legl.Countries.Uk.UkClean do
             &1,
             "\\g{1} \\g{3} \\g{4}\n\\g{2}\n"
           )).()
-      # [::annex::]2
-      # [::sRef::]Regulations 3, 6 and 7
-      # SCHEDULE 2
-      # |> (&Regex.replace(
-      #     ~r/(\[::annex::\].*)\n(?:\[::sRef::\](.*)\n)?((?!\[::).*)/m,
-      #      &1,
-      #      "\\g{1} \\g{3} \\g{4}\n\\g{2}"
-      #    )).()
 
       # rm duped [::heading::]
       |> (&Regex.replace(~r/(\[::heading::\]\[::heading::\])/m, &1, "[::heading::]")).()
@@ -157,6 +152,38 @@ defmodule Legl.Countries.Uk.UkClean do
 
     IO.puts("...complete")
     text
+  end
+
+  defp set_sub_clauses(binary) do
+    # we cannot distinguish sub clause type in the parser and all are called [::sub::]
+    # change the name depending on what comes before
+    String.split(binary, "\n")
+    |> Enum.reduce({[], nil}, fn
+      "[::article::]" <> _ = ln, {acc, _state} ->
+        {[ln | acc], :article}
+
+      "[::section::]" <> _ = ln, {acc, _state} ->
+        {[ln | acc], :section}
+
+      "[::paragraph::]" <> _ = ln, {acc, _state} ->
+        {[ln | acc], :paragraph}
+
+      "[::sub::]" <> _ = ln, {acc, state} ->
+        ln =
+          case state do
+            :article -> String.replace(ln, "[::sub::]", "[::sub_article::]")
+            :section -> String.replace(ln, "[::sub::]", "[::sub_section::]")
+            :paragraph -> String.replace(ln, "[::sub::]", "[::sub_paragraph::]")
+          end
+
+        {[ln | acc], state}
+
+      ln, {acc, state} ->
+        {[ln | acc], state}
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+    |> Enum.join("\n")
   end
 
   @doc """

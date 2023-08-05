@@ -103,7 +103,7 @@ defmodule UK do
           footnote_name: "footnote",
           amendment: ~s/^([A-Z])(\\d+)(.*)/,
           paragraph: ~s/^([A-Z]?[\\.\\d]+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
-          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/
+          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)(?:\\[::region::\\])?/
         }
     end
   end

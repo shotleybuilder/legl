@@ -537,7 +537,7 @@ defmodule Legl.Airtable.Schema do
             | flow: flow(last_record),
               type: type,
               sub_section: n,
-              text: t,
+              text: String.replace(t, "[::region::]", ""),
               # inherit region from last record
               region: last_record.region
           }
