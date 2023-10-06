@@ -13,6 +13,7 @@ defmodule Legl.Countries.Uk.UkClean do
     |> rm_carriage_return()
     |> UkBespoke.bespoker(opts.name)
     |> Legl.Parser.rm_empty_lines()
+    |> set_sub_clauses()
     |> collapse_amendment_text_between_quotes()
     |> opening_quotes()
     |> closing_quotes()
@@ -103,7 +104,7 @@ defmodule Legl.Countries.Uk.UkClean do
 
       # put in -1 for those articles & paras
       |> (&Regex.replace(
-            ~r/(\[::article::\]|\[::paragraph::\])(\d+[A-Z]*)([^-\d].*?—.*?\(([A-Z]?1)\))/m,
+            ~r/(\[::section::\]|\[::article::\]|\[::paragraph::\])(\d+[A-Z]*)([^-\d].*?—.*?\(([A-Z]?1)\))/m,
             &1,
             "\\g{1}\\g{2}-\\g{4}\\g{3}"
           )).()
@@ -118,8 +119,21 @@ defmodule Legl.Countries.Uk.UkClean do
       |> (&Regex.replace(~r/(\[::chapter::\].*)\n(.*\[::region::\].*)/m, &1, "\\g{1} \\g{2}")).()
       # Concatenate [::chapter::] with next line
       |> (&Regex.replace(~r/(\[::chapter::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
+
+      # 4E
+      # [::section::]4E-1 (1)
+      # text
+      # [::region::]S
+      # Uses a matching subpattern
+      |> (&Regex.replace(
+            ~r/(?'s'\d+[A-Z])\n(\[::section::\](?P=s).*)\n((?!\[::).*)\n(\[::region::\].*)?/m,
+            &1,
+            "\\g{2} \\g{3} \\g{4}\n"
+          )).()
       # Concatenate [::section::] with next line
-      |> (&Regex.replace(~r/(\[::section::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
+      # [::section::]4B
+      # 4B Coal mine water discharge: powers of entry [::region::]E+W
+      |> (&Regex.replace(~r/^(\[::section::\].*)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
 
     File.open(@debug, [:write, :utf8])
 
@@ -127,7 +141,23 @@ defmodule Legl.Countries.Uk.UkClean do
 
     text =
       text
-      # Concatenate [::annex::] with next line
+      # [::part::]2
+      # [::sRef::]Regulation 48(2)
+      # PART II MODIFICATIONS
+
+      |> (&Regex.replace(
+            ~r/(\[::part::\].*)\n(?:\[::sRef::\](.*)\n)?((?!\[::).*)\n((?!\[::).*)?/m,
+            &1,
+            "\\g{1} \\g{3} \\g{4}\n\\g{2}\n"
+          )).()
+      # [::part::]1 Part I
+      # [::region::]U.K.
+      # Organisation and Proceedings
+      |> (&Regex.replace(
+            ~r/(\[::part::\].*)\n(\[::region::\](.*)\n)?((?!\[::).*)\n((?!\[::).*)?/m,
+            &1,
+            "\\g{1} \\g{3} \\g{4} \\g{2}"
+          )).()
       # [::annex::]3
       # [::sRef::]Regulation 8(2)
       # SCHEDULE 3
@@ -137,18 +167,31 @@ defmodule Legl.Countries.Uk.UkClean do
             &1,
             "\\g{1} \\g{3} \\g{4}\n\\g{2}\n"
           )).()
-
+      # [::annex::]1
+      # [::region::]N.I.
+      # Schedule 1—Amendments
+      |> (&Regex.replace(
+            ~r/(\[::annex::\].*)\n(\[::region::\].*\n)?((?!\[::).*)/m,
+            &1,
+            "\\g{1} \\g{3} \\g{4}\\g{2}\n"
+          )).()
       # rm duped [::heading::]
       |> (&Regex.replace(~r/(\[::heading::\]\[::heading::\])/m, &1, "[::heading::]")).()
       # rm empty headings
       |> (&Regex.replace(~r/^\[::heading::\]\[::region::\].+?\n/m, &1, "")).()
       |> (&Regex.replace(~r/^\[::heading::\]\n/m, &1, "")).()
+
+      # PARAGRAPHS
+
+      # Rm p. in composite 1 [::paragraph::]1-1
+      |> (&Regex.replace(~r/^\d+[ ](\[::paragraph::\])/m, &1, "\\g{1}")).()
       # Join empty paragraphs
       |> (&Regex.replace(~r/^(\[::paragraph::\][\d\.]+)\n((?!\[::).*)/m, &1, "\\g{1} \\g{2}")).()
       # Rm orphan paragraphs
       |> (&Regex.replace(~r/\[::paragraph::\][\d\.]*\n/, &1, "")).()
-      # Rm Marginal Citations
-      |> (&Regex.replace(~r/^Marginal Citations\n/m, &1, "")).()
+
+      # Rm Marginal Citations [::marginal_citation::]Marginal Citations
+      |> (&Regex.replace(~r/^\[::marginal_citation::\].*/m, &1, "")).()
 
     IO.puts("...complete")
     text
@@ -339,9 +382,11 @@ defmodule Legl.Countries.Uk.UkClean do
               true ->
                 (String.slice(x, 0..199) <> "📌...📌" <> String.slice(x, (len - 199)..len))
                 |> join()
+                |> String.replace(~r/[ ]\[::region::\].+?[ ]/, " ")
 
               _ ->
                 "#{join(x)}"
+                |> String.replace(~r/[ ]\[::region::\].+?[ ]/, " ")
             end
           end
         )).()

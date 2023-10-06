@@ -105,6 +105,17 @@ defmodule Legl.Utility do
     :ok
   end
 
+  def append_records_to_file(records, path) when is_binary(records) do
+    {:ok, file} =
+      path
+      |> Path.absname()
+      |> File.open([:utf8, :append])
+
+    IO.puts(file, records)
+    File.close(file)
+    :ok
+  end
+
   def count_csv_rows(filename) do
     binary =
       ("lib/" <> filename <> ".csv")

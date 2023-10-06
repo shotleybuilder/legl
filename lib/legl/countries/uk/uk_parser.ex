@@ -37,10 +37,10 @@ defmodule UK.Parser do
 
   @cols Legl.Utility.cols()
 
-  def parser(binary, %{type: :act, html?: true} = _opts) do
+  def parser(binary, %{type: :act, html?: true} = opts) do
     binary
     |> get_title()
-    |> provision_before_schedule()
+    |> provision_before_schedule(opts)
     # |> get_dbl_A_heading(:act)
     |> get_A_heading(:act)
     |> Legl.Parser.join("UK")
@@ -86,7 +86,7 @@ defmodule UK.Parser do
         _ ->
           schedules
           |> get_annex()
-          |> provision_before_schedule()
+          |> provision_before_schedule(opts)
           |> get_A_section(:act, :paragraph)
           |> get_section_with_period(@components.paragraph, opts)
           |> get_section(:act, @components.paragraph)
@@ -114,10 +114,10 @@ defmodule UK.Parser do
     binary
   end
 
-  def parser(binary, %{type: :regulation} = _opts) do
+  def parser(binary, %{type: :regulation} = opts) do
     binary
     |> get_title()
-    # |> provision_before_schedule()
+    |> provision_before_schedule(opts)
     # |> get_dbl_A_heading(:regulation)
     |> get_A_heading(:regulation)
     # for double headng
@@ -777,15 +777,19 @@ defmodule UK.Parser do
             fn _, x -> String.replace(x, ~r/[ ]{2,4}/, " ") end
           )).()
 
-  def provision_before_schedule(binary) do
+  def provision_before_schedule(binary, %{pbs?: false} = _opts), do: binary
+
+  def provision_before_schedule(binary, %{pbs?: true} = _opts) do
     IO.puts("PROVISION BEFORE SCHEDULE/1")
-    regex = ~r/(\[F\d+ )?(Regulation.*|Article.*|Section.*)\n(\[::annex::\].*)/m
+
+    regex =
+      ~r/^(Regulation.*|Article.*|Section.*)\n(\[::annex::\].*)|^(\[?F\d+ )?(Regulation.*|Article.*|Section.*)\n(\[::annex::\].*)/m
 
     binary
     |> (&Regex.replace(
           regex,
           &1,
-          "\\g{3} 📌\\g{1}\\g{2}"
+          "\\g{3}📌\\g{1}\\g{2}"
         )).()
   end
 
@@ -997,6 +1001,7 @@ defmodule UK.Parser do
 
   def move_region_to_end(binary) do
     Regex.replace(~r/(.*)([ ]\[::region::\].*?)([ 📌].*)/m, binary, "\\g{1}\\g{3}\\g{2}")
+    |> (&Regex.replace(~r/[ ]{2, }\[::region::\]/m, &1, " [::region::]")).()
   end
 
   def add_missing_region(binary) do

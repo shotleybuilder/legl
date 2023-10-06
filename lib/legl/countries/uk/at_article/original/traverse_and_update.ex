@@ -52,11 +52,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, "")
         |> (&{"h4", attr, [&1]}).()
 
-      {"span", [{"class", "LegExtentRestriction"}, {"title", "Applies to " <> _t}] = attr,
-       children} ->
-        concat(children, "")
-        |> (&{"span", attr, ["[::region::]" <> &1]}).()
-
       # CHAPTER.  Includes a Region
       {"h" <> h, [{"class", "LegChapter" <> _c}] = attr, children} ->
         concat(children, " ")
@@ -83,6 +78,16 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
           x when is_binary(x) ->
             {"a", attr, [x]}
         end
+
+      # EXTENT
+      {"span", [{"class", "LegScheduleNo"}] = attr, children} ->
+        concat(children, " ")
+        |> (&{"span", attr, [&1]}).()
+
+      {"span", [{"class", "LegExtentRestriction"}, {"title", "Applies to " <> _t}] = attr,
+       children} ->
+        concat(children, "")
+        |> (&{"span", attr, ["[::region::]" <> &1]}).()
 
       # HEADING
 
@@ -381,19 +386,20 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       {"p", [{"class", "LegP2ParaText"}] = attr, children} ->
         concat(children, " ")
-        |> (&Regex.replace(
-              ~r/(.*?)\(([A-Z]?\d+[A-Z]*)\)(.*)/,
-              &1,
-              "[::sub::]\\g{2} \\g{1} (\\g{2}) \\g{3}"
-            )).()
+        # |> (&Regex.replace(
+        #      ~r/(.*?)\(([A-Z]?\d+[A-Z]*)\)(.*)/,
+        #      &1,
+        #      "[::sub::]\\g{2} \\g{1} (\\g{2}) \\g{3}"
+        #    )).()
         |> (&{"p", attr, [&1]}).()
 
-      # {"span", [{"class", "LegDS LegLHS LegP2No"}, {"id", "section-1-1"}], ["(1)"]}
       {"span", [{"class", "LegDS LegLHS LegP2No"}, {"id", id}] = attr, children} ->
-        x = String.split(id, "-") |> anchorID()
+        txt = concat(children, " ")
 
-        concat(children, " ")
-        |> (&{"span", attr, [~s/#{x} #{&1}/]}).()
+        case String.split(id, "-") |> anchorID() do
+          {_x, y} -> {"span", attr, [~s/#{y} #{txt}/]}
+          x -> {"span", attr, [~s/#{x} #{txt}/]}
+        end
 
       # {"span", [{"class", "LegDS LegRHS LegP2Text"}] = attr, children} ->
       #  {"span", attr, children}
@@ -428,19 +434,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       {"h" <> h = ele, [{"class", "LegSchedule"}] = attr, children} when h in ["1", "2", "3"] ->
         txt = concat(children, " ")
-
-        txt =
-          case h do
-            x when x in ["1", "2"] ->
-              txt
-              |> move_region_to_end(upcase: true)
-              |> (&Kernel.<>(&1, "\r")).()
-
-            _ ->
-              txt
-          end
-
-        IO.puts("#{txt}")
         {ele, attr, [txt]}
 
       {"h4", [{"class", "LegScheduleFirst"}], children} ->
@@ -464,17 +457,36 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{"p", attr, [~s/#{&1}/]}).()
 
+      {"p", [{"class", "LegClearFix LegP2Container LegExtentContainer"}] = attr, children} ->
+        txt = concat(children, " ")
+        # [::section::]4E 4E [::sub::]1 (1) If the Authority ...
+        regex = ~r/^(\[::section::\]\d+[A-Z]?) (\d+[A-Z]?) \[::sub::\]1 \(1\) (.*)/
+        txt = Regex.replace(regex, txt, "\\g{1}-1 \\g{2} (1) \\g{3}")
+        {"p", attr, [txt]}
+
       {"p", [{"class", "LegClearFix LegSP2Container LegExtentContainer"}] = attr, children} ->
-        concat(children, " ")
-        |> (&{"p", attr, [~s/#{&1}/]}).()
+        txt = concat(children, " ")
+        # IO.inspect(txt)
+        # [::paragraph::]1 1 [::paragraph::]1-1 (1) This Part of this Schedule shall
+        regex =
+          ~r/^(\[::paragraph::\]\d+[A-Z]?) (\d+[A-Z]?) \[::paragraph::\]\d+[A-Z]?-1 \(1\) (.*)/
+
+        txt = Regex.replace(regex, txt, "\\g{1}-1 \\g{2} (1) \\g{3}")
+        {"p", attr, [txt]}
 
       {"p", [{"class", "LegClearFix LegSP1Container"}] = attr, children} ->
         concat(children, " ")
         |> (&{"p", attr, [&1]}).()
 
       {"p", [{"class", "LegClearFix LegSP2Container"}] = attr, children} ->
-        concat(children, " ")
-        |> (&{"p", attr, [&1]}).()
+        txt = concat(children, " ")
+        # [::paragraph::]24 [::paragraph::]24 24 [::paragraph::]24-1 (1) In section 2
+        regex =
+          ~r/^(\[::paragraph::\]\d+[A-Z]?) \[::paragraph::\]\d+[A-Z]? (\d+[A-Z]?) \[::paragraph::\]\d+[A-Z]?-1 \(1\) (.*)/
+
+        txt = Regex.replace(regex, txt, "\\g{1}-1 \\g{2} (1) \\g{3}")
+
+        {"p", attr, [txt]}
 
       {"p", [{"class", "LegClearFix LegSP3Container"}] = attr, children} ->
         concat(children, " ")
@@ -497,16 +509,23 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         concat(children, " ")
         |> (&{"span", attr, [~s/#{id} #{&1}/]}).()
 
-      # Sub-Paragraph
+      # Sub
 
-      {"span", [{"class", "LegDS LegSN1No"}, {"id", _id}] = _attr, _children} ->
-        nil
+      {"span", [{"class", "LegDS LegSN1No"}, {"id", id}] = attr, children} ->
+        txt = concat(children, " ")
+        id = String.split(id, "-") |> anchorID()
+        {"span", attr, [~s/#{id} #{txt}/]}
 
       {"span", [{"class", "LegDS LegSN2No"}, {"id", id}] = attr, children} ->
-        {para, sub} = String.split(id, "-") |> anchorID()
+        txt = concat(children, " ")
 
-        concat(children, " ")
-        |> (&{"span", attr, [~s/[::paragraph::]#{para}-#{sub} #{para} #{&1}/]}).()
+        case String.split(id, "-") |> anchorID() do
+          {_x, y} ->
+            {"span", attr, [~s/#{y} #{txt}/]}
+
+          x ->
+            {"span", attr, [~s/#{x} #{txt}/]}
+        end
 
       # Schedule Reference
 
@@ -530,26 +549,6 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
     |> String.trim(" ")
   end
 
-  defp move_region_to_end(text, opts) do
-    case text =~ "[::region::]" do
-      true ->
-        regex = ~r/^(.*?)[ ](\d+[A-Z]?)[ ](\[::region::\][ ].*?)[ ](.*)/
-
-        text
-        |> (&Regex.replace(
-              regex,
-              &1,
-              fn _, type, n, geo, txt ->
-                txt = if opts.upcase == true, do: String.upcase(txt), else: txt
-                "#{n} #{type} #{n} #{txt} #{geo}"
-              end
-            )).()
-
-      false ->
-        text
-    end
-  end
-
   defp amendment_title(text) do
     cond do
       String.contains?(text, "Modifications etc. (not altering text)") == true ->
@@ -566,6 +565,9 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
 
       String.contains?(text, "Subordinate Legislation") == true ->
         "[::subordinate_heading::]" <> text
+
+      String.contains?(text, "Marginal Citations") == true ->
+        "[::marginal_citation::]" <> text
 
       true ->
         IO.puts("ERROR Missed Annotation #{text}")
@@ -627,8 +629,15 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
     ~s/[::chapter::]#{id}/
   end
 
+  # defp anchorID(["section", id, "1"]) do
+  #  ~s/[::sub::]#{id}/
+  # end
+
   defp anchorID(["section", _, id]) do
-    ~s/[::sub_section::]#{id}/
+    case Regex.match?(~r/\d+/, id) do
+      true -> ~s/[::sub::]#{id}/
+      false -> ""
+    end
   end
 
   defp anchorID(["section", id]) do
@@ -658,6 +667,10 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
   end
 
   # SCHEDULE
+
+  defp anchorID(["schedule", "n" <> id]) do
+    anchorID(["schedule", id])
+  end
 
   defp anchorID(["schedule", id]) do
     id = Legl.Utility.numericalise_ordinal(id)
@@ -724,6 +737,13 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
     end
   end
 
-  defp anchorID(["schedule", _, "paragraph", para, sub]), do: {para, sub}
+  defp anchorID(["schedule", _, "paragraph", para, "1"]) do
+    ~s/[::paragraph::]#{para}-1/
+  end
+
+  defp anchorID(["schedule", _, "paragraph", _para, sub]) do
+    ~s/[::sub::]#{sub}/
+  end
+
   defp anchorID(_), do: nil
 end

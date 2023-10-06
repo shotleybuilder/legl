@@ -45,9 +45,11 @@ defmodule Legl.Countries.Uk.UkTypeClass do
             byelaw: "Byelaws",
             measure: "Measure"
 
+  def type_class(nil), do: {:ok, ""}
+
   def type_class(type_class) when is_atom(type_class) do
     case Map.get(%__MODULE__{}, type_class) do
-      nil -> {:error, "No result for #{type_class}"}
+      nil -> {:error, "No type_class result for #{type_class}"}
       result -> {:ok, result}
     end
   end
@@ -59,7 +61,7 @@ defmodule Legl.Countries.Uk.UkTypeClass do
   def type_class(""), do: {:ok, ""}
 
   def type_class(type_class) when is_binary(type_class),
-    do: {:error, "No result for #{type_class}"}
+    do: {:error, "No type_class result for #{type_class}"}
 end
 
 defmodule Legl.Countries.Uk.SClass do
@@ -73,4 +75,23 @@ defmodule Legl.Countries.Uk.SClass do
   end
 
   def sClass(sClass) when is_binary(sClass), do: {:ok, sClass}
+end
+
+defmodule Legl.Countries.Uk.Family do
+  defstruct offshore: "OH&S: Offshore Safety",
+            road: "TRANS: Road Safety",
+            cc: "Climate Change",
+            ep: "Environmental Protection",
+            mr: "Marine & Riverine",
+            rv: "Roads & Vehicles",
+            ww: "Water & Wastewater"
+
+  def family(nil), do: {:ok, ""}
+
+  def family(family) when is_atom(family) do
+    case Map.get(%__MODULE__{}, family) do
+      nil -> {:error, "No FAMILY result for #{family}"}
+      result -> {:ok, result}
+    end
+  end
 end

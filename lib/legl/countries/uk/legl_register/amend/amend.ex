@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient do
+defmodule Legl.Countries.Uk.LeglRegister.Amend do
   @moduledoc """
     iex instructions
     1. Copy Name, Title_EN, type, year, number from AT into original.txt
@@ -44,6 +44,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient do
   @default_opts %{
     name: "",
     new?: true,
+    # triggers the update workflow and populates the change log
+    update?: false,
     base_name: "UK E",
     type_code: [""],
     type_class: "",

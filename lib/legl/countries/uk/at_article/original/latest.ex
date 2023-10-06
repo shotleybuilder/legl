@@ -73,6 +73,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Latest do
              {"h1", [{"class", "LegSchedulesTitle"}], [" SCHEDULES"]},
              {"h1", [{"class", "LegSchedulesTitle"}], ["SCHEDULE S"]},
              {"a", [{"class", "LegAnchorID"}, {"id", "schedule-1"}], []},
+             {"a", [{"class", "LegAnchorID"}, {"id", "schedule-n1"}], []},
              {"a", [{"class", "LegAnchorID"}, {"id", "schedule"}], []}
            ] ->
         false

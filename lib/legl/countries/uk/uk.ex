@@ -114,6 +114,9 @@ defmodule UK do
     clean?: true,
     annotation: true,
     parse: true,
+    # provision_before_schedule
+    pbs?: false,
+    opts?: false,
 
     # parse Acts with Ordinal schedules eg First Schedule
     numericalise_schedules: false,
@@ -165,7 +168,7 @@ defmodule UK do
   def parse(opts \\ []) do
     opts = Enum.into(opts, @parse_default_opts)
 
-    IO.inspect(opts, label: "\nOptions: ")
+    if opts.opts?, do: IO.inspect(opts, label: "\nOptions: ")
 
     binary =
       case opts.clean? do
