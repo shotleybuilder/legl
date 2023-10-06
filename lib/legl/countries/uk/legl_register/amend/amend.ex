@@ -24,35 +24,45 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Countries.Uk.UkAirtable, as: AT
 
+  alias Legl.Countries.Uk.LeglRegister.Amend.Delta
+  alias Legl.Countries.Uk.LeglRegister.Amend.Csv
+
   @at_csv ~s[lib/legl/countries/uk/legl_register/amend/amended_by.csv] |> Path.absname()
 
-  @amended_fields ~s[
+  @amended_fields_list ~s[
     Name
     Title_EN
     type_code
     Year
     Number
-    Amendments_Checked
-    Amended_By
+    amendments_checked
+    Amended_by
     leg_gov_uk_updates
     stats_self_amending_count
     stats_amending_laws_count
     stats_amendments_count
     stats_amendments_count_per_law
-  ] |> String.split() |> Enum.join(",")
+    amended_by_change_log
+  ] |> String.split()
+
+  @amended_fields @amended_fields_list |> Enum.join(",")
+
+  def amended_fields_list(), do: @amended_fields_list
+  def amended_fields(), do: @amended_fields
 
   @default_opts %{
     name: "",
-    new?: true,
-    # triggers the update workflow and populates the change log
-    update?: false,
+    # workflow options are [:create, :update]
+    # :update triggers the update workflow and populates the change log
+    workflow: :create,
     base_name: "UK E",
     type_code: [""],
     type_class: "",
-    percent?: false,
     sClass: "",
+    family: "",
+    percent?: false,
     filesave?: false,
-    fields: ["Name", "Title_EN", "type_code", "Year", "Number"],
+    # getting existing field data from Airtable
     view: "VS_CODE_AMENDMENT"
   }
 
@@ -69,8 +79,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     with {:ok, type_codes} <- Legl.Countries.Uk.UkTypeCode.type_code(opts.type_code),
          {:ok, type_classes} <- Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class),
          {:ok, sClass} <- Legl.Countries.Uk.SClass.sClass(opts.sClass),
+         {:ok, family} <- Legl.Countries.Uk.Family.family(opts.family),
          opts =
-           Map.merge(opts, %{type_code: type_codes, type_class: type_classes, sClass: sClass}),
+           Map.merge(opts, %{
+             type_code: type_codes,
+             type_class: type_classes,
+             sClass: sClass,
+             family: family
+           }),
          IO.puts("OPTIONS: #{inspect(opts)}"),
          {:ok, file} <- @at_csv |> File.open([:utf8, :write]),
          IO.puts(file, @amended_fields) do
@@ -78,7 +94,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         IO.puts(">>>#{type}")
 
         IO.puts("#{formula(type, opts)}")
-
+        opts = Map.put(opts, :fields, fields(opts))
         opts = Map.put(opts, :formula, formula(type, opts))
 
         full_workflow(file, opts)
@@ -91,8 +107,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     end
   end
 
+  def fields(%{workflow: :create} = _opts),
+    do: ["Name", "Title_EN", "type_code", "Year", "Number"]
+
+  def fields(%{workflow: :update} = _opts), do: @amended_fields_list
+
   def formula(type, %{name: ""} = opts) do
-    f = if opts.new?, do: [~s/{Amendments_Checked}=BLANK()/], else: []
+    f = if opts.workflow == :create, do: [~s/{amendments_checked}=BLANK()/], else: []
+    f = if opts.workflow == :update, do: [~s/{amendments_checked}!=TODAY()/ | f], else: f
     f = if opts.type_code != [""], do: [~s/{type_code}="#{type}"/ | f], else: f
     f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
 
@@ -101,7 +123,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         do: [~s/{% Amended By}<"1.00",{stats_amending_laws_count}>"0"/ | f],
         else: f
 
-    f = if opts.sClass != "", do: [~s/{sClass}="#{opts.sClass}"/ | f], else: f
+    f =
+      if opts.family != "",
+        do: [~s/{Family}="#{opts.family}"/ | f],
+        else: f
+
+    f =
+      if opts.sClass != "",
+        do: [~s/{sClass}="#{opts.sClass}"/ | f],
+        else: f
+
     ~s/AND(#{Enum.join(f, ",")})/
   end
 
@@ -110,25 +141,29 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   end
 
   def full_workflow(file, opts) do
-    with({:ok, records} <- AT.get_records_from_at(opts)) do
-      {records, _} =
-        Enum.reduce(records, [], fn %{
-                                      "fields" => %{
-                                        "Name" => name,
-                                        "Title_EN" => title,
-                                        "type_code" => type,
-                                        "Year" => year,
-                                        "Number" => number
-                                      }
-                                    },
-                                    acc ->
+    with({:ok, current_records} <- AT.get_records_from_at(opts)) do
+      {latest_records, _} =
+        Enum.reduce(current_records, [], fn %{
+                                              "fields" => %{
+                                                "Name" => name,
+                                                "Title_EN" => title,
+                                                "type_code" => type,
+                                                "Year" => year,
+                                                "Number" => number
+                                              }
+                                            },
+                                            acc ->
           [[name, title, type, year, number] | acc]
         end)
         |> paths()
         |> IO.inspect()
         |> (&amendment_bfs({[], &1}, file, 0)).()
 
-      records_to_csv(records)
+      if opts.workflow == :update do
+        Delta.compare(current_records, latest_records)
+      end
+
+      Csv.records_to_csv(latest_records)
     end
   end
 
@@ -168,7 +203,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
       |> paths()
       |> (&amendment_bfs({[], &1}, file, 0)).()
 
-    records_to_csv(records)
+    Csv.records_to_csv(records)
 
     File.close(file)
   end
@@ -186,7 +221,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     IO.puts(file, @amended_fields)
 
     {records, _} = amendment_bfs({[], [{title, path}]}, file, 1)
-    records_to_csv(records)
+
+    Csv.records_to_csv(records)
 
     File.close(file)
   end
@@ -231,18 +267,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
         ~s[/changes/affected/#{type}/#{year}/#{n}/data.xml?results-count=1000&&sort=affecting-year-number]
     end
-  end
-
-  def records_to_csv([]), do: :ok
-
-  def records_to_csv(records) do
-    records
-    |> Enum.uniq()
-    # |> (&([@amended_fields | &1])).()
-    |> Enum.map(fn x -> Enum.join(x, ",") end)
-    |> (&[@amended_fields <> "\n" | &1]).()
-    |> Enum.join("\n")
-    |> save_to_csv()
   end
 
   @doc """
@@ -294,7 +318,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
               AirtableTitleField.title_clean(title)
               |> Legl.Utility.csv_quote_enclosure()
 
-            # the 'Amendments_Checked' field in Airtable
+            # the 'amendments_checked' field in Airtable
             at_amendments_checked = Legl.Utility.todays_date()
 
             IO.puts("title: #{at_title_en} #{at_type} #{at_year} #{at_number}")
@@ -429,14 +453,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     |> Legl.Utility.csv_quote_enclosure()
   end
 
-  def save_to_csv(binary) do
-    "lib/amending.csv"
-    |> Path.absname()
-    |> File.write(binary)
-
-    :ok
-  end
-
   defmodule AmendmentStats do
     defstruct [:self, :laws, :amendments, :counts]
   end
@@ -543,5 +559,157 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         end
       end)
     end)
+  end
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
+  @moduledoc """
+  Module compares the content of the following fields against the latest data @leg.gov.uk
+  stats_amendments_count
+  stats_amending_laws_count
+  stats_amendments_count_per_law
+
+  Generates a amended_by_change_log field to capture the differences
+  """
+  alias Legl.Countries.Uk.LeglRegister.Amend
+
+  @field_paddings %{
+    :stats_amendments_count => 10,
+    :stats_amending_laws_count => 8,
+    :stats_amendments_count_per_law => 6
+  }
+  @compare_fields ~w[
+    leg_gov_uk_updates
+    stats_amendments_count
+    stats_amending_laws_count
+    stats_amendments_count_per_law
+    stats_self_amending_count
+    ] |> Enum.map(&String.to_atom(&1))
+
+  def amended_fields() do
+    Enum.map(Amend.amended_fields_list(), &String.to_atom(&1))
+  end
+
+  def compare(current_records, latest_records) do
+    # convert keys from strings to atoms
+    current_records =
+      Enum.map(current_records, fn record ->
+        record =
+          for {key, val} <- record, into: %{} do
+            {String.to_atom(key), val}
+          end
+
+        fields =
+          for {key, val} <- record.fields, into: %{} do
+            {String.to_atom(key), val}
+          end
+
+        %{record | fields: fields}
+      end)
+
+    latest_records_as_maps =
+      Enum.map(latest_records, fn latest_record ->
+        Enum.zip(amended_fields(), latest_record)
+      end)
+      |> Enum.map(fn record ->
+        Enum.reduce(record, %{}, fn {k, v}, acc -> Map.put(acc, k, v) end)
+      end)
+
+    Enum.zip(current_records, latest_records_as_maps)
+    |> Enum.map(fn {current, latest} ->
+      current = %{current | fields: Map.put_new(current.fields, :amended_by_change_log, "")}
+      latest = Map.put_new(latest, :amended_by_change_log, "")
+      {current, %{id: current.id, fields: latest}}
+    end)
+    |> Enum.map(fn {current, latest} ->
+      compare_fields(current.fields, latest.fields)
+    end)
+    |> IO.inspect()
+  end
+
+  def compare_fields(current_fields, latest_fields) do
+    Enum.reduce(@compare_fields, [], fn field, acc ->
+      current = Map.get(current_fields, field)
+      latest = Map.get(latest_fields, field)
+
+      case changed?(current, latest) do
+        false ->
+          acc
+
+        value ->
+          Keyword.put(acc, field, value)
+      end
+    end)
+    |> amended_by_change_log()
+    |> (&Kernel.<>(current_fields.amended_by_change_log, &1)).()
+    |> String.trim_leading("📌")
+  end
+
+  defp amended_by_change_log([]), do: ""
+
+  defp amended_by_change_log(changes) do
+    IO.inspect(changes)
+    # Returns the metadata changes as a formated multi-line string
+    date = Date.utc_today()
+    date = ~s(#{date.day}/#{date.month}/#{date.year})
+
+    Enum.reduce(changes, ~s/📌#{date}📌/, fn {k, v}, acc ->
+      # width = 80 - string_width(k)
+      width = Map.get(@field_paddings, k)
+      k = ~s/#{k}#{Enum.map(1..width, fn _ -> "." end) |> Enum.join()}/
+      # k = String.pad_trailing(~s/#{k}/, width, ".")
+      ~s/#{acc}#{k}#{v}📌/
+    end)
+    |> String.trim_trailing("📌")
+  end
+
+  defp changed?(current, latest) when current in [nil, "", []] and latest not in [nil, "", []] do
+    case current != latest do
+      false ->
+        false
+
+      true ->
+        ~s/New value/
+    end
+  end
+
+  defp changed?(_, latest) when latest in [nil, "", []], do: false
+
+  defp changed?(current, latest) when is_list(current) and is_list(latest) do
+    case current != latest do
+      false ->
+        false
+
+      true ->
+        ~s/#{Enum.join(current, ", ")} -> #{Enum.join(latest, ", ")}/
+    end
+  end
+
+  defp changed?(current, current), do: false
+
+  defp changed?(current, latest), do: "#{current} -> #{latest}"
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Amend.Csv do
+  alias Legl.Countries.Uk.LeglRegister.Amend
+
+  def records_to_csv([]), do: :ok
+
+  def records_to_csv(records) do
+    records
+    |> Enum.uniq()
+    # |> (&([@amended_fields | &1])).()
+    |> Enum.map(fn x -> Enum.join(x, ",") end)
+    |> (&[Amend.amended_fields() <> "\n" | &1]).()
+    |> Enum.join("\n")
+    |> save_to_csv()
+  end
+
+  def save_to_csv(binary) do
+    "lib/amending.csv"
+    |> Path.absname()
+    |> File.write(binary)
+
+    :ok
   end
 end

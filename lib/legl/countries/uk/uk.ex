@@ -43,7 +43,7 @@ defmodule UK do
     do: Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run(opts)
 
   def amend(opts),
-    do: Legl.Countries.Uk.LeglRegister.Amend.UkAmendClient.run(opts)
+    do: Legl.Countries.Uk.LeglRegister.Amend.run(opts)
 
   def revoke(opts),
     do: Legl.Countries.Uk.RepealRevoke.RepealRevoke.run(opts)
