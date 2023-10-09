@@ -46,6 +46,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     amended_by_change_log
   ] |> String.split()
 
+  @amended_fields_atoms_list Enum.map(@amended_fields_list, &String.to_atom(&1))
+
   @amended_fields @amended_fields_list |> Enum.join(",")
 
   def amended_fields_list(), do: @amended_fields_list
@@ -63,6 +65,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     family: "",
     percent?: false,
     filesave?: false,
+    # include/exclude AT records holding today's date
+    today?: false,
     # patch? only works with :update workflow
     patch?: false,
     # getting existing field data from Airtable
@@ -122,8 +126,21 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   def fields(%{workflow: :update} = _opts), do: @amended_fields_list
 
   def formula(type, %{name: ""} = opts) do
-    f = if opts.workflow == :create, do: [~s/{amendments_checked}=BLANK()/], else: []
-    f = if opts.today? == false, do: [~s/{amendments_checked}!=TODAY()/ | f], else: f
+    f =
+      cond do
+        opts.workflow == :create and opts.today? == true ->
+          [~s/OR({amendments_checked}=BLANK(), {amendments_checked}=TODAY())/]
+
+        opts.workflow == :create ->
+          [~s/{amendments_checked}=BLANK()/]
+
+        opts.today? == false ->
+          [~s/{amendments_checked}!=TODAY()/]
+
+        true ->
+          []
+      end
+
     f = if opts.type_code != [""], do: [~s/{type_code}="#{type}"/ | f], else: f
     f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
 
@@ -152,17 +169,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   def workflow(opts) do
     with(
       {:ok, current_records} <-
-        AT.get_records_from_at(opts)
-      # |> IO.inspect()
+        AT.get_records_from_at(opts),
+      current_records =
+        Jason.encode!(current_records)
+        |> Jason.decode!(keys: :atoms)
+      # |> IO.inspect(label: "CURRENT RECORDS:")
     ) do
-      {latest_records, _} =
+      {latest_records_as_list, _} =
         Enum.reduce(current_records, [], fn %{
-                                              "fields" => %{
-                                                "Name" => name,
-                                                "Title_EN" => title,
-                                                "type_code" => type,
-                                                "Year" => year,
-                                                "Number" => number
+                                              fields: %{
+                                                Name: name,
+                                                Number: number,
+                                                Title_EN: title,
+                                                type_code: type,
+                                                Year: year
                                               }
                                             },
                                             acc ->
@@ -172,14 +192,45 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         # |> IO.inspect()
         |> (&amendment_bfs({[], &1}, opts, 0)).()
 
-      if opts.workflow == :update do
-        Delta.compare(current_records, latest_records)
-        # |> IO.inspect()
-        |> Patch.patch(opts)
+      # rebuild latest records as a map
+      latest_records =
+        Enum.map(latest_records_as_list, fn latest_record ->
+          Enum.zip(@amended_fields_atoms_list, latest_record)
+        end)
+        |> Enum.map(fn record ->
+          Enum.reduce(record, %{}, fn {k, v}, acc -> Map.put(acc, k, v) end)
+        end)
+
+      # IO.inspect(latest_records, label: "LATEST RECORDS:")
+
+      # the %{id: xxx fields: {}} structure is needed for latest_records
+      # and we need to pair current with latest in a tuple
+      record_set = zip(current_records, latest_records)
+
+      cond do
+        opts.workflow == :create ->
+          Enum.map(record_set, fn {_, latest} -> latest end)
+          |> Patch.patch(opts)
+
+        opts.workflow == :update ->
+          Delta.compare(record_set)
+          # |> IO.inspect()
+          |> Patch.patch(opts)
       end
 
-      Csv.records_to_csv(latest_records)
+      Csv.records_to_csv(latest_records_as_list)
     end
+  end
+
+  defp zip(current_records, latest_records) do
+    Enum.reduce(current_records, [], fn %{fields: %{Name: current_name}} = current_record, acc ->
+      latest_record =
+        Enum.find(latest_records, fn %{Name: latest_name} ->
+          latest_name == current_name
+        end)
+
+      [{current_record, %{id: current_record.id, fields: latest_record}} | acc]
+    end)
   end
 
   @enumeration_limit 2
@@ -530,6 +581,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     Enum.map(stats.counts, fn {linked_record_name, count} ->
       "#{linked_record_name} - #{count}"
     end)
+    |> Enum.sort()
     |> Enum.join("💚️")
 
     # Legl.Utility.csv_quote_enclosure(counts)
@@ -609,9 +661,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
   @api_results_path ~s[lib/legl/countries/uk/legl_register/amend/api_metadata_results.json]
   def patch([], _), do: :ok
 
-  def patch(records, %{patch?: true} = opts) do
+  def patch(records, opts) do
     IO.write("PATCH bulk - ")
-    records = clean_records_for_patch(records)
+    records = clean_records_for_patch(records, opts)
 
     json = Map.put(%{}, "records", records) |> Jason.encode!()
     Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
@@ -619,9 +671,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
     process(records, opts)
   end
 
-  def patch(_, _), do: :ok
-
-  defp process(results, opts) do
+  defp process(results, %{patch?: true} = opts) do
     headers = [{:"Content-Type", "application/json"}]
 
     params = %{
@@ -644,7 +694,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
     end)
   end
 
-  defp clean_records_for_patch(records) do
+  defp process(_, _), do: :ok
+
+  # defp clean_records_for_patch(records, %{workflow: :create} = _opts), do: records
+
+  defp clean_records_for_patch(records, _opts) do
     Enum.map(records, fn record ->
       # IO.inspect(record)
 
@@ -696,41 +750,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
     stats_self_amending_count
     ] |> Enum.map(&String.to_atom(&1))
 
-  def amended_fields() do
-    Enum.map(Amend.amended_fields_list(), &String.to_atom(&1))
-  end
-
-  def compare(current_records, latest_records) do
-    # convert keys from strings to atoms
-    current_records =
-      Enum.map(current_records, fn record ->
-        record =
-          for {key, val} <- record, into: %{} do
-            {String.to_atom(key), val}
-          end
-
-        fields =
-          for {key, val} <- record.fields, into: %{} do
-            {String.to_atom(key), val}
-          end
-
-        %{record | fields: fields}
-      end)
-
-    latest_records_as_maps =
-      Enum.map(latest_records, fn latest_record ->
-        Enum.zip(amended_fields(), latest_record)
-      end)
-      |> Enum.map(fn record ->
-        Enum.reduce(record, %{}, fn {k, v}, acc -> Map.put(acc, k, v) end)
-      end)
-
-    zip(current_records, latest_records_as_maps)
+  def compare(records) do
+    records
     # |> IO.inspect(label: "data for compare")
     |> Enum.map(fn {current, latest} ->
       current = %{current | fields: Map.put_new(current.fields, :amended_by_change_log, "")}
-      latest = Map.put_new(latest, :amended_by_change_log, "")
-      {current, %{id: current.id, fields: latest}}
+      latest = %{latest | fields: Map.put_new(latest.fields, :amended_by_change_log, "")}
+      {current, latest}
     end)
     |> Enum.reduce([], fn {current, latest}, acc ->
       latest_amended_by_change_log = compare_fields(current.fields, latest.fields)
@@ -758,17 +784,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
     end)
 
     # |> IO.inspect()
-  end
-
-  defp zip(current_records, latest_records) do
-    Enum.reduce(current_records, [], fn %{fields: %{Name: current_name}} = current_record, acc ->
-      latest_record =
-        Enum.find(latest_records, fn %{Name: latest_name} ->
-          latest_name == current_name
-        end)
-
-      [{current_record, latest_record} | acc]
-    end)
   end
 
   def compare_fields(current_fields, latest_fields) do
