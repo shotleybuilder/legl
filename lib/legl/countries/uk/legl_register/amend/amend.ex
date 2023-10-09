@@ -26,6 +26,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
   alias Legl.Countries.Uk.LeglRegister.Amend.Delta
   alias Legl.Countries.Uk.LeglRegister.Amend.Csv
+  alias Legl.Countries.Uk.LeglRegister.Amend.Patch
 
   @at_csv ~s[lib/legl/countries/uk/legl_register/amend/amended_by.csv] |> Path.absname()
 
@@ -62,6 +63,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     family: "",
     percent?: false,
     filesave?: false,
+    # patch? only works with :update workflow
+    patch?: false,
     # getting existing field data from Airtable
     view: "VS_CODE_AMENDMENT"
   }
@@ -93,11 +96,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
       Enum.each(type_codes, fn type ->
         IO.puts(">>>#{type}")
 
-        IO.puts("#{formula(type, opts)}")
-        opts = Map.put(opts, :fields, fields(opts))
-        opts = Map.put(opts, :formula, formula(type, opts))
+        fields = fields(opts)
+        formula = formula(type, opts)
 
-        full_workflow(file, opts)
+        opts = Map.put(opts, :fields, fields)
+        opts = Map.put(opts, :formula, formula)
+        opts = Map.put(opts, :file, file)
+
+        IO.puts("AT FIELDS: #{inspect(fields)}")
+        IO.puts("AT FORMULA: #{formula}")
+
+        workflow(opts)
       end)
 
       File.close(file)
@@ -114,7 +123,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
   def formula(type, %{name: ""} = opts) do
     f = if opts.workflow == :create, do: [~s/{amendments_checked}=BLANK()/], else: []
-    f = if opts.workflow == :update, do: [~s/{amendments_checked}!=TODAY()/ | f], else: f
+    f = if opts.today? == false, do: [~s/{amendments_checked}!=TODAY()/ | f], else: f
     f = if opts.type_code != [""], do: [~s/{type_code}="#{type}"/ | f], else: f
     f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
 
@@ -140,8 +149,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     ~s/{name}="#{name}"/
   end
 
-  def full_workflow(file, opts) do
-    with({:ok, current_records} <- AT.get_records_from_at(opts)) do
+  def workflow(opts) do
+    with(
+      {:ok, current_records} <-
+        AT.get_records_from_at(opts)
+      # |> IO.inspect()
+    ) do
       {latest_records, _} =
         Enum.reduce(current_records, [], fn %{
                                               "fields" => %{
@@ -153,14 +166,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
                                               }
                                             },
                                             acc ->
-          [[name, title, type, year, number] | acc]
+          [[name, String.trim(title), type, year, number] | acc]
         end)
         |> paths()
-        |> IO.inspect()
-        |> (&amendment_bfs({[], &1}, file, 0)).()
+        # |> IO.inspect()
+        |> (&amendment_bfs({[], &1}, opts, 0)).()
 
       if opts.workflow == :update do
         Delta.compare(current_records, latest_records)
+        # |> IO.inspect()
+        |> Patch.patch(opts)
       end
 
       Csv.records_to_csv(latest_records)
@@ -260,12 +275,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   def path(type, year, number) do
     case String.match?(number, ~r/\//) do
       false ->
-        ~s[/changes/affected/#{type}/#{year}/#{number}/data.xml?results-count=1000&&sort=affecting-year-number]
+        ~s[/changes/affected/#{type}/#{year}/#{number}/data.xml?results-count=2000&&sort=affecting-year-number]
 
       true ->
         [_, n] = Regex.run(~r/\/(\d+$)/, number)
 
-        ~s[/changes/affected/#{type}/#{year}/#{n}/data.xml?results-count=1000&&sort=affecting-year-number]
+        ~s[/changes/affected/#{type}/#{year}/#{n}/data.xml?results-count=2000&&sort=affecting-year-number]
     end
   end
 
@@ -292,9 +307,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
       at_stats_amendments_count_per_law
     ]
   """
-  def amendment_bfs(data, _file, @enumeration_limit), do: data
+  def amendment_bfs(data, _, @enumeration_limit), do: data
 
-  def amendment_bfs({results, links}, file, enumeration_limit) do
+  def amendment_bfs({results, links}, opts, enumeration_limit) do
     IO.puts("enumeration #{enumeration_limit}")
 
     case ExPrompt.confirm("There are #{Enum.count(links)} laws in this iteration.  Continue?") do
@@ -304,7 +319,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
       true ->
         enumeration_limit = enumeration_limit + 1
-        IO.puts(file, "ENUMERATION #{enumeration_limit} *******************")
+        IO.puts(opts.file, "ENUMERATION #{enumeration_limit} *******************")
 
         {nresults, nlinks} =
           Enum.reduce(links, {results, MapSet.new()}, fn {name, title, path},
@@ -314,17 +329,42 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
             at_name = name
 
             # surround the title with " in case it contains commas
-            at_title_en =
-              AirtableTitleField.title_clean(title)
-              |> Legl.Utility.csv_quote_enclosure()
+            at_title_en = AirtableTitleField.title_clean(title)
+            # |> Legl.Utility.csv_quote_enclosure()
 
             # the 'amendments_checked' field in Airtable
             at_amendments_checked = Legl.Utility.todays_date()
 
-            IO.puts("title: #{at_title_en} #{at_type} #{at_year} #{at_number}")
+            IO.puts("title-> #{at_title_en} #{at_type} #{at_year} #{at_number}")
 
             # call to legislation.gov.uk to get the amendments
             {:ok, stats, amended_by_laws} = Record.amendments_table(path)
+
+            # |> IO.inspect(label: "response")
+
+            at_stats_self_amending_count =
+              cond do
+                stats == nil -> 0
+                true -> stats.self
+              end
+
+            at_stats_amending_laws_count =
+              cond do
+                amended_by_laws != [] -> count_amending_laws(amended_by_laws)
+                true -> 0
+              end
+
+            at_stats_amendments_count =
+              cond do
+                stats == nil -> 0
+                true -> stats.amendments
+              end
+
+            at_stats_amendments_count_per_law =
+              cond do
+                stats == nil -> "no amendments"
+                true -> stats.counts
+              end
 
             # IO.inspect(amended_by_laws)
 
@@ -342,24 +382,19 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
                   at_amendments_checked,
                   [],
                   nil,
-                  0,
-                  0,
-                  0,
-                  0
+                  at_stats_self_amending_count,
+                  at_stats_amending_laws_count,
+                  at_stats_amendments_count,
+                  at_stats_amendments_count_per_law
                 ]
 
-                Enum.join(record, ",") |> (&IO.puts(file, &1)).()
+                Enum.join(record, ",") |> (&IO.puts(opts.file, &1)).()
 
                 {[record | nresults], nlinks}
 
               _ ->
                 at_amended_by = at_amended_by(amended_by_laws)
                 at_leg_gov_uk_updates = at_leg_gov_uk_updates(amended_by_laws)
-                # stats
-                at_stats_self_amending_count = stats.self
-                at_stats_amendments_count = stats.amendments
-                at_stats_amending_laws_count = count_amending_laws(amended_by_laws)
-                at_stats_amendments_count_per_law = stats.counts
 
                 record = [
                   at_name,
@@ -376,7 +411,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
                   at_stats_amendments_count_per_law
                 ]
 
-                Enum.join(record, ",") |> (&IO.puts(file, &1)).()
+                # here we can process the record for each separate law
+                # Patch.patch([record], opts)
+                Enum.join(record, ",") |> (&IO.puts(opts.file, &1)).()
 
                 nresults = [record | nresults]
 
@@ -413,7 +450,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         # IO.inspect(nlinks)
         params = {nresults, nlinks}
 
-        amendment_bfs(params, file, enumeration_limit)
+        amendment_bfs(params, opts, enumeration_limit)
     end
   end
 
@@ -427,8 +464,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
       AirtableIdField.id(amending_title, type, year, number)
     end)
     |> Enum.sort()
-    |> Enum.join(", ")
-    |> Legl.Utility.csv_quote_enclosure()
+
+    # |> Enum.join(", ")
+    # |> Legl.Utility.csv_quote_enclosure()
   end
 
   @doc """
@@ -450,7 +488,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     end)
     |> Enum.uniq()
     |> Enum.join(",")
-    |> Legl.Utility.csv_quote_enclosure()
+
+    # |> Legl.Utility.csv_quote_enclosure()
   end
 
   defmodule AmendmentStats do
@@ -482,14 +521,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   """
   def at_stats_amendments_count_per_law(nil), do: "no amendments"
 
-  def at_stats_amendments_count_per_law(stats) do
-    counts =
-      Enum.map(stats.counts, fn {linked_record_name, count} ->
-        "#{linked_record_name} - #{count}"
-      end)
-      |> Enum.join("💚️")
+  def at_stats_amendments_count_per_law(%{counts: []} = _stats), do: "no amendments"
 
-    Legl.Utility.csv_quote_enclosure(counts)
+  def at_stats_amendments_count_per_law(stats) do
+    # IO.inspect(stats, label: "at_stats_amendments_count_per_law")
+
+    # counts =
+    Enum.map(stats.counts, fn {linked_record_name, count} ->
+      "#{linked_record_name} - #{count}"
+    end)
+    |> Enum.join("💚️")
+
+    # Legl.Utility.csv_quote_enclosure(counts)
   end
 
   def amendment_ids(records) do
@@ -562,6 +605,68 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   end
 end
 
+defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
+  @api_results_path ~s[lib/legl/countries/uk/legl_register/amend/api_metadata_results.json]
+  def patch([], _), do: :ok
+
+  def patch(records, %{patch?: true} = opts) do
+    IO.write("PATCH bulk - ")
+    records = clean_records_for_patch(records)
+
+    json = Map.put(%{}, "records", records) |> Jason.encode!()
+    Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
+
+    process(records, opts)
+  end
+
+  def patch(_, _), do: :ok
+
+  defp process(results, opts) do
+    headers = [{:"Content-Type", "application/json"}]
+
+    params = %{
+      base: opts.base_id,
+      table: opts.table_id,
+      options: %{}
+    }
+
+    # Airtable only accepts sets of 10x records in a single PATCH request
+    results =
+      Enum.chunk_every(results, 10)
+      |> Enum.reduce([], fn set, acc ->
+        Map.put(%{}, "records", set)
+        |> Jason.encode!()
+        |> (&[&1 | acc]).()
+      end)
+
+    Enum.each(results, fn result_subset ->
+      Legl.Services.Airtable.AtPatch.patch_records(result_subset, headers, params)
+    end)
+  end
+
+  defp clean_records_for_patch(records) do
+    Enum.map(records, fn record ->
+      # IO.inspect(record)
+
+      clean(record)
+    end)
+  end
+
+  defp clean(%{fields: %{Amended_by: amended_by} = fields} = record) do
+    Map.drop(fields, [
+      :Name,
+      :Title_EN,
+      :Year,
+      :Number,
+      :type_code
+    ])
+    |> Map.put(:Amended_by, Enum.join(amended_by, ", "))
+    |> (&Map.put(record, :fields, &1)).()
+  end
+
+  defp clean(record), do: record
+end
+
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
   @moduledoc """
   Module compares the content of the following fields against the latest data @leg.gov.uk
@@ -574,15 +679,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
   alias Legl.Countries.Uk.LeglRegister.Amend
 
   @field_paddings %{
+    :Amended_by => 10,
+    :leg_gov_uk_updates => 10,
+    :stats_self_amending_count => 10,
+    :amended_by_change_log => 10,
     :stats_amendments_count => 10,
     :stats_amending_laws_count => 8,
     :stats_amendments_count_per_law => 6
   }
+  # TODO stats_amendments_count_per_law needs to find the changes within the list
   @compare_fields ~w[
+    Amended_by
     leg_gov_uk_updates
     stats_amendments_count
     stats_amending_laws_count
-    stats_amendments_count_per_law
     stats_self_amending_count
     ] |> Enum.map(&String.to_atom(&1))
 
@@ -615,16 +725,50 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
         Enum.reduce(record, %{}, fn {k, v}, acc -> Map.put(acc, k, v) end)
       end)
 
-    Enum.zip(current_records, latest_records_as_maps)
+    zip(current_records, latest_records_as_maps)
+    # |> IO.inspect(label: "data for compare")
     |> Enum.map(fn {current, latest} ->
       current = %{current | fields: Map.put_new(current.fields, :amended_by_change_log, "")}
       latest = Map.put_new(latest, :amended_by_change_log, "")
       {current, %{id: current.id, fields: latest}}
     end)
-    |> Enum.map(fn {current, latest} ->
-      compare_fields(current.fields, latest.fields)
+    |> Enum.reduce([], fn {current, latest}, acc ->
+      latest_amended_by_change_log = compare_fields(current.fields, latest.fields)
+      date = ~s/#{Date.utc_today()}/
+      # if there is a change to the amended_by_change_log then keep latest record
+      case compare_amended_by_change_log(
+             current.fields.amended_by_change_log,
+             latest_amended_by_change_log
+           ) do
+        nil ->
+          current
+          |> Map.drop([:createdTime, :fields])
+          |> Map.put(:fields, %{amendments_checked: date})
+          |> (&[&1 | acc]).()
+
+        _ ->
+          fields = %{
+            latest.fields
+            | amended_by_change_log: latest_amended_by_change_log,
+              amendments_checked: date
+          }
+
+          [%{latest | fields: fields} | acc]
+      end
     end)
-    |> IO.inspect()
+
+    # |> IO.inspect()
+  end
+
+  defp zip(current_records, latest_records) do
+    Enum.reduce(current_records, [], fn %{fields: %{Name: current_name}} = current_record, acc ->
+      latest_record =
+        Enum.find(latest_records, fn %{Name: latest_name} ->
+          latest_name == current_name
+        end)
+
+      [{current_record, latest_record} | acc]
+    end)
   end
 
   def compare_fields(current_fields, latest_fields) do
@@ -632,12 +776,52 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
       current = Map.get(current_fields, field)
       latest = Map.get(latest_fields, field)
 
-      case changed?(current, latest) do
-        false ->
-          acc
+      cond do
+        # find the Delta between the lists
+        field == :Amended_by ->
+          current =
+            cond do
+              is_binary(current) ->
+                String.split(current, ",")
+                |> Enum.map(&String.trim(&1))
+                |> Enum.sort()
 
-        value ->
-          Keyword.put(acc, field, value)
+              current == nil ->
+                []
+
+              true ->
+                current
+                |> Enum.sort()
+            end
+
+          latest = Enum.sort(latest)
+
+          # IO.puts("CURRENT:\n#{inspect(current)}\nLATEST:\n#{inspect(latest)}")
+          # IO.puts("DIFF: #{inspect(latest -- current)}")
+
+          case latest -- current do
+            [] ->
+              acc
+
+            values ->
+              IO.puts(
+                "NAME: #{current_fields."Title_EN"} #{current_fields."Year"}\nDIFF: #{inspect(values, limit: :infinity)}"
+              )
+
+              values
+              |> Enum.sort()
+              |> Enum.join("📌")
+              |> (&Keyword.put(acc, field, &1)).()
+          end
+
+        true ->
+          case changed?(current, latest) do
+            false ->
+              acc
+
+            value ->
+              Keyword.put(acc, field, value)
+          end
       end
     end)
     |> amended_by_change_log()
@@ -645,10 +829,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
     |> String.trim_leading("📌")
   end
 
+  def compare_amended_by_change_log(current, current), do: nil
+
+  def compare_amended_by_change_log(_current, latest), do: latest
+
   defp amended_by_change_log([]), do: ""
 
   defp amended_by_change_log(changes) do
-    IO.inspect(changes)
+    # IO.inspect(changes)
     # Returns the metadata changes as a formated multi-line string
     date = Date.utc_today()
     date = ~s(#{date.day}/#{date.month}/#{date.year})

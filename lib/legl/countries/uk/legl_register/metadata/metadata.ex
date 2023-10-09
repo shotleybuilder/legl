@@ -412,7 +412,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.Patch do
     process(records, opts)
   end
 
-  def patch(_), do: :ok
+  def patch(_, _), do: :ok
 
   defp clean_records_for_patch(records) do
     # Discard data we don't need to send back to Airtable

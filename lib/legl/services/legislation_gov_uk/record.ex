@@ -154,6 +154,7 @@ defmodule Legl.Services.LegislationGovUk.Record do
 
   def stats(records) do
     Legl.Countries.Uk.LeglRegister.Amend.pre_uniq_summary_amendment_stats(records)
+    # |> IO.inspect(label: "stats")
   end
 
   defp uniq_by_amending_title(records) do
