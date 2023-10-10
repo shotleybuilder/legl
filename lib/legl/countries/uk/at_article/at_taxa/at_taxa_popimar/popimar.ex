@@ -5,7 +5,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
   Duty type for 'sections' is a roll-up (aggregate) of the duty types for seb-sections
   """
   alias Legl.Services.Airtable.AtBasesTables
-  # alias Legl.Countries.Uk.UkAirtable, as: AT
+  # alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.Records
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib, as: Lib
 

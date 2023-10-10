@@ -10,9 +10,11 @@ defmodule Legl.Services.Airtable.Client do
   @timeout ~s(timeout: Sorry, there was a delay in getting the information from Airtable and the request has timed out.  Please try again!)
 
   def request(:get, url, headers) do
+    # IO.puts("URL: #{url}")
+
     case get(url, headers) do
       {:ok, %HTTPoison.Response{status_code: _code, body: body}} ->
-        body
+        {:ok, body}
 
       {:error, %HTTPoison.Error{__exception__: _, id: _, reason: :timeout}} ->
         {:error, reason: @timeout}

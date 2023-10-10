@@ -11,7 +11,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
   UK.extent(base_name: "UK S", name: "UK_uksi_2014_1639_ASEWSR", new?: false, filesave?: true)
   """
   alias Legl.Services.LegislationGovUk.RecordGeneric
-  alias Legl.Countries.Uk.UkAirtable, as: AT
+  alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.AtBasesTables
 
   @at_type ["asc"]

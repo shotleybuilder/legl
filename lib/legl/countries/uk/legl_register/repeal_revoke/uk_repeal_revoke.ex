@@ -14,7 +14,7 @@ defmodule Legl.Countries.Uk.RepealRevoke.RepealRevoke do
   """
 
   alias Legl.Services.LegislationGovUk.RecordGeneric
-  alias Legl.Countries.Uk.UkAirtable, as: AT
+  alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Airtable.AirtableIdField, as: ID
   alias Legl.Airtable.AirtableTitleField, as: Title
   alias Legl.Services.Airtable.AtBasesTables

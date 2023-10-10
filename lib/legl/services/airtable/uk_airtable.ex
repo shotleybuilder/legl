@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.UkAirtable do
+defmodule Legl.Services.Airtable.UkAirtable do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
 

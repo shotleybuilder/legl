@@ -5,7 +5,7 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
 
   """
 
-  alias Legl.Countries.Uk.UkAirtable, as: AT
+  alias Legl.Services.Airtable.UkAirtable, as: AT
 
   @at_type %{
     ukpga: ["ukpga"],
@@ -20,7 +20,6 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
   @at_csv "airtable_search_links"
 
   def run(t) when is_atom(t) do
-
     {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
     IO.puts(file, "Name,leg.gov.uk_Search_paste")
 
@@ -31,42 +30,53 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
   end
 
   def run(file, type) do
-    #formula = ~s/{leg.gov.uk_Search_paste}=BLANK()/
-    #formula = ~s/AND({leg.gov.uk_Search_paste}=BLANK(),{Search}!=BLANK(),{type_code}="#{type}")/
+    # formula = ~s/{leg.gov.uk_Search_paste}=BLANK()/
+    # formula = ~s/AND({leg.gov.uk_Search_paste}=BLANK(),{Search}!=BLANK(),{type_code}="#{type}")/
     formula = ~s/AND({Search}!=BLANK(),{type_code}="#{type}")/
-    opts =
-      [
-        formula: formula,
-        view: "SEARCH",
-        fields: ["Name","Title_EN","Search"]
-      ]
+
+    opts = [
+      formula: formula,
+      view: "SEARCH",
+      fields: ["Name", "Title_EN", "Search"]
+    ]
+
     func = &__MODULE__.make_csv/2
+
     with(
       {:ok, records} <- AT.get_records_from_at(opts),
-      #IO.inspect(records, limit: :infinity),
+      # IO.inspect(records, limit: :infinity),
       {:ok, msg} <- AT.enumerate_at_records({file, records}, func)
     ) do
       IO.puts(msg)
     end
   end
 
-  def make_csv(file,
-    %{
-      "Name" => name,
-      "Search" => search
-    } =
-    _fields) do
-
+  def make_csv(
+        file,
+        %{
+          "Name" => name,
+          "Search" => search
+        } = _fields
+      ) do
     txt =
       case Legl.Utility.split_name(name) do
         {type, year, number} ->
           Enum.reduce(search, [], fn x, acc ->
-            url = URI.encode(~s[https://legislation.gov.uk/#{type}/#{year}/#{number}/contents/made?text="#{x}"#match-1])
+            url =
+              URI.encode(
+                ~s[https://legislation.gov.uk/#{type}/#{year}/#{number}/contents/made?text="#{x}"#match-1]
+              )
+
             [~s/#{x}💚#{url} / | acc]
           end)
+
         {type, number} ->
           Enum.reduce(search, [], fn x, acc ->
-            url = URI.encode(~s[https://legislation.gov.uk/#{type}/#{number}/contents/made?text="#{x}"#match-1])
+            url =
+              URI.encode(
+                ~s[https://legislation.gov.uk/#{type}/#{number}/contents/made?text="#{x}"#match-1]
+              )
+
             [~s/#{x}💚#{url} / | acc]
           end)
       end
@@ -74,8 +84,8 @@ defmodule Legl.Countries.Uk.UkSearchLinks do
     txt = Enum.reverse(txt)
 
     ~s/#{name},#{Enum.join(txt, "💚")}/
-    #|> IO.inspect()
-    |> (&(IO.puts(file, &1))).()
+    # |> IO.inspect()
+    |> (&IO.puts(file, &1)).()
   end
 
   def make_csv(_file, _fields), do: :ok

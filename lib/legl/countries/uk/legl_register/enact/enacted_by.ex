@@ -4,7 +4,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
   Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run([t: type_code, base_name: "UK S"])
   """
 
-  alias Legl.Countries.Uk.UkAirtable, as: AT
+  alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Countries.Uk.UkTypeClass, as: TypeClass
   alias Legl.Countries.Uk.UkTypeCode, as: TypeCode
 

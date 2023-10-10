@@ -22,11 +22,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   alias Legl.Airtable.AirtableTitleField
   alias Legl.Services.LegislationGovUk.Record
   alias Legl.Services.Airtable.AtBasesTables
-  alias Legl.Countries.Uk.UkAirtable, as: AT
+  alias Legl.Services.Airtable.UkAirtable, as: AT
 
   alias Legl.Countries.Uk.LeglRegister.Amend.Delta
   alias Legl.Countries.Uk.LeglRegister.Amend.Csv
   alias Legl.Countries.Uk.LeglRegister.Amend.Patch
+  alias Legl.Countries.Uk.LeglRegister.Amend.NewLaw
 
   @at_csv ~s[lib/legl/countries/uk/legl_register/amend/amended_by.csv] |> Path.absname()
 
@@ -59,6 +60,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     # :update triggers the update workflow and populates the change log
     workflow: :create,
     base_name: "UK E",
+    # type_code as an atom eg :ukpga
     type_code: [""],
     type_class: "",
     sClass: "",
@@ -193,13 +195,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         |> (&amendment_bfs({[], &1}, opts, 0)).()
 
       # rebuild latest records as a map
-      latest_records =
-        Enum.map(latest_records_as_list, fn latest_record ->
-          Enum.zip(@amended_fields_atoms_list, latest_record)
-        end)
-        |> Enum.map(fn record ->
-          Enum.reduce(record, %{}, fn {k, v}, acc -> Map.put(acc, k, v) end)
-        end)
+      latest_records = rebuild_map_from_list(latest_records_as_list)
 
       # IO.inspect(latest_records, label: "LATEST RECORDS:")
 
@@ -220,6 +216,15 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
       Csv.records_to_csv(latest_records_as_list)
     end
+  end
+
+  defp rebuild_map_from_list(latest_records_as_list) do
+    Enum.map(latest_records_as_list, fn latest_record ->
+      Enum.zip(@amended_fields_atoms_list, latest_record)
+    end)
+    |> Enum.map(fn record ->
+      Enum.reduce(record, %{}, fn {k, v}, acc -> Map.put(acc, k, v) end)
+    end)
   end
 
   defp zip(current_records, latest_records) do
@@ -494,6 +499,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         # IO.inspect(nlinks, limit: :infinity)
         # IO.inspect(nresults, limit: :infinity)
 
+        # Capture details of new laws for the Base
+        if enumeration_limit > 1,
+          do:
+            rebuild_map_from_list(nresults)
+            |> NewLaw.new_law?(opts)
+
         # Let's not process laws that might have been already processed
         nlinks = MapSet.difference(nlinks, MapSet.new(links))
         # IO.inspect(nlinks, limit: :infinity)
@@ -658,7 +669,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
-  @api_results_path ~s[lib/legl/countries/uk/legl_register/amend/api_metadata_results.json]
+  @api_results_path ~s[lib/legl/countries/uk/legl_register/amend/api_patch_results.json]
   def patch([], _), do: :ok
 
   def patch(records, opts) do
@@ -719,6 +730,55 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
   end
 
   defp clean(record), do: record
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Amend.Post do
+  @api_results_path ~s[lib/legl/countries/uk/legl_register/amend/api_post_results.json]
+  def post([], _), do: :ok
+
+  def post(records, opts) do
+    IO.write("POST record - ")
+    records = clean_records_for_post(records)
+
+    json = Map.put(%{}, "records", records) |> Jason.encode!()
+    Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
+
+    process(records, opts)
+  end
+
+  defp process(records, opts) do
+    headers = [{:"Content-Type", "application/json"}]
+
+    params = %{
+      base: opts.base_id,
+      table: opts.table_id,
+      options: %{}
+    }
+
+    # Airtable only accepts sets of 10x records in a single PATCH request
+    records =
+      Enum.chunk_every(records, 10)
+      |> Enum.reduce([], fn set, acc ->
+        Map.put(%{}, "records", set)
+        |> Jason.encode!()
+        |> (&[&1 | acc]).()
+      end)
+
+    Enum.each(records, fn subset ->
+      Legl.Services.Airtable.AtPost.post_records(subset, headers, params)
+    end)
+  end
+
+  defp clean_records_for_post(records) do
+    Enum.map(records, fn %{fields: fields} = _record ->
+      Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
+      |> Map.drop([:Name])
+      |> (&Map.put(&1, :Year, String.to_integer(Map.get(&1, :Year)))).()
+      |> (&Map.put(%{}, :fields, &1)).()
+    end)
+
+    # |> IO.inspect(label: "CLEAN: ")
+  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
@@ -891,6 +951,70 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
   defp changed?(current, current), do: false
 
   defp changed?(current, latest), do: "#{current} -> #{latest}"
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Amend.NewLaw do
+  @moduledoc """
+  Module to handle addition of new amending laws into the Base
+  1. Checks existence of law (for enumeration 1+)
+  2. Filters records based on absence
+  3. Posts new record with amendment data to Base
+  """
+  alias Legl.Services.Airtable.Client
+  alias Legl.Services.Airtable.Url
+  alias Legl.Countries.Uk.LeglRegister.Amend.Post
+
+  def new_law?(records, opts) do
+    # Loop through the records and add a new record parameter :url
+    records =
+      Enum.map(records, fn record ->
+        options = [
+          formula: ~s/{Name}="#{Map.get(record, :Name)}"/,
+          fields: ["Name", "Number", "Year", "type_class"]
+        ]
+
+        {:ok, url} = Url.url(opts.base_id, opts.table_id, options)
+        Map.put(record, :url, url)
+      end)
+
+    # Loop through the records and get request the url
+    records = record_exists_filter(records)
+
+    Enum.each(records, fn record ->
+      case ExPrompt.confirm("Save this law to the Base?\n#{inspect(record)}") do
+        false ->
+          :ok
+
+        true ->
+          Post.post([record], opts)
+      end
+    end)
+  end
+
+  def record_exists_filter(records) do
+    Enum.reduce(records, [], fn record, acc ->
+      with {:ok, body} <- Client.request(:get, record.url, []),
+           %{records: values} <- Jason.decode!(body, keys: :atoms) do
+        # IO.puts("VALUES: #{inspect(values)}")
+
+        case values do
+          [] ->
+            Map.drop(record, [:url])
+            |> (&Map.put(%{}, :fields, &1)).()
+            |> (&[&1 | acc]).()
+
+          _ ->
+            acc
+        end
+      else
+        {:error, reason: reason} ->
+          IO.puts("ERROR #{reason}")
+          acc
+      end
+    end)
+
+    # |> IO.inspect()
+  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Csv do

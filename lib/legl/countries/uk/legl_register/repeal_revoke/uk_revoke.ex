@@ -6,7 +6,7 @@ defmodule Legl.Countries.Uk.UkRevoke do
     the .xml
   """
 
-  alias Legl.Countries.Uk.UkAirtable, as: AT
+  alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.LegislationGovUk.RecordGeneric
 
   @at_type %{
