@@ -39,7 +39,7 @@ end
 defmodule Legl.Countries.Uk.UkTypeClass do
   @type_classes ~w[Act Regulations Order Rules Byelaws]
   defstruct act: "Act",
-            regulation: "Regulations",
+            regulation: "Regulation",
             order: "Order",
             rule: "Rules",
             byelaw: "Byelaws",

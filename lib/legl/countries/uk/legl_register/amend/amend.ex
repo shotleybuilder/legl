@@ -148,7 +148,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
     f =
       if opts.percent? != false,
-        do: [~s/{% Amended By}<"1.00",{stats_amending_laws_count}>"0"/ | f],
+        do: [~s/{% amending law in Base}<"1",{stats_amending_laws_count}>"0"/ | f],
         else: f
 
     f =
@@ -771,10 +771,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Post do
 
   defp clean_records_for_post(records) do
     Enum.map(records, fn %{fields: fields} = _record ->
-      Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
-      |> Map.drop([:Name])
-      |> (&Map.put(&1, :Year, String.to_integer(Map.get(&1, :Year)))).()
-      |> (&Map.put(%{}, :fields, &1)).()
+      fields =
+        Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
+        |> Map.drop([:Name])
+        |> (&Map.put(&1, :Year, String.to_integer(Map.get(&1, :Year)))).()
+
+      case Map.get(fields, :Amended_by) do
+        nil ->
+          Map.put(%{}, :fields, fields)
+
+        value ->
+          Enum.join(value, ", ")
+          |> (&Map.replace(fields, :Amended_by, &1)).()
+          |> (&Map.put(%{}, :fields, &1)).()
+      end
     end)
 
     # |> IO.inspect(label: "CLEAN: ")
@@ -977,21 +987,36 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.NewLaw do
         Map.put(record, :url, url)
       end)
 
-    # Loop through the records and get request the url
+    # Add Family to records
+
     records = record_exists_filter(records)
 
     Enum.each(records, fn record ->
-      case ExPrompt.confirm("Save this law to the Base?\n#{inspect(record)}") do
+      case ExPrompt.confirm("Save this law to the Base? #{record[Title_EN]}\n#{inspect(record)}") do
         false ->
           :ok
 
         true ->
-          Post.post([record], opts)
+          case opts.family do
+            "" ->
+              Post.post([record], opts)
+
+            _ ->
+              case ExPrompt.confirm("Assign this Family? #{opts.family}") do
+                false ->
+                  Post.post([record], opts)
+
+                true ->
+                  [Map.put(record, :Family, opts.family) | []]
+                  |> Post.post(opts)
+              end
+          end
       end
     end)
   end
 
   def record_exists_filter(records) do
+    # Loop through the records and GET request the url
     Enum.reduce(records, [], fn record, acc ->
       with {:ok, body} <- Client.request(:get, record.url, []),
            %{records: values} <- Jason.decode!(body, keys: :atoms) do

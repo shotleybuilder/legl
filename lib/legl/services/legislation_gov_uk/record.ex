@@ -83,15 +83,25 @@ defmodule Legl.Services.LegislationGovUk.Record do
     "uksi", "2013", "1966", "Yes", "coming into force", []]
   """
   def amendments_table_records(_url, []) do
-    IO.puts("record.ex: number of records: 0")
+    IO.puts("Number of amendments 0 (zero)\n [#{__MODULE__}.amendments_table_records]\n")
     {:ok, nil, []}
   end
 
   def amendments_table_records(_url, [{"tbody", _, records}]) do
     # "/changes/affected/ukpga/2010/10/data.xml?results-count=1000&sort=affecting-year-number"
-    # [_, otype, oyear, onumber] = Regex.run(~r/\/changes\/affected\/([a-z]+?)\/(\d{4})\/(\d+)\/data\.xml\?results-count=1000&sort=affecting-year-number/, url)
-    IO.inspect(Enum.count(records), label: "record.ex: number of records")
-    # IO.inspect(records, limit: :infinity)
+    # [_, otype, oyear, onumber] =
+    # Regex.run(~r/\/changes\/affected\/([a-z]+?)\/(\d{4})\/(\d+)\/data\.xml\?results-count=1000&sort=affecting-year-number/,
+    # url)
+    IO.puts(
+      "Total number of amendments #{Enum.count(records)}\n [#{__MODULE__}.amendments_table_records]\n"
+    )
+
+    # IO.inspect(records, label: "LAWS: ", limit: :infinity)
+
+    # Each row of the table is a 3-part tuple:
+    # Element == "tr"
+    # Class == [{"class", "oddRow"}]
+    # Content
     amending_records =
       Enum.reduce(records, [], fn {_, _, x}, acc ->
         case process_amendment_table_row(x) do
@@ -115,6 +125,10 @@ defmodule Legl.Services.LegislationGovUk.Record do
             [[title, amending_title, path, type, year, number, applied?] | acc]
 
           {:error, "no match"} ->
+            IO.puts(
+              "ERROR: No match against this row #{inspect(x)} [#{__MODULE__}.amendments_table_records]"
+            )
+
             acc
         end
       end)
@@ -122,34 +136,63 @@ defmodule Legl.Services.LegislationGovUk.Record do
     stats = stats(amending_records)
     # |> IO.inspect(limit: :infinity)
     Enum.uniq(amending_records)
+    # |> IO.inspect(label: "UNIQ: ", limit: :infinity)
     |> remove_self_amending()
-    # |> IO.inspect(limit: :infinity)
+    # |> IO.inspect(label: "NO SELF: ", limit: :infinity)
     |> applied()
+    # |> IO.inspect(label: "APPLIED: ", limit: :infinity)
     # |> save_amendments_as_csv_file()
     |> (&{:ok, stats, &1}).()
   end
 
-  @pattern quote do: [
-                   {"td", _, [{_, _, [var!(title)]}]},
-                   {"td", _, _},
-                   {"td", _, _},
-                   {"td", _, [var!(amendment_effect)]},
-                   {"td", _, [{_, _, [var!(amending_title)]}]},
-                   {"td", _, [{_, [{"href", var!(path)}], [var!(yr_num)]}]},
-                   {"td", _, _},
-                   {"td", _, [{_, _, [var!(applied?)]}]},
-                   {"td", _, var!(note)}
-                 ]
-
   def process_amendment_table_row(row) do
-    # IO.puts(Macro.to_string(@pattern))
-    case row do
-      unquote(@pattern) ->
-        {:ok, title, amendment_effect, amending_title, path, yr_num, applied?, note}
+    Enum.with_index(row, fn cell, index -> {index, cell} end)
+    |> Enum.reduce([:ok], fn
+      {0, {"td", _, [{_, _, [title]}]}}, acc ->
+        [title | acc]
 
-      _ ->
-        {:error, "no match"}
-    end
+      {1, _cell}, acc ->
+        acc
+
+      {2, _cell}, acc ->
+        acc
+
+      {3, {"td", _, []}}, acc ->
+        ["" | acc]
+
+      {3, {"td", _, [amendment_effect]}}, acc ->
+        [amendment_effect | acc]
+
+      {4, {"td", _, [{_, _, [amending_title]}]}}, acc ->
+        [amending_title | acc]
+
+      {5, {"td", _, [{_, [{"href", path}], [yr_num]}]}}, acc ->
+        [yr_num, path | acc]
+
+      {6, _cell}, acc ->
+        acc
+
+      {7, {"td", _, [{_, _, [applied?]}]}}, acc ->
+        [applied? | acc]
+
+      {7, {"td", _, [{_, _, [applied1?]}, {_, _, [applied2?]}]}}, acc ->
+        [~s/#{applied1?}. #{applied2?}/ | acc]
+
+      {7, {"td", _, [applied?]}}, acc ->
+        [applied? | acc]
+
+      {8, {"td", _, note}}, acc ->
+        [note | acc]
+
+      {id, row}, acc ->
+        IO.puts(
+          "Unhandled amendment table row\nID #{id}\nROW #{inspect(row)}\n[#{__MODULE__}.amendments_table_records]\n"
+        )
+
+        acc
+    end)
+    |> Enum.reverse()
+    |> List.to_tuple()
   end
 
   def stats(records) do
@@ -158,15 +201,18 @@ defmodule Legl.Services.LegislationGovUk.Record do
   end
 
   defp uniq_by_amending_title(records) do
-    Enum.uniq_by(records, fn [_title, amending_title, _path, _type, _year, _number, _applied?] ->
-      amending_title
-    end)
+    Enum.uniq_by(
+      records,
+      fn [_title, amending_title, _path, _type, _year, _number, _applied?] ->
+        amending_title
+      end
+    )
   end
 
   @doc """
-    Groups the amendments by law and then combines the tag that decribes if the amended law has actually
-    been updated on the legislation.gov.uk website.  Captures the tags as a comma separated string in the
-    variable 'applied?'
+    Groups the amendments by law and then combines the tag that decribes if the
+    amended law has actually been updated on the legislation.gov.uk website.
+    Captures the tags as a comma separated string in the variable 'applied?'
   """
   def applied([]), do: []
 
@@ -175,24 +221,27 @@ defmodule Legl.Services.LegislationGovUk.Record do
     uniq_titles = uniq_by_amending_title(records)
 
     grouped_by_title =
-      Enum.map(uniq_titles, fn [_title, amending_title, _path, _type, _year, _number, _applied?] ->
-        Enum.reduce(records, [], fn [
-                                      _title,
-                                      amending_title2,
-                                      _path,
-                                      _type,
-                                      _year,
-                                      _number,
-                                      _applied?
-                                    ] = x,
-                                    acc ->
-          if amending_title == amending_title2 do
-            [x | acc]
-          else
-            acc
-          end
-        end)
-      end)
+      Enum.map(
+        uniq_titles,
+        fn [_title, amending_title, _path, _type, _year, _number, _applied?] ->
+          Enum.reduce(records, [], fn [
+                                        _title,
+                                        amending_title2,
+                                        _path,
+                                        _type,
+                                        _year,
+                                        _number,
+                                        _applied?
+                                      ] = x,
+                                      acc ->
+            if amending_title == amending_title2 do
+              [x | acc]
+            else
+              acc
+            end
+          end)
+        end
+      )
 
     Enum.map(grouped_by_title, fn x ->
       {list, str} =
