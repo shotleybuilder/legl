@@ -46,7 +46,7 @@ defmodule UK do
     do: Legl.Countries.Uk.LeglRegister.Amend.run(opts)
 
   def revoke(opts),
-    do: Legl.Countries.Uk.RepealRevoke.RepealRevoke.run(opts)
+    do: Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.run(opts)
 
   def metadata(opts),
     do: Legl.Countries.Uk.Metadata.run(opts)

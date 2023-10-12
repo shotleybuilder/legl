@@ -1,5 +1,4 @@
 defmodule Legl.Services.LegislationGovUk.RecordGeneric do
-
   @endpoint "https://www.legislation.gov.uk"
 
   @enact &Legl.Services.LegislationGovUk.Parsers.EnactingText.sax_event_handler/2
@@ -8,61 +7,53 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
 
   def enacting_text(url) do
     case Legl.Services.LegislationGovUk.ClientGeneric.run!(@endpoint <> url, @enact) do
-
       {:ok, %{:content_type => :xml, :body => %{acc: acc}}} ->
-
         {:ok, :xml, acc}
 
       {:ok, %{:content_type => :html}} ->
-
         {:ok, :html}
 
-      {:error, code, error} -> {:error, code, error}
-
+      {:error, code, error} ->
+        {:error, code, error}
     end
   end
 
   def extent(url) do
     case Legl.Services.LegislationGovUk.ClientGeneric.run!(@endpoint <> url, @extent) do
-
       {:ok, %{:content_type => :xml, :body => %{acc: acc}}} ->
-
         {:ok, :xml, acc}
 
       {:ok, %{:content_type => :html}} ->
-
         {:ok, :html}
 
-      {:error, code, error} -> {:error, code, error}
-
+      {:error, code, error} ->
+        {:error, code, error}
     end
   end
 
   def revoke(url) do
     case Legl.Services.LegislationGovUk.ClientGeneric.run!(@endpoint <> url, @revoke) do
-
       {:ok, %{:content_type => :xml, :body => %{acc: acc}}} ->
-
         {:ok, :xml, acc}
 
       {:ok, %{:content_type => :html}} ->
-
         {:ok, :html}
 
-      {:error, code, error} -> {:error, code, error}
-
+      {:error, code, error} ->
+        {:error, code, error}
     end
   end
 
   def leg_gov_uk_html(url, client, parser) do
     with(
       {:ok, %{:content_type => :html, :body => body}} <- client.(@endpoint <> url),
+      # IO.inspect(body, label: "BODY: "),
       {:ok, response} <- parser.(body)
     ) do
       {:ok, response}
     else
+      :no_records -> :no_records
       {:error, code, response} -> {:error, code, url, response}
     end
   end
-
 end
