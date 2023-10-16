@@ -39,3 +39,5 @@ lib/empty_si_codes.csv
 lib/error_si_codes.csv
 
 airtable_data.ex
+
+.elixir_ls

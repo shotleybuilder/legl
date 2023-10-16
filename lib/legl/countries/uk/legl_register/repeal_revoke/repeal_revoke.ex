@@ -21,6 +21,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.RRDescription
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Delta
+  alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Clean
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Patch
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Post
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.NewLaw
@@ -30,9 +31,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
     :Title_EN,
     :amending_title,
     :path,
-    :type,
-    :year,
-    :number,
+    :type_code,
+    :Year,
+    :Number,
     :Live?,
     :Revoked_by,
     :"Live?_description"
@@ -78,8 +79,51 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
       records = Jason.encode!(records) |> Jason.decode!(keys: :atoms),
       {:ok, {results, new_laws}} <- enumerate_records(records, opts)
     ) do
-      IO.inspect(results, label: "RESULTS: ")
+      # NEW LAWS for the BASE
 
+      new_laws =
+        new_laws
+        |> List.flatten()
+        |> Enum.uniq()
+
+      IO.puts(~s<\n#{Enum.count(new_laws)} REPEALING / REVOKING LAWS\n>)
+      Enum.each(new_laws, fn law -> IO.puts(law[:Title_EN]) end)
+
+      # Filter revoking / repealing laws against those already stored in Base
+      new_laws =
+        new_laws
+        |> NewLaw.new_law?(opts)
+
+      IO.puts(~s<\n#{Enum.count(new_laws)} LAWS MISSING FROM LEGAL REGISTER\n>)
+      Enum.each(new_laws, fn %{fields: fields} = _law -> IO.puts("#{fields[:Title_EN]}") end)
+
+      new_laws = Clean.clean_records_for_post(new_laws, opts)
+
+      # view the unclean results to the console?
+      if ExPrompt.confirm("\nView New Law Results?"),
+        do: IO.inspect(new_laws, label: "NEW CLEANED LAWS: ")
+
+      # save new law records to file as .json
+      json =
+        new_laws
+        |> (&Map.put(%{}, "records", &1)).()
+        |> Jason.encode!()
+
+      Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_post_results_path)
+
+      # if option flag :post? == true then POST new laws to Airtable
+      if opts.post?, do: Post.post(new_laws, opts)
+
+      # UPDATED LAWS that are REVOKED / REPEALED
+
+      # clean the results so they are suitable for a PATCH call to Airtable
+      results = Clean.clean_records(results)
+
+      # view the unclean results to the console?
+      if ExPrompt.confirm("\nView Cleaned Patch Results?"),
+        do: IO.inspect(results, label: "CLEAN RESULTS: ")
+
+      # store the cleaned results to file for QA
       json =
         results
         |> (&Map.put(%{}, "records", [&1])).()
@@ -87,26 +131,8 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
       Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_patch_results_path)
 
-      new_laws =
-        new_laws
-        |> List.flatten()
-        |> Enum.uniq()
-
-      IO.puts(~s<#{Enum.count(new_laws)} REPEALING / REVOKING LAWS>)
-      Enum.each(new_laws, fn law -> IO.puts(law[:Title_EN]) end)
-
-      new_laws =
-        new_laws
-        |> NewLaw.new_law?(opts)
-
-      json =
-        new_laws
-        |> (&Map.put(%{}, "records", [&1])).()
-        |> Jason.encode!()
-
-      Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_post_results_path)
-
-      if opts.post?, do: Post.post(new_laws, opts)
+      # PATCH the results to Airtable if :patch? == true
+      if opts.patch?, do: Patch.patch(results, opts)
     end
   end
 
@@ -154,8 +180,6 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
               Delta.compare(current_record, latest_record, opts)
           end
 
-        if opts.patch?, do: Patch.patch(result, opts)
-
         {[result | elem(acc, 0)], [new_law | elem(acc, 1)]}
       else
         :ok ->
@@ -166,8 +190,6 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
             id: record_id,
             fields: %{Title_EN: title, Live?: opts.code_live, "Live?_checked": opts.date}
           }
-
-          if opts.patch?, do: Patch.patch(result, opts)
 
           {[result | elem(acc, 0)], elem(acc, 1)}
 
@@ -226,6 +248,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
         Enum.map(content, fn
           {"a", [{"href", _}, [v1]], [v2]} -> ~s/#{v1} #{v2}/
           {"a", [{"href", _}], [v]} -> v
+          {"a", [{"href", _}], []} -> ""
           [v] -> v
           v when is_binary(v) -> v
         end)
@@ -236,6 +259,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
       {3, {"td", _, [amendment_effect]}}, acc ->
         [amendment_effect | acc]
+
+      {3, {"td", [], []}}, acc ->
+        ["" | acc]
 
       {4, {"td", _, [{_, _, [amending_title]}]}}, acc ->
         [amending_title | acc]
@@ -328,9 +354,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
                 Title_EN: title,
                 amending_title: amending_title,
                 path: path,
-                type: type,
-                year: year,
-                number: number,
+                type_code: type,
+                Year: year,
+                Number: number,
                 Live?: opts.code_full
               }
             )
@@ -525,12 +551,12 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.RRDescription
   @doc """
     OUTPUT
       %Legl.Countries.Uk.UkRepealRevoke{
-                title: nil,
+                Title_EN: nil,
                 amending_title: nil,
                 path: nil,
-                type: nil,
-                year: nil,
-                number: nil,
+                type_code: nil,
+                Year: nil,
+                Number: nil,
                 "Live?": "⭕ Part Revocation / Repeal",
                 "Live?_description":
                 "\"Forestry and Land Management (Scotland) Act 2018💚️https://legislation.gov.uk/id/asp/2018/8💚️ repealed💚️ Act
@@ -607,10 +633,13 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options do
     # Switches for save
     csv?: false,
     patch?: false,
-    post?: false
+    post?: false,
+    # include/exclude AT records holding today's date
+    today?: false
   }
 
   def setOptions(opts) do
+    # IO.puts("DEFAULTS: #{inspect(@default_opts)}")
     opts = Enum.into(opts, @default_opts)
 
     {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
@@ -682,6 +711,8 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options do
     f = if opts.workflow == :create, do: [~s/{Live?}=BLANK()/], else: []
     f = if opts.type_code != [""], do: [~s/{type_code}="#{type}"/ | f], else: f
     f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
+    f = if opts.today? == false, do: [~s/{Live?_checked}!=TODAY()/ | f], else: f
+    f = if opts.today? == true, do: [~s/{Live?_checked}=TODAY()/ | f], else: f
 
     f =
       if opts.family != "",
@@ -710,9 +741,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Delta do
     :"Live?_description" => 5,
     :Revoked_by => 10
   }
+  # Live?_description is not a good field to compare ...
   @compare_fields ~w[
       Live?
-      Live?_description
       Revoked_by
       ] |> Enum.map(&String.to_atom(&1))
 
@@ -728,8 +759,8 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Delta do
       | fields: Map.put_new(latest_record.fields, :"Live?_change_log", "")
     }
 
-    IO.inspect(current_record, label: "CURRENT RECORD: ")
-    IO.inspect(latest_record, label: "LATEST RECORD: ")
+    # IO.inspect(current_record, label: "CURRENT RECORD: ")
+    # IO.inspect(latest_record, label: "LATEST RECORD: ")
 
     latest_live_change_log =
       Enum.reduce(@compare_fields, [], fn field, acc ->
@@ -772,9 +803,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Delta do
                 acc
 
               values ->
-                IO.puts(
-                  "NAME: #{current_record.fields."Title_EN"} #{current_record.fields."Year"}\nDIFF: #{inspect(values, limit: :infinity)}"
-                )
+                # IO.puts(
+                #  "NAME: #{current_record.fields."Title_EN"} #{current_record.fields."Year"}\nDIFF: #{inspect(values, limit: :infinity)}"
+                # )
 
                 values
                 |> Enum.sort()
@@ -794,7 +825,8 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Delta do
       end)
       # Create the latest change_log content
       |> live_change_log()
-      |> IO.inspect(label: "LATEST CHANGE LOG: ")
+
+    # |> IO.inspect(label: "LATEST CHANGE LOG: ")
 
     # |> (&Kernel.<>(current_record.fields[:"Live?_change_log"], &1)).()
     # |> String.trim_leading("📌")
@@ -872,8 +904,105 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Delta do
   defp compare_live_change_log(_current, latest), do: latest
 end
 
+defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Clean do
+  @moduledoc """
+  Module to clean the records before POST / PATCH to Airtable
+  Calling from the workflow means we can process and store to .json for QA
+  """
+  def clean_records(record) when is_map(record) do
+    clean_records([record]) |> List.first()
+  end
+
+  def clean_records(records) when is_list(records) do
+    Enum.map(records, fn %{fields: fields} = record ->
+      Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
+      |> clean()
+      |> (&Map.put(record, :fields, &1)).()
+    end)
+  end
+
+  defp clean(%{Revoked_by: []} = fields) do
+    Map.drop(fields, [
+      :Name,
+      :Title_EN,
+      :Year,
+      :Number,
+      :type_code,
+      :Revoked_by,
+      :path,
+      :amending_title
+    ])
+  end
+
+  defp clean(%{Revoked_by: _revoked_by} = fields) do
+    Map.drop(fields, [
+      :Name,
+      :Title_EN,
+      :Year,
+      :Number,
+      :type_code,
+      :path,
+      :amending_title
+    ])
+
+    # |> Map.put(:Revoked_by, Enum.join(revoked_by, ", "))
+  end
+
+  defp clean(fields) do
+    Map.drop(fields, [
+      :Name,
+      :Title_EN,
+      :Year,
+      :Number,
+      :type_code,
+      :Revoked_by,
+      :path,
+      :amending_title
+    ])
+  end
+
+  def clean_records_for_post(records, opts) do
+    Enum.map(records, fn %{fields: fields} = _record ->
+      Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
+      |> Map.drop([:Name])
+      |> (&Map.put(%{}, :fields, &1)).()
+    end)
+    |> add_family(opts)
+  end
+
+  defp add_family(records, opts) do
+    # Add Family to records
+    # Manually filter those laws to add or not to the BASE
+
+    Enum.reduce(records, [], fn record, acc ->
+      case ExPrompt.confirm(
+             "Save this law to the Base? #{record.fields[Title_EN]}\n#{inspect(record)}"
+           ) do
+        false ->
+          acc
+
+        true ->
+          case opts.family do
+            "" ->
+              [record | acc]
+
+            _ ->
+              case ExPrompt.confirm("Assign this Family? #{opts.family}") do
+                false ->
+                  [record | acc]
+
+                true ->
+                  Map.put(record.fields, :Family, opts.family)
+                  |> (&Map.put(record, :fields, &1)).()
+                  |> (&[&1 | acc]).()
+              end
+          end
+      end
+    end)
+  end
+end
+
 defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Patch do
-  @api_results_path ~s[lib/legl/countries/uk/legl_register/repeal_revoke/api_patch_results.json]
   def patch([], _), do: :ok
 
   def patch(record, opts) when is_map(record) do
@@ -881,11 +1010,8 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Patch do
 
     json =
       record
-      |> clean()
       |> (&Map.put(%{}, "records", [&1])).()
       |> Jason.encode!()
-
-    Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
 
     headers = [{:"Content-Type", "application/json"}]
 
@@ -900,10 +1026,6 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Patch do
 
   def patch(records, opts) when is_list(records) do
     IO.write("PATCH bulk - ")
-    json = Map.put(%{}, "records", records) |> Jason.encode!()
-
-    Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
-
     process(records, opts)
   end
 
@@ -931,81 +1053,12 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Patch do
   end
 
   defp process(_, _), do: :ok
-
-  defp clean(%{fields: %{Revoked_by: []} = fields} = record) do
-    Map.drop(fields, [
-      :Name,
-      :Title_EN,
-      :Year,
-      :Number,
-      :type_code,
-      :Revoked_by
-    ])
-    |> (&Map.put(record, :fields, &1)).()
-  end
-
-  defp clean(%{fields: %{Revoked_by: revoked_by} = fields} = record) do
-    Map.drop(fields, [
-      :Name,
-      :Title_EN,
-      :Year,
-      :Number,
-      :type_code
-    ])
-    |> Map.put(:Revoked_by, Enum.join(revoked_by, ", "))
-    |> (&Map.put(record, :fields, &1)).()
-  end
-
-  defp clean(%{fields: fields} = record) do
-    Map.drop(fields, [
-      :Name,
-      :Title_EN,
-      :Year,
-      :Number,
-      :type_code,
-      :Revoked_by
-    ])
-    |> (&Map.put(record, :fields, &1)).()
-  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Post do
   def post([], _), do: :ok
 
   def post(records, opts) do
-    # Add Family to records
-    records =
-      Enum.map(records, fn record ->
-        case ExPrompt.confirm(
-               "Save this law to the Base? #{record[Title_EN]}\n#{inspect(record)}"
-             ) do
-          false ->
-            :ok
-
-          true ->
-            case opts.family do
-              "" ->
-                record
-
-              _ ->
-                case ExPrompt.confirm("Assign this Family? #{opts.family}") do
-                  false ->
-                    record
-
-                  true ->
-                    [Map.put(record, :Family, opts.family) | []]
-                end
-            end
-        end
-      end)
-
-    IO.write("POST record - ")
-    records = clean_records_for_post(records)
-
-    process(records, opts)
-  end
-
-  defp process(records, opts) do
     headers = [{:"Content-Type", "application/json"}]
 
     params = %{
@@ -1026,15 +1079,6 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Post do
     Enum.each(records, fn subset ->
       Legl.Services.Airtable.AtPost.post_records(subset, headers, params)
     end)
-  end
-
-  defp clean_records_for_post(records) do
-    Enum.map(records, fn %{fields: fields} = _record ->
-      Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
-      |> Map.drop([:Name])
-      |> (&Map.put(%{}, :fields, &1)).()
-    end)
-    |> IO.inspect(label: "CLEAN: ")
   end
 end
 
@@ -1069,10 +1113,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.NewLaw do
         Map.put(record, :url, url)
       end)
 
-    records = record_exists_filter(records)
-
-    IO.puts(~s<#{Enum.count(records)} LAWS MISSING FROM LEGAL REGISTER>)
-    Enum.each(records, fn law -> IO.puts(law[:Title_EN]) end)
+    record_exists_filter(records)
   end
 
   def record_exists_filter(records) do

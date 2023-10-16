@@ -12,6 +12,7 @@ defmodule Legl.Countries.Uk.UkTypeCode do
             anaw: "anaw",
             mwa: "mwa",
             wsi: "wsi",
+            ukla: "ukla",
             ni: ["nia", "apni", "nisi", "nisr", "nisro"],
             s: ["asp", "ssi"],
             uk: ["ukpga", "uksi"],
@@ -86,7 +87,7 @@ defmodule Legl.Countries.Uk.Family do
             rv: "Roads & Vehicles",
             ww: "Water & Wastewater"
 
-  def family(nil), do: {:ok, ""}
+  def family(family) when family in ["", nil], do: {:ok, ""}
 
   def family(family) when is_atom(family) do
     case Map.get(%__MODULE__{}, family) do
