@@ -3,29 +3,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
   Run as
   Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run([t: type_code, base_name: "UK S"])
   """
-
+  alias Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Clean
+  alias Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Post
+  alias Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Patch
+  alias Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Options
+  alias Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.NewLaw
+  alias Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Csv
   alias Legl.Services.Airtable.UkAirtable, as: AT
-  alias Legl.Countries.Uk.UkTypeClass, as: TypeClass
-  alias Legl.Countries.Uk.UkTypeCode, as: TypeCode
 
-  @new_law_csv ~s[lib/legl/countries/uk/legl_register/enact/new_law.csv] |> Path.absname()
-  @enacted_by_csv ~s[lib/legl/countries/uk/legl_register/enact/enacting.csv] |> Path.absname()
   @source_path ~s[lib/legl/countries/uk/legl_register/enact/enacted_source.json]
   @enacting_path ~s[lib/legl/countries/uk/legl_register/enact/enacting.json]
-
-  @default_opts %{
-    # a new value for the Enacted_by field ie the cells are blank
-    new?: true,
-    # target single record Enacted_by field by providing the Name (key/ID)
-    name: "",
-    # set this as an option or get an error!
-    base_name: "",
-    type_code: [""],
-    type_class: nil,
-    fields: ["Name", "Title_EN", "type_code", "Year", "Number", "Enacted_by"],
-    view: "",
-    filesave: true
-  }
 
   @doc """
     opts has this shape
@@ -37,49 +24,42 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
 
   """
   def run(opts \\ []) when is_list(opts) do
-    opts = Enum.into(opts, @default_opts)
-
-    opts =
-      with {:ok, type_code} <- TypeCode.type_code(opts.type_code),
-           {:ok, type_class} <- TypeClass.type_class(opts.type_class),
-           {new_law_csv, enacted_by_csv} = open_files() do
-        Map.merge(
-          opts,
-          %{
-            type_class: type_class,
-            type_code: type_code,
-            new_law_csv: new_law_csv,
-            enacted_by_csv: enacted_by_csv
-          }
-        )
-      else
-        {:error, error} ->
-          IO.puts("ERROR: #{error}")
-      end
-
-    # %UKTypeCode is a struct with type_code as atom key and type_code as string value
-    # Also, bundles type_codes under country key e.g. ni: ["nia", "apni", "nisi", "nisr", "nisro"]
-
-    Enum.each(opts.type_code, fn type ->
-      IO.puts(">>>#{type}")
-      formula = formula(type, opts)
-      opts = Map.put(opts, :formula, formula)
-      IO.puts("options #{inspect(opts)}")
-      get_child_process(opts)
-    end)
-
-    File.close(opts.new_law_csv)
-    File.close(opts.enacted_by_csv)
+    with(
+      {:ok, opts} <- Options.setOptions(opts),
+      opts <- if(opts.csv?, do: Csv.openFiles(opts), else: opts),
+      :ok <- enumerate_type_codes(opts),
+      :ok <- if(opts.csv?, do: Csv.closeFiles(opts), else: :ok)
+    ) do
+      :ok
+    end
   end
 
-  def get_child_process(opts) do
+  def enumerate_type_codes(opts) do
+    Enum.each(opts.type_codes, fn type_code ->
+      # Formula is different for each type_code
+      formula = Options.formula(type_code, opts)
+      opts = Map.put(opts, :formula, formula)
+
+      IO.puts("TYPE_CODE: #{type_code}. FORMULA: #{formula}")
+
+      workflow(opts)
+    end)
+  end
+
+  @api_patch_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_patch_results.json]
+  @api_post_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_post_results.json]
+
+  def workflow(opts) do
     with {:ok, at_records} <- AT.get_records_from_at(opts),
+         at_records = Jason.encode!(at_records) |> Jason.decode!(keys: :atoms),
          :ok <- filesave(at_records, @source_path, opts),
-         {:ok, results} <-
+         {:ok, results, enacting_laws_list} <-
            Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws(at_records, opts),
+         # IO.inspect(results),
+         :ok <- workflow_new_laws(enacting_laws_list, opts),
+         :ok <- enacted_by_laws(results, opts),
          :ok <- filesave(results, @enacting_path, opts) do
-      save_enacted_by_to_csv(results, opts)
-      save_new_laws_to_csv(results, opts)
+      Csv.save_new_laws_to_csv(results, opts)
       :ok
     else
       {:error, error} ->
@@ -90,75 +70,98 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
     end
   end
 
-  def formula(type, %{name: ""} = opts) do
-    f = if opts.new?, do: [~s/{Enacted_by}=BLANK()/], else: []
-    f = if type != "", do: [~s/{type_code}="#{type}"/ | f], else: f
-    f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
-    # f = if opts.view != "", do: [~s/view="#{opts.view}"/ | f], else: f
-    ~s/AND(#{Enum.join(f, ",")})/
+  defp workflow_new_laws([], _) do
+    IO.puts(~s<\nZero (0) ENACTING LAWS\n>)
   end
 
-  def formula(_type, %{name: name} = _opts) do
-    ~s/{name}="#{name}"/
+  @api_post_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_post_results.json]
+
+  defp workflow_new_laws(results, opts) do
+    #
+    # NEW LAWS FOR THE BASE
+
+    IO.puts(~s<\n#{Enum.count(results)} ENACTING LAWS\n>)
+    Enum.each(results, fn law -> IO.puts(law[:Title_EN]) end)
+
+    # Filter revoking / repealing laws against those already stored in Base
+    new_laws =
+      results
+      |> NewLaw.new_law?(opts)
+
+    IO.puts(~s<\n#{Enum.count(new_laws)} LAWS MISSING FROM LEGAL REGISTER\n>)
+
+    Enum.each(new_laws, fn
+      %{fields: fields} = _law -> IO.puts("#{fields[:Title_EN]}")
+    end)
+
+    new_laws =
+      Enum.reduce(new_laws, [], fn law, acc ->
+        if ExPrompt.confirm("\nSave #{law.fields[:Title_EN]} to BASE?\n"),
+          do: [law | acc],
+          else: acc
+      end)
+
+    new_laws = Clean.clean_records_for_post(new_laws, opts)
+
+    IO.inspect(new_laws, label: "NEW LAWS: ")
+
+    # store the cleaned results to file for QA
+    json =
+      new_laws
+      |> (&Map.put(%{}, "records", [&1])).()
+      |> Jason.encode!()
+
+    Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_post_results_path)
+
+    if opts.post? and new_laws != [],
+      do: Post.post(new_laws, opts),
+      else: IO.puts("opts.post? == false")
   end
 
-  defp open_files() do
-    # path = @new_law_csv |> Path.absname()
-    {:ok, new_law_csv} = File.open(@new_law_csv, [:utf8, :append, :read])
+  @api_patch_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_patch_results.json]
 
-    File.write(@new_law_csv, "Name,Title_EN,type_code,Year,Number\n")
+  defp enacted_by_laws(results, opts) do
+    # ENACTING LAWS
 
-    # path = @enacted_by_csv |> Path.absname()
-    {:ok, enacted_by_csv} = File.open(@enacted_by_csv, [:utf8, :append, :read])
+    # Filter out any records where there are no enacting laws
+    results =
+      Enum.filter(results, fn %{enacting_laws: enacting_laws} -> enacting_laws != [] end)
+      |> Enum.reduce([], fn law, acc ->
+        enacted_by = Enum.join(law.fields[:Enacted_by])
 
-    File.write(@enacted_by_csv, "Name,Enacted_by\n")
-    {new_law_csv, enacted_by_csv}
-  end
+        [
+          %{id: law.id, fields: %{Name: law.fields[:Name], Enacted_by: enacted_by}}
+          | acc
+        ]
+      end)
 
-  defp type_code(opts) do
-    # sets the type_class as a string in opts
-    tc =
-      case opts.type_code do
-        nil ->
-          nil
+    # IO.inspect(results, label: "FILTERED RESULTS: ")
 
-        _ ->
-          tc = Map.get(%Legl.Countries.Uk.UkTypeCode{}, opts.type_code)
+    # clean the results so they are suitable for a PATCH call to Airtable
+    case results do
+      [] ->
+        IO.puts("No Enacting Laws have been identified")
+        :ok
 
-          case tc do
-            nil ->
-              IO.puts("ERROR type_class #{opts.type_code} not recognised: setting to nil")
-              nil
+      _ ->
+        if opts.csv? == true, do: Csv.save_enacted_by_to_csv(results, opts)
 
-            x ->
-              x
-          end
-      end
+        results = Clean.clean_records(results)
 
-    Map.put(opts, :sTypeCode, tc)
-  end
+        if ExPrompt.confirm("\nView Cleaned Patch Results?"),
+          do: IO.inspect(results, label: "CLEAN RESULTS: ")
 
-  defp type_class(opts) do
-    # sets the type_class as a string in opts
-    tc =
-      case opts.type_class do
-        nil ->
-          nil
+        # store the cleaned results to file for QA
+        json =
+          results
+          |> (&Map.put(%{}, "records", &1)).()
+          |> Jason.encode!()
 
-        _ ->
-          tc = Map.get(%Legl.Countries.Uk.UkTypeClass{}, opts.type_class)
+        Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_patch_results_path)
 
-          case tc do
-            nil ->
-              IO.puts("ERROR type_class #{opts.type_class} not recognised: setting to nil")
-              nil
-
-            x ->
-              x
-          end
-      end
-
-    Map.put(opts, :sTypeClass, tc)
+        # PATCH the results to Airtable if :patch? == true
+        if opts.patch?, do: Patch.patch(results, opts), else: IO.puts("Set opts.patch? == true")
+    end
   end
 
   defp filesave(records, _, %{filesave: false} = _opts), do: records
@@ -167,11 +170,282 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
     json = Map.put(%{}, "records", records) |> Jason.encode!()
     Legl.Utility.save_at_records_to_file(~s/#{json}/, path)
   end
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Options do
+  alias Legl.Countries.Uk.UkTypeClass, as: TypeClass
+  alias Legl.Countries.Uk.UkTypeCode, as: TypeCode
+  alias alias Legl.Services.Airtable.AtBasesTables
+
+  @default_opts %{
+    # a new value for the Enacted_by field ie the cells are blank
+    new?: true,
+    # target single record Enacted_by field by providing the Name (key/ID)
+    name: "",
+    # set this as an option or get an error!
+    base_name: "UK E",
+    type_code: [""],
+    type_class: nil,
+    year: nil,
+    fields: ["Name", "Title_EN", "type_code", "Year", "Number", "Enacted_by"],
+    view: "",
+    csv?: true,
+    post?: true,
+    patch?: true,
+    filesave: true
+  }
+  def setOptions(opts) do
+    opts = Enum.into(opts, @default_opts)
+
+    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
+    opts = Map.merge(opts, %{base_id: base_id, table_id: table_id})
+
+    with {:ok, type_codes} <- TypeCode.type_code(opts.type_code),
+         {:ok, type_classes} <- TypeClass.type_class(opts.type_class) do
+      Map.merge(
+        opts,
+        %{
+          type_class: type_classes,
+          type_codes: type_codes
+        }
+      )
+      |> (&{:ok, &1}).()
+    else
+      {:error, error} ->
+        IO.puts("ERROR: #{error}")
+    end
+  end
+
+  def formula(type, %{name: ""} = opts) do
+    f = if opts.new?, do: [~s/{Enacted_by}=BLANK()/], else: []
+    f = if type != "", do: [~s/{type_code}="#{type}"/ | f], else: f
+    f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
+    f = if opts.year != nil, do: [~s/{Year}="#{opts.year}"/ | f], else: f
+    # f = if opts.view != "", do: [~s/view="#{opts.view}"/ | f], else: f
+    ~s/AND(#{Enum.join(f, ",")})/
+  end
+
+  def formula(_type, %{name: name} = _opts) do
+    ~s/{name}="#{name}"/
+  end
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Clean do
+  def clean_records_for_post(records, _opts) do
+    Enum.map(records, fn %{fields: fields} = _record ->
+      Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
+      |> Map.drop([:Name])
+      |> Map.put(:Year, String.to_integer(fields[:Year]))
+      |> (&Map.put(%{}, :fields, &1)).()
+    end)
+  end
+
+  def clean_records(records) when is_list(records) do
+    Enum.map(records, fn %{fields: fields} = record ->
+      Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
+      |> clean()
+      |> (&Map.put(record, :fields, &1)).()
+      |> Map.drop([:enacting_laws, :text, :urls, "createdTime"])
+    end)
+  end
+
+  defp clean(%{Enacted_by: []} = fields) do
+    Map.drop(fields, [
+      :Name,
+      :Title_EN,
+      :Year,
+      :Number,
+      :type_code,
+      :Enacted_by,
+      :path,
+      :amending_title
+    ])
+  end
+
+  defp clean(%{Enacted_by: _revoked_by} = fields) do
+    Map.drop(fields, [
+      :Name,
+      :Title_EN,
+      :Year,
+      :Number,
+      :type_code,
+      :path,
+      :amending_title
+    ])
+
+    # |> Map.put(:Revoked_by, Enum.join(revoked_by, ", "))
+  end
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Post do
+  def post([], _), do: :ok
+
+  def post(records, opts) do
+    headers = [{:"Content-Type", "application/json"}]
+
+    params = %{
+      base: opts.base_id,
+      table: opts.table_id,
+      options: %{}
+    }
+
+    # Airtable only accepts sets of 10x records in a single PATCH request
+    records =
+      Enum.chunk_every(records, 10)
+      |> Enum.reduce([], fn set, acc ->
+        Map.put(%{}, "records", set)
+        |> Jason.encode!()
+        |> (&[&1 | acc]).()
+      end)
+
+    Enum.each(records, fn subset ->
+      Legl.Services.Airtable.AtPost.post_records(subset, headers, params)
+    end)
+  end
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Patch do
+  def patch([], _), do: :ok
+
+  def patch(record, opts) when is_map(record) do
+    IO.write("PATCH single record - ")
+
+    json =
+      record
+      |> (&Map.put(%{}, "records", &1)).()
+      |> Jason.encode!()
+
+    headers = [{:"Content-Type", "application/json"}]
+
+    params = %{
+      base: opts.base_id,
+      table: opts.table_id,
+      options: %{}
+    }
+
+    Legl.Services.Airtable.AtPatch.patch_records(json, headers, params)
+  end
+
+  def patch(records, opts) when is_list(records) do
+    IO.write("PATCH bulk - ")
+    process(records, opts)
+  end
+
+  defp process(results, %{patch?: true} = opts) do
+    headers = [{:"Content-Type", "application/json"}]
+
+    params = %{
+      base: opts.base_id,
+      table: opts.table_id,
+      options: %{}
+    }
+
+    # Airtable only accepts sets of 10x records in a single PATCH request
+    results =
+      Enum.chunk_every(results, 10)
+      |> Enum.reduce([], fn set, acc ->
+        Map.put(%{}, "records", set)
+        |> Jason.encode!()
+        |> (&[&1 | acc]).()
+      end)
+
+    Enum.each(results, fn result_subset ->
+      Legl.Services.Airtable.AtPatch.patch_records(result_subset, headers, params)
+    end)
+  end
+
+  defp process(_, _), do: :ok
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.NewLaw do
+  @moduledoc """
+  Module to handle addition of new amending laws into the Base
+  1. Checks existence of law (for enumeration 1+)
+  2. Filters records based on absence
+  3. Posts new record with amendment data to Base
+  """
+  alias Legl.Services.Airtable.Client
+  alias Legl.Services.Airtable.Url
+
+  def new_law?(records, opts) do
+    # Loop through the records and add a new record parameter :url
+    # Record has this shape:
+    # %{
+    #    Name: "UK_uksi_2003_3073_RVRLAR",
+    #    Number: "3073",
+    #    Title_EN: "Road Vehicles (Registration and Licensing) (Amendment) (No. 4) Regulations",
+    #    Year: "2003",
+    #    type_code: "uksi"
+    # }
+    records =
+      Enum.map(records, fn record ->
+        options = [
+          formula: ~s/{Name}="#{Map.get(record, :Name)}"/,
+          fields: ["Name", "Number", "Year", "type_class"]
+        ]
+
+        {:ok, url} = Url.url(opts.base_id, opts.table_id, options)
+        Map.put(record, :url, url)
+      end)
+
+    record_exists_filter(records)
+  end
+
+  defp record_exists_filter(records) do
+    # Loop through the records and GET request the url
+    Enum.reduce(records, [], fn record, acc ->
+      with {:ok, body} <- Client.request(:get, record.url, []),
+           %{records: values} <- Jason.decode!(body, keys: :atoms) do
+        # IO.puts("VALUES: #{inspect(values)}")
+
+        case values do
+          [] ->
+            Map.drop(record, [:url])
+            |> (&Map.put(%{}, :fields, &1)).()
+            |> (&[&1 | acc]).()
+
+          _ ->
+            acc
+        end
+      else
+        {:error, reason: reason} ->
+          IO.puts("ERROR #{reason}")
+          acc
+      end
+    end)
+
+    # |> IO.inspect()
+  end
+end
+
+defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Csv do
+  @csv_new_law ~s[lib/legl/countries/uk/legl_register/enact/new_law.csv] |> Path.absname()
+  @csv_enacted_by ~s[lib/legl/countries/uk/legl_register/enact/enacting.csv] |> Path.absname()
+  def openFiles(opts) do
+    {:ok, csv_new_law} = File.open(@csv_new_law, [:utf8, :append, :read])
+    File.write(@csv_new_law, "Name,Title_EN,type_code,Year,Number\n")
+
+    # path = @enacted_by_csv |> Path.absname()
+    {:ok, csv_enacted_by} = File.open(@csv_enacted_by, [:utf8, :append, :read])
+    File.write(@csv_enacted_by, "Name,Enacted_by\n")
+
+    Map.merge(opts, %{csv_enacted_by: csv_enacted_by, csv_new_law: csv_new_law})
+  end
+
+  def closeFiles(opts) do
+    File.close(opts.csv_enacted_by)
+    File.close(opts.csv_new_law)
+  end
 
   def save_enacted_by_to_csv(results, opts) do
     Enum.each(results, fn
-      %{"fields" => %{"Name" => name, Enacted_by: enacted_by}} = _result ->
-        IO.puts(opts.enacted_by_csv, "#{name},#{enacted_by}")
+      %{fields: %{Name: name, Enacted_by: enacted_by}} = _result ->
+        enacted_by =
+          enacted_by
+          # |> Enum.join(",")
+          |> Legl.Utility.csv_quote_enclosure()
+
+        IO.puts(opts.csv_enacted_by, "#{name},#{enacted_by}")
     end)
   end
 
@@ -179,14 +453,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
     Enum.reduce(results, [], fn %{enacting_laws: eLaws} = _result, acc ->
       acc ++ eLaws
     end)
-    |> Enum.uniq_by(&{&1.id})
+    |> Enum.uniq_by(&{&1[Name]})
     |> new_laws()
-    |> Enum.each(&IO.puts(opts.new_law_csv, &1))
+    |> Enum.each(&IO.puts(opts.csv_new_law, &1))
   end
 
-  def new_laws(enacting_laws) do
+  defp new_laws(enacting_laws) do
     Enum.reduce(enacting_laws, [], fn law, acc ->
-      %{id: id, number: number, title: title, type: type, year: year} = law
+      %{Name: id, Number: number, Title_EN: title, type_code: type, Year: year} = law
 
       # we have to quote enclose in case title contains commas and quotes
       title =

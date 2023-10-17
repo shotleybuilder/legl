@@ -46,6 +46,7 @@ defmodule Legl.Services.LegislationGovUk.Record do
         # File.write!("lib/amendments.html", body)
         case Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser(body) do
           {:ok, response} -> amendments_table_records(url, response)
+          :no_records -> amendments_table_records(url, [])
         end
 
       {:error, code, response} ->

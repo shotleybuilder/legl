@@ -26,32 +26,36 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   """
 
   def get_enacting_laws(records, opts) do
-    Enum.reduce(records, [], fn %{"fields" => %{"Title_EN" => title}} = record, acc ->
-      IO.puts("#{title}")
+    results =
+      Enum.reduce(records, [], fn %{fields: %{Title_EN: title}} = record, acc ->
+        IO.puts("#{title}")
 
-      with(
-        record = Map.merge(record, %{enacting_laws: [], urls: nil, text: ""}),
-        {:ok, record} <- get_leg_gov_uk(record),
-        {:ok, record} <- text(record),
-        {:ok, record} <- specific_enacting_clauses(record, opts),
-        {:ok, record} <- enacting_law_in_match(record),
-        {:ok, record} <- enacting_law_in_enacting_text(record),
-        {:ok, record} <- dedupe(record),
-        {:ok, record} <- enacted_by(record)
-      ) do
-        [record | acc]
-      else
-        {:error, error} ->
-          IO.puts("ERROR get_enacting_laws/1 #{error}")
-          acc
+        with(
+          record = Map.merge(record, %{enacting_laws: [], urls: nil, text: ""}),
+          {:ok, record} <- get_leg_gov_uk(record),
+          {:ok, record} <- text(record),
+          {:ok, record} <- specific_enacting_clauses(record, opts),
+          {:ok, record} <- enacting_law_in_match(record),
+          {:ok, record} <- enacting_law_in_enacting_text(record),
+          {:ok, record} <- dedupe(record),
+          {:ok, record} <- enacted_by(record)
+        ) do
+          [record | acc]
+        else
+          {:error, error} ->
+            IO.puts("ERROR get_enacting_laws/1 #{error}")
+            acc
 
-        {:no_text, _record} ->
-          # avoids parsing if there is no text
-          acc
-          # [record | acc]
-      end
-    end)
-    |> (&{:ok, &1}).()
+          {:no_text, _record} ->
+            # avoids parsing if there is no text
+            acc
+            # [record | acc]
+        end
+      end)
+
+    enacting_laws_list = enacting_laws_list(results)
+
+    {:ok, results, enacting_laws_list}
   end
 
   @doc """
@@ -65,10 +69,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   """
   def get_leg_gov_uk(
         %{
-          "fields" => %{
-            "type_code" => type,
-            "Year" => year,
-            "Number" => number
+          fields: %{
+            type_code: type,
+            Year: year,
+            Number: number
           }
         } = record
       ) do
@@ -81,8 +85,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
           | urls: urls_to_string(urls)
         }
 
-        fields = Map.merge(record["fields"], %{introductory_text: i, enacting_text: e})
-        record = %{record | "fields" => fields, urls: u}
+        fields = Map.merge(record.fields, %{introductory_text: i, enacting_text: e})
+        record = %{record | fields: fields, urls: u}
         {:ok, record}
 
       {:ok, :html} ->
@@ -100,7 +104,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     end)
   end
 
-  defp text(%{"fields" => %{introductory_text: iText, enacting_text: eText}} = record) do
+  defp text(%{fields: %{introductory_text: iText, enacting_text: eText}} = record) do
     text =
       (Regex.replace(~r/\n/m, iText, " ") <>
          " " <> Regex.replace(~r/\n/m, eText, " "))
@@ -359,24 +363,29 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
       |> Legl.Airtable.AirtableIdField.id(type, year, number)
 
     %{
-      id: id,
-      title: title,
-      type: type,
-      year: year,
-      number: number
+      Name: id,
+      Title_EN: title,
+      type_code: type,
+      Year: year,
+      Number: number
     }
   end
 
   def dedupe(%{enacting_laws: eLaws} = record) do
-    {:ok, %{record | enacting_laws: Enum.uniq_by(eLaws, &{&1.id})}}
+    {:ok, %{record | enacting_laws: Enum.uniq_by(eLaws, &{&1[Name]})}}
   end
 
   def enacted_by(%{enacting_laws: eLaws} = record) do
-    enacted_by =
-      Enum.map(eLaws, fn %{id: id} = _eLaw -> id end)
-      |> Enum.join(",")
-      |> Legl.Utility.csv_quote_enclosure()
+    enacted_by = Enum.map(eLaws, fn %{Name: name} = _eLaw -> name end)
 
-    {:ok, %{record | "fields" => Map.put(record["fields"], :Enacted_by, enacted_by)}}
+    {:ok, %{record | fields: Map.put(record.fields, :Enacted_by, enacted_by)}}
+  end
+
+  defp enacting_laws_list(results) do
+    Enum.map(results, fn %{enacting_laws: enacting_laws} = _result ->
+      enacting_laws
+    end)
+    |> List.flatten()
+    |> Enum.uniq()
   end
 end

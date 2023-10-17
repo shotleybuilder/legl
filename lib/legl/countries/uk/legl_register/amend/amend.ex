@@ -389,7 +389,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
             # |> Legl.Utility.csv_quote_enclosure()
 
             # the 'amendments_checked' field in Airtable
-            at_amendments_checked = Legl.Utility.todays_date()
+            # Legl.Utility.todays_date()
+            at_amendments_checked = ~s/#{Date.utc_today()}/
 
             IO.puts("title-> #{at_title_en} #{at_type} #{at_year} #{at_number}")
 
