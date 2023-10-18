@@ -44,7 +44,7 @@ defmodule Legl.Services.LegislationGovUk.Record do
     case Legl.Services.LegislationGovUk.ClientAmdTbl.run!(@endpoint <> url) do
       {:ok, %{:content_type => :html, :body => body}} ->
         # File.write!("lib/amendments.html", body)
-        case Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser(body) do
+        case Legl.Services.LegislationGovUk.Parsers.Html.amendment_parser(body) do
           {:ok, response} -> amendments_table_records(url, response)
           :no_records -> amendments_table_records(url, [])
         end

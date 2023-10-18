@@ -44,16 +44,18 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
     end
   end
 
-  def leg_gov_uk_html(url, client, parser) do
+  def leg_gov_uk_html(path, client, parser) do
     with(
-      {:ok, %{:content_type => :html, :body => body}} <- client.(@endpoint <> url),
-      # IO.inspect(body, label: "BODY: "),
+      url = @endpoint <> path,
+      # IO.puts("HTML URL: #{url}"),
+      {:ok, %{:content_type => :html, :body => body}} <- client.(url),
       {:ok, response} <- parser.(body)
+      # IO.inspect(response, label: "HTML CONTENT: ")
     ) do
       {:ok, response}
     else
       :no_records -> :no_records
-      {:error, code, response} -> {:error, code, url, response}
+      {:error, code, response} -> {:error, code, path, response}
     end
   end
 end

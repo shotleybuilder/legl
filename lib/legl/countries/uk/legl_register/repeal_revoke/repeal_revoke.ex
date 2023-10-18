@@ -137,7 +137,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
   end
 
   @client &Legl.Services.LegislationGovUk.ClientAmdTbl.run!/1
-  @parser &Legl.Services.LegislationGovUk.Parsers.Amendment.amendment_parser/1
+  @parser &Legl.Services.LegislationGovUk.Parsers.Html.amendment_parser/1
 
   def enumerate_records(records, opts) do
     # IO.inspect(records, limit: :infinity)

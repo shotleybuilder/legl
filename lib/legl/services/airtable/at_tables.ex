@@ -99,9 +99,12 @@ defmodule Legl.Services.Airtable.AtTables do
         "uk_town_country_planning" => "tblq86h5C2hBRwsXk",
         "articles" => "tbl85xgy1Zs5f6a4g"
       },
+      # 💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙
       # uk s
       "appRhQoz94zyVh2LR" => %{
-        "uk" => "tbla82bppK8YnScrj"
+        "uk" => "tbla82bppK8YnScrj",
+        # Publication Date table
+        "publication_date" => "tblhclH8AyopZ5t73"
       },
 
       # uk ohs

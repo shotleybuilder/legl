@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.UkSiCode do
+defmodule Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode do
   @moduledoc """
   Module automates read of the SI Code for a piece of law and posts the result into Airtable.
 
@@ -19,7 +19,7 @@ defmodule Legl.Countries.Uk.UkSiCode do
   @doc """
     Can be called with an optional view name
 
-    Legl.Countries.Uk.UkSiCode.si_code_process([view: view])
+    LLegl.Countries.Uk.LeglRegister.Metadata.UkSiCode.si_code_process([view: view])
 
   """
 
@@ -89,7 +89,7 @@ defmodule Legl.Countries.Uk.UkSiCode do
   end
 
   @doc """
-    Legl.Countries.Uk.UkSiCode.get_parent_at_records_with_multi_si_codes("UK E")
+    Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode.get_parent_at_records_with_multi_si_codes("UK E")
   """
 
   def get_and_save_si_code_from_legl_gov_uk(at_records, file) do
@@ -132,10 +132,15 @@ defmodule Legl.Countries.Uk.UkSiCode do
   @doc """
     /uksi/1995/304/introduction/made/data.xml
   """
+
+  def resource_path({type_code, year, number}) do
+    {:ok, ~s[/#{type_code}/#{year}/#{number}/introduction/data.xml]}
+  end
+
   def resource_path("UK" <> name) do
     case Legl.Utility.split_name(name) do
       {type, year, number} ->
-        {:ok, ~s[/#{type}/#{year}/#{number}/introduction/data.xml]}
+        resource_path({type, year, number})
 
       {:error, error} ->
         {:error, error}
@@ -165,14 +170,14 @@ defmodule Legl.Countries.Uk.UkSiCode do
   # todo: check that we've got the right piece of law by comparing title
   def get_si_code(path) do
     case Legl.Services.LegislationGovUk.Record.legislation(path) do
-      {:ok, :xml, %{title: _title, si_code: si_code}} ->
+      {:ok, :xml, %{title: _title, si_code: si_code} = _metadata} ->
         {:ok, si_code}
 
-      {:ok, :xml, %{title: _title}} ->
-        {:ok, ""}
+      {:ok, :xml, %{title: title}} ->
+        {:none, "no SI codes for #{title}"}
 
       {:ok, :html} ->
-        {:ok, "not found"}
+        {:error, "not found"}
 
       {:error, code, error} ->
         {:error, code, error}

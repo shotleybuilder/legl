@@ -80,6 +80,17 @@ defmodule Legl.Utility do
     :ok
   end
 
+  @doc """
+  Function to save records as .json
+  """
+  def save_json(records, path) do
+    json = Map.put(%{}, "records", records) |> Jason.encode!(pretty: true)
+    save_at_records_to_file(~s/#{json}/, path)
+  end
+
+  @doc """
+
+  """
   def save_at_records_to_file(records),
     do: save_at_records_to_file(records, "lib/legl/data_files/txt/airtable.txt")
 
