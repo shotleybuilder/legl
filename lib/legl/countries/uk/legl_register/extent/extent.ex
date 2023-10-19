@@ -190,14 +190,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
     uniq_extent = uniq_extent(data)
 
-    regions = regions(uniq_extent)
-
-    extents = extents(data, uniq_extent)
-
     {:ok,
      %{
-       geo_extent: ~s/\"#{extents}\"/,
-       geo_region: regions
+       geo_extent: extents(data, uniq_extent),
+       geo_region: regions(uniq_extent)
      }}
   end
 
@@ -313,7 +309,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
     ordered_regions = ordered_regions(regions)
 
-    ~s/\"#{Enum.join(ordered_regions, ",")}\"/
+    Enum.join(ordered_regions, ",")
   end
 
   def ordered_regions(regions) do

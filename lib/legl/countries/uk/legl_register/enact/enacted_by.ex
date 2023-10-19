@@ -113,9 +113,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
 
     Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_post_results_path)
 
-    if opts.post? and new_laws != [],
-      do: Post.post(new_laws, opts),
-      else: IO.puts("opts.post? == false")
+    if ExPrompt.confirm("\nPOST New Laws?"), do: Post.post(new_laws, opts)
   end
 
   @api_patch_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_patch_results.json]

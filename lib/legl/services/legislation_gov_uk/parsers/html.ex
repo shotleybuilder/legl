@@ -22,7 +22,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Html do
   @doc """
   Function transforms the returned html
   Then calls traverse to return a lst of maps
-  [%{Number: "xxxx", Title_EN: title, Year: 1234, txt: "text", type_code: "uksi"}]
+  [%{Number: "xxxx", Title_EN: title, Year: 1234, md_description: "text", type_code: "uksi"}]
   """
   def new_law_parser(html) do
     {:ok, document} = Floki.parse_document(html)
@@ -65,7 +65,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Html do
 
         {v, acc} = List.pop_at(acc, 0)
 
-        Map.put(v, :txt, description)
+        Map.put(v, :md_description, description)
         |> (&[&1 | acc]).()
 
       {"h4", _, _}, acc ->

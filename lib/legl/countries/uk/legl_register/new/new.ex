@@ -10,13 +10,25 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   alias Legl.Countries.Uk.LeglRegister.Helpers.NewLaw
 
+  alias Legl.Countries.Uk.LeglRegister.New.Create
+
   @exc_path ~s[lib/legl/countries/uk/legl_register/new/exc.json]
   @inc_wo_si_path ~s[lib/legl/countries/uk/legl_register/new/inc_wo_si.json]
   @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/new/inc_w_si.json]
-  @doc """
+  @inc_path ~s[lib/legl/countries/uk/legl_register/new/inc.json]
 
+  @doc """
+  Function to set the options and route the workflow
   """
   def run(opts) do
+    {:ok, opts} = Options.setOptions(opts)
+    workflow(opts)
+  end
+
+  @doc """
+  Function to create a new law record for a Legal Register Base
+  """
+  def workflow(%{source: :web} = opts) do
     with {:ok, opts} <- Options.setOptions(opts),
          {:ok, records} <- getNewLaws(opts),
 
@@ -42,9 +54,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
          :ok = Legl.Utility.save_json(exc, @exc_path),
          :ok = Legl.Utility.save_json(inc_wo_si, @inc_wo_si_path),
          :ok = Legl.Utility.save_json(inc_w_si, @inc_w_si_path) do
-      # Create the Airtable Base do
-      #
-
       :ok
     else
       {:none, {_inc, exc}} ->
@@ -53,6 +62,70 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
       {:error, msg} ->
         IO.puts("#{msg}")
+    end
+  end
+
+  def workflow(%{source: :both} = opts) do
+    %{records: inc_w_si} = @inc_w_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
+    %{records: inc_wo_si} = @inc_wo_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
+
+    {:ok, _records} =
+      Map.merge(inc_w_si, inc_wo_si)
+      |> complete_new_law_fields(@inc_path, opts)
+  end
+
+  def workflow(%{source: :si_coded} = opts) do
+    # Open previously saved records from file
+    %{records: records} = @inc_w_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
+
+    {:ok, _records} = complete_new_law_fields(records, @inc_path, opts)
+  end
+
+  def workflow(%{source: :si_uncoded} = opts) do
+    # Open previously saved records from file
+    %{records: records} = @inc_wo_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
+
+    {:ok, _records} = complete_new_law_fields(records, @inc_path, opts)
+  end
+
+  def complete_new_law_fields(records, path, opts) do
+    with(
+      # type_class field
+      records = Create.setTypeClass(records),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("TYPE CLASS"),
+
+      # Tags field
+      records = Create.setTags(records),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("TAGS"),
+
+      # Metadata fields
+      records = Create.setMetadata(records),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("METADATA"),
+
+      # Extent fields
+      records = Create.setExtent(records),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("EXTENT"),
+
+      # Enacted by fields
+      records = Create.setEnactedBy(records, opts),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("ENACTED BY"),
+
+      # Amended by fields
+      records = Create.setAmendedBy(records),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("AMENDED BY"),
+
+      # Revoked by fields
+      records = Create.setRevokedBy(records, opts),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("REVOKED BY")
+    ) do
+      {:ok, records}
     end
   end
 
@@ -82,7 +155,9 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.Options do
     month: nil,
     day: nil,
     # days as a tuple {from, to} eg {10, 23} for days from 10th to 23rd
-    days: nil
+    days: nil,
+    # Where's the data coming from?
+    source: :web
   }
 
   def setOptions(opts) do
@@ -188,7 +263,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.LegUkGov do
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.New.New.Filters do
-  alias Legl.Countries.Uk.UkSearch.Terms
+  # alias Legl.Countries.Uk.UkSearch.Terms
   alias Legl.Countries.Uk.UkSearch.Terms.HealthSafety, as: HS
   alias Legl.Countries.Uk.UkSearch.Terms.Environment, as: E
   alias Legl.Countries.Uk.UkSearch.Terms.SICodes

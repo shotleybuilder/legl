@@ -47,7 +47,36 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     {:ok, records, enacting_laws_list}
   end
 
-  def get_enacting_laws(record, opts) when is_map(record) do
+  @doc """
+  Function to get and search for Enacting Laws
+  Records from Airtable for Update use the nested :fields map
+  New records are a flat map
+  """
+
+  def get_enacting_laws(%{fields: fields} = record, opts) when is_map(record) do
+    with(
+      fields = Map.merge(fields, %{enacting_laws: [], urls: nil, text: ""}),
+      {:ok, fields} <- get_leg_gov_uk(fields),
+      {:ok, fields} <- text(fields),
+      {:ok, fields} <- specific_enacting_clauses(fields, opts),
+      {:ok, fields} <- enacting_law_in_match(fields),
+      {:ok, fields} <- enacting_law_in_enacting_text(fields),
+      {:ok, fields} <- dedupe(fields),
+      {:ok, fields} <- enacted_by(fields)
+    ) do
+      %{record | fields: fields}
+      {:ok, record}
+    else
+      {:error, error} ->
+        {:error, "ERROR get_enacting_laws/1 #{error}", record}
+
+      {:no_text, record} ->
+        {:no_text, "No enacting text for this law", record}
+    end
+  end
+
+  def get_enacting_laws(%{type_code: _type, Year: _year, Number: _number} = record, opts)
+      when is_map(record) do
     with(
       record = Map.merge(record, %{enacting_laws: [], urls: nil, text: ""}),
       {:ok, record} <- get_leg_gov_uk(record),
@@ -61,10 +90,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
       {:ok, record}
     else
       {:error, error} ->
-        {:error, "ERROR get_enacting_laws/1 #{error}", record}
+        {:error,
+         "\nERROR: #{error}\n#{record[:Title_EN]}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1",
+         record}
 
       {:no_text, record} ->
-        {:no_text, "No enacting text for this law", record}
+        {:no_text,
+         "\nNO TEXT: No enacting text for this law\nFUNCTION: #{__MODULE__}.get_enacting_laws/1",
+         record}
     end
   end
 
@@ -77,16 +110,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     }
     If the response is successful the results are merged into the fields property of the record
   """
-  def get_leg_gov_uk(
-        %{
-          fields: %{
-            type_code: type,
-            Year: year,
-            Number: number
-          }
-        } = record
-      ) do
-    path = Url.introduction_path(type, year, number)
+  def get_leg_gov_uk(record) do
+    path = Url.introduction_path(record)
 
     case RecordGeneric.enacting_text(path) do
       {:ok, :xml, %{urls: urls} = response} ->
@@ -95,8 +120,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
           | urls: urls_to_string(urls)
         }
 
-        fields = Map.merge(record.fields, %{introductory_text: i, enacting_text: e})
-        record = %{record | fields: fields, urls: u}
+        record = Map.merge(record, %{introductory_text: i, enacting_text: e, urls: u})
+
         {:ok, record}
 
       {:ok, :html} ->
@@ -114,7 +139,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     end)
   end
 
-  defp text(%{fields: %{introductory_text: iText, enacting_text: eText}} = record) do
+  defp text(%{introductory_text: iText, enacting_text: eText} = record) do
     text =
       (Regex.replace(~r/\n/m, iText, " ") <>
          " " <> Regex.replace(~r/\n/m, eText, " "))
@@ -255,7 +280,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   """
 
   def enacting_law_in_enacting_text(
-        %{"fields" => %{enacting_text: text}, urls: urls, enacting_laws: []} = record
+        %{enacting_text: text, urls: urls, enacting_laws: []} = record
       ) do
     get_url_refs(urls, text)
     |> (&{:ok, %{record | enacting_laws: &1}}).()
@@ -388,12 +413,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   def enacted_by(%{enacting_laws: eLaws} = record) do
     enacted_by = Enum.map(eLaws, fn %{Name: name} = _eLaw -> name end)
 
-    {:ok, %{record | fields: Map.put(record.fields, :Enacted_by, enacted_by)}}
+    {:ok, Map.put(record, :Enacted_by, enacted_by)}
   end
 
   def enacting_laws_list(results) do
-    Enum.map(results, fn %{enacting_laws: enacting_laws} = _result ->
-      enacting_laws
+    Enum.reduce(results, [], fn
+      %{enacting_laws: enacting_laws} = _result, acc ->
+        [enacting_laws | acc]
+
+      _result, acc ->
+        acc
     end)
     |> List.flatten()
     |> Enum.uniq()

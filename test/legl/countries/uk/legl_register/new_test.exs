@@ -5,6 +5,7 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
   alias Legl.Countries.Uk.LeglRegister.New.New
   alias Legl.Countries.Uk.LeglRegister.New.New.LegUkGov
   alias Legl.Countries.Uk.LeglRegister.New.New.Filters
+  alias Legl.Countries.Uk.LeglRegister.New.Create
 
   @moduletag :uk
 
@@ -57,8 +58,49 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
   end
 
   describe "run/1" do
-    test "trial" do
+    test "records from web" do
       assert :ok == New.run(@opts)
+    end
+
+    test "records from file" do
+      assert :ok == New.run(Map.put(@opts, :source, :si_coded))
+    end
+  end
+
+  @titles [
+    "Motor Vehicles (Construction and Use) (Amendment) Regulations (Northern Ireland)",
+    "Misuse of Drugs Act 1971 (Amendment) Order",
+    "Parking Places (Disabled Persons’ Vehicles) (Amendment No. 6) Order (Northern Ireland)",
+    "A47 North Tuddenham to Easton Development Consent (Correction) Order",
+    "Inspectors of Education, Children’s Services and Skills (No. 3) Order"
+  ]
+
+  @geo_regions [
+    "England,Wales,Northern Ireland,Scotland",
+    "England,Wales",
+    "England,Scotland",
+    "Northern Ireland"
+  ]
+
+  describe "Legl.Countries.Uk.LeglRegister.New.Create" do
+    test "tags" do
+      result =
+        Enum.map(@titles, fn title ->
+          Create.tags(title)
+        end)
+
+      IO.inspect(result)
+      assert is_list(result)
+    end
+
+    test "geo_pan_region/1" do
+      result =
+        Enum.map(@geo_regions, fn geo ->
+          Create.geo_pan_region(geo)
+        end)
+
+      IO.inspect(result)
+      assert is_list(result)
     end
   end
 end

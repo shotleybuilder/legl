@@ -283,7 +283,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     API for a single piece of law to be processed
   """
   def amendment_bfs_client(
-        %{Title_EN: title, type_code: type_code, Year: year, Number: number} = _record
+        %{Title_EN: title, type_code: type_code, Year: year, Number: number} = _record,
+        opts
       ) do
     year =
       if is_integer(year) do
@@ -293,19 +294,19 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
       end
 
     path = path(type_code, year, number)
-    amendment_bfs_client(title, path)
+    amendment_bfs_client(title, path, opts)
   end
 
-  def amendment_bfs_client(title, type, year, number) do
+  def amendment_bfs_client(title, type, year, number, opts) do
     path = path(type, year, number)
-    amendment_bfs_client(title, path)
+    amendment_bfs_client(title, path, opts)
   end
 
-  def amendment_bfs_client(title, path) do
+  def amendment_bfs_client(title, path, opts) do
     # {:ok, file} = "lib/#{@at_csv}.csv" |> Path.absname() |> File.open([:utf8, :write])
     # IO.puts(file, @amended_fields)
 
-    {records, _} = amendment_bfs({[], [{title, path}]}, file, 1)
+    {records, _} = amendment_bfs({[], [{title, path}]}, opts, 1)
 
     records
 

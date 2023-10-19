@@ -298,7 +298,7 @@ defmodule Legl.Countries.Uk.Metadata do
     # "#{path}/data.xml"
   end
 
-  defp get_latest_metadata(path) do
+  def get_latest_metadata(path) do
     with({:ok, :xml, metadata} <- Record.legislation(path)) do
       # save the data returned from leg.gov.uk w/o transformation
       json = Map.put(%{}, "records", metadata) |> Jason.encode!()
