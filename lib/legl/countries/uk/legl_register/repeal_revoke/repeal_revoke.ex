@@ -147,23 +147,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
       IO.puts("TITLE_EN: #{title}")
       {:ok, url} = Legl.Utility.resource_path(url)
 
-      with(
-        {:ok, html} <- RecordGeneric.leg_gov_uk_html(url, @client, @parser),
-        # IO.inspect(html, label: "TABLE DATA", limit: :infinity),
-        # Process the html to get a list of data tuples
-        data <- proc_amd_tbl(html),
-        # Search and filter for the terms 'revoke' or 'repeal' returning {:ok, list} or :no_records
-        # List {:ok, [{title, amendment_target, amendment_effect, amending_title&path}, ...{}]
-        {:ok, rr_data} <- rrFilter(data),
-        # Sets the content of the revocation / repeal "Live?_description" field
-        {:ok, result} <- RRDescription.rrDescription(rr_data, %__MODULE__{}, opts),
-        # Filters for laws that have been revoked / repealed in full
-        {:ok, result} <- rrFullFilter(data, result, opts),
-        {:ok, result} <- at_revoked_by_field(rr_data, result),
-        {:ok, new_law} <- new_law(rr_data)
-      ) do
+      with({:ok, result, new_laws} <- getRevocations(url, opts)) do
         if opts.csv?, do: Csv.save_to_csv(name, result, opts)
-        if opts.csv?, do: Csv.save_new_law(new_law, opts)
+        if opts.csv?, do: Csv.save_new_law(new_laws, opts)
 
         # Build the map needed to patch to AT
         latest_record =
@@ -180,11 +166,8 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
               Delta.compare(current_record, latest_record, opts)
           end
 
-        {[result | elem(acc, 0)], [new_law | elem(acc, 1)]}
+        {[result | elem(acc, 0)], [new_laws | elem(acc, 1)]}
       else
-        :ok ->
-          :ok
-
         :no_records ->
           result = %{
             id: record_id,
@@ -201,21 +184,67 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
         {nil, msg} ->
           IO.puts("#{name} #{msg}")
-
-        {:error, code, response, _} ->
-          IO.puts("#{code} #{response}")
-
-        {:error, code, response} ->
-          IO.puts("#{code} #{response}")
+          {elem(acc, 0), elem(acc, 1)}
 
         {:error, :html} ->
           IO.puts(".html from #{fields["Title_EN"]}")
+          {elem(acc, 0), elem(acc, 1)}
 
-        {:error, error} ->
-          IO.puts("ERROR #{error} with #{fields["Title_EN"]}")
+        {:error, msg} ->
+          IO.puts("ERROR #{msg} with #{fields["Title_EN"]}")
+          {elem(acc, 0), elem(acc, 1)}
+
+        :error ->
+          {elem(acc, 0), elem(acc, 1)}
       end
     end)
     |> (&{:ok, &1}).()
+  end
+
+  def getRevocations(url, opts) do
+    with(
+      {:ok, html} <- RecordGeneric.leg_gov_uk_html(url, @client, @parser),
+      # IO.inspect(html, label: "TABLE DATA", limit: :infinity),
+      # Process the html to get a list of data tuples
+      data <- proc_amd_tbl(html),
+      # Search and filter for the terms 'revoke' or 'repeal' returning {:ok, list} or :no_records
+      # List {:ok, [{title, amendment_target, amendment_effect, amending_title&path}, ...{}]
+      {:ok, rr_data} <- rrFilter(data),
+      # Sets the content of the revocation / repeal "Live?_description" field
+      {:ok, result} <- RRDescription.rrDescription(rr_data, %__MODULE__{}, opts),
+      # Filters for laws that have been revoked / repealed in full
+      {:ok, result} <- rrFullFilter(data, result, opts),
+      {:ok, result} <- at_revoked_by_field(rr_data, result),
+      {:ok, new_laws} <- new_law(rr_data)
+    ) do
+      {:ok, result, new_laws}
+    else
+      :ok ->
+        :ok
+
+      :no_records ->
+        :no_records
+
+      {:live, result} ->
+        {:live, result}
+
+      {nil, msg} ->
+        {nil, msg}
+
+      {:error, code, response, _} ->
+        IO.puts("#{code} #{response}")
+        :error
+
+      {:error, code, response} ->
+        IO.puts("#{code} #{response}")
+        :error
+
+      {:error, :html} ->
+        {:error, :html}
+
+      {:error, msg} ->
+        {:error, msg}
+    end
   end
 
   @doc """

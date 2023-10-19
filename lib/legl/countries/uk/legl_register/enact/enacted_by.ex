@@ -70,13 +70,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
     end
   end
 
-  defp workflow_new_laws([], _) do
+  def workflow_new_laws([], _) do
     IO.puts(~s<\nZero (0) ENACTING LAWS\n>)
   end
 
   @api_post_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_post_results.json]
 
-  defp workflow_new_laws(results, opts) do
+  def workflow_new_laws(results, opts) do
     #
     # NEW LAWS FOR THE BASE
 

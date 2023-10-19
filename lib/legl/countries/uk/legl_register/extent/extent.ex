@@ -148,6 +148,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     end
   end
 
+  @doc """
+
+  """
   def get_extent_leg_gov_uk(url) do
     with({:ok, :xml, %{extents: data}} <- RecordGeneric.extent(url)) do
       {:ok, data}

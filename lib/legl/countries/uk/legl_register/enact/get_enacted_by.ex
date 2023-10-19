@@ -24,38 +24,48 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     These processes search for the ef-codes and read the url from the map of
     urls returned from leg,gov.uk
   """
-
-  def get_enacting_laws(records, opts) do
-    results =
+  def get_enacting_laws(records, opts) when is_list(records) do
+    records =
       Enum.reduce(records, [], fn %{fields: %{Title_EN: title}} = record, acc ->
         IO.puts("#{title}")
 
-        with(
-          record = Map.merge(record, %{enacting_laws: [], urls: nil, text: ""}),
-          {:ok, record} <- get_leg_gov_uk(record),
-          {:ok, record} <- text(record),
-          {:ok, record} <- specific_enacting_clauses(record, opts),
-          {:ok, record} <- enacting_law_in_match(record),
-          {:ok, record} <- enacting_law_in_enacting_text(record),
-          {:ok, record} <- dedupe(record),
-          {:ok, record} <- enacted_by(record)
-        ) do
+        with({:ok, record} <- get_enacting_laws(record, opts)) do
           [record | acc]
         else
-          {:error, error} ->
-            IO.puts("ERROR get_enacting_laws/1 #{error}")
+          {:error, msg, _record} ->
+            IO.puts("#{msg}")
             acc
 
-          {:no_text, _record} ->
-            # avoids parsing if there is no text
+          {:no_text, msg, _record} ->
+            IO.puts("#{msg}")
             acc
-            # [record | acc]
         end
       end)
 
-    enacting_laws_list = enacting_laws_list(results)
+    enacting_laws_list = enacting_laws_list(records)
 
-    {:ok, results, enacting_laws_list}
+    {:ok, records, enacting_laws_list}
+  end
+
+  def get_enacting_laws(record, opts) when is_map(record) do
+    with(
+      record = Map.merge(record, %{enacting_laws: [], urls: nil, text: ""}),
+      {:ok, record} <- get_leg_gov_uk(record),
+      {:ok, record} <- text(record),
+      {:ok, record} <- specific_enacting_clauses(record, opts),
+      {:ok, record} <- enacting_law_in_match(record),
+      {:ok, record} <- enacting_law_in_enacting_text(record),
+      {:ok, record} <- dedupe(record),
+      {:ok, record} <- enacted_by(record)
+    ) do
+      {:ok, record}
+    else
+      {:error, error} ->
+        {:error, "ERROR get_enacting_laws/1 #{error}", record}
+
+      {:no_text, record} ->
+        {:no_text, "No enacting text for this law", record}
+    end
   end
 
   @doc """
@@ -381,7 +391,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     {:ok, %{record | fields: Map.put(record.fields, :Enacted_by, enacted_by)}}
   end
 
-  defp enacting_laws_list(results) do
+  def enacting_laws_list(results) do
     Enum.map(results, fn %{enacting_laws: enacting_laws} = _result ->
       enacting_laws
     end)
