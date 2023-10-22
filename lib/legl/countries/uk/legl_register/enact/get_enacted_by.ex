@@ -395,7 +395,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   defp make_law_map({title, type, year, number}) do
     id =
       Legl.Airtable.AirtableTitleField.title_clean(title)
-      |> Legl.Airtable.AirtableIdField.id(type, year, number)
+      |> Legl.Countries.Uk.LeglRegister.IdField.id(type, year, number)
 
     %{
       Name: id,
@@ -410,8 +410,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     {:ok, %{record | enacting_laws: Enum.uniq_by(eLaws, &{&1[Name]})}}
   end
 
+  @doc """
+  Airtable 'Enacted_by' field is a long text that needs a comma separated string
+  """
   def enacted_by(%{enacting_laws: eLaws} = record) do
-    enacted_by = Enum.map(eLaws, fn %{Name: name} = _eLaw -> name end)
+    enacted_by =
+      Enum.map(eLaws, fn %{Name: name} = _eLaw -> name end)
+      |> Enum.join(",")
 
     {:ok, Map.put(record, :Enacted_by, enacted_by)}
   end

@@ -8,7 +8,7 @@ defmodule Legl.Countries.Uk.UkAmend do
   """
   alias Types.ATLawSchema
   # alias Legl.Services.LegislationGovUk.Record
-  alias Legl.Airtable.AirtableIdField
+  alias Legl.Countries.Uk.LeglRegister.IdField
   alias Legl.Airtable.AirtableTitleField
 
   @doc """
@@ -28,7 +28,7 @@ defmodule Legl.Countries.Uk.UkAmend do
       fn x, acc ->
         [amending_title, type, year, number, _, _] = line_item(x)
 
-        AirtableIdField.id(amending_title, type, year, number)
+        IdField.id(amending_title, type, year, number)
         |> (&[&1 | acc]).()
       end
     )
@@ -179,7 +179,7 @@ defmodule Legl.Countries.Uk.UkAmend do
           |> escape_commas()
 
         amending_title
-        |> AirtableIdField.id(type, year, number)
+        |> IdField.id(type, year, number)
         |> (&[&1 | [amending_title, "United Kingdom", region, year, number, type, true, true]]).()
         |> Enum.join(",")
         |> (&[&1 | acc]).()
@@ -200,7 +200,7 @@ defmodule Legl.Countries.Uk.UkAmend do
   end
 
   def file_text([amending_title, type, year, number, _, _]) do
-    "#{AirtableIdField.id(amending_title, type, year, number)}, #{amending_title}"
+    "#{IdField.id(amending_title, type, year, number)}, #{amending_title}"
   end
 
   def escape_commas(str) do

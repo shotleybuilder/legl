@@ -1,4 +1,13 @@
-defmodule Legl.Airtable.AirtableIdField do
+defmodule Legl.Countries.Uk.LeglRegister.IdField do
+  def id(%{Number: number, Title_EN: title, type_code: type_code, Year: year})
+      when is_binary(number) and is_binary(title) and is_binary(type_code) and is_binary(year) do
+    id(title, type_code, year, number)
+  end
+
+  def id(%{Number: number, Title_EN: title, type_code: type_code, Year: year})
+      when is_binary(number) and is_binary(title) and is_binary(type_code) and is_integer(year) do
+    id(title, type_code, Integer.to_string(year), number)
+  end
 
   def id(title, type, year, number) do
     title
@@ -7,7 +16,7 @@ defmodule Legl.Airtable.AirtableIdField do
     |> split_title()
     |> proper_title()
     |> acronym()
-    |> (&Kernel.<>("UK_#{type}_#{year}_#{number}_",&1)).()
+    |> (&Kernel.<>("UK_#{type}_#{year}_#{number}_", &1)).()
   end
 
   @spec downcase(binary) :: binary
@@ -58,7 +67,11 @@ defmodule Legl.Airtable.AirtableIdField do
     String.trim(title)
     |> (&Regex.replace(~r/\(|\)|\/|\"|\-|[A-Za-z]+\.?\d+|\d+|:|\.|,|—|\*|&|\[|\]|\+/, &1, "")).()
     |> (&Regex.replace(~r/[ ][T|t]o[ ]|[ ][T|t]h[a|e|i|o]t?s?e?[ ]/, &1, " ")).()
-    |> (&Regex.replace(~r/[ ][A|a][ ]|[ ][A|a]n[ ]|[ ][A|a]nd[ ]|[ ][A|a]t[ ]|[ ][A|a]re[ ]/, &1, " ")).()
+    |> (&Regex.replace(
+          ~r/[ ][A|a][ ]|[ ][A|a]n[ ]|[ ][A|a]nd[ ]|[ ][A|a]t[ ]|[ ][A|a]re[ ]/,
+          &1,
+          " "
+        )).()
     |> (&Regex.replace(~r/[ ][F|f]?[O|o]r[ ]/, &1, " ")).()
     |> (&Regex.replace(~r/[ ][I|i][f|n][ ]|[ ][I|i][s|t]s?[ ]/, &1, " ")).()
     |> (&Regex.replace(~r/[ ][O|o][f|n][ ]/, &1, " ")).()

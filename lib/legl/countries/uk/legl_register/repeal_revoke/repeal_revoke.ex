@@ -15,8 +15,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
   alias Legl.Services.LegislationGovUk.RecordGeneric
   alias Legl.Services.Airtable.UkAirtable, as: AT
-  alias Legl.Airtable.AirtableIdField, as: ID
+  alias Legl.Countries.Uk.LeglRegister.IdField, as: ID
   alias Legl.Airtable.AirtableTitleField, as: Title
+  alias Legl.Services.LegislationGovUk.Url
 
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.RRDescription
@@ -136,23 +137,33 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
     end
   end
 
+  def workflow(records, opts) do
+    {:ok, opts} = Options.setOptions(opts)
+    {:ok, {records, _new_laws}} = enumerate_records(records, opts)
+    records
+  end
+
   @client &Legl.Services.LegislationGovUk.ClientAmdTbl.run!/1
   @parser &Legl.Services.LegislationGovUk.Parsers.Html.amendment_parser/1
 
   def enumerate_records(records, opts) do
     # IO.inspect(records, limit: :infinity)
 
-    Enum.reduce(records, {[], []}, fn %{id: record_id, fields: fields} = current_record, acc ->
-      %{Name: name, Title_EN: title, "leg.gov.uk - changes": url} = fields
-      IO.puts("TITLE_EN: #{title}")
-      {:ok, url} = Legl.Utility.resource_path(url)
+    Enum.reduce(records, {[], []}, fn
+      #
+      # A record returned from Airtable
+      %{id: record_id, fields: fields} = record, acc ->
+        # BROKEN NEEDS TO GET DIFFERENT FIELDS FROM AT
+        %{Name: name, Title_EN: title} = fields
+        IO.puts("TITLE_EN: #{title}")
 
-      with({:ok, result, new_laws} <- getRevocations(url, opts)) do
+        {result, new_laws} = getRevocations(record, opts)
+
         if opts.csv?, do: Csv.save_to_csv(name, result, opts)
         if opts.csv?, do: Csv.save_new_law(new_laws, opts)
 
         # Build the map needed to patch to AT
-        latest_record =
+        result =
           Map.from_struct(result)
           |> (&Map.put(%{id: record_id}, :fields, &1)).()
 
@@ -160,49 +171,35 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
         result =
           case opts.workflow do
             :create ->
-              latest_record
+              result
 
             :update ->
-              Delta.compare(current_record, latest_record, opts)
+              Delta.compare(record, result, opts)
           end
 
         {[result | elem(acc, 0)], [new_laws | elem(acc, 1)]}
-      else
-        :no_records ->
-          result = %{
-            id: record_id,
-            fields: %{Title_EN: title, Live?: opts.code_live, "Live?_checked": opts.date}
-          }
 
-          {[result | elem(acc, 0)], elem(acc, 1)}
+      # A record returned from legislation.gov.uk
+      %{Title_EN: title} = record, acc ->
+        IO.puts("TITLE_EN: #{title}")
 
-        {:live, result} ->
-          IO.puts("#{name}\n#{inspect(result)}")
-          if opts.csv?, do: Csv.save_to_csv(name, result, opts)
+        {result, new_laws} = getRevocations(record, opts)
 
-          {[result | elem(acc, 0)], elem(acc, 1)}
+        # Save the new laws to json for later processing
+        json_path = ~s[lib/legl/countries/uk/legl_register/repeal_revoke/newlaws.json]
 
-        {nil, msg} ->
-          IO.puts("#{name} #{msg}")
-          {elem(acc, 0), elem(acc, 1)}
+        Map.put(%{}, "records", new_laws)
+        |> Jason.encode!()
+        |> Legl.Utility.save_at_records_to_file(json_path)
 
-        {:error, :html} ->
-          IO.puts(".html from #{fields["Title_EN"]}")
-          {elem(acc, 0), elem(acc, 1)}
-
-        {:error, msg} ->
-          IO.puts("ERROR #{msg} with #{fields["Title_EN"]}")
-          {elem(acc, 0), elem(acc, 1)}
-
-        :error ->
-          {elem(acc, 0), elem(acc, 1)}
-      end
+        {[Map.merge(record, result) | elem(acc, 0)], [new_laws | elem(acc, 1)]}
     end)
     |> (&{:ok, &1}).()
   end
 
-  def getRevocations(url, opts) do
+  def getRevocations(record, opts) do
     with(
+      url = Url.content_path(record),
       {:ok, html} <- RecordGeneric.leg_gov_uk_html(url, @client, @parser),
       # IO.inspect(html, label: "TABLE DATA", limit: :infinity),
       # Process the html to get a list of data tuples
@@ -217,34 +214,55 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
       {:ok, result} <- at_revoked_by_field(rr_data, result),
       {:ok, new_laws} <- new_law(rr_data)
     ) do
-      {:ok, result, new_laws}
+      {Map.from_struct(result), new_laws}
     else
-      :ok ->
-        :ok
-
       :no_records ->
-        :no_records
+        result =
+          case Map.has_key?(record, :fields) do
+            true ->
+              Map.merge(record[:fields], %{Live?: opts.code_live, "Live?_checked": opts.date})
+              |> (&Map.put(record, :fields, &1)).()
+
+            _ ->
+              %{Live?: opts.code_live, "Live?_checked": opts.date}
+          end
+
+        {result, []}
 
       {:live, result} ->
-        {:live, result}
+        IO.puts("LIVE: #{title(record)}\n#{inspect(result)}")
+
+        {result, []}
 
       {nil, msg} ->
-        {nil, msg}
+        IO.puts("NIL: #{title(record)}\n#{msg}\n")
+        {record, []}
 
       {:error, code, response, _} ->
         IO.puts("#{code} #{response}")
-        :error
+        {record, []}
 
       {:error, code, response} ->
         IO.puts("#{code} #{response}")
-        :error
+        {record, []}
 
       {:error, :html} ->
-        {:error, :html}
+        IO.puts(".html from #{title(record)}")
+        {record, []}
 
       {:error, msg} ->
-        {:error, msg}
+        IO.puts("ERROR: #{msg}")
+        {record, []}
+
+      :error ->
+        {record, []}
     end
+  end
+
+  defp title(record) do
+    if Map.has_key?(record, :fields),
+      do: record[:fields][:Title_EN],
+      else: record[:Title_EN]
   end
 
   @doc """

@@ -152,9 +152,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
   """
   def get_extent_leg_gov_uk(url) do
-    with({:ok, :xml, %{extents: data}} <- RecordGeneric.extent(url)) do
+    with({:ok, :xml, data} <- RecordGeneric.extent(url)) do
       {:ok, data}
     else
+      {:no_data, []} ->
+        {:no_data, []}
+
       {:error, 307, _error} ->
         adjust_url(url)
 
@@ -205,6 +208,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
       {provisions, "EW"}, acc -> [{provisions, "E+W"} | acc]
       {provisions, extent}, acc -> [{provisions, extent} | acc]
     end)
+  end
+
+  def uniq_extent(data) do
+    Enum.reduce(data, [], fn
+      {_, extent}, acc -> [extent | acc]
+      {}, acc -> acc
+      {_extent}, acc -> acc
+    end)
+    |> Enum.uniq()
+    |> Enum.sort_by(&byte_size/1, :desc)
   end
 
   def extents(_data, [uniq_extent]) do
@@ -267,16 +280,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     |> (&(&1 <> " " <> k)).()
   end
 
-  def uniq_extent(data) do
-    Enum.reduce(data, [], fn
-      {_, extent}, acc -> [extent | acc]
-      {}, acc -> acc
-      {_extent}, acc -> acc
-    end)
-    |> Enum.uniq()
-    |> Enum.sort_by(&byte_size/1, :desc)
-  end
-
   def create_map(uniq_extent) do
     Enum.reduce(uniq_extent, %{}, fn x, acc ->
       Map.put(acc, x, [])
@@ -307,9 +310,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
       end)
       |> Enum.uniq()
 
-    ordered_regions = ordered_regions(regions)
+    ordered_regions(regions)
 
-    Enum.join(ordered_regions, ",")
+    # Enum.join(ordered_regions, ",")
   end
 
   def ordered_regions(regions) do

@@ -3,9 +3,12 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
   # mix test test/legl/countries/uk/legl_register/new_test.exs:11
   use ExUnit.Case
   alias Legl.Countries.Uk.LeglRegister.New.New
-  alias Legl.Countries.Uk.LeglRegister.New.New.LegUkGov
+  alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
   alias Legl.Countries.Uk.LeglRegister.New.New.Filters
   alias Legl.Countries.Uk.LeglRegister.New.Create
+  alias Legl.Countries.Uk.LeglRegister.Helpers.NewLaw
+  alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
+  alias Legl.Countries.Uk.LeglRegister.New.New.Options
 
   @moduletag :uk
 
@@ -20,13 +23,13 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
 
   describe "url/1" do
     test "url w/o type code" do
-      url = LegUkGov.url(@opts)
+      url = LegGovUk.url(@opts)
       assert url == "/new/2023-10-12"
     end
 
     test "url w/ type code" do
       opts = Map.put(@opts, :type_code, "uksi")
-      url = LegUkGov.url(opts)
+      url = LegGovUk.url(opts)
       assert url == "/new/uksi/2023-10-12"
     end
   end
@@ -48,12 +51,57 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
     type_code: "uksi"
   }
 
-  describe "terms_filter/1" do
-    test "w/ match" do
-      result = Filters.terms_filter([@laws])
+  describe "Legl.Countries.Uk.LeglRegister.New.New.Filters" do
+    test "terms_filter/1 w/ match" do
+      result = Filters.terms_filter([@laws], %{base_name: "UK S"})
 
       assert result ==
                {[Map.put(@laws, :Family, "OH&S: Occupational / Personal Safety")], []}
+    end
+
+    @match_si_codes ~w[FOOD GAS]
+    @no_match_si_codes ~w[FOO BAR]
+    @mix_match_si_codes ["FOO", "BAR", "HEALTH AND SAFETY"]
+
+    test "si_code_member? match" do
+      result = Filters.si_code_member?(@match_si_codes)
+      assert true == result
+    end
+
+    test "si_code_member? no match" do
+      result = Filters.si_code_member?(@no_match_si_codes)
+      assert false == result
+    end
+
+    test "si_code_member? mixed match" do
+      result = Filters.si_code_member?(@mix_match_si_codes)
+      assert true == result
+    end
+  end
+
+  @source [
+    %{
+      Number: "1078",
+      Title_EN: "Air Navigation (Restriction of Flying) (Luton) (Emergency) Regulations",
+      Year: 2023,
+      md_description: "",
+      publication_date: "2023-10-11",
+      type_code: "uksi"
+    },
+    %{
+      Number: "1073",
+      Title_EN: "Air Navigation (Restriction of Flying) (Edinburgh) Regulations",
+      Year: 2023,
+      md_description: "",
+      publication_date: "2023-10-11",
+      type_code: "uksi"
+    }
+  ]
+
+  describe " Legl.Countries.Uk.LeglRegister.Helpers.NewLaw" do
+    test "setUrl/2" do
+      {:ok, result} = NewLaw.setUrl(@source, %{base_id: "foo", table_id: "bar"})
+      assert is_list(result)
     end
   end
 
@@ -101,6 +149,14 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
 
       IO.inspect(result)
       assert is_list(result)
+    end
+  end
+
+  describe "Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable" do
+    test "get_publication_date_table_records/1" do
+    {:ok, opts} = Options.setOptions(month: 10, days: {19, 20})
+    results = PDT.get_publication_date_table_records(opts)
+    assert {:ok, _} = results
     end
   end
 end

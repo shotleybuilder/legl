@@ -1,8 +1,6 @@
 defmodule Legl.Services.LegislationGovUk.Record do
   require Logger
 
-  # alias Legl.Airtable.AirtableIdField
-
   @endpoint "https://www.legislation.gov.uk"
 
   # @legislation_gov_uk_api is a module attribute (constant) set to the env value

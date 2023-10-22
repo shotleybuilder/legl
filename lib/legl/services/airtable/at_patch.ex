@@ -8,6 +8,10 @@ defmodule Legl.Services.Airtable.AtPatch do
       {:ok, response} <- Client.patch(url, body, headers)
     ) do
       case response do
+        %HTTPoison.Response{status_code: 403, body: body} ->
+          IO.puts("Status: 403")
+          IO.inspect(body)
+
         %HTTPoison.Response{status_code: 422, body: body} ->
           IO.puts("Status: 422")
           IO.inspect(body)

@@ -20,7 +20,10 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
 
   def extent(url) do
     case Legl.Services.LegislationGovUk.ClientGeneric.run!(@endpoint <> url, @extent) do
-      {:ok, %{:content_type => :xml, :body => %{acc: acc}}} ->
+      {:ok, %{:content_type => :xml, :body => %{acc: %{extents: []}}}} ->
+        {:no_data, []}
+
+      {:ok, %{:content_type => :xml, :body => %{acc: %{extents: acc}}}} ->
         {:ok, :xml, acc}
 
       {:ok, %{:content_type => :html}} ->

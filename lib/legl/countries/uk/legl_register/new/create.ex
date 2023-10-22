@@ -16,9 +16,16 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
          records = setMetadata(records),
          records = setExtent(records),
          records = setEnactedBy(records, opts),
-         records = setAmendedBy(records),
+         records = setAmendedBy(records, opts),
          setRevokedBy(records, opts) do
     end
+  end
+
+  def setName(records) do
+    Enum.map(records, fn record ->
+      Legl.Countries.Uk.LeglRegister.IdField.id(record)
+      |> (&Map.put(record, :Name, &1)).()
+    end)
   end
 
   @doc """
@@ -227,6 +234,10 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
             Geo_Extent: geo_extent
           })
         else
+          {:no_data, []} ->
+            IO.puts("NO DATA: No Extent data returned from legislation.gov.uk\n Check manually")
+            record
+
           {:error, msg} ->
             IO.puts("ERROR: #{msg}\nProcessing Extents for:\n#{inspect(record[:Title_EN])}\n")
             record
@@ -242,9 +253,12 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
     end)
   end
 
+  def geo_pan_region(""), do: ""
+
   def geo_pan_region(geo_region) do
     regions_list =
-      String.split(geo_region, ",")
+      geo_region
+      # String.split(geo_region, ",")
       |> Enum.map(&String.trim(&1))
       |> Enum.sort()
 
@@ -299,33 +313,14 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
   @doc """
   Function to set the 'Amended_by' field
   """
-  def setAmendedBy(records) do
-    Enum.map(records, fn record ->
-      Amend.amendment_bfs_client(record)
-    end)
+  def setAmendedBy(records, opts) do
+    Amend.workflow(records, opts)
   end
 
   @doc """
   Function to set the 'Live?_checked', 'Live?', 'Live?_description', 'Revoked_by' fields of the Legal Register
   """
   def setRevokedBy(records, opts) do
-    Enum.map(records, fn
-      record ->
-        with(
-          url = Url.content_path(record),
-          {:ok, result, _new_laws} <- RR.getRevocations(url, opts)
-        ) do
-          result
-        else
-          :no_records ->
-            record
-
-          {:live, result} ->
-            result
-
-          :error ->
-            record
-        end
-    end)
+    RR.workflow(records, opts)
   end
 end

@@ -139,7 +139,7 @@ defmodule Legl.Countries.Uk.UkSearch do
       Enum.reduce(records, results, fn {_, _, x}, acc ->
         case process_search_table_row(x) do
           {:ok, title, type, year, number, path} ->
-            name = Legl.Airtable.AirtableIdField.id(title, type, year, number)
+            name = Legl.Countries.Uk.LeglRegister.IdField.id(title, type, year, number)
             title = Legl.Airtable.AirtableTitleField.title_clean(title)
             key = String.to_atom(name)
 
