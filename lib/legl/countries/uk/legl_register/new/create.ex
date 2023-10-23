@@ -21,6 +21,16 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
     end
   end
 
+  @doc """
+  Linked record field linking the Legal Register to the Publication Date table
+  """
+  def setPublicationDateLink(records, opts) do
+    Enum.map(records, fn record ->
+      Map.get(opts[:record_ids], record[:publication_date])
+      |> (&Map.put(record, :"Publication Date", &1)).()
+    end)
+  end
+
   def setName(records) do
     Enum.map(records, fn record ->
       Legl.Countries.Uk.LeglRegister.IdField.id(record)

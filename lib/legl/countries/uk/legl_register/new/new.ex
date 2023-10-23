@@ -4,7 +4,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   """
   alias Legl.Countries.Uk.LeglRegister.New.New.Options
-  alias Legl.Countries.Uk.LeglRegister.New.New.Airtable, as: AT
+  alias Legl.Countries.Uk.LeglRegister.New.New.Airtable
   alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
   alias Legl.Countries.Uk.LeglRegister.New.New.Filters
   alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
@@ -118,18 +118,36 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       # Filter out laws that are already in the Base
       {:ok, inc_wo_si} <- NewLaw.filterDelta(inc_wo_si, opts),
       {:ok, inc_w_si} <- NewLaw.filterDelta(inc_w_si, opts),
+      inc_w_si_count = Enum.count(inc_w_si),
+      inc_wo_si_count = Enum.count(inc_wo_si),
 
       # Save the results to 3x .json files for manual QA
-      :ok = IO.puts("# W/O SI CODE RECORDS: #{Enum.count(inc_wo_si)}"),
+      :ok = IO.puts("# W/O SI CODE RECORDS: #{inc_w_si_count}"),
       :ok = Legl.Utility.save_json(inc_wo_si, @inc_wo_si_path),
-      :ok = IO.puts("# W/ SI CODE RECORDS: #{Enum.count(inc_w_si)}"),
+      :ok = IO.puts("# W/ SI CODE RECORDS: #{inc_wo_si_count}"),
       :ok = Legl.Utility.save_json(inc_w_si, @inc_w_si_path)
     ) do
       # Returns a tuple
-      IO.puts("\nPROCESSING LAWS MATCHING Terms and SI Code")
-      inc_w_si = complete_new_law_fields(inc_w_si, @inc_w_si_path, opts)
-      IO.puts("\nPROCESSING LAWS MATCHING Terms and NO MATCH SI Code")
-      inc_wo_si = complete_new_law_fields(inc_wo_si, @inc_wo_si_path, opts)
+      inc_w_si =
+        case inc_w_si_count do
+          0 ->
+            []
+
+          _ ->
+            IO.puts("\nPROCESSING LAWS MATCHING Terms and SI Code\n")
+            complete_new_law_fields(inc_w_si, @inc_w_si_path, opts)
+        end
+
+      inc_wo_si =
+        case inc_wo_si_count do
+          0 ->
+            []
+
+          _ ->
+            IO.puts("\nPROCESSING LAWS MATCHING Terms and NO MATCH SI Code\n")
+            complete_new_law_fields(inc_wo_si, @inc_wo_si_path, opts)
+        end
+
       {:ok, inc_w_si, inc_wo_si}
     else
       {:no_data, opts} -> {:no_data, opts}
@@ -162,6 +180,12 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   def complete_new_law_fields(records, path, opts) do
     with(
+      # Publication Date field
+      IO.write("PUBLICATION DATE"),
+      records = Create.setPublicationDateLink(records, opts),
+      :ok = Legl.Utility.save_json(records, path),
+      IO.puts("...complete"),
+
       # Name field
       IO.write("NAME"),
       records = Create.setName(records),
@@ -217,6 +241,7 @@ end
 
 defmodule Legl.Countries.Uk.LeglRegister.New.New.Options do
   alias Legl.Services.Airtable.AtBasesTables
+  alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable
 
   @default_opts %{
     base_name: "UK S",
@@ -280,6 +305,9 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.Options do
         {:error, msg} -> {:error, msg}
       end
 
+    # Returns a map of dates as keys and record_ids as values
+    opts = PublicationDateTable.get(opts)
+
     IO.puts("OPTIONS: #{inspect(opts)}")
     {:ok, opts}
   end
@@ -287,13 +315,9 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.Options do
   defp formula(%{source: :web} = opts) do
     with(
       f = [~s/{Year}="#{opts.year}"/],
-      {:ok, f} <-
-        if(opts.month != nil,
-          do: {:ok, [~s/{Month}="#{opts.month}"/ | f]},
-          else: {:error, "Month option required e.g. month: 04"}
-        ),
+      {:ok, f} <- month_formula(opts.month, f),
       f = if(opts.day != nil, do: [~s/{Day}="#{opts.day}"/ | f], else: f),
-      f = if({from, to} = opts.days, do: [~s/{Day}>="#{from}", {Day}<="#{to}"/ | f])
+      f = if({from, to} = opts.days, do: [day_range_formula(from, to) | f], else: f)
     ) do
       {:ok, ~s/AND(#{Enum.join(f, ",")})/}
     else
@@ -302,14 +326,42 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.Options do
   end
 
   defp formula(_), do: {:ok, nil}
+
+  defp day_range_formula(from, to) do
+    ~s/OR(#{Enum.map(from..to, fn d ->
+      d = if String.length(Integer.to_string(d)) == 1 do
+        ~s/0#{d}/
+      else
+        ~s/#{d}/
+      end
+      ~s/{Day}="#{d}"/
+    end) |> Enum.join(",")})/
+  end
+
+  defp month_formula(nil, _), do: {:error, "Month option required e.g. month: 4"}
+
+  defp month_formula(month, f) do
+    month = if String.length(Integer.to_string(month)) == 1, do: ~s/0#{month}/, else: ~s/#{month}/
+    {:ok, [~s/{Month}="#{month}"/ | f]}
+  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.New.New.Airtable do
-  alias Legl.Services.Airtable.UkAirtable, as: AT
+  alias Legl.Services.Airtable.Client
 
-  def getDates(opts) do
-    {:ok, records} = AT.get_records_from_at(opts)
-    Jason.encode!(records) |> Jason.decode!(keys: :atoms)
+  @doc """
+  Publication Date table ID is held by the opts param ':pub_table_id'
+  """
+  def get_publication_date_table_records(opts) do
+    {:ok, url} =
+      Legl.Services.Airtable.Url.url(opts.base_id, opts.pub_table_id,
+        formula: opts.formula,
+        fields: ["Name"]
+      )
+
+    {:ok, data} = Client.request(:get, url, [])
+    %{records: records} = Jason.decode!(data, keys: :atoms)
+    records
   end
 end
 
@@ -322,7 +374,22 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.LegGovUk do
 
   def getNewLaws(%{days: {from, to}} = opts) when is_integer(from) and is_integer(to) do
     Enum.reduce(from..to, [], fn day, acc ->
-      opts = Map.put(opts, :date, ~s<#{opts.year}-#{opts.month}-#{day}>)
+      # Transfrom single number dates eg 1 -> "01"
+      day =
+        if String.length(Integer.to_string(day)) == 1 do
+          ~s/0#{day}/
+        else
+          day
+        end
+
+      month =
+        if String.length(Integer.to_string(opts.month)) == 1 do
+          ~s/0#{opts.month}/
+        else
+          ~s/opts.month/
+        end
+
+      opts = Map.put(opts, :date, ~s<#{opts.year}-#{month}-#{day}>)
 
       with({:ok, response} <- getLaws(opts)) do
         Enum.reduce(response, acc, fn law, acc2 ->
@@ -471,36 +538,38 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable do
   Module to PATCH an update to mark all records that have been processed
   Fields: 'Checked?'
   """
-  alias Legl.Services.Airtable.Client
+  alias Legl.Countries.Uk.LeglRegister.New.New.Airtable
+
+  def get(opts) do
+    Airtable.get_publication_date_table_records(opts)
+    |> make_map_of_record_ids(opts)
+  end
+
+  @doc """
+  Function to create a map with dates as key and record_ids as value
+  %{"date" => "record_id"}
+  """
+  def make_map_of_record_ids(records, opts) do
+    Enum.reduce(records, %{}, fn %{id: id, fields: %{Name: date}}, acc ->
+      Map.put(acc, date, id)
+    end)
+    |> (&Map.put(opts, :record_ids, &1)).()
+  end
+
+  def make_list_of_dates(%{days: {from, to}, month: month, year: year} = _opts)
+      when is_integer(from) and is_integer(to) do
+    Enum.map(from..to, fn d ->
+      # d = if String.length(Integer.to_string(d)) == 2, do: d, else: ~s/0#{d}/
+      {:ok, date} = Date.new(year, month, d)
+      date
+      # ~s/#{year}-#{month}-#{d}/
+    end)
+  end
 
   def field_checked?(opts) do
     # set Publication Date table credentials
-    opts =
-      case opts.base_name do
-        "UK S" -> Map.merge(opts, %{pd_base: "appRhQoz94zyVh2LR", pd_table: "tblhclH8AyopZ5t73"})
-        "UK E" -> nil
-      end
-
-    get_publication_date_table_records(opts)
+    Airtable.get_publication_date_table_records(opts)
     |> patch_to_field_checked(opts)
-  end
-
-  def get_publication_date_table_records(opts) do
-    opts =
-      case opts.base_name do
-        "UK S" -> Map.merge(opts, %{pd_base: "appRe94r8wBTgGlUs", pd_table: "tbl6sqDsiCFfOkTNk"})
-        "UK E" -> nil
-      end
-
-    {:ok, url} =
-      Legl.Services.Airtable.Url.url(opts.pd_base, opts.pd_table,
-        formula: opts.formula,
-        fields: ["Name"]
-      )
-
-    {:ok, data} = Client.request(:get, url, [])
-    %{records: records} = Jason.decode!(data, keys: :atoms)
-    records
   end
 
   def patch_to_field_checked(records, opts) do
@@ -517,8 +586,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable do
     headers = [{:"Content-Type", "application/json"}]
 
     params = %{
-      base: opts.pd_base,
-      table: opts.pd_table,
+      base: opts.base_id,
+      table: opts.pub_table_id,
       options: %{}
     }
 
@@ -533,16 +602,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable do
 
     Enum.each(results, fn result_subset ->
       Legl.Services.Airtable.AtPatch.patch_records(result_subset, headers, params)
-    end)
-  end
-
-  def make_list_of_dates(%{days: {from, to}, month: month, year: year} = _opts)
-      when is_integer(from) and is_integer(to) do
-    Enum.map(from..to, fn d ->
-      # d = if String.length(Integer.to_string(d)) == 2, do: d, else: ~s/0#{d}/
-      {:ok, date} = Date.new(year, month, d)
-      date
-      # ~s/#{year}-#{month}-#{d}/
     end)
   end
 end

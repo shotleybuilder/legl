@@ -3,6 +3,7 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
   # mix test test/legl/countries/uk/legl_register/new_test.exs:11
   use ExUnit.Case
   alias Legl.Countries.Uk.LeglRegister.New.New
+  alias Legl.Countries.Uk.LeglRegister.New.New.Airtable
   alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
   alias Legl.Countries.Uk.LeglRegister.New.New.Filters
   alias Legl.Countries.Uk.LeglRegister.New.Create
@@ -20,6 +21,34 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
     days: {12, 13},
     type_code: [""]
   }
+
+  describe "Legl.Countries.Uk.LeglRegister.New.New.Airtable" do
+    test "get_publication_date_table_records/1" do
+      opts =
+        Map.merge(
+          @opts,
+          %{
+            base_id: "appRhQoz94zyVh2LR",
+            pub_table_id: "tblQtdYg4MGIk3tzb",
+            formula: "AND({Day}>=\"1\", {Day}<=\"9\",{Month}=\"10\",{Year}=\"2023\")"
+          }
+        )
+
+      response = Airtable.get_publication_date_table_records(opts)
+
+      IO.inspect(response)
+
+      assert is_list(response)
+    end
+
+    test "get_publication_date_table_records/1 w/ options" do
+      {:ok, opts} = Options.setOptions(base_name: "UK S", month: 10, days: {9, 12})
+      response = Airtable.get_publication_date_table_records(opts)
+
+      IO.inspect(response)
+      assert is_list(response)
+    end
+  end
 
   describe "url/1" do
     test "url w/o type code" do
@@ -154,9 +183,9 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
 
   describe "Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable" do
     test "get_publication_date_table_records/1" do
-    {:ok, opts} = Options.setOptions(month: 10, days: {19, 20})
-    results = PDT.get_publication_date_table_records(opts)
-    assert {:ok, _} = results
+      {:ok, opts} = Options.setOptions(month: 10, days: {19, 20})
+      results = PDT.get_publication_date_table_records(opts)
+      assert {:ok, _} = results
     end
   end
 end
