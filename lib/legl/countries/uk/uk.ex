@@ -32,6 +32,11 @@ defmodule UK do
   @doc """
   Function provides a shortcut to list all the members of the Dutyholders taxonomy
   """
+
+  def create(), do: Legl.Countries.Uk.LeglRegister.New.New.create()
+  def create_from_file(), do: Legl.Countries.Uk.LeglRegister.New.New.create_from_file()
+  def creates(), do: Legl.Countries.Uk.LeglRegister.New.New.creates()
+
   def dutyholders(),
     do:
       Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib.print_dutyholders_to_console()

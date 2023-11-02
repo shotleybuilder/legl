@@ -37,7 +37,8 @@ defmodule Legl.Services.Airtable.AtTables do
       # uk e
       "appq5OQW9bTHC1zO5" => %{
         "uk" => "tblJW0DMpRs74CJux",
-        "articles" => "tblJM9zmThl82vRD4"
+        "articles" => "tblJM9zmThl82vRD4",
+        "publication_date" => "tblxuNCI43PFf9au7"
       },
       # envrionmental protection
       "appPFUz8wfo9RU7gN" => %{

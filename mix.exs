@@ -32,7 +32,7 @@ defmodule Legl.MixProject do
     [
       {:phoenix, "~> 1.6"},
       {:ex_doc, "~> 0.14", only: :dev, runtime: false},
-      {:ex_prompt, "~> 0.1.5"},
+      {:ex_prompt, "~> 0.2.0"},
       {:tesla, "~> 1.4"},
       {:hackney, "~> 1.6"},
       {:httpoison, "~> 1.6"},

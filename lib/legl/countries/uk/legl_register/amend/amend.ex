@@ -380,7 +380,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
               nrecords =
                 with(
                   {:ok, nrecords} <-
-                    Legl.Countries.Uk.LeglRegister.Helpers.NewLaw.filterDelta(nrecords, opts)
+                    Legl.Countries.Uk.LeglRegister.Helpers.Create.filterDelta(nrecords, opts)
                 ) do
                   nrecords
                 else
@@ -872,7 +872,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.NewLaw do
   alias Legl.Countries.Uk.LeglRegister.Amend.Post
 
   def new_law?(records, opts) do
-    records = Legl.Countries.Uk.LeglRegister.Helpers.NewLaw.filterDelta(records, opts)
+    records = Legl.Countries.Uk.LeglRegister.Helpers.Create.filterDelta(records, opts)
 
     Enum.each(records, fn record ->
       case ExPrompt.confirm("Save this law to the Base? #{record[Title_EN]}\n#{inspect(record)}") do

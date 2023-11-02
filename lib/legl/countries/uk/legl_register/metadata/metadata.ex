@@ -313,10 +313,15 @@ defmodule Legl.Countries.Uk.Metadata do
         md_attachment_paras: attachment,
         md_images: images,
         md_modified: modified,
-        si_code: si_code
+        si_code: si_code,
+        title: title
       } = metadata
 
       # %{fields: fields} = record = struct(%__MODULE__{}, record)
+
+      metadata =
+        Legl.Airtable.AirtableTitleField.title_clean(title)
+        |> (&Map.put(metadata, :title, &1)).()
 
       metadata =
         case subject do

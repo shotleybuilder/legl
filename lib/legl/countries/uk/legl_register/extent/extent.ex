@@ -14,10 +14,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
   alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.AtBasesTables
 
-  @at_type ["asc"]
   @at_csv ~s[lib/legl/countries/uk/legl_register/extent/extent.csv]
           |> Path.absname()
-  @at_name "UK_uksi_2004_1959_ALNITCR"
 
   @fields_update ~w[
     Name
@@ -183,6 +181,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     get_extent_leg_gov_uk(url)
   end
 
+  @spec extent_transformation(list()) :: :ok | {:ok, map()}
   def extent_transformation([{}]), do: :ok
 
   def extent_transformation(data) do
@@ -195,12 +194,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
     {:ok,
      %{
-       geo_extent: extents(data, uniq_extent),
-       geo_region: regions(uniq_extent)
+       # geo_extent is a string of legal clauses sorted by extent
+       geo_extent: geo_extent(data, uniq_extent),
+       # geo_region is one of more of the nations of the UK
+       geo_region: geo_region(uniq_extent)
      }}
   end
 
-  def clean_data(data) do
+  defp clean_data(data) do
     Enum.reduce(data, [], fn
       {}, acc -> acc
       {_extents}, acc -> acc
@@ -220,12 +221,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     |> Enum.sort_by(&byte_size/1, :desc)
   end
 
-  def extents(_data, [uniq_extent]) do
+  def geo_extent(_data, [uniq_extent]) do
     uniq_extent = emoji_flags(uniq_extent)
     ~s/#{uniq_extent}💚️All provisions/
   end
 
-  def extents(data, uniq_extent) do
+  def geo_extent(data, uniq_extent) do
     # use extent as the keys to a map where each section amends
     # |> IO.inspect
     extents = create_map(uniq_extent)
@@ -246,8 +247,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
     # sort the map
     # |> IO.inspect
+    # Enum.map(extents, fn {k, v} -> {k, Enum.reverse(v)} end)
     extents =
-      Enum.map(extents, fn {k, v} -> {k, Enum.reverse(v)} end)
+      Enum.map(extents, fn {k, v} -> {k, v} end)
       |> Enum.sort_by(&(elem(&1, 0) |> byte_size()), :desc)
 
     # |> IO.inspect
@@ -286,7 +288,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     end)
   end
 
-  def regions(extents) do
+  def geo_region(extents) do
     # change this to String.split on '+' and Enum the list
     regions =
       Enum.reduce(extents, [], fn x, acc ->

@@ -22,6 +22,11 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
     type_code: [""]
   }
 
+  describe "Legl.Countries.Uk.LeglRegister.New.New" do
+    test "create/1" do
+    end
+  end
+
   describe "Legl.Countries.Uk.LeglRegister.New.New.Airtable" do
     test "get_publication_date_table_records/1" do
       opts =
@@ -86,6 +91,14 @@ defmodule Legl.Countries.Uk.LeglRegister.NewTest do
 
       assert result ==
                {[Map.put(@laws, :Family, "OH&S: Occupational / Personal Safety")], []}
+    end
+
+    @title String.downcase(
+             "Air Navigation (Restriction of Flying) (Royal Air Force Waddington) (No. 7) Regulations"
+           )
+    test "exclude?" do
+      result = Filters.exclude?(@title)
+      assert true == result
     end
 
     @match_si_codes ~w[FOOD GAS]

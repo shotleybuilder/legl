@@ -24,36 +24,41 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     These processes search for the ef-codes and read the url from the map of
     urls returned from leg,gov.uk
   """
+  @spec get_enacting_laws(list(), map()) :: {:ok, list(), list()}
   def get_enacting_laws(records, opts) when is_list(records) do
     records =
-      Enum.reduce(records, [], fn %{fields: %{Title_EN: title}} = record, acc ->
-        IO.puts("#{title}")
-
-        with({:ok, record} <- get_enacting_laws(record, opts)) do
+      Enum.reduce(records, [], fn
+        # Acts are not Enacted
+        %{type_class: "Act"} = record, acc ->
           [record | acc]
-        else
-          {:error, msg, _record} ->
-            IO.puts("#{msg}")
-            acc
 
-          {:no_text, msg, _record} ->
-            IO.puts("#{msg}")
-            acc
-        end
+        %{type_code: type_code} = record, acc
+        when type_code in ["ukpga", "anaw", "asp", "nia", "apni"] ->
+          [record | acc]
+
+        record, acc ->
+          with({:ok, record} <- get_enacting_laws(record, opts)) do
+            [record | acc]
+          else
+            {:error, msg, _record} ->
+              IO.puts("#{msg}")
+              [record | acc]
+
+            {:no_text, msg, _record} ->
+              IO.puts("#{msg}")
+              [record | acc]
+          end
       end)
 
-    enacting_laws_list = enacting_laws_list(records)
+    enacting_laws = enacting_laws_list(records)
 
-    {:ok, records, enacting_laws_list}
+    {:ok, records, enacting_laws}
   end
 
-  @doc """
-  Function to get and search for Enacting Laws
-  Records from Airtable for Update use the nested :fields map
-  New records are a flat map
-  """
+  def get_enacting_laws(%{fields: %{Title_EN: title} = fields} = record, opts)
+      when is_map(record) do
+    IO.puts("#{title}")
 
-  def get_enacting_laws(%{fields: fields} = record, opts) when is_map(record) do
     with(
       fields = Map.merge(fields, %{enacting_laws: [], urls: nil, text: ""}),
       {:ok, fields} <- get_leg_gov_uk(fields),
@@ -64,14 +69,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
       {:ok, fields} <- dedupe(fields),
       {:ok, fields} <- enacted_by(fields)
     ) do
-      %{record | fields: fields}
+      # |> IO.inspect()
+      record = Map.put(record, :fields, fields)
       {:ok, record}
     else
       {:error, error} ->
-        {:error, "ERROR get_enacting_laws/1 #{error}", record}
+        {:error,
+         "\nERROR: #{error} #{record[:Title_EN]}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n",
+         record}
 
       {:no_text, record} ->
-        {:no_text, "No enacting text for this law", record}
+        {:no_text, "No enacting text for this law\n", record}
     end
   end
 
@@ -91,12 +99,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     else
       {:error, error} ->
         {:error,
-         "\nERROR: #{error}\n#{record[:Title_EN]}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1",
+         "\nERROR: #{error} #{record[:Title_EN]}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n",
+         record}
+
+      {:error, code, error} ->
+        {:error,
+         "\nERROR: #{code}, #{error} #{record[:Title_EN]}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n",
          record}
 
       {:no_text, record} ->
         {:no_text,
-         "\nNO TEXT: No enacting text for this law\nFUNCTION: #{__MODULE__}.get_enacting_laws/1",
+         "\nNO TEXT: No enacting text for this law FUNCTION: #{__MODULE__}.get_enacting_laws/1\n",
          record}
     end
   end
@@ -115,10 +128,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
 
     case RecordGeneric.enacting_text(path) do
       {:ok, :xml, %{urls: urls} = response} ->
-        %{introductory_text: i, enacting_text: e, urls: u} = %{
-          response
-          | urls: urls_to_string(urls)
-        }
+        %{introductory_text: i, enacting_text: e, urls: u} =
+          Map.put(response, :urls, urls_to_string(urls))
 
         record = Map.merge(record, %{introductory_text: i, enacting_text: e, urls: u})
 
@@ -127,8 +138,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
       {:ok, :html} ->
         {:error, "html"}
 
-      {:error, _code, error} ->
-        {:error, error}
+      {:error, code, error} ->
+        {:error, code, error}
     end
   end
 
@@ -421,6 +432,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     {:ok, Map.put(record, :Enacted_by, enacted_by)}
   end
 
+  @spec enacting_laws_list(list()) :: list()
   def enacting_laws_list(results) do
     Enum.reduce(results, [], fn
       %{enacting_laws: enacting_laws} = _result, acc ->

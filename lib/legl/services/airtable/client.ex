@@ -13,8 +13,11 @@ defmodule Legl.Services.Airtable.Client do
     # IO.puts("URL: #{url}")
 
     case get(url, headers) do
-      {:ok, %HTTPoison.Response{status_code: _code, body: body}} ->
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         {:ok, body}
+
+      {:ok, %HTTPoison.Response{status_code: code, body: body}} ->
+        {:ok, code, body}
 
       {:error, %HTTPoison.Error{__exception__: _, id: _, reason: :timeout}} ->
         {:error, reason: @timeout}

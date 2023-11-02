@@ -55,11 +55,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
          :ok <- filesave(at_records, @source_path, opts),
          {:ok, results, enacting_laws_list} <-
            Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws(at_records, opts),
-         # IO.inspect(results),
-         :ok <- workflow_new_laws(enacting_laws_list, opts),
-         :ok <- enacted_by_laws(results, opts),
-         :ok <- filesave(results, @enacting_path, opts) do
-      Csv.save_new_laws_to_csv(results, opts)
+         :ok <- filesave(results, @enacting_path, opts),
+         :ok <- post_new_laws(enacting_laws_list, opts),
+         :ok <- enacted_by_laws(results, opts) do
+      if opts.csv?, do: Csv.save_new_laws_to_csv(results, opts)
+
       :ok
     else
       {:error, error} ->
@@ -70,13 +70,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
     end
   end
 
-  def workflow_new_laws([], _) do
+  @api_post_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_post_results.json]
+
+  @doc """
+  Receives a list of Enacting Laws and optionally POSTs to the Legal Register
+  BASE if they are not present
+  """
+  @spec post_new_laws(list(), map()) :: :ok
+  def post_new_laws([], _) do
     IO.puts(~s<\nZero (0) ENACTING LAWS\n>)
   end
 
-  @api_post_results_path ~s[lib/legl/countries/uk/legl_register/enact/api_post_results.json]
-
-  def workflow_new_laws(results, opts) do
+  def post_new_laws(results, opts) do
     #
     # NEW LAWS FOR THE BASE
 
@@ -123,15 +128,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
 
     # Filter out any records where there are no enacting laws
     results =
-      Enum.filter(results, fn %{enacting_laws: enacting_laws} -> enacting_laws != [] end)
-      |> Enum.reduce([], fn law, acc ->
-        enacted_by = Enum.join(law.fields[:Enacted_by])
-
-        [
-          %{id: law.id, fields: %{Name: law.fields[:Name], Enacted_by: enacted_by}}
-          | acc
-        ]
+      Enum.filter(results, fn
+        %{fields: %{enacting_laws: enacting_laws}} -> enacting_laws != []
+        %{enacting_laws: enacting_laws} -> enacting_laws != []
       end)
+
+    # results =
+    #  Enum.reduce(results, [], fn law, acc ->
+    #    enacted_by = Enum.join(law.fields[:Enacted_by])
+    #
+    #       [
+    #        %{id: law.id, fields: %{Name: law.fields[:Name], Enacted_by: enacted_by}}
+    #       | acc
+    #    ]
+    # end)
 
     # IO.inspect(results, label: "FILTERED RESULTS: ")
 
@@ -165,7 +175,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
   defp filesave(records, _, %{filesave: false} = _opts), do: records
 
   defp filesave(records, path, %{filesave: true} = _opts) do
-    json = Map.put(%{}, "records", records) |> Jason.encode!()
+    json = Map.put(%{}, "records", records) |> Jason.encode!(pretty: true)
     Legl.Utility.save_at_records_to_file(~s/#{json}/, path)
   end
 end
@@ -187,7 +197,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Options do
     year: nil,
     fields: ["Name", "Title_EN", "type_code", "Year", "Number", "Enacted_by"],
     view: "",
-    csv?: true,
+    csv?: false,
     post?: true,
     patch?: true,
     filesave: true
@@ -239,11 +249,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Clean do
   end
 
   def clean_records(records) when is_list(records) do
+    Enum.map(records, fn %{id: id, fields: %{Enacted_by: enabled_by} = _fields} = _record ->
+      %{id: id, fields: %{Enacted_by: enabled_by}}
+    end)
+  end
+
+  def clean_records(records) when is_list(records) do
     Enum.map(records, fn %{fields: fields} = record ->
       Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
       |> clean()
       |> (&Map.put(record, :fields, &1)).()
-      |> Map.drop([:enacting_laws, :text, :urls, "createdTime"])
+      |> Map.drop([:createdTime])
     end)
   end
 
@@ -256,7 +272,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Clean do
       :type_code,
       :Enacted_by,
       :path,
-      :amending_title
+      :amending_title,
+      :enacting_laws,
+      :enacting_text,
+      :introductory_text,
+      :text,
+      :urls
     ])
   end
 
@@ -268,7 +289,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Clean do
       :Number,
       :type_code,
       :path,
-      :amending_title
+      :amending_title,
+      :enacting_laws,
+      :enacting_text,
+      :introductory_text,
+      :text,
+      :urls
     ])
 
     # |> Map.put(:Revoked_by, Enum.join(revoked_by, ", "))

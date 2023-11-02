@@ -42,7 +42,8 @@ defmodule DE_Article_Type_Conversion do
     |> File.read!()
     |> String.split("\n")
     |> converter()
-    |> Legl.copy()
+
+    # |> Legl.copy()
   end
 
   def converter(types) do

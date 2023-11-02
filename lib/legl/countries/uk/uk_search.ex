@@ -237,23 +237,43 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       greenhouse\u00a0gas
       ozone\u00a0depleting
       ozone-depleting
-    ]
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
+  @energy ~w[
+      wind\u00a0farm
+      solar\u00a0farm
+      solar\u00a0park
+      heat\u00a0network
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
+  @finance ~w[
+      plastic\u00a0packaging\u00a0tax
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @general ~w[
-      environmental\u00a0impact\u00a0assessment
+      environment
       circular\u00a0economy
-    ]
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @marine ~w[
       marine\u00a0pollution
       marine\u00a0conservation
+      marine\u00a0protected\u00a0area
       fish\u00a0conservation
       deep\u00a0sea\u00a0mining
       eels
+      edible\u00a0crab
       coastal\u00a0access
       river\u00a0pollution
       river\u00a0conservation
-    ]
+      sea\u00a0fish
+      aquatic\u00a0animal
+      shark\u00a0fin
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
+  @planning ~w[
+      planning
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @pollution ~w[
       control\u00a0of\u00a0pollution
@@ -261,7 +281,8 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       pollution\u00a0prevention
       nitrate\u00a0pollution
       prevention\u00a0of\u00a0pollution
-    ]
+      control\u00a0of\u00a0agricultural\u00a0pollution
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @waste ~w[
       waste\u00a0management
@@ -274,15 +295,15 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       waste\u00a0electrical
       packaging\u00a0waste
       controlled\u00a0waste
-
       contaminated\u00a0land
-    ]
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @water ~w[
       water\u00a0abstraction
       water\u00a0pollution
       discharge\u00a0consent
-    ]
+      water\u00a0and\u00a0sewerage
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @wildlife_countryside ~w[
       countryside
@@ -308,19 +329,24 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       byway
       historic\u00a0site
       archeological\u00a0service
-    ]
+      spring\u00a0trap
+      hunting
+      felling\u00a0of\u00a0trees
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   def e_search_terms() do
     # putting the likely most popular matching terms first
     [
-      "Climate Change": Enum.map(@climate_change, &String.replace(&1, "\u00a0", " ")),
-      "Environmental Protection": Enum.map(@general, &String.replace(&1, "\u00a0", " ")),
-      "Marine & Riverine": Enum.map(@marine, &String.replace(&1, "\u00a0", " ")),
-      Pollution: Enum.map(@pollution, &String.replace(&1, "\u00a0", " ")),
-      Waste: Enum.map(@waste, &String.replace(&1, "\u00a0", " ")),
-      "Water & Wastewater": Enum.map(@water, &String.replace(&1, "\u00a0", " ")),
-      "Wildlife & Countryside":
-        Enum.map(@wildlife_countryside, &String.replace(&1, "\u00a0", " "))
+      "Climate Change": @climate_change,
+      Energy: @energy,
+      "Environmental Protection": @general,
+      Finance: @finance,
+      "Marine & Riverine": @marine,
+      Planning: @planning,
+      Pollution: @pollution,
+      Waste: @waste,
+      "Water & Wastewater": @water,
+      "Wildlife & Countryside": @wildlife_countryside
     ]
   end
 end
@@ -339,17 +365,20 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
 
   @oh_s ~w[
     health\u00a0and\u00a0safety
+    safety\u00a0and\u00a0security
     accident
     consultation\u00a0of\u00a0employee
     protection\u00a0at\u00a0work
+    reach
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @fire_safety ~w[
-    fire
+    fire\u00a0
     explosive
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @food_safety ~w[
+    food
     food\u00a0safety
     contact\u00a0with\u00a0food
     hygiene
@@ -362,12 +391,14 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @hr_employment ~w[
+    workers
     working\u00a0time
     agency\u00a0worker
     employment\u00a0right
     employment\u00a0tribunal
     employment\u00a0relation
     maternity
+    protection\u00a0from\u00a0redundancy
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @hr_pay ~w[
@@ -375,6 +406,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
     pneumoconiosis
     wage
     industrial\u00a0injuries
+    unpaid\u00a0work
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @hr_working_time ~w[
@@ -405,15 +437,25 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
     consumer
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
+  @public_safety ~w[
+    firework
+    firearm
+    sex-based\u00a0harassment
+  ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
   @public_health ~w[
+    public\u0a00health
     smoking
     smoke_free
     health\u00a0protection
+    coronavirus
     care
     cqc
+    nutritional\u0a00requirements
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @air_safety ~w[
+    aviation\u00a0safety
     air\u00a0navigation
     air\u00a0traffic
     civil\u00a0aviation
@@ -461,6 +503,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
       "TRANS: Road Safety": @road_safety,
       "HEALTH: Public": @public_health,
       "HR: Employment": @hr_employment,
+      PUBLIC: @public_safety,
       "PUBLIC: Building Safety": @building_safety,
       "FIRE: Dangerous and Explosive Substances": @dangerous_explosive_substances,
       "GAS & ELECTRIC": @gas_electric_safety,

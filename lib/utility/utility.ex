@@ -81,8 +81,21 @@ defmodule Legl.Utility do
   end
 
   @doc """
+  Receives a path as string and returns atom keyed map
+  """
+  @spec open_and_parse_json_file(binary()) :: map()
+  def open_and_parse_json_file(path) do
+    path
+    |> Path.absname()
+    |> File.read()
+    |> elem(1)
+    |> Jason.decode!(keys: :atoms)
+  end
+
+  @doc """
   Function to save records as .json
   """
+  @spec save_json(list(), binary()) :: :ok
   def save_json(records, path) do
     json = Map.put(%{}, "records", records) |> Jason.encode!(pretty: true)
     save_at_records_to_file(~s/#{json}/, path)

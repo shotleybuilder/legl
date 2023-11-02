@@ -137,9 +137,13 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
     end
   end
 
+  @spec workflow(list(), map()) :: list()
   def workflow(records, opts) do
     {:ok, opts} = Options.setOptions(opts)
-    {:ok, {records, _new_laws}} = enumerate_records(records, opts)
+    {:ok, {records, revoking}} = enumerate_records(records, opts)
+    # Save the new laws to json for later processing
+    path = ~s[lib/legl/countries/uk/legl_register/repeal_revoke/revoke.json]
+    Legl.Utility.save_json(revoking, path)
     records
   end
 
@@ -148,7 +152,6 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
   def enumerate_records(records, opts) do
     # IO.inspect(records, limit: :infinity)
-
     Enum.reduce(records, {[], []}, fn
       #
       # A record returned from Airtable
@@ -183,16 +186,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
       %{Title_EN: title} = record, acc ->
         IO.puts("TITLE_EN: #{title}")
 
-        {result, new_laws} = getRevocations(record, opts)
+        {result, revoking} = getRevocations(record, opts)
 
-        # Save the new laws to json for later processing
-        json_path = ~s[lib/legl/countries/uk/legl_register/repeal_revoke/newlaws.json]
-
-        Map.put(%{}, "records", new_laws)
-        |> Jason.encode!()
-        |> Legl.Utility.save_at_records_to_file(json_path)
-
-        {[Map.merge(record, result) | elem(acc, 0)], [new_laws | elem(acc, 1)]}
+        {[Map.merge(result, record) | elem(acc, 0)], [revoking | elem(acc, 1)]}
     end)
     |> (&{:ok, &1}).()
   end
@@ -706,7 +702,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options do
              sClass: sClass,
              family: family
            }) do
-      IO.puts("OPTIONS: #{inspect(opts)}")
+      if opts.mute? == false, do: IO.puts("OPTIONS: #{inspect(opts)}")
       {:ok, opts}
     else
       {:error, msg} ->
