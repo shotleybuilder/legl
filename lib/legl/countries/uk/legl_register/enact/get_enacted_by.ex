@@ -391,7 +391,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   end
 
   defp get_title(path) do
-    case Legl.Services.LegislationGovUk.Record.legislation(path) do
+    case RecordGeneric.metadata(path) do
       {:ok, :xml, %{title: title}} ->
         {:ok, title}
 

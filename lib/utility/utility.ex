@@ -156,8 +156,17 @@ defmodule Legl.Utility do
     end
   end
 
-  def type_year_number(path) do
-    Regex.run(~r/\/(a-z)*?\/(\d{2})\/(\d{2})/, path)
+  @spec type_number_year(binary()) ::
+          {UK.law_type_code(), UK.law_year(), UK.law_number()} | {:error, :no_match}
+  def type_number_year("/id" <> path) do
+    type_number_year(path)
+  end
+
+  def type_number_year(path) do
+    case Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d+)/, path) do
+      [_match, type, year, number] -> {type, number, year}
+      nil -> {:error, :no_match}
+    end
   end
 
   def split_name(name) do

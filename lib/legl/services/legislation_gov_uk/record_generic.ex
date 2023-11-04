@@ -5,6 +5,38 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
   @extent &Legl.Services.LegislationGovUk.Parsers.ParserExtent.sax_event_handler/2
   @revoke &Legl.Services.LegislationGovUk.Parsers.ParserRevoke.sax_event_handler/2
 
+  def metadata(url) do
+    case Legl.Services.LegislationGovUk.Client.run!(@endpoint <> url) do
+      {:ok, %{:content_type => :xml, :body => body}} ->
+        {:ok, :xml, body.metadata}
+
+      {:ok, %{:content_type => :html}} ->
+        {:ok, :html}
+
+      {:error, code, error} ->
+        # Some older legislation doesn't have .../made/data.xml api
+        case code do
+          # temporary redirect
+          307 ->
+            if String.contains?(url, "made") != true do
+              metadata(String.replace(url, "data.xml", "made/data.xml"))
+            else
+              {:error, code, error}
+            end
+
+          404 ->
+            if String.contains?(url, "/made/") do
+              metadata(String.replace(url, "/made", ""))
+            else
+              {:error, code, error}
+            end
+
+          _ ->
+            {:error, code, error}
+        end
+    end
+  end
+
   @doc """
   Receives url for legislation.gov.uk
 
@@ -83,8 +115,20 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
     ) do
       {:ok, response}
     else
-      :no_records -> :no_records
-      {:error, code, response} -> {:error, code, path, response}
+      :no_records ->
+        {:error, :no_records}
+
+      {:error, 307, msg} ->
+        IO.puts("CODE: 307 - temporary redirect from leg.gov.uk for #{msg}\n#{path}\n")
+        {:error, 307}
+
+      {:error, 404, msg} ->
+        IO.puts("CODE: 404 - no records returned from leg.gov.uk for #{msg}\n#{path}\n")
+        {:error, 404}
+
+      {:error, code, msg} ->
+        IO.puts("CODE: #{code} #{msg}\n#{path}\n")
+        {:error, code}
     end
   end
 end

@@ -26,7 +26,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/new/inc_w_si.json]
   @inc_path ~s[lib/legl/countries/uk/legl_register/new/inc.json]
 
-  @drop_fields ~w[changes_path
+  @drop_fields ~w[affecting_path
+    affected_path
     enacting_laws
     enacting_text
     introductory_text
@@ -727,38 +728,20 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.LegGovUk do
 
       opts = Map.put(opts, :date, ~s<#{opts.year}-#{month}-#{day}>)
 
-      with({:ok, response} <- getLaws(opts)) do
+      with(
+        url = url(opts),
+        :ok = IO.puts("\n#{url}\n [#{__MODULE__}.getLaws]"),
+        {:ok, response} <- LegGovUk.leg_gov_uk_html(url, @client, @parser)
+      ) do
         Enum.reduce(response, acc, fn law, acc2 ->
           Map.put(law, :publication_date, opts.date)
           |> (&[&1 | acc2]).()
         end)
       else
-        {:error, 307} -> acc
-        {:error, 404} -> acc
+        {:error, _} -> acc
       end
     end)
     |> (&{:ok, &1}).()
-  end
-
-  def getLaws(opts) do
-    with(
-      url = url(opts),
-      :ok = IO.puts("\n#{url}\n [#{__MODULE__}.getLaws]"),
-      {:ok, response} <- LegGovUk.leg_gov_uk_html(url, @client, @parser)
-    ) do
-      {:ok, response}
-    else
-      {:error, 307, msg, "Other response code"} ->
-        IO.puts("CODE: 307 - temporary redirect from leg.gov.uk for #{msg}")
-        {:error, 307}
-
-      {:error, 404, msg, _} ->
-        IO.puts("CODE: 404 - no records returned from leg.gov.uk for #{msg}")
-        {:error, 404}
-
-      {:error, msg} ->
-        {:error, msg}
-    end
   end
 
   def url(opts) do

@@ -12,12 +12,28 @@ defmodule UK do
   """
   @type part :: atom
 
+  @typedoc "The Name (unique ID) field of the Legal Register"
+  @type lr_name_field :: String.t()
   @typedoc """
   The type of a piece of legislation.
-
   `:act`, `:regulation`
   """
   @type uk_law_type :: atom
+  @typedoc """
+    law_type_code is one of the three params that uniquely ids UK law
+    e.g. "uksi", "ukpga"
+  """
+  @type law_type_code :: String.t()
+  @typedoc """
+    law_number is one of the three params that uniquely ids UK law
+    e.g. "700"
+  """
+  @type law_number :: String.t()
+  @typedoc """
+    law_year is one of the three params that uniquely ids UK law
+    e.g. 2023
+  """
+  @type law_year :: integer()
 
   @region_regex "U\\.K\\.|E\\+W\\+N\\.I\\.|E\\+W\\+S|E\\+W|S\\+N\\.I\\."
   @country_regex "N\\.I\\.|S|W|E"

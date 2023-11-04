@@ -7,7 +7,6 @@ defmodule Legl.Countries.Uk.UkAmend do
   Where the results-count has all the amendments on a single page and the sort ensures affecting law is grouped
   """
   alias Types.ATLawSchema
-  # alias Legl.Services.LegislationGovUk.Record
   alias Legl.Countries.Uk.LeglRegister.IdField
   alias Legl.Airtable.AirtableTitleField
 

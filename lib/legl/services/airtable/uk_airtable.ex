@@ -6,13 +6,11 @@ defmodule Legl.Services.Airtable.UkAirtable do
     Legl.Countries.Uk.UkExtent.get_records_from_at("UK E", true)
   """
 
-  def get_records_from_at(opts) do
+  def get_records_from_at(%{base_id: _} = opts) do
     with(
-      {:ok, {base_id, table_id}} <-
-        AtBasesTables.get_base_table_id(opts.base_name),
       params = %{
-        base: base_id,
-        table: table_id,
+        base: opts.base_id,
+        table: opts.table_id,
         options: %{
           view: opts.view,
           fields: opts.fields,
@@ -28,6 +26,12 @@ defmodule Legl.Services.Airtable.UkAirtable do
       {:error, error} ->
         IO.inspect(error)
     end
+  end
+
+  def get_records_from_at(%{base_name: base_name} = opts) do
+    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(base_name)
+    opts = Map.merge(opts, %{base_id: base_id, table_id: table_id})
+    get_records_from_at(opts)
   end
 
   def enumerate_at_records({file, records}, func) do

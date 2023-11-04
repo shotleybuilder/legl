@@ -85,7 +85,7 @@ defmodule Legl.Countries.Uk.Metadata do
   ]
 
   alias Legl.Services.Airtable.Records
-  alias Legl.Services.LegislationGovUk.Record
+  alias Legl.Services.LegislationGovUk.RecordGeneric, as: Record
   alias Legl.Services.Airtable.AtBasesTables
 
   alias Legl.Countries.Uk.Metadata.Delta
@@ -299,7 +299,7 @@ defmodule Legl.Countries.Uk.Metadata do
   end
 
   def get_latest_metadata(path) do
-    with({:ok, :xml, metadata} <- Record.legislation(path)) do
+    with({:ok, :xml, metadata} <- Record.metadata(path)) do
       # save the data returned from leg.gov.uk w/o transformation
       json = Map.put(%{}, "records", metadata) |> Jason.encode!()
       Legl.Utility.append_records_to_file(~s/#{json}/, @raw_results_path)
