@@ -292,4 +292,18 @@ defmodule Legl.Utility do
       x -> x
     end
   end
+
+  def map_filter_out_empty_members(records) do
+    Enum.map(records, fn record ->
+      Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
+    end)
+  end
+
+  @spec maps_from_structs([]) :: []
+  def maps_from_structs([]), do: []
+
+  @spec maps_from_structs(list()) :: list()
+  def maps_from_structs(records) when is_list(records) do
+    Enum.map(records, &Map.from_struct(&1))
+  end
 end

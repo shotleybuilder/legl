@@ -279,8 +279,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       {:ok, {inc_w_si, inc_wo_si}} <- Filters.si_code_filter({inc_w_si, inc_wo_si}),
 
       # Filter out laws that are already in the Base
-      {:ok, inc_wo_si} <- Helper.filterDelta(inc_wo_si, opts),
-      {:ok, inc_w_si} <- Helper.filterDelta(inc_w_si, opts),
+      {:ok, inc_wo_si} <- Helper.filter_delta(inc_wo_si, opts),
+      {:ok, inc_w_si} <- Helper.filter_delta(inc_w_si, opts),
       inc_w_si_count = Enum.count(inc_w_si),
       inc_wo_si_count = Enum.count(inc_wo_si),
 

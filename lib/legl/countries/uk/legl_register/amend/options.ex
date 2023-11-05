@@ -34,7 +34,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     # include/exclude AT records holding today's date
     today?: false,
     # patch? only works with :update workflow
-    patch?: false,
+    patch?: true,
     # getting existing field data from Airtable
     view: "VS_CODE_AMENDMENT",
     # saving to csv?
@@ -47,7 +47,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
 
     opts = type_code(opts)
 
-    pts = amendment_checked(opts)
+    opts = amendment_checked(opts)
 
     # workflow options are [:create, :update]
     # :update triggers the update workflow and populates the change log
@@ -142,7 +142,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
   end
 
   def fields(%{workflow: :create} = _opts),
-    do: ["Name", "Title_EN", "type_code", "Year", "Number"]
+    do: ["record_id", "Name", "Title_EN", "type_code", "Year", "Number"]
 
   def fields(%{workflow: :update} = _opts), do: @amended_fields_list
 

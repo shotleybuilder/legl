@@ -1,9 +1,10 @@
 defmodule Legl.Services.Airtable.UkAirtable do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
 
   @doc """
-    Legl.Countries.Uk.UkExtent.get_records_from_at("UK E", true)
+
   """
 
   def get_records_from_at(%{base_id: _} = opts) do
@@ -32,6 +33,20 @@ defmodule Legl.Services.Airtable.UkAirtable do
     {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(base_name)
     opts = Map.merge(opts, %{base_id: base_id, table_id: table_id})
     get_records_from_at(opts)
+  end
+
+  @doc """
+  Receives the records returned from an Airtable GET request
+  Returns a list of maps with :id, :createdtime and :fields members removed
+  """
+  @spec strip_id_and_createdtime_fields(list()) :: list()
+  def strip_id_and_createdtime_fields(records) do
+    Enum.map(records, fn %{fields: fields} = _record -> fields end)
+  end
+
+  @spec make_records_into_legal_register_structs(list()) :: LR.legal_register()
+  def make_records_into_legal_register_structs(records) do
+    Enum.map(records, &Kernel.struct(%LR{}, &1))
   end
 
   def enumerate_at_records({file, records}, func) do

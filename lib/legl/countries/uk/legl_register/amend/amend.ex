@@ -68,32 +68,37 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   def run(opts \\ []) do
     opts = Options.set_options(opts)
 
-    with(
-      {:ok, records} <-
-        AT.get_records_from_at(opts),
-      records =
-        Jason.encode!(records)
-        |> Jason.decode!(keys: :atoms)
-      # |> IO.inspect(label: "CURRENT RECORDS:")
-    ) do
-      results = amendment_bfs({[], records}, opts, 0)
+    {:ok, records} = AT.get_records_from_at(opts)
 
-      # IO.inspect(latest_records, label: "LATEST RECORDS:")
+    records = Jason.encode!(records) |> Jason.decode!(keys: :atoms)
 
-      cond do
-        opts.workflow == :create ->
-          Patch.patch(results, opts)
+    records = AT.strip_id_and_createdtime_fields(records)
 
-        opts.workflow == :update ->
-          Delta.compare(results)
-          # |> IO.inspect()
-          |> Patch.patch(opts)
-      end
+    records = AT.make_records_into_legal_register_structs(records)
+    # |> IO.inspect(label: "CURRENT RECORDS:")
 
-      if opts.csv?, do: Csv.records_to_csv(results)
+    {records, _} = amendment_bfs({[], records}, opts, 0)
+
+    records =
+      Legl.Utility.maps_from_structs(records)
+      |> Legl.Utility.map_filter_out_empty_members()
+
+    # IO.inspect(latest_records, label: "LATEST RECORDS:")
+
+    cond do
+      opts.workflow == :create ->
+        Patch.patch(records, opts)
+
+      opts.workflow == :update ->
+        Delta.compare(records)
+        # |> IO.inspect()
+        |> Patch.patch(opts)
     end
 
-    if(opts.csv?, do: File.close(opts.file))
+    if opts.csv? do
+      Csv.records_to_csv(records)
+      File.close(opts.file)
+    end
   end
 
   @doc """
@@ -118,6 +123,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   def amendment_bfs(data, _, @enumeration_limit), do: data
 
   def amendment_bfs({results, records}, opts, enumeration_limit) do
+    #
     IO.puts("\nEnumeration #{enumeration_limit}")
 
     case Enum.count(records) == 0 do
@@ -142,7 +148,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
               Enum.reduce(records, {results, [], []}, fn
                 record, {acc, cum_amending_laws, cum_amended_laws} ->
                   IO.puts(
-                    "title-> #{record[:Title_EN]} #{record[:Year]} #{record[:type_code]} #{record[:Number]}"
+                    "title-> #{record."Title_EN"} #{record."Year"} #{record.type_code} #{record."Number"}"
                   )
 
                   {record, amending_laws} = AmendedBy.get_laws_amending_this_law(record)
@@ -155,55 +161,35 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
                   }
               end)
 
-            # IO.inspect(nlinks, limit: :infinity)
-            # IO.inspect(nresults, limit: :infinity)
             amending_laws =
-              if amending_laws != [] do
-                # Remove new records (nrecords) that are already in the BASE
-
-                case Legl.Countries.Uk.LeglRegister.Helpers.Create.filterDelta(
-                       amending_laws,
-                       opts
-                     ) do
-                  {:ok, records} ->
-                    records
-
-                  {:error, msg} ->
-                    IO.puts("ERROR: #{msg}\n")
-                    records
-                end
-              end
+              Legl.Utility.maps_from_structs(amending_laws)
+              |> Legl.Utility.map_filter_out_empty_members()
 
             amended_laws =
-              if amended_laws != [] do
-                # Remove new records (nrecords) that are already in the BASE
+              Legl.Utility.maps_from_structs(amended_laws)
+              |> Legl.Utility.map_filter_out_empty_members()
 
-                case Legl.Countries.Uk.LeglRegister.Helpers.Create.filterDelta(
-                       amended_laws,
-                       opts
-                     ) do
-                  {:ok, records} ->
-                    records
+            # IO.inspect(amending_laws, limit: :infinity)
+            # IO.inspect(amended_laws, limit: :infinity)
 
-                  {:error, msg} ->
-                    IO.puts("ERROR: #{msg}\n")
-                    records
-                end
-              end
+            # Remove new records that are already in the BASE
+            # amending_laws = filter(amending_laws, opts)
+
+            # amended_laws = filter(amended_laws, opts)
 
             # Capture details of new laws for the Base in json for later processing
             json_path =
               ~s[lib/legl/countries/uk/legl_register/amend/new_amending_laws_enum#{enumeration_limit - 1}.json]
 
             Map.put(%{}, "records", amending_laws)
-            |> Jason.encode!()
+            |> Jason.encode!(pretty: true)
             |> Legl.Utility.save_at_records_to_file(json_path)
 
             json_path =
               ~s[lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum#{enumeration_limit - 1}.json]
 
             Map.put(%{}, "records", amended_laws)
-            |> Jason.encode!()
+            |> Jason.encode!(pretty: true)
             |> Legl.Utility.save_at_records_to_file(json_path)
 
             # IO.inspect(nlinks, limit: :infinity)
@@ -212,23 +198,40 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         end
     end
   end
+
+  defp filter(records, opts) do
+    case Legl.Countries.Uk.LeglRegister.Helpers.Create.filter_delta(
+           records,
+           opts
+         ) do
+      {:ok, records} ->
+        records
+
+      {:error, msg} ->
+        IO.puts("ERROR: #{msg}\n")
+        records
+    end
+  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
   @api_results_path ~s[lib/legl/countries/uk/legl_register/amend/api_patch_results.json]
   def patch([], _), do: :ok
 
-  def patch(records, opts) do
+  def patch(records, %{patch?: true} = opts) do
     IO.write("PATCH bulk - ")
-    records = clean_records_for_patch(records, opts)
 
-    json = Map.put(%{}, "records", records) |> Jason.encode!()
+    records = Enum.map(records, &clean(&1))
+    IO.write("Records cleaned - ")
+
+    json = Map.put(%{}, "records", records) |> Jason.encode!(pretty: true)
     Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
+    IO.write("Records saved to json - ")
 
     process(records, opts)
   end
 
-  defp process(results, %{patch?: true} = opts) do
+  defp process(results, opts) do
     headers = [{:"Content-Type", "application/json"}]
 
     params = %{
@@ -251,31 +254,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
     end)
   end
 
-  defp process(_, _), do: :ok
-
-  # defp clean_records_for_patch(records, %{workflow: :create} = _opts), do: records
-
-  defp clean_records_for_patch(records, _opts) do
-    Enum.map(records, fn record ->
-      # IO.inspect(record)
-
-      clean(record)
-    end)
-  end
-
-  defp clean(%{fields: %{Amended_by: amended_by} = fields} = record) do
-    Map.drop(fields, [
+  def clean(%{record_id: _} = record) when is_map(record) do
+    record
+    |> Map.drop([
       :Name,
       :Title_EN,
       :Year,
       :Number,
-      :type_code
+      :type_code,
+      :record_id
     ])
-    |> Map.put(:Amended_by, Enum.join(amended_by, ", "))
-    |> (&Map.put(record, :fields, &1)).()
+    |> (&Map.merge(%{id: record.record_id}, %{fields: &1})).()
   end
 
-  defp clean(record), do: record
+  def clean(record), do: record
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Post do
@@ -346,7 +338,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
 
   Generates a amended_by_change_log field to capture the differences
   """
-  alias Legl.Countries.Uk.LeglRegister.Amend
 
   @field_paddings %{
     :Amended_by => 10,
@@ -519,7 +510,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.NewLaw do
   alias Legl.Countries.Uk.LeglRegister.Amend.Post
 
   def new_law?(records, opts) do
-    records = Legl.Countries.Uk.LeglRegister.Helpers.Create.filterDelta(records, opts)
+    records = Legl.Countries.Uk.LeglRegister.Helpers.Create.filter_delta(records, opts)
 
     Enum.each(records, fn record ->
       case ExPrompt.confirm("Save this law to the Base? #{record[Title_EN]}\n#{inspect(record)}") do
@@ -547,11 +538,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.NewLaw do
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Csv do
-  alias Legl.Countries.Uk.LeglRegister.Amend
+  alias Legl.Countries.Uk.LeglRegister.Amend.Options
   @at_csv ~s[lib/legl/countries/uk/legl_register/amend/amended_by.csv] |> Path.absname()
   def openCSVfile() do
     {:ok, file} = @at_csv |> File.open([:utf8, :write])
-    IO.puts(file, Amend.amended_fields())
+    IO.puts(file, Options.amended_fields())
     file
   end
 
@@ -562,7 +553,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Csv do
     |> Enum.uniq()
     # |> (&([@amended_fields | &1])).()
     |> Enum.map(fn x -> Enum.join(x, ",") end)
-    |> (&[Amend.amended_fields() <> "\n" | &1]).()
+    |> (&[Options.amended_fields() <> "\n" | &1]).()
     |> Enum.join("\n")
     |> save_to_csv()
   end

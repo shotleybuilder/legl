@@ -136,9 +136,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
   Laws that are a record in the the Base are removed from the records.
   To create a list of records suitable for a POST request.
   """
-  def filterDelta([], _), do: {:ok, []}
+  @spec filter_delta([], any()) :: {:ok, []}
+  def filter_delta([], _), do: {:ok, []}
 
-  def filterDelta(records, opts) do
+  @spec filter_delta(list(), map()) :: {:ok, list()} | {:error, binary()}
+  def filter_delta(records, opts) do
     with {:ok, records} <- setUrl(records, opts),
          records <- filter(:delta, records) do
       {:ok, records}
@@ -227,7 +229,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
   defp filter(:delta, records) do
     # Loop through the records and GET request the url
     Enum.reduce(records, [], fn record, acc ->
-      with {:ok, body} <- Client.request(:get, record.url, []),
+      with :ok = IO.puts(~s/BASE check for #{record."Title_EN"}/),
+           {:ok, body} <- Client.request(:get, record.url, []),
            %{records: values} <- Jason.decode!(body, keys: :atoms) do
         # IO.puts("VALUES: #{inspect(values)}")
 

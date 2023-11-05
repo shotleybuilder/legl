@@ -5,6 +5,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           Name: String.t(),
 
           # id fields
+          record_id: String.t(),
           Title_EN: String.t(),
           type_code: String.t(),
           Number: String.t(),
@@ -74,6 +75,8 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
   defstruct ~w[
     Name
+
+    record_id
     Title_EN
     type_code
     Number

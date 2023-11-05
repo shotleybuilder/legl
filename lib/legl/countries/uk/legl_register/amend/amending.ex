@@ -26,15 +26,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
   def get_laws_amended_by_this_law(record) do
     # call to legislation.gov.uk to get the laws that have amended this
     {:ok, stats, affected} = affecting(record)
-    record = Map.merge(record, update_record(stats))
+    record = Kernel.struct(record, update_record(stats))
     # Merge with the LegalRegister struct removes all scaffolding members
     affected = convert_amend_structs_to_legal_register_structs(affected)
+
     {record, affected}
+    # |> IO.inspect()
   end
 
-  @spec update_record(AmendmentStats.stats()) :: LegalRegister
+  @spec update_record(AmendmentStats.stats()) :: map()
   defp update_record(stats) do
-    %LegalRegister{
+    %{
       # amendments_checked: ~s/#{Date.utc_today()}/,
       Amending: stats.links,
       stats_amendings_count: stats.amendments,
@@ -53,23 +55,27 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
 
   @spec affecting(map()) :: Stats.AmendmentStats
   def affecting(record) do
-    with(
-      url = Url.affecting_path(record),
-      {:ok, response} <- LegGovUk.leg_gov_uk_html(url, @client, @parser),
-      records =
-        case response do
-          [{"tbody", _, records}] -> records
-          [] -> []
-        end
-    ) do
-      # |> IO.inspect(limit: :infinity)
-      records = parse_laws_affected(records)
-      Stats.amendment_stats(records)
-    else
-      # amendments_table_records(url, [])
-      {:error, :no_records} -> {:error, :no_records}
-      {:error, _} -> {:ok, nil, []}
-    end
+    url = Url.affecting_path(record)
+
+    records =
+      case LegGovUk.leg_gov_uk_html(url, @client, @parser) do
+        {:ok, response} ->
+          case response do
+            [{"tbody", _, records}] -> records
+            [] -> []
+          end
+
+        {:error, :no_records} ->
+          []
+
+        {:error, msg} ->
+          IO.puts("ERROR: #{msg}")
+          []
+      end
+
+    # IO.inspect(records, limit: :infinity)
+    records = parse_laws_affected(records)
+    Stats.amendment_stats(records)
   end
 
   def parse_laws_affected([]), do: []
@@ -119,8 +125,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
         {type_code, number, year} = Legl.Utility.type_number_year(path)
         [path, year, number, type_code | acc]
 
-      {2, {"td", _, [target]}}, acc ->
-        [target | acc]
+      {2, {"td", _, content}}, acc ->
+        # IO.inspect(content, label: "CONTENT: ")
+
+        Enum.map(content, fn
+          {"a", [{"href", _}, [v1]], [v2]} -> ~s/#{v1} #{v2}/
+          {"a", [{"href", _}], [v]} -> v
+          {"a", [{"href", _}], []} -> ""
+          [v] -> v
+          v when is_binary(v) -> v
+        end)
+        # |> IO.inspect(label: "AT: ")
+        |> Enum.join(" ")
+        |> String.trim()
+        |> (&[&1 | acc]).()
 
       {3, {"td", _, [affect]}}, acc ->
         [affect | acc]
@@ -134,8 +152,22 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
       {6, _cell}, acc ->
         acc
 
-      {7, {"td", _, [applied?]}}, acc ->
-        [applied? | acc]
+      {7, {"td", _, content}}, acc ->
+        # IO.inspect(content, label: "CONTENT: ")
+
+        Enum.map(content, fn
+          {"a", [{"href", _}, [v1]], [v2]} -> ~s/#{v1} #{v2}/
+          {"a", [{"href", _}], [v]} -> v
+          {"a", [{"href", _}], []} -> ""
+          {"span", _, [v]} -> v
+          [v] -> v
+          [] -> ""
+          v when is_binary(v) -> v
+        end)
+        # |> IO.inspect(label: "AT: ")
+        |> Enum.join(" ")
+        |> String.trim()
+        |> (&[&1 | acc]).()
 
       {8, {"td", _, note}}, acc ->
         [note | acc]

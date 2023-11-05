@@ -5,6 +5,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
   """
   alias Legl.Countries.Uk.LeglRegister.IdField
   alias Legl.Countries.Uk.LeglRegister.Amend
+  alias Legl.Countries.Uk.LeglRegister.Amend.Stats.AmendmentStats
 
   defmodule AmendmentStats do
     @type stats :: %__MODULE__{
@@ -15,10 +16,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
             counts: String.t(),
             counts_detailed: String.t()
           }
-    defstruct ~w[links self laws amendments counts counts_detailed]a
+    defstruct links: "", self: 0, laws: 0, amendments: 0, counts: "", counts_detailed: ""
   end
 
-  @spec amendment_stats(list()) :: {AmendmentStats.stats(), list()}
+  @doc """
+  Receives a list of Amended or Amending Laws
+
+  Returns the %AmendmentStats{}, and a list of the unique Amended / Amending
+  Laws
+  """
+
+  @spec amendment_stats([]) :: {:ok, AmendmentStats.stats(), list()}
+  def amendment_stats([]), do: {:ok, %AmendmentStats{}, []}
+
+  @spec amendment_stats(list()) :: {:ok, AmendmentStats.stats(), list()}
   def amendment_stats(records) do
     # Total number of amendments made by or made to a law
     stats =
@@ -54,7 +65,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
   end
 
   @spec count_self_amendments(list()) :: integer()
-  def count_self_amendments(records) do
+  defp count_self_amendments(records) do
     Enum.reduce(records, 0, fn
       [title, amending_title, _, _, _, _, _] = _affected, acc ->
         if title == amending_title do
@@ -132,30 +143,34 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     # |> IO.inspect(label: "uniq")
   end
 
-  def counts(records) do
+  defp counts(records) do
     Enum.map(records, fn record ->
       ~s[#{record."Name"} - #{record.affect_count}💚️https://legislation.gov.uk#{record.path}]
     end)
-    |> Enum.sort()
+    |> Enum.sort(:desc)
     |> Enum.join("💚️💚️")
   end
 
-  def links(records) do
+  defp links(records) do
     Enum.map(records, fn record ->
       record."Name"
     end)
-    |> Enum.sort()
+    |> Enum.sort_by(
+      &{Regex.run(~r/\d{4}/, &1),
+       Regex.run(~r/UK_[a-z]*_\d{4}_(.*)_/, &1, capture: :all_but_first)},
+      :desc
+    )
     |> Enum.join(",")
   end
 
-  def counts_detailed(records) do
+  defp counts_detailed(records) do
     Enum.map(records, fn record ->
-      detail = Enum.join(record.target_affect_applied?, "💚️")
+      detail = Enum.join(record.target_affect_applied?, "💚️ ")
       url = ~s[https://legislation.gov.uk#{record.path}]
 
       ~s[#{record."Name"} - #{record.affect_count}💚️#{url}💚️ #{detail}]
     end)
-    |> Enum.sort()
+    |> Enum.sort(:desc)
     |> Enum.join("💚️💚️")
   end
 end

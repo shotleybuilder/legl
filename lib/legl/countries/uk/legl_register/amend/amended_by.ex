@@ -24,14 +24,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
   def get_laws_amending_this_law(record) do
     # call to legislation.gov.uk to get the laws that have amended this
     {:ok, stats, affecting} = affected(record)
-    record = Map.merge(record, update_record(stats))
+    record = Kernel.struct(record, update_record(stats))
     affecting = convert_amend_structs_to_legal_register_structs(affecting)
+
     {record, affecting}
+    # |> IO.inspect()
   end
 
-  @spec update_record(AmendmentStats.stats()) :: LegalRegister
+  @spec update_record(AmendmentStats.stats()) :: map()
   defp update_record(stats) do
-    %LegalRegister{
+    %{
       # amendments_checked: ~s/#{Date.utc_today()}/,
       Amended_by: stats.links,
       # leg_gov_uk_updates: "",
@@ -51,24 +53,29 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
 
   @spec affected(map()) :: Stats.AmendmentStats
   def affected(record) do
-    with(
-      url = Url.affected_path(record),
-      {:ok, response} <- LegGovUk.leg_gov_uk_html(url, @client, @parser),
-      records =
-        case response do
-          [{"tbody", _, records}] -> records
-          [] -> []
-        end
-    ) do
-      records = parse_laws_affecting(records)
-      Stats.amendment_stats(records)
-    else
-      {:error, :no_records} -> {:error, :no_records}
-      {:error, _} -> {:ok, nil, []}
-    end
+    url = Url.affected_path(record)
+
+    records =
+      case LegGovUk.leg_gov_uk_html(url, @client, @parser) do
+        {:ok, response} ->
+          case response do
+            [{"tbody", _, records}] -> records
+            [] -> []
+          end
+
+        {:error, :no_records} ->
+          []
+
+        {:error, msg} ->
+          IO.puts("ERROR: #{msg}")
+          []
+      end
+
+    records = parse_laws_affecting(records)
+    Stats.amendment_stats(records)
   end
 
-  @spec parse_laws_affecting(list()) :: []
+  @spec parse_laws_affecting([]) :: []
   def parse_laws_affecting([]), do: []
 
   @spec parse_laws_affecting(list()) :: [%__MODULE__{}]
@@ -114,12 +121,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
         acc
 
       {2, {"td", _, targets}}, acc when is_list(targets) ->
-        Enum.reduce(targets, [], fn
-          {_, _, [target]}, accum ->
-            [target | accum]
-
-          "-", accum ->
-            ["-" | accum]
+        Enum.map(targets, fn
+          {_, _, [target]} -> target
+          v when is_binary(v) -> v
         end)
         |> Enum.reverse()
         |> Enum.join(" ")
