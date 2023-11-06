@@ -101,6 +101,14 @@ defmodule Legl.Utility do
     save_at_records_to_file(~s/#{json}/, path)
   end
 
+  @spec save_structs_as_json(list(), binary()) :: :ok
+  def save_structs_as_json(records, path) do
+    maps_from_structs(records)
+    |> (&Map.put(%{}, "records", &1)).()
+    |> Jason.encode!(pretty: true)
+    |> save_at_records_to_file(path)
+  end
+
   @doc """
 
   """
@@ -304,6 +312,9 @@ defmodule Legl.Utility do
 
   @spec maps_from_structs(list()) :: list()
   def maps_from_structs(records) when is_list(records) do
-    Enum.map(records, &Map.from_struct(&1))
+    Enum.map(records, fn
+      record when is_struct(record) -> Map.from_struct(record)
+      record when is_map(record) -> record
+    end)
   end
 end

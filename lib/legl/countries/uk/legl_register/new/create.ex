@@ -8,16 +8,31 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
   alias Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy
   alias Legl.Countries.Uk.LeglRegister.Amend
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke, as: RR
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
 
   def run(records, opts) do
-    with records = setTypeClass(records),
-         records = setTags(records),
-         records = setMetadata(records),
-         records = setExtent(records),
-         records = setEnactedBy(records, opts),
-         records = setAmendedBy(records, opts),
-         setRevokedBy(records, opts) do
+    with records = set_type_class(records),
+         records = set_tags(records),
+         records = set_metadata(records),
+         records = set_extent(records),
+         records = set_enacted_by(records, opts),
+         records = set_amended_by(records, opts),
+         set_revoked_by(records, opts) do
     end
+  end
+
+  @spec set_year(list(LR.legal_register())) :: list(LR.legal_register())
+  def set_year(records) do
+    Enum.map(records, fn
+      %_{Year: year} = record ->
+        cond do
+          is_integer(year) ->
+            record
+
+          is_binary(year) ->
+            Map.put(record, :Year, String.to_integer(year))
+        end
+    end)
   end
 
   @doc """
@@ -30,22 +45,28 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
     end)
   end
 
-  def setName(records) do
-    Enum.map(records, fn record ->
-      Legl.Countries.Uk.LeglRegister.IdField.id(record)
-      |> (&Map.put_new(record, :Name, &1)).()
+  @spec set_name(list(LR.legal_register())) :: list(LR.legal_register())
+  def set_name(records) do
+    Enum.map(records, fn
+      %_{Name: nil} = record ->
+        Legl.Countries.Uk.LeglRegister.IdField.id(record)
+        |> (&Map.put(record, :Name, &1)).()
+
+      record ->
+        record
     end)
   end
 
   @doc """
   Function to set the value of the type_class field in the Legal Register
   """
-  def setTypeClass(records) do
+  @spec set_type_class(list(LR.legal_register())) :: list(LR.legal_register())
+  def set_type_class(records) do
     Enum.map(
       records,
       fn
         # :type_class is already set
-        %{type_class: type_class} = record
+        %_{type_class: type_class} = record
         when type_class in [
                "Act",
                "Regulation",
@@ -58,7 +79,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
           record
 
         # set :type_class using :Title_EN
-        %{Title_EN: title} = record ->
+        %_{Title_EN: title} = record when title != nil ->
           type_class =
             cond do
               Regex.match?(~r/Act[ ]?$|Act[ ]\(Northern Ireland\)[ ]?$/, title) ->
@@ -99,13 +120,13 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
               record
 
             _ ->
-              Map.put_new(record, :type_class, type_class)
+              Map.put(record, :type_class, type_class)
           end
 
         # Pass through the record w/o setting :type_class if :Title_EN absent
         record ->
           IO.puts(
-            "\nERROR: Record does not have a :Title_EN field\ntype_class cannot be set\n#{inspect(record)}"
+            "\nERROR: Record does not have a valid :Title_EN field\ntype_class cannot be set\n#{inspect(record)}"
           )
 
           record
@@ -116,60 +137,62 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
   @doc """
   Function to set the value of the type field in the Legal Register
   """
-  def setType(records) do
-    Enum.map(records, fn %{type_code: type_code} = record ->
-      type =
-        case type_code do
-          "ukpga" ->
-            "Public General Act of the United Kingdom Parliament"
+  @spec set_type(list(LR.legal_register())) :: list(LR.legal_register())
+  def set_type(records) do
+    Enum.map(records, fn
+      %_{type_code: type_code} = record when type_code != nil ->
+        type =
+          case type_code do
+            "ukpga" ->
+              "Public General Act of the United Kingdom Parliament"
 
-          "uksi" ->
-            "UK Statutory Instrument"
+            "uksi" ->
+              "UK Statutory Instrument"
 
-          # SCOTLAND
-          "asp" ->
-            "Act of the Scottish Parliament"
+            # SCOTLAND
+            "asp" ->
+              "Act of the Scottish Parliament"
 
-          "ssi" ->
-            "Scottish Statutory Instrument"
+            "ssi" ->
+              "Scottish Statutory Instrument"
 
-          # NORTHERN IRELAND
-          "nisr" ->
-            "Northern Ireland Statutory Rule"
+            # NORTHERN IRELAND
+            "nisr" ->
+              "Northern Ireland Statutory Rule"
 
-          "nisi" ->
-            "Northern Ireland Order in Council 1972-date"
+            "nisi" ->
+              "Northern Ireland Order in Council 1972-date"
 
-          # WALES
-          "wsi" ->
-            "Wales Statutory Instrument 2018-date"
+            # WALES
+            "wsi" ->
+              "Wales Statutory Instrument 2018-date"
 
-          "mwa" ->
-            "Measure of the National Assembly for Wales 2008-2011"
+            "mwa" ->
+              "Measure of the National Assembly for Wales 2008-2011"
 
-          _ ->
-            nil
-        end
+            _ ->
+              nil
+          end
 
-      Map.put_new(record, :Type, type)
+        Map.put(record, :Type, type)
     end)
   end
 
   @doc """
   Function to set the value of the Tags field in the Legal Register
   """
-  @spec setTags(list()) :: list()
-  def setTags(records) do
+  @spec set_tags(list(LR.legal_register())) :: list(LR.legal_register())
+  def set_tags(records) do
     Enum.map(records, fn
       # Accumulate any record with a :Tags key containing a non-empty list
-      %{Tags: [_, _]} = record ->
+      %_{Tags: [_, _]} = record ->
         record
 
-      %{Title_EN: title} = record ->
+      %_{Title_EN: title} = record ->
         title
         |> tags()
         # New :Tags key and save Map into accumulator
-        |> (&Map.put_new(record, :Tags, &1)).()
+        |> (&Map.put(record, :Tags, &1)).()
 
       # |> (&[&1 | acc]).()
 
@@ -183,7 +206,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
     end)
   end
 
-  def tags(title) do
+  defp tags(title) do
     title
     |> String.trim()
     # Emulate the Airtable name_downcase formula field
@@ -251,28 +274,35 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
     md_change_log
     title
   """
-  @spec setMetadata(list()) :: list()
-  def setMetadata(records) do
-    Enum.map(records, fn record ->
-      url = Url.introduction_path(record)
-      {:ok, metadata} = MD.get_latest_metadata(url)
+  @spec set_metadata(list(LR.legal_register())) :: list(LR.legal_register())
+  def set_metadata(records) do
+    Enum.map(
+      records,
+      fn %_{} = record ->
+        url = Url.introduction_path(record)
+        {:ok, metadata} = MD.get_latest_metadata(url)
 
-      title = metadata[:title]
+        record =
+          if metadata.title != record."Title_EN",
+            do: Map.put(record, :Title_EN, metadata.title),
+            else: record
 
-      Map.drop(metadata, [:si_code, :pdf_href, :md_modified_csv, :md_subjects_csv, :title])
-      |> Map.put_new(:Title_EN, title)
-      |> Map.merge(record)
-    end)
+        metadata =
+          Map.drop(metadata, [:si_code, :pdf_href, :md_modified_csv, :md_subjects_csv, :title])
+
+        Kernel.struct(record, metadata)
+      end
+    )
   end
 
   @doc """
   Function to set the Extent fields: 'Geo_Pan_Region', 'Geo_Region' and 'Geo_Extent'
   in the Legal Register
   """
-  @spec setExtent(list()) :: list()
-  def setExtent(records) do
+  @spec set_extent(list(LR.legal_register())) :: list(LR.legal_register())
+  def set_extent(records) do
     Enum.map(records, fn
-      %{Number: number, type_code: type_code, Year: year} = record
+      %_{Number: number, type_code: type_code, Year: year} = record
       when is_binary(number) and is_binary(type_code) and is_integer(year) ->
         path = Url.contents_xml_path(record)
 
@@ -285,31 +315,31 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
            }} <- Extent.extent_transformation(data),
           geo_pan_region = geo_pan_region(geo_region)
         ) do
-          Map.merge(
+          Kernel.struct(
+            record,
             %{
               Geo_Parent: "United Kingdom",
               Geo_Pan_Region: geo_pan_region,
               Geo_Region: geo_region,
               Geo_Extent: geo_extent
-            },
-            record
+            }
           )
 
           # |> IO.inspect(label: "EXTENT: ")
         else
           {:no_data, []} ->
-            IO.puts("NO DATA: No Extent data returned from legislation.gov.uk\n Check manually")
+            IO.puts("\nNO DATA: No Extent data returned from legislation.gov.uk\n Check manually")
             record
 
           {:error, msg} ->
-            IO.puts("ERROR: #{msg}\nProcessing Extents for:\n#{inspect(record[:Title_EN])}\n")
+            IO.puts("\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record[:Title_EN])}\n")
             record
         end
 
       # Pass through the record w/o setting Extent if :Number, :type_code, :Year absent
       record ->
         IO.puts(
-          "ERROR: Record does not have required fields\n:Extents key cannot be set\n#{inspect(record)}"
+          "\nERROR: Record does not have required fields\n:Extents key cannot be set\n#{inspect(record)}"
         )
 
         record
@@ -342,11 +372,9 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
   @doc """
   Function to set the 'Enacted_by' field
   """
-  @spec setEnactedBy(list(), map()) :: list()
-  def setEnactedBy(records, opts) do
-    {:ok, records, enacting_laws} =
-      records
-      |> GetEnactedBy.get_enacting_laws(opts)
+  @spec set_enacted_by(list(LR.legal_register()), map()) :: list(LR.legal_register())
+  def set_enacted_by(records, opts) do
+    {:ok, records, enacting_laws} = GetEnactedBy.get_enacting_laws(records, opts)
 
     # Save the Enacting Laws to file for later processing as NEW LAWs
     :ok = Legl.Utility.save_json(enacting_laws, @enacting)
@@ -360,8 +388,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
   @doc """
   Function to set the 'Amended_by' field
   """
-  @spec setAmendedBy(list(), map()) :: list()
-  def setAmendedBy(records, opts) do
+  @spec set_amended_by(list(LR.legal_register()), map()) :: list(LR.legal_register())
+  def set_amended_by(records, opts) do
     Amend.workflow(records, opts)
     # |> IO.inspect(label: "AMENDED: ")
   end
@@ -369,8 +397,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Create do
   @doc """
   Function to set the 'Live?_checked', 'Live?', 'Live?_description', 'Revoked_by' fields of the Legal Register
   """
-  @spec setRevokedBy(list(), map()) :: list()
-  def setRevokedBy(records, opts) do
+  @spec set_revoked_by(list(LR.legal_register()), map()) :: list(LR.legal_register())
+  def set_revoked_by(records, opts) do
     RR.workflow(records, opts)
     # |> IO.inspect(label: "REVOKED: ")
   end

@@ -229,17 +229,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
   defp filter(:delta, records) do
     # Loop through the records and GET request the url
     Enum.reduce(records, [], fn record, acc ->
-      with :ok = IO.puts(~s/BASE check for #{record."Title_EN"}/),
+      with :ok = IO.write(~s/BASE check for #{record."Title_EN"}/),
            {:ok, body} <- Client.request(:get, record.url, []),
            %{records: values} <- Jason.decode!(body, keys: :atoms) do
         # IO.puts("VALUES: #{inspect(values)}")
 
         case values do
           [] ->
+            IO.puts(" - is not in the Base")
+
             Map.drop(record, [:url])
             |> (&[&1 | acc]).()
 
           _ ->
+            IO.puts(" - is in the Base")
             acc
         end
       else

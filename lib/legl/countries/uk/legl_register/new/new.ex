@@ -3,12 +3,13 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   Module to obtain new laws from legislation.gov.uk and POST to Airtable
 
   """
-  alias Legl.Services.Airtable.AtBasesTables
 
-  alias Legl.Countries.Uk.LeglRegister.New.New.Options
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
+
+  alias Legl.Countries.Uk.LeglRegister.New.Options
   alias Legl.Countries.Uk.LeglRegister.New.New.Airtable
   alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
-  alias Legl.Countries.Uk.LeglRegister.New.New.Filters
+  alias Legl.Countries.Uk.LeglRegister.New.Filters
   alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
 
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
@@ -61,7 +62,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         false ->
           record = update_empty_law_fields(record, @inc_path, opts)
 
-          case ExPrompt.confirm("Save #{record[:Title_EN]}?") do
+          case ExPrompt.confirm("Save #{record."Title_EN"}?") do
             true ->
               Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(record, opts)
 
@@ -85,7 +86,43 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   end
 
   @doc """
-  Receives list of options and PATCHes or POSTs a inc.json Legal Register record to the BASE
+  Function to PATCH or POST to Airtable bare new law records These records might
+  have the minimal :type_code, :Number, :Year and all other fields need to be
+  populated
+  """
+  def create_from_bare_file(opts \\ [csv?: false, mute?: true]) do
+    opts =
+      Enum.into(opts, %{})
+      |> Options.base_name()
+      |> Options.base_table_id()
+      |> Options.source()
+      |> Map.merge(%{
+        api_patch_path: @api_patch_path,
+        api_post_path: @api_post_path
+      })
+
+    %{records: records} =
+      cond do
+        # Process laws saved in .json having processed amending or amended laws
+        {:amend, path} = opts.source ->
+          path |> File.read!() |> Jason.decode!(keys: :atoms)
+      end
+
+    {:ok, w_si_code, wo_si_code, exc} =
+      Enum.map(records, &Kernel.struct(%LR{}, &1))
+      |> workflow(opts)
+
+    save({w_si_code, wo_si_code, exc}, opts)
+  end
+
+  @doc """
+  Function to PATCH or POST to Airtable fully formed new law records stored in
+  "inc.json"
+
+  Receives list of options
+
+  Returns :ok after successful post
+
   Run as UK.create_from_file()
   """
   def create_from_file(opts \\ [csv?: false, mute?: true]) do
@@ -137,21 +174,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
             records
         end,
       # IO.inspect(exc),
-      :ok <-
-        Enum.each(w_si_code, fn record ->
-          case ExPrompt.confirm("SAVE to BASE?: #{record[:Title_EN]} #{record[:"SI Code"]}") do
-            true -> save([record], opts)
-            _ -> nil
-          end
-        end),
-      :ok <-
-        Enum.each(wo_si_code, fn record ->
-          case ExPrompt.confirm("SAVE to BASE?: #{record[:Title_EN]}") do
-            true -> save([record], opts)
-            _ -> nil
-          end
-        end),
-      :ok <- save_exc(exc, opts),
+      :ok = save({w_si_code, wo_si_code, exc}, opts),
 
       # Check off in the Publication Date table to keep a tab of what's been done
       :ok <- PDT.field_checked?(opts)
@@ -167,10 +190,116 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     end
   end
 
-  defp save(records, opts) do
+  @doc """
+  Function to save laws in 'inc_w_si.json' and 'inc_wo_si.json' that have had
+  all fields completed
+  """
+  @spec save_from_full_file(list()) :: :ok
+  def save_from_full_file(opts \\ []) do
+    opts =
+      Enum.into(opts, %{})
+      |> Options.base_name()
+      |> Options.base_table_id()
+      |> Options.source()
+      |> Map.merge(%{
+        api_patch_path: @api_patch_path,
+        api_post_path: @api_post_path
+      })
+
+    paths =
+      case opts.source do
+        :si_code ->
+          [@inc_w_si_path]
+
+        :x_si_code ->
+          [@inc_wo_si_path]
+
+        :both ->
+          [@inc_w_si_path, @inc_wo_si_path]
+
+        _ ->
+          IO.puts("ERROR: wrong source option chosen")
+          []
+      end
+
+    records =
+      Enum.reduce(paths, [], fn
+        path, acc ->
+          Legl.Utility.open_and_parse_json_file(path)
+          |> Map.get(:records)
+          |> (&[&1 | acc]).()
+      end)
+      |> List.flatten()
+
+    Enum.each(records, &IO.puts("#{&1."Title_EN"} #{&1."Year"}"))
+
+    Enum.each(records, fn
+      %{Title_EN: title, si_code: si_code} = record when si_code != nil ->
+        case ExPrompt.confirm("SAVE to BASE?: #{title} #{record."Year"} #{si_code}") do
+          true -> save([record], opts)
+          _ -> nil
+        end
+
+      %{Title_EN: title} = record ->
+        case ExPrompt.confirm("SAVE to BASE?: #{title}") do
+          true -> save([record], opts)
+          _ -> nil
+        end
+    end)
+  end
+
+  def save({w_si_code, wo_si_code, exc}, opts) do
+    with(
+      :ok <-
+        Enum.each(w_si_code, fn record ->
+          case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"} #{record.si_code}") do
+            true -> save([record], opts)
+            _ -> nil
+          end
+        end),
+      :ok <-
+        Enum.each(wo_si_code, fn record ->
+          case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"}") do
+            true -> save([record], opts)
+            _ -> nil
+          end
+        end),
+      :ok <- save_exc(exc, opts)
+    ) do
+      :ok
+    else
+      {:error, msg} ->
+        IO.puts("ERROR: #{msg}")
+    end
+  end
+
+  def save(records, opts) do
+    records =
+      Legl.Utility.maps_from_structs(records)
+      |> Legl.Utility.map_filter_out_empty_members()
+
     IO.puts("#{Enum.count(records)} to be POSTed to Airtable\n")
+
     opts = Map.merge(opts, %{drop_fields: @drop_fields, api_post_path: @api_post_path})
     Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(records, opts)
+  end
+
+  @doc """
+   Function to save to Airtable bare laws stored in exc.json
+  """
+  def save_bare_excluded(opts \\ [csv?: false, mute?: true]) do
+    opts =
+      Enum.into(opts, %{})
+      |> Options.base_name()
+      |> Options.base_table_id()
+      |> Map.merge(%{
+        api_patch_path: @api_patch_path,
+        api_post_path: @api_post_path
+      })
+
+    %{records: records} = @exc_path |> File.read!() |> Jason.decode!(keys: :atoms)
+
+    save_exc(records, opts)
   end
 
   defp save_exc(records, opts) do
@@ -180,9 +309,10 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         :ok
 
       id ->
-        IO.inspect(records, label: "EXC RECORDS: ")
+        # IO.inspect(records, label: "EXC RECORDS: ")
 
         Map.get(records, :"#{id}")
+        |> (&Kernel.struct(%LR{}, &1)).()
         |> (&[&1 | []]).()
         |> IO.inspect(label: "RECORD: ")
         |> complete_new_law_fields(@inc_path, opts)
@@ -241,22 +371,39 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   @doc """
   Function to create a new law record for a Legal Register Base
+
+  Source can
   """
   def workflow(%{source: :web} = opts) do
     with(
       {:ok, records} <- LegGovUk.getNewLaws(opts.days, opts),
-      :ok = Legl.Utility.save_json(records, @source),
+      :ok = Legl.Utility.save_json(records, @source)
+    ) do
+      workflow(records, opts)
+    else
+      {:no_data, opts} -> {:no_data, opts}
+      {:error, msg} -> {:error, msg}
+    end
+  end
 
+  def workflow(records, opts) when is_list(records) do
+    with(
+      :ok = IO.puts("# PRE_FILTERED RECORDS: #{Enum.count(records)}"),
       # Filter each Law record based on terms in Title_EN
       {:ok, {inc, exc}} <- Filters.terms_filter(records, opts),
-      :ok = IO.puts("# RECORDS: #{Enum.count(records)}"),
+      :ok = IO.puts("Terms inside Title Filter"),
       :ok = IO.puts("# INCLUDED RECORDS: #{Enum.count(inc)}"),
       :ok = IO.puts("# EXCLUDED RECORDS: #{Enum.count(exc)}"),
-
+      # IO.inspect(inc, label: "inc"),
+      # IO.inspect(exc, label: "exc"),
       # Save Included records to file
-      :ok = Legl.Utility.save_json(inc, @inc_path),
+      :ok =
+        Legl.Utility.maps_from_structs(inc)
+        |> Legl.Utility.save_json(@inc_path),
       # Save an indexed Excluded records .json
-      exc = index_exc(exc),
+      exc =
+        Legl.Utility.maps_from_structs(exc)
+        |> index_exc(),
       :ok = Legl.Utility.save_json(exc, @exc_path),
 
       # Let's stop further workflow if we have filtered out all the records
@@ -276,7 +423,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       # 1. inc_w_si -> w/ SI Code and Term match
       # 2. inc_wo_si -> w/ only Term match
       # 3. ex -> neither SI Code or Term match
-      {:ok, {inc_w_si, inc_wo_si}} <- Filters.si_code_filter({inc_w_si, inc_wo_si}),
+      {:ok, {inc_w_si, inc_wo_si}} <-
+        Filters.si_code_filter({inc_w_si, inc_wo_si}),
 
       # Filter out laws that are already in the Base
       {:ok, inc_wo_si} <- Helper.filter_delta(inc_wo_si, opts),
@@ -284,11 +432,15 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       inc_w_si_count = Enum.count(inc_w_si),
       inc_wo_si_count = Enum.count(inc_wo_si),
 
-      # Save the results to 3x .json files for manual QA
+      # Save the results to 2x .json files for manual QA
       :ok = IO.puts("# W/O SI CODE RECORDS: #{inc_w_si_count}"),
-      :ok = Legl.Utility.save_json(inc_wo_si, @inc_wo_si_path),
+      :ok =
+        Legl.Utility.maps_from_structs(inc_wo_si)
+        |> Legl.Utility.save_json(@inc_wo_si_path),
       :ok = IO.puts("# W/ SI CODE RECORDS: #{inc_wo_si_count}"),
-      :ok = Legl.Utility.save_json(inc_w_si, @inc_w_si_path)
+      :ok =
+        Legl.Utility.maps_from_structs(inc_w_si)
+        |> Legl.Utility.save_json(@inc_w_si_path)
     ) do
       # Returns a tuple
       inc_w_si =
@@ -318,7 +470,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     end
   end
 
-  def workflow(%{source: :both} = opts) do
+  def complete(%{source: :both} = opts) do
     %{records: inc_w_si} = @inc_w_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
     %{records: inc_wo_si} = @inc_wo_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
 
@@ -327,14 +479,14 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       |> complete_new_law_fields(@inc_path, opts)
   end
 
-  def workflow(%{source: :si_coded} = opts) do
+  def complete(%{source: :si_coded} = opts) do
     # Open previously saved records from file
     %{records: records} = @inc_w_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
 
     complete_new_law_fields(records, @inc_path, opts)
   end
 
-  def workflow(%{source: :si_uncoded} = opts) do
+  def complete(%{source: :si_uncoded} = opts) do
     # Open previously saved records from file
     %{records: records} = @inc_wo_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
 
@@ -354,55 +506,55 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     with(
       # Metadata fields
       IO.write("METADATA"),
-      records = Create.setMetadata(records),
+      records = Create.set_metadata(records),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # type_class field
       IO.write("TYPE CLASS"),
-      records = Create.setTypeClass(records),
+      records = Create.set_type_class(records),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # Type field
       IO.write("TYPE"),
-      records = Create.setType(records),
+      records = Create.set_type(records),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # Tags field
       IO.write("TAGS"),
-      records = Create.setTags(records),
+      records = Create.set_tags(records),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # Name field
       IO.write("NAME"),
-      records = Create.setName(records),
+      records = Create.set_name(records),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # Extent fields
       IO.write("EXTENT"),
-      records = Create.setExtent(records),
+      records = Create.set_extent(records),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # Enacted by fields
       IO.puts("ENACTED BY"),
-      records = Create.setEnactedBy(records, opts),
+      records = Create.set_enacted_by(records, opts),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # Amended by fields
       IO.puts("AMENDED BY"),
-      records = Create.setAmendedBy(records, opts),
+      records = Create.set_amended_by(records, opts),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete"),
 
       # Revoked by fields
       IO.puts("REVOKED BY"),
-      records = Create.setRevokedBy(records, opts),
+      records = Create.set_revoked_by(records, opts),
       :ok = Legl.Utility.save_json(records, path),
       IO.puts("...complete")
     ) do
@@ -413,64 +565,72 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   def complete_new_law_fields(records, path, opts) do
     with(
-      # Publication Date field
-      IO.write("PUBLICATION DATE"),
-      records = Create.setPublicationDateLink(records, opts),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Name field
-      IO.write("NAME"),
-      records = Create.setName(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # type_class field
-      IO.write("TYPE CLASS"),
-      records = Create.setTypeClass(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Type field
-      IO.write("TYPE"),
-      records = Create.setType(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Tags field
-      IO.write("TAGS"),
-      records = Create.setTags(records),
-      :ok = Legl.Utility.save_json(records, path),
+      # Year field
+      IO.write("YEAR"),
+      records = Create.set_year(records),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
       IO.puts("...complete"),
 
       # Metadata fields
       IO.write("METADATA"),
-      records = Create.setMetadata(records),
-      :ok = Legl.Utility.save_json(records, path),
+      records = Create.set_metadata(records),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
+      IO.puts("...complete"),
+
+      # Publication Date field
+      if Map.has_key?(opts, :record_ids) do
+        IO.write("PUBLICATION DATE")
+        records = Create.setPublicationDateLink(records, opts)
+        :ok = Legl.Utility.save_structs_as_json(records, path)
+        IO.puts("...complete")
+      end,
+
+      # Name field
+      IO.write("NAME"),
+      records = Create.set_name(records),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
+      IO.puts("...complete"),
+
+      # type_class field
+      IO.write("TYPE CLASS"),
+      records = Create.set_type_class(records),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
+      IO.puts("...complete"),
+
+      # Type field
+      IO.write("TYPE"),
+      records = Create.set_type(records),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
+      IO.puts("...complete"),
+
+      # Tags field
+      IO.write("TAGS"),
+      records = Create.set_tags(records),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
       IO.puts("...complete"),
 
       # Extent fields
       IO.write("EXTENT"),
-      records = Create.setExtent(records),
-      :ok = Legl.Utility.save_json(records, path),
+      records = Create.set_extent(records),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
       IO.puts("...complete"),
 
       # Enacted by fields
       IO.puts("ENACTED BY"),
-      records = Create.setEnactedBy(records, opts),
-      :ok = Legl.Utility.save_json(records, path),
+      records = Create.set_enacted_by(records, opts),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
       IO.puts("...complete"),
 
       # Amended by fields
       IO.puts("AMENDED BY"),
-      records = Create.setAmendedBy(records, opts),
-      :ok = Legl.Utility.save_json(records, path),
+      records = Create.set_amended_by(records, opts),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
       IO.puts("...complete"),
 
       # Revoked by fields
       IO.puts("REVOKED BY"),
-      records = Create.setRevokedBy(records, opts),
-      :ok = Legl.Utility.save_json(records, path),
+      records = Create.set_revoked_by(records, opts),
+      :ok = Legl.Utility.save_structs_as_json(records, path),
       IO.puts("...complete")
     ) do
       records
@@ -490,196 +650,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       end)
 
     records
-  end
-end
-
-defmodule Legl.Countries.Uk.LeglRegister.New.New.Options do
-  alias Legl.Services.Airtable.AtBasesTables
-  alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable
-  alias Legl.Countries.Uk.UkTypeCode
-
-  @default_opts %{
-    base_name: "UK S",
-    table_name: "Publication Date",
-    type_code: [""],
-    year: 2023,
-    month: nil,
-    day: nil,
-    # days as a tuple {from, to} eg {10, 23} for days from 10th to 23rd
-    days: nil,
-    # Where's the data coming from?
-    source: :web,
-    # Trigger .csv saving?
-    csv?: false,
-    # Global mute msg
-    mute?: true
-  }
-
-  def setOptions(opts) do
-    opts = Enum.into(opts, @default_opts)
-
-    opts = base_name(opts)
-
-    opts =
-      Map.put(
-        opts,
-        :source,
-        case ExPrompt.choose("Source Records", [
-               "legislation.gov.uk",
-               "w/ si code",
-               "w/o si code",
-               "w/ & w/o si code"
-             ]) do
-          0 -> :web
-          1 -> :si_code
-          2 -> :x_si_code
-          3 -> :both
-        end
-      )
-
-    opts = month(opts)
-
-    opts =
-      Map.put(
-        opts,
-        :days,
-        case ExPrompt.choose("Days", ["1-9", "10-20", "21-30", "21-31", "21-28"]) do
-          0 -> {1, 9}
-          1 -> {10, 20}
-          2 -> {21, 30}
-          3 -> {21, 31}
-          4 -> {21, 28}
-        end
-      )
-
-    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
-
-    {:ok, {_base_id, pub_table_id}} =
-      AtBasesTables.get_base_table_id(opts.base_name, opts.table_name)
-
-    opts = Map.merge(opts, %{base_id: base_id, table_id: table_id, pub_table_id: pub_table_id})
-
-    opts =
-      with {:ok, f} <- formula(opts) do
-        Map.put(opts, :formula, f)
-      else
-        {:error, msg} -> {:error, msg}
-      end
-
-    # Returns a map of dates as keys and record_ids as values
-    opts = PublicationDateTable.get(opts)
-
-    IO.puts("OPTIONS: #{inspect(opts)}")
-    {:ok, opts}
-  end
-
-  @spec base_table_id(map()) :: map()
-  def base_table_id(opts) do
-    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
-    Map.merge(opts, %{base_id: base_id, table_id: table_id})
-  end
-
-  @spec base_name(map()) :: map()
-  def base_name(opts) do
-    Map.put(
-      opts,
-      :base_name,
-      case ExPrompt.choose("Choose Base", ["HEALTH & SAFETY", "ENVIRONMENT"]) do
-        0 ->
-          "UK S"
-
-        1 ->
-          "UK E"
-      end
-    )
-  end
-
-  @spec month(map()) :: map()
-  def month(opts) do
-    Map.put(
-      opts,
-      :month,
-      ExPrompt.choose("Month", ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"])
-      |> (&Kernel.+(&1, 1)).()
-    )
-  end
-
-  @spec number(map()) :: map()
-  def number(opts) do
-    Map.put(
-      opts,
-      :number,
-      ExPrompt.get_required("number? ")
-    )
-  end
-
-  @spec type_code(map()) :: map()
-  def type_code(opts) do
-    type_codes =
-      UkTypeCode.type_codes()
-      |> Enum.with_index(fn v, k -> {k, v} end)
-
-    Map.put(
-      opts,
-      :type_code,
-      ExPrompt.choose("type_code? ", UkTypeCode.type_codes())
-      |> (&List.keyfind(type_codes, &1, 0)).()
-      |> elem(1)
-    )
-  end
-
-  @spec year(map()) :: map()
-  def year(opts) do
-    Map.put(
-      opts,
-      :year,
-      ExPrompt.string("year? ", 2023)
-    )
-  end
-
-  @spec days(map()) :: map()
-  def days(opts) do
-    from = ExPrompt.string("from?: ") |> String.to_integer()
-    to = ExPrompt.string("to?: ") |> String.to_integer()
-
-    Map.put(
-      opts,
-      :days,
-      {from, to}
-    )
-  end
-
-  defp formula(%{source: :web} = opts) do
-    with(
-      f = [~s/{Year}="#{opts.year}"/],
-      {:ok, f} <- month_formula(opts.month, f),
-      f = if(opts.day != nil, do: [~s/{Day}="#{opts.day}"/ | f], else: f),
-      f = if({from, to} = opts.days, do: [day_range_formula(from, to) | f], else: f)
-    ) do
-      {:ok, ~s/AND(#{Enum.join(f, ",")})/}
-    else
-      {:error, msg} -> {:error, msg}
-    end
-  end
-
-  defp formula(_), do: {:ok, nil}
-
-  defp day_range_formula(from, to) do
-    ~s/OR(#{Enum.map(from..to, fn d ->
-      d = if String.length(Integer.to_string(d)) == 1 do
-        ~s/0#{d}/
-      else
-        ~s/#{d}/
-      end
-      ~s/{Day}="#{d}"/
-    end) |> Enum.join(",")})/
-  end
-
-  defp month_formula(nil, _), do: {:error, "Month option required e.g. month: 4"}
-
-  defp month_formula(month, f) when is_integer(month) do
-    month = if String.length(Integer.to_string(month)) == 1, do: ~s/0#{month}/, else: ~s/#{month}/
-    {:ok, [~s/{Month}="#{month}"/ | f]}
   end
 end
 
@@ -758,7 +728,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.LegGovUk do
       when type_code not in ["ukpga", "asp", "anaw", "apni"] ->
         with(
           {:ok, url} <-
-            SI.resource_path({law.type_code, Integer.to_string(law[:Year]), law[:Number]}),
+            SI.resource_path({law.type_code, law."Year", law."Number"}),
           {:ok, si_code} <- SI.get_si_code(url)
         ) do
           case si_code do
@@ -766,7 +736,10 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.LegGovUk do
               {ninc, [law | nexc]}
 
             _ ->
-              law = Map.put(law, :"SI Code", si_code)
+              # Deal with country names in SI Codes
+              si_code = SI.si_code(si_code)
+              law = Map.put(law, :si_code, si_code)
+
               {[law | ninc], nexc}
           end
         else
@@ -780,107 +753,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.LegGovUk do
         {ninc, [law | nexc]}
     end)
     |> (&{:ok, &1}).()
-  end
-end
-
-defmodule Legl.Countries.Uk.LeglRegister.New.New.Filters do
-  # alias Legl.Countries.Uk.UkSearch.Terms
-  alias Legl.Countries.Uk.UkSearch.Terms.HealthSafety, as: HS
-  alias Legl.Countries.Uk.UkSearch.Terms.Environment, as: E
-  alias Legl.Countries.Uk.UkSearch.Terms.SICodes
-
-  @hs_search_terms HS.hs_search_terms()
-  @e_search_terms E.e_search_terms()
-
-  def si_code_filter({inc_w_si, inc_wo_si}) do
-    Enum.reduce(inc_w_si, {[], inc_wo_si}, fn
-      %{"SI Code": si_codes} = law, {inc, exc} ->
-        case si_code_member?(si_codes) do
-          true -> {[law | inc], exc}
-          _ -> {inc, [law | exc]}
-        end
-
-      # Acts and some regs don't have SI Codes
-      law, {inc, exc} ->
-        {[law | inc], exc}
-    end)
-    |> (&{:ok, &1}).()
-  end
-
-  def si_code_member?(si_code) when is_binary(si_code),
-    do: MapSet.member?(SICodes.si_codes(), si_code)
-
-  def si_code_member?(si_codes) when is_list(si_codes) do
-    Enum.reduce_while(si_codes, false, fn si_code, _acc ->
-      case MapSet.member?(SICodes.si_codes(), si_code) do
-        true -> {:halt, true}
-        _ -> {:cont, false}
-      end
-    end)
-  end
-
-  def terms_filter(laws, opts) do
-    search_terms =
-      case opts.base_name do
-        "UK S" -> @hs_search_terms
-        "UK E" -> @e_search_terms
-      end
-
-    Enum.reduce(laws, {[], []}, fn law, {inc, exc} ->
-      title = String.downcase(law[:Title_EN])
-
-      match? =
-        Enum.reduce_while(search_terms, false, fn {k, n}, _acc ->
-          # n = :binary.compile_pattern(v)
-
-          case String.contains?(title, n) do
-            true -> {:halt, {true, k}}
-            false -> {:cont, false}
-          end
-        end)
-
-      case match? do
-        {true, k} ->
-          case exclude?(title) do
-            true ->
-              {inc, exc}
-
-            false ->
-              Map.put(law, :Family, Atom.to_string(k))
-              |> (&{[&1 | inc], exc}).()
-          end
-
-        false ->
-          case exclude?(title) do
-            true ->
-              {inc, exc}
-
-            false ->
-              {inc, [law | exc]}
-          end
-      end
-    end)
-    |> (&{:ok, &1}).()
-  end
-
-  @doc """
-  Function to exclude certain laws even though terms filter includes them
-  """
-  def exclude?(title) do
-    search_terms = ~w[
-    restriction\u00a0of\u00a0flying
-    correction\u00a0slip
-    trunk\u00a0road
-  ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
-
-    Enum.reduce_while(search_terms, false, fn n, _acc ->
-      # n = :binary.compile_pattern(v)
-
-      case String.contains?(title, n) do
-        true -> {:halt, true}
-        false -> {:cont, false}
-      end
-    end)
   end
 end
 

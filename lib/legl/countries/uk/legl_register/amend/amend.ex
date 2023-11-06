@@ -19,6 +19,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
   """
 
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
   alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Countries.Uk.LeglRegister.Amend.Options
   alias Legl.Countries.Uk.LeglRegister.Amend.Amending
@@ -77,7 +78,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     records = AT.make_records_into_legal_register_structs(records)
     # |> IO.inspect(label: "CURRENT RECORDS:")
 
-    {records, _} = amendment_bfs({[], records}, opts, 0)
+    records = amendment_bfs({[], records}, opts, 0)
 
     records =
       Legl.Utility.maps_from_structs(records)
@@ -105,22 +106,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   Workflow is part of a larger process setting all the fields of a legal register record
   """
   def workflow(record, opts) when is_map(record) do
-    # Function to process a single piece of law
     workflow([record], opts)
   end
 
+  @spec workflow(list(LegalRegister), map()) :: list(LegalRegister)
   def workflow(records, opts) when is_list(records) do
-    results = amendment_bfs({[], records}, opts, 0)
-
-    if opts.csv?, do: Csv.records_to_csv(results)
-
-    results
+    amendment_bfs({[], records}, opts, 0)
   end
 
   @doc """
     Breadth first search up to an arbitrary number of layers of the amendments tree
   """
-  def amendment_bfs(data, _, @enumeration_limit), do: data
+  def amendment_bfs({records, _}, _, @enumeration_limit), do: records
 
   def amendment_bfs({results, records}, opts, enumeration_limit) do
     #

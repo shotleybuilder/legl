@@ -67,8 +67,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
   @spec count_self_amendments(list()) :: integer()
   defp count_self_amendments(records) do
     Enum.reduce(records, 0, fn
-      [title, amending_title, _, _, _, _, _] = _affected, acc ->
-        if title == amending_title do
+      %{path: path, pathA: pathA}, acc ->
+        if path == pathA do
           acc + 1
         else
           acc
@@ -145,7 +145,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
 
   defp counts(records) do
     Enum.map(records, fn record ->
-      ~s[#{record."Name"} - #{record.affect_count}💚️https://legislation.gov.uk#{record.path}]
+      ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️https://legislation.gov.uk#{record.path}]
     end)
     |> Enum.sort(:desc)
     |> Enum.join("💚️💚️")
@@ -168,7 +168,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
       detail = Enum.join(record.target_affect_applied?, "💚️ ")
       url = ~s[https://legislation.gov.uk#{record.path}]
 
-      ~s[#{record."Name"} - #{record.affect_count}💚️#{url}💚️ #{detail}]
+      ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️#{url}💚️ #{detail}]
     end)
     |> Enum.sort(:desc)
     |> Enum.join("💚️💚️")

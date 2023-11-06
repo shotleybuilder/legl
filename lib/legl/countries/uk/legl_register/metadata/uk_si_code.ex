@@ -132,6 +132,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode do
   @doc """
     /uksi/1995/304/introduction/made/data.xml
   """
+  def resource_path({type_code, year, number}) when is_integer(year) do
+    resource_path({type_code, Integer.to_string(year), number})
+  end
 
   def resource_path({type_code, year, number}) do
     {:ok, ~s[/#{type_code}/#{year}/#{number}/introduction/data.xml]}

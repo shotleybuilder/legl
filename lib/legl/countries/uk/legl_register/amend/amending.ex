@@ -146,16 +146,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
       {4, _cell}, acc ->
         acc
 
-      {5, _cell}, acc ->
-        acc
+      {5, {"td", _, [{_, [{"href", path}], _}]}}, acc ->
+        [path | acc]
 
       {6, _cell}, acc ->
         acc
 
-      {7, {"td", _, content}}, acc ->
-        # IO.inspect(content, label: "CONTENT: ")
+      {7, {"td", _, applied?}}, acc ->
+        # IO.inspect(applied?, label: "CONTENT: ")
 
-        Enum.map(content, fn
+        Enum.map(applied?, fn
           {"a", [{"href", _}, [v1]], [v2]} -> ~s/#{v1} #{v2}/
           {"a", [{"href", _}], [v]} -> v
           {"a", [{"href", _}], []} -> ""
@@ -181,7 +181,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
     end)
     |> Enum.reverse()
     |> (&Enum.zip(
-          [:Title_EN, :type_code, :Number, :Year, :path, :target, :affect, :applied?, :note],
+          [
+            :Title_EN,
+            :type_code,
+            :Number,
+            :Year,
+            :path,
+            :target,
+            :affect,
+            :pathA,
+            :applied?,
+            :note
+          ],
           &1
         )).()
     |> (&Kernel.struct(__MODULE__, &1)).()

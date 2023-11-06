@@ -52,6 +52,7 @@ defmodule UK do
   def create(), do: Legl.Countries.Uk.LeglRegister.New.New.create()
   def create_from_file(), do: Legl.Countries.Uk.LeglRegister.New.New.create_from_file()
   def creates(), do: Legl.Countries.Uk.LeglRegister.New.New.creates()
+  def bare(), do: Legl.Countries.Uk.LeglRegister.New.New.create_from_bare_file()
 
   def dutyholders(),
     do:
@@ -63,7 +64,7 @@ defmodule UK do
   def enact(opts),
     do: Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run(opts)
 
-  def amend(opts),
+  def amend(opts \\ []),
     do: Legl.Countries.Uk.LeglRegister.Amend.run(opts)
 
   def revoke(opts),
