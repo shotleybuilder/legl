@@ -32,6 +32,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
   def hs_family, do: @hsfamily
 
   @efamily [
+    "Air",
     "Climate Change",
     "Energy",
     "Environmental Protection",

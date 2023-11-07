@@ -124,6 +124,7 @@ defmodule Legl.Countries.Uk.Metadata do
     |> LRO.type_class()
     |> LRO.family()
     |> LRO.today()
+    |> LRO.view()
     |> LRO.at_source()
     |> LRO.leg_gov_uk_source()
     |> fields()
@@ -200,7 +201,8 @@ defmodule Legl.Countries.Uk.Metadata do
         table: opts.table_id,
         options: %{
           fields: opts.fields,
-          formula: opts.formula
+          formula: opts.formula,
+          view: opts.view
         }
       },
       {:ok, {jsonset, _recordset}} <- Records.get_records({[], []}, params)
@@ -350,7 +352,7 @@ defmodule Legl.Countries.Uk.Metadata do
             |> (&Map.put(metadata, :md_subjects_csv, [&1])).()
         end
 
-      # the field is called 'SI Code' in Airtable
+      # the field is called 'si_code' in Airtable
       metadata =
         case si_code do
           [] ->
@@ -365,8 +367,8 @@ defmodule Legl.Countries.Uk.Metadata do
             |> Enum.map(&String.replace(&1, ", ENGLAND", ""))
             |> Enum.map(&String.replace(&1, ", SCOTLAND", ""))
             |> Enum.map(&String.replace(&1, ", NORTHERN IRELAND", ""))
-            |> Enum.map(&String.replace(&1, ",WALES", ""))
-            |> (&Map.put(metadata, :"SI Code", &1)).()
+            |> Enum.map(&String.replace(&1, ", WALES", ""))
+            |> (&Map.put(metadata, :si_code, &1)).()
         end
 
       [_, year, month, day] = Regex.run(~r/(\d{4})-(\d{2})-(\d{2})/, modified)
@@ -490,12 +492,25 @@ defmodule Legl.Countries.Uk.Metadata.Delta do
       current = Map.get(current_fields, field)
       latest = Map.get(latest_fields, field)
 
-      case changed?(current, latest) do
-        false ->
-          acc
+      cond do
+        field == "md_description" ->
+          if String.jaro_distance(current, latest) > 0.8,
+            do: acc,
+            else:
+              Keyword.put(
+                acc,
+                field,
+                ~s/#{Enum.join(current, ", ")} -> #{Enum.join(latest, ", ")}/
+              )
 
-        value ->
-          Keyword.put(acc, field, value)
+        true ->
+          case changed?(current, latest) do
+            false ->
+              acc
+
+            value ->
+              Keyword.put(acc, field, value)
+          end
       end
     end)
     |> md_change_log()
@@ -664,7 +679,7 @@ defmodule Legl.Countries.Uk.Metadata.Csv do
              md_attachment_paras: attachment,
              md_images: images,
              md_modified_csv: modified,
-             "SI Code": si_code,
+             si_code: si_code,
              md_change_log: md_change_log
            }
          } = _md

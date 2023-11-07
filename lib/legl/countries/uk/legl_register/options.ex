@@ -61,6 +61,15 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
+  @spec view(opts()) :: opts()
+  def view(opts) do
+    Map.put(
+      opts,
+      :view,
+      ExPrompt.string("View ID (from url bar)")
+    )
+  end
+
   @spec family(map()) :: map()
   def family(%{base_name: "UK S"} = opts) do
     Map.put(
