@@ -83,10 +83,11 @@ defmodule Legl.Countries.Uk.Metadata do
     md_error_code
     md_change_log
   ]
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   alias Legl.Services.Airtable.Records
   alias Legl.Services.LegislationGovUk.RecordGeneric, as: Record
-  alias Legl.Services.Airtable.AtBasesTables
 
   alias Legl.Countries.Uk.Metadata.Delta
   alias Legl.Countries.Uk.Metadata.Csv
@@ -102,9 +103,9 @@ defmodule Legl.Countries.Uk.Metadata do
     base_name: "UK E",
     table: "UK",
     # source of Airtable records
-    source: :web,
+    at_source: :web,
     # source of legislation-gov-uk records
-    md: :web,
+    leg_gov_uk_source: :web,
     workflow: nil,
     family: nil,
     filesave?: true,
@@ -116,38 +117,28 @@ defmodule Legl.Countries.Uk.Metadata do
     Legl.Countries.Uk.UkLegGovUkMetadata.workflow()
   """
   def run(opts \\ []) do
-    opts = Enum.into(opts, @default_opts)
-
-    with {:ok, type_codes} <- Legl.Countries.Uk.UkTypeCode.type_code(opts.type_code),
-         {:ok, type_classes} <- Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class),
-         {:ok, family} <- Legl.Countries.Uk.Family.family(opts.family),
-         opts =
-           Map.merge(opts, %{type_code: type_codes, type_class: type_classes, family: family}),
-         {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name),
-         opts = Map.merge(opts, %{base_id: base_id, table_id: table_id}),
-         opts = fields(opts) do
-      if opts.workflow != nil do
-        Enum.each(
-          type_codes,
-          fn type ->
-            opts = formula(opts, type)
-
-            opts
-            |> IO.inspect(label: "\nOptions: ")
-            |> workflow()
-          end
-        )
-      end
-    end
+    Enum.into(opts, @default_opts)
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> LRO.type_code()
+    |> LRO.type_class()
+    |> LRO.family()
+    |> LRO.today()
+    |> LRO.at_source()
+    |> LRO.leg_gov_uk_source()
+    |> fields()
+    |> formula()
+    |> IO.inspect(label: "\nOptions: ")
+    |> workflow()
   end
 
-  defp fields(%{source: :web, workflow: :update} = opts) do
+  defp fields(%{at_source: :web, workflow: :update} = opts) do
     Map.merge(opts, %{
       fields: ["Title_EN", "leg.gov.uk intro text"] ++ @get_fields
     })
   end
 
-  defp fields(%{source: :web} = opts) do
+  defp fields(%{at_source: :web} = opts) do
     Map.merge(opts, %{
       fields: ["Name", "Title_EN", "leg.gov.uk intro text"]
     })
@@ -155,24 +146,27 @@ defmodule Legl.Countries.Uk.Metadata do
 
   defp fields(opts), do: opts
 
-  defp formula(%{source: :web, workflow: :update} = opts, type) do
-    # date = Date.utc_today()
-    # date = ~s(#{date.day}/#{date.month}/#{date.year})
-    # date = ~s/#{Date.utc_today()}/
+  defp formula(%{at_source: :web, workflow: :update} = opts) do
+    f =
+      LRO.formula_today(opts, "md_checked")
+      |> LRO.formula_type_code(opts)
+      |> LRO.formula_type_class(opts)
+      |> LRO.formula_family(opts)
 
-    Map.merge(opts, %{
-      # formula: ~s/AND({type_code}="#{type}", {Family}="#{opts.family}", {md_checked}!="#{date}")/
-      formula: ~s/AND({type_code}="#{type}", {Family}="#{opts.family}", {md_checked}!=TODAY())/
-    })
+    Map.put(
+      opts,
+      :formula,
+      ~s/AND(#{Enum.join(f, ",")})/
+    )
   end
 
-  defp formula(%{source: :web} = opts, type) do
-    Map.merge(opts, %{formula: ~s/AND({type_code}="#{type}", {md_modified}=BLANK())/})
+  defp formula(%{at_source: :web} = opts) do
+    Map.merge(opts, %{formula: ~s/AND({type_code}="#{opts.type_code}", {md_modified}=BLANK())/})
   end
 
-  defp formula(opts, _type), do: opts
+  defp formula(opts), do: opts
 
-  defp workflow(%{md: :file} = opts) do
+  defp workflow(%{leg_gov_uk_source: :file} = opts) do
     # when legislation.gov.uk records have been saved to file
     {:ok, records} = get_metadata(opts)
     Patch.patch(records, opts)
@@ -199,7 +193,7 @@ defmodule Legl.Countries.Uk.Metadata do
     end
   end
 
-  defp get(%{source: :web} = opts) do
+  defp get(%{at_source: :web} = opts) do
     with(
       params = %{
         base: opts.base_id,
@@ -244,7 +238,7 @@ defmodule Legl.Countries.Uk.Metadata do
     end)
   end
 
-  defp get_metadata(%{current_records: current_records, md: :web} = opts) do
+  defp get_metadata(%{current_records: current_records, leg_gov_uk_source: :web} = opts) do
     Enum.reduce(current_records, [], fn %{fields: current_fields} = record, acc ->
       path = resource_path(current_fields)
 
@@ -285,7 +279,7 @@ defmodule Legl.Countries.Uk.Metadata do
     |> (&{:ok, &1}).()
   end
 
-  defp get_metadata(%{md: :file} = _opts) do
+  defp get_metadata(%{leg_gov_uk_source: :file} = _opts) do
     json = @results_path |> Path.absname() |> File.read!()
     %{records: records} = Jason.decode!(json, keys: :atoms)
     {:ok, records}
@@ -298,6 +292,14 @@ defmodule Legl.Countries.Uk.Metadata do
     # "#{path}/data.xml"
   end
 
+  @doc """
+  API for metadata
+
+  Receives the path to the law's Intro web content
+
+  Returns the metadata map
+  """
+  @spec get_latest_metadata(binary()) :: {:ok, map()}
   def get_latest_metadata(path) do
     with({:ok, :xml, metadata} <- Record.metadata(path)) do
       # save the data returned from leg.gov.uk w/o transformation
@@ -399,12 +401,14 @@ end
 defmodule Legl.Countries.Uk.LeglRegister.Metadata.Patch do
   @moduledoc """
   """
+  alias Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord
+
   @api_results_path ~s[lib/legl/countries/uk/legl_register/metadata/api_metadata_results.json]
 
   def patch(records, %{patch?: false, patch_as_you_go?: true} = opts) do
     IO.write("PATCH payg - ")
     records = clean_records_for_patch(records)
-    process(records, opts)
+    PatchRecord.patch(records, opts)
   end
 
   def patch(records, %{patch?: true, patch_as_you_go?: false} = opts) do
@@ -414,7 +418,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.Patch do
     json = Map.put(%{}, "records", records) |> Jason.encode!()
     Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
 
-    process(records, opts)
+    PatchRecord.patch(records, opts)
   end
 
   def patch(_, _), do: :ok
@@ -454,29 +458,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.Patch do
 
       Map.put(record, :fields, xfield)
       |> (&[&1 | acc]).()
-    end)
-  end
-
-  defp process(results, opts) do
-    headers = [{:"Content-Type", "application/json"}]
-
-    params = %{
-      base: opts.base_id,
-      table: opts.table_id,
-      options: %{}
-    }
-
-    # Airtable only accepts sets of 10x records in a single PATCH request
-    results =
-      Enum.chunk_every(results, 10)
-      |> Enum.reduce([], fn set, acc ->
-        Map.put(%{}, "records", set)
-        |> Jason.encode!()
-        |> (&[&1 | acc]).()
-      end)
-
-    Enum.each(results, fn result_subset ->
-      Legl.Services.Airtable.AtPatch.patch_records(result_subset, headers, params)
     end)
   end
 end

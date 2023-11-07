@@ -619,6 +619,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options do
 
   """
   alias Legl.Services.Airtable.AtBasesTables
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   @code_full "❌ Revoked / Repealed / Abolished"
   @code_part "⭕ Part Revocation / Repeal"
@@ -683,7 +684,9 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options do
 
   def setOptions(opts) do
     # IO.puts("DEFAULTS: #{inspect(@default_opts)}")
-    opts = Enum.into(opts, @default_opts)
+    opts =
+      Enum.into(opts, @default_opts)
+      |> LRO.family()
 
     {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
     opts = Map.merge(opts, %{base_id: base_id, table_id: table_id})
@@ -694,13 +697,11 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Options do
     with {:ok, type_codes} <- Legl.Countries.Uk.UkTypeCode.type_code(opts.type_code),
          {:ok, type_classes} <- Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class),
          {:ok, sClass} <- Legl.Countries.Uk.SClass.sClass(opts.sClass),
-         {:ok, family} <- Legl.Countries.Uk.Family.family(opts.family),
          opts =
            Map.merge(opts, %{
              type_codes: type_codes,
              type_class: type_classes,
-             sClass: sClass,
-             family: family
+             sClass: sClass
            }) do
       if opts.mute? == false, do: IO.puts("OPTIONS: #{inspect(opts)}")
       {:ok, opts}

@@ -1,19 +1,19 @@
 defmodule Legl.Countries.Uk.LeglRegister.New.New do
   @moduledoc """
   Module to obtain new laws from legislation.gov.uk and POST to Airtable
+  API
+  api_create - create a single new law record in a LEGAL REGISTER TABLE
 
   """
 
   alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
-
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
   alias Legl.Countries.Uk.LeglRegister.New.Options
   alias Legl.Countries.Uk.LeglRegister.New.New.Airtable
   alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
   alias Legl.Countries.Uk.LeglRegister.New.Filters
   alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
-
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
-
   alias Legl.Countries.Uk.LeglRegister.New.Create
 
   @source ~s[lib/legl/countries/uk/legl_register/new/source.json]
@@ -21,7 +21,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   # @api_path ~s[lib/legl/countries/uk/legl_register/new/api.json]
   @api_patch_path ~s[lib/legl/countries/uk/legl_register/new/api_patch_results.json]
   @api_post_path ~s[lib/legl/countries/uk/legl_register/new/api_post_results.json]
-
   @exc_path ~s[lib/legl/countries/uk/legl_register/new/exc.json]
   @inc_wo_si_path ~s[lib/legl/countries/uk/legl_register/new/inc_wo_si.json]
   @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/new/inc_w_si.json]
@@ -40,22 +39,32 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   @doc """
   Function to create or update the Legal Register record for a SINGLE law.
+
+  Receives :type_code, :Number and :Year
+
+  Run UK.api()
   """
-  def create(opts \\ [csv?: false, mute?: true]) do
+  @spec api_create(list()) :: :ok
+  def api_create(opts \\ [csv?: false, mute?: true]) do
     opts =
       Enum.into(opts, %{})
-      |> Options.base_name()
-      |> Options.base_table_id()
-      |> Options.type_code()
-      |> Options.number()
-      |> Options.year()
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> LRO.type_code()
+      |> LRO.number()
+      |> LRO.year()
       |> Map.merge(%{
         drop_fields: @drop_fields,
         api_patch_path: @api_patch_path,
         api_post_path: @api_post_path
       })
 
-    record = %{Number: opts.number, type_code: opts.type_code, Year: String.to_integer(opts.year)}
+    # Build BARE struct to initiate the process
+    record = %LR{
+      Number: opts.number,
+      type_code: opts.type_code,
+      Year: String.to_integer(opts.year)
+    }
 
     record =
       case Helper.exists?(record, opts) do
@@ -79,7 +88,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
             update_empty_law_fields(fields, @inc_path, opts)
             |> (&Map.put(record, :fields, &1)).()
           end)
-          |> Legl.Countries.Uk.LeglRegister.Helpers.PatchNewRecord.run(opts)
+          |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(opts)
       end
 
     record
@@ -90,11 +99,11 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   have the minimal :type_code, :Number, :Year and all other fields need to be
   populated
   """
-  def create_from_bare_file(opts \\ [csv?: false, mute?: true]) do
+  def api_create_from_file_bare(opts \\ [csv?: false, mute?: true]) do
     opts =
       Enum.into(opts, %{})
-      |> Options.base_name()
-      |> Options.base_table_id()
+      |> LRO.base_name()
+      |> LRO.base_table_id()
       |> Options.source()
       |> Map.merge(%{
         api_patch_path: @api_patch_path,
@@ -118,18 +127,15 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   @doc """
   Function to PATCH or POST to Airtable fully formed new law records stored in
   "inc.json"
-
   Receives list of options
-
   Returns :ok after successful post
-
   Run as UK.create_from_file()
   """
   def create_from_file(opts \\ [csv?: false, mute?: true]) do
     opts =
       Enum.into(opts, %{})
-      |> Options.base_name()
-      |> Options.base_table_id()
+      |> LRO.base_name()
+      |> LRO.base_table_id()
       |> Map.merge(%{
         drop_fields: @drop_fields,
         api_patch_path: @api_patch_path,
@@ -140,13 +146,13 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
     case Helper.filter(:both, records, opts) do
       {[], update} ->
-        Legl.Countries.Uk.LeglRegister.Helpers.PatchNewRecord.run(update, opts)
+        Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(update, opts)
 
       {new, []} ->
         Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(new, opts)
 
       {new, update} ->
-        Legl.Countries.Uk.LeglRegister.Helpers.PatchNewRecord.run(update, opts)
+        Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(update, opts)
         Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(new, opts)
     end
   end
@@ -154,25 +160,38 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   @doc """
   Function to set the options, route the workflow to either get records from
   legislation.gov.uk or .json, and POST to Airtable
-
   Run in the terminal with
-
   UK.creates()
   Legl.Countries.Uk.LeglRegister.New.New.run()
-
   """
-  def creates(opts \\ []) do
-    with(
-      {:ok, opts} <- Options.setOptions(opts),
-      {:ok, w_si_code, wo_si_code, exc} <-
-        cond do
-          opts.source == :web ->
-            workflow(opts)
+  def api_creates(opts \\ []) do
+    opts =
+      Enum.into(opts, Options.default_opts())
+      |> LRO.base_name()
+      |> Options.legal_register_base_id_table_id()
+      |> Options.source()
+      |> Options.month()
+      |> Options.day_groups()
+      |> Options.formula()
+      |> PDT.get()
 
-          true ->
-            %{records: records} = @inc_path |> File.read!() |> Jason.decode!(keys: :atoms)
-            records
-        end,
+    # Get the records from gov.uk
+    # Save as .json to @source
+    # Convert to the LegalRegister struct
+    records =
+      with(
+        {:ok, records} <- LegGovUk.getNewLaws(opts.days, opts),
+        :ok = Legl.Utility.save_json(records, @source)
+      ) do
+        Enum.map(records, &Kernel.struct(%LR{}, &1))
+      else
+        {:no_data, opts} -> {:no_data, opts}
+        {:error, msg} -> {:error, msg}
+      end
+
+    with(
+      {:ok, w_si_code, wo_si_code, exc} <- workflow(records, opts),
+
       # IO.inspect(exc),
       :ok = save({w_si_code, wo_si_code, exc}, opts),
 
@@ -198,8 +217,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   def save_from_full_file(opts \\ []) do
     opts =
       Enum.into(opts, %{})
-      |> Options.base_name()
-      |> Options.base_table_id()
+      |> LRO.base_name()
+      |> LRO.base_table_id()
       |> Options.source()
       |> Map.merge(%{
         api_patch_path: @api_patch_path,
@@ -290,8 +309,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   def save_bare_excluded(opts \\ [csv?: false, mute?: true]) do
     opts =
       Enum.into(opts, %{})
-      |> Options.base_name()
-      |> Options.base_table_id()
+      |> LRO.base_name()
+      |> LRO.base_table_id()
       |> Map.merge(%{
         api_patch_path: @api_patch_path,
         api_post_path: @api_post_path
@@ -330,13 +349,13 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   def find_publication_date(opts \\ []) do
     opts =
       Enum.into(opts, %{})
-      |> Options.base_name()
-      |> Options.base_table_id()
-      |> Options.type_code()
-      |> Options.year()
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> LRO.type_code()
+      |> LRO.number()
+      |> LRO.year()
       |> Options.month()
       |> Options.days()
-      |> Options.number()
 
     {from, to} = opts.days
 
@@ -367,23 +386,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
           {:cont, acc}
       end
     end)
-  end
-
-  @doc """
-  Function to create a new law record for a Legal Register Base
-
-  Source can
-  """
-  def workflow(%{source: :web} = opts) do
-    with(
-      {:ok, records} <- LegGovUk.getNewLaws(opts.days, opts),
-      :ok = Legl.Utility.save_json(records, @source)
-    ) do
-      workflow(records, opts)
-    else
-      {:no_data, opts} -> {:no_data, opts}
-      {:error, msg} -> {:error, msg}
-    end
   end
 
   def workflow(records, opts) when is_list(records) do
@@ -580,7 +582,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       # Publication Date field
       if Map.has_key?(opts, :record_ids) do
         IO.write("PUBLICATION DATE")
-        records = Create.setPublicationDateLink(records, opts)
+        records = Create.set_publication_date_link(records, opts)
         :ok = Legl.Utility.save_structs_as_json(records, path)
         IO.puts("...complete")
       end,

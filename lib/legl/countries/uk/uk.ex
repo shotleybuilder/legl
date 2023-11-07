@@ -4,6 +4,7 @@ defmodule UK do
   """
 
   alias Types.AirtableSchema
+  alias Legl.Countries.Uk.LeglRegister.New.New
 
   @typedoc """
   A part of a piece of legislation.
@@ -45,15 +46,31 @@ defmodule UK do
   def country(), do: @country_regex
   def geo(), do: @geo_regex
 
+  def api do
+    case ExPrompt.choose(
+           "API Choices",
+           [
+             "Single Law using :type_code, :number, :year",
+             "New Laws from gov.uk",
+             "Bare Laws from File",
+             "UPDATE Metadata"
+           ]
+         ) do
+      0 -> create()
+      1 -> creates()
+      2 -> bare()
+      3 -> metadata(workflow: :update)
+    end
+  end
+
+  def create(), do: New.api_create()
+  def create_from_file(), do: New.api_create_from_file_bare()
+  def creates(), do: New.api_creates()
+  def bare(), do: New.api_create_from_file_bare()
+
   @doc """
   Function provides a shortcut to list all the members of the Dutyholders taxonomy
   """
-
-  def create(), do: Legl.Countries.Uk.LeglRegister.New.New.create()
-  def create_from_file(), do: Legl.Countries.Uk.LeglRegister.New.New.create_from_file()
-  def creates(), do: Legl.Countries.Uk.LeglRegister.New.New.creates()
-  def bare(), do: Legl.Countries.Uk.LeglRegister.New.New.create_from_bare_file()
-
   def dutyholders(),
     do:
       Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib.print_dutyholders_to_console()
@@ -70,7 +87,7 @@ defmodule UK do
   def revoke(opts),
     do: Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.run(opts)
 
-  def metadata(opts),
+  def metadata(opts \\ []),
     do: Legl.Countries.Uk.Metadata.run(opts)
 
   def extent(opts),

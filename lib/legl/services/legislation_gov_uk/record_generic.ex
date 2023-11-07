@@ -110,6 +110,7 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
       url = @endpoint <> path,
       # IO.puts("HTML URL: #{url}"),
       {:ok, %{:content_type => :html, :body => body}} <- client.(url),
+      # IO.inspect(body, label: "body\n#{__MODULE__}.leg_gov_uk_html"),
       {:ok, response} <- parser.(body)
       # IO.inspect(response, label: "HTML CONTENT: ")
     ) do
@@ -119,11 +120,11 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
         {:error, :no_records}
 
       {:error, 307, msg} ->
-        IO.puts("CODE: 307 - temporary redirect from leg.gov.uk for #{msg}\n#{path}\n")
+        IO.puts("CODE: 307 - temporary redirect from leg.gov.uk for: #{msg}\n#{path}\n")
         {:error, 307}
 
       {:error, 404, msg} ->
-        IO.puts("CODE: 404 - no records returned from leg.gov.uk for #{msg}\n#{path}\n")
+        IO.puts("CODE: 404 - no records returned from leg.gov.uk for: #{msg}\n#{path}\n")
         {:error, 404}
 
       {:error, code, msg} ->

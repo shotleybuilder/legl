@@ -4,6 +4,11 @@ defmodule Legl.Services.LegislationGovUk.ClientAmdTbl do
   @doc """
     Rtns an AsyncResponse struct with id
     PID used is self() - the iex console
+
+    async response
+    receive/1 gets the response msg from HTTPoison
+    and works like a <case do end> statement, but runs multiple
+    times handling each msg
   """
   def run!(url) do
     case HTTPoison.get!(url, %{}, stream_to: self()) do
@@ -11,11 +16,6 @@ defmodule Legl.Services.LegislationGovUk.ClientAmdTbl do
     end
   end
 
-  @doc """
-    receive/1 gets the response msg from HTTPoison
-    and works like a <case do end> statement, but runs multiple
-    times handling each msg
-  """
   defp async_response({id, data}) do
     receive do
       # first msg is a status code
@@ -25,8 +25,8 @@ defmodule Legl.Services.LegislationGovUk.ClientAmdTbl do
       %HTTPoison.AsyncStatus{id: ^id, code: 301} ->
         async_response({id, data})
 
-      %HTTPoison.AsyncStatus{id: ^id, code: 307} ->
-        async_response({id, data})
+      # %HTTPoison.AsyncStatus{id: ^id, code: 307} ->
+      #  async_response({id, data})
 
       %HTTPoison.AsyncStatus{id: ^id, code: 404} ->
         {:error, 404, "No resource"}
@@ -38,6 +38,15 @@ defmodule Legl.Services.LegislationGovUk.ClientAmdTbl do
       %HTTPoison.AsyncHeaders{id: ^id, headers: headers} ->
         ct = headers |> Map.new() |> content_type?()
         data = Map.merge(data, %{content_type: ct, body: ""})
+        async_response({id, data})
+
+      %HTTPoison.AsyncRedirect{id: ^id, headers: headers, to: to} ->
+        ct =
+          headers
+          |> Map.new()
+          |> content_type?()
+
+        data = Map.merge(data, %{content_type: ct, to: to})
         async_response({id, data})
 
       # then the content in the AsyncChunk struct

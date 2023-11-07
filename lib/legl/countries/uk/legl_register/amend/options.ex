@@ -2,6 +2,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Countries.Uk.LeglRegister.Amend.Csv
   alias Legl.Countries.Uk.UkTypeCode
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   @amended_fields_list ~s[
     Name
@@ -32,7 +33,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     percent?: false,
     filesave?: false,
     # include/exclude AT records holding today's date
-    today?: false,
+    today: false,
     # patch? only works with :update workflow
     patch?: true,
     # getting existing field data from Airtable
@@ -41,13 +42,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     csv?: false
   }
   def set_options(opts) do
-    opts = Enum.into(opts, @default_opts)
-
-    opts = base_name(opts)
-
-    opts = type_code(opts)
-
-    opts = amendment_checked(opts)
+    opts =
+      Enum.into(opts, @default_opts)
+      |> LRO.base_name()
+      |> LRO.type_code()
+      |> LRO.family()
+      |> LRO.today()
 
     # workflow options are [:create, :update]
     # :update triggers the update workflow and populates the change log
@@ -58,13 +58,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
 
     {:ok, type_classes} = Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class)
     {:ok, sClass} = Legl.Countries.Uk.SClass.sClass(opts.sClass)
-    {:ok, family} = Legl.Countries.Uk.Family.family(opts.family)
 
     opts =
       Map.merge(opts, %{
         type_class: type_classes,
-        sClass: sClass,
-        family: family
+        sClass: sClass
       })
 
     fields = fields(opts)
@@ -82,36 +80,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     opts
   end
 
-  @spec base_name(map()) :: map()
-  defp base_name(opts) do
-    Map.put(
-      opts,
-      :base_name,
-      case ExPrompt.choose("Choose Base", ["HEALTH & SAFETY", "ENVIRONMENT"]) do
-        0 ->
-          "UK S"
-
-        1 ->
-          "UK E"
-      end
-    )
-  end
-
-  @spec type_code(map()) :: map()
-  defp type_code(opts) do
-    type_codes =
-      UkTypeCode.type_codes()
-      |> Enum.with_index(fn v, k -> {k, v} end)
-
-    Map.put(
-      opts,
-      :type_code,
-      ExPrompt.choose("type_code? ", UkTypeCode.type_codes())
-      |> (&List.keyfind(type_codes, &1, 0)).()
-      |> elem(1)
-    )
-  end
-
   @spec workflow(map()) :: map()
   defp workflow(opts) do
     Map.put(
@@ -124,49 +92,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     )
   end
 
-  defp amendment_checked(opts) do
-    Map.put(
-      opts,
-      :today?,
-      case ExPrompt.choose(
-             "amendment_checked ",
-             ["Today", "Blank", "Today & Blank", "Not Today", "Not Today & Blank"]
-           ) do
-        0 -> :today
-        1 -> :blank
-        2 -> :today_blank
-        3 -> :not_today
-        4 -> :not_today_blank
-      end
-    )
-  end
-
   def fields(%{workflow: :create} = _opts),
     do: ["record_id", "Name", "Title_EN", "type_code", "Year", "Number"]
 
   def fields(%{workflow: :update} = _opts), do: @amended_fields_list
 
   def formula(type, %{name: ""} = opts) do
-    f =
-      cond do
-        opts.today? == :today ->
-          [~s/OR({amendments_checked}!=BLANK(), {amendments_checked}=TODAY())/]
-
-        opts.today? == :blank ->
-          [~s/{amendments_checked}=BLANK()/]
-
-        opts.today? == :today_blank ->
-          [~s/OR({amendments_checked}=BLANK(), {amendments_checked}=TODAY())/]
-
-        opts.today? == :not_today ->
-          [~s/OR({amendments_checked}!=BLANK(), {amendments_checked}!=TODAY())/]
-
-        opts.today? == :not_today_blank ->
-          [~s/OR({amendments_checked}=BLANK(), {amendments_checked}!=TODAY())/]
-
-        true ->
-          []
-      end
+    f = LRO.formula_today(opts, "amendments_checked")
 
     f = if opts.type_code != [""], do: [~s/{type_code}="#{type}"/ | f], else: f
     f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f

@@ -1,8 +1,5 @@
 defmodule Legl.Countries.Uk.LeglRegister.New.Options do
   alias Legl.Services.Airtable.AtBasesTables
-  alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable
-  alias Legl.Countries.Uk.UkTypeCode
-  alias Legl.Countries.Uk.LeglRegister.New.New
 
   @default_opts %{
     base_name: "UK S",
@@ -21,54 +18,16 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
     mute?: true
   }
 
-  def setOptions(opts) do
-    opts =
-      Enum.into(opts, @default_opts)
-      |> base_name()
-      |> source()
-      |> month()
-      |> day_groups()
+  def default_opts, do: @default_opts
 
+  @spec legal_register_base_id_table_id(map()) :: map()
+  def legal_register_base_id_table_id(opts) do
     {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
 
     {:ok, {_base_id, pub_table_id}} =
       AtBasesTables.get_base_table_id(opts.base_name, opts.table_name)
 
-    opts = Map.merge(opts, %{base_id: base_id, table_id: table_id, pub_table_id: pub_table_id})
-
-    opts =
-      with {:ok, f} <- formula(opts) do
-        Map.put(opts, :formula, f)
-      else
-        {:error, msg} -> {:error, msg}
-      end
-
-    # Returns a map of dates as keys and record_ids as values
-    opts = PublicationDateTable.get(opts)
-
-    IO.puts("OPTIONS: #{inspect(opts)}")
-    {:ok, opts}
-  end
-
-  @spec base_table_id(map()) :: map()
-  def base_table_id(opts) do
-    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
-    Map.merge(opts, %{base_id: base_id, table_id: table_id})
-  end
-
-  @spec base_name(map()) :: map()
-  def base_name(opts) do
-    Map.put(
-      opts,
-      :base_name,
-      case ExPrompt.choose("Choose Base", ["HEALTH & SAFETY", "ENVIRONMENT"]) do
-        0 ->
-          "UK S"
-
-        1 ->
-          "UK E"
-      end
-    )
+    Map.merge(opts, %{base_id: base_id, table_id: table_id, pub_table_id: pub_table_id})
   end
 
   @spec source(map()) :: map()
@@ -148,53 +107,21 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
     )
   end
 
-  @spec number(map()) :: map()
-  def number(opts) do
-    Map.put(
-      opts,
-      :number,
-      ExPrompt.get_required("number? ")
-    )
-  end
-
-  @spec type_code(map()) :: map()
-  def type_code(opts) do
-    type_codes =
-      UkTypeCode.type_codes()
-      |> Enum.with_index(fn v, k -> {k, v} end)
-
-    Map.put(
-      opts,
-      :type_code,
-      ExPrompt.choose("type_code? ", UkTypeCode.type_codes())
-      |> (&List.keyfind(type_codes, &1, 0)).()
-      |> elem(1)
-    )
-  end
-
-  @spec year(map()) :: map()
-  def year(opts) do
-    Map.put(
-      opts,
-      :year,
-      ExPrompt.string("year? ", 2023)
-    )
-  end
-
-  defp formula(%{source: :web} = opts) do
+  @spec formula(map()) :: map()
+  def formula(%{source: :web} = opts) do
     with(
       f = [~s/{Year}="#{opts.year}"/],
       {:ok, f} <- month_formula(opts.month, f),
       f = if(opts.day != nil, do: [~s/{Day}="#{opts.day}"/ | f], else: f),
       f = if({from, to} = opts.days, do: [day_range_formula(from, to) | f], else: f)
     ) do
-      {:ok, ~s/AND(#{Enum.join(f, ",")})/}
+      Map.put(opts, :formula, ~s/AND(#{Enum.join(f, ",")})/)
     else
       {:error, msg} -> {:error, msg}
     end
   end
 
-  defp formula(_), do: {:ok, nil}
+  def formula(_), do: {:ok, nil}
 
   defp day_range_formula(from, to) do
     ~s/OR(#{Enum.map(from..to, fn d ->

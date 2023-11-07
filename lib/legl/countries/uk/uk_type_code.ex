@@ -81,22 +81,3 @@ defmodule Legl.Countries.Uk.SClass do
 
   def sClass(sClass) when is_binary(sClass), do: {:ok, sClass}
 end
-
-defmodule Legl.Countries.Uk.Family do
-  defstruct offshore: "OH&S: Offshore Safety",
-            road: "TRANS: Road Safety",
-            cc: "Climate Change",
-            ep: "Environmental Protection",
-            mr: "Marine & Riverine",
-            rv: "Roads & Vehicles",
-            ww: "Water & Wastewater"
-
-  def family(family) when family in ["", nil], do: {:ok, ""}
-
-  def family(family) when is_atom(family) do
-    case Map.get(%__MODULE__{}, family) do
-      nil -> {:error, "No FAMILY result for #{family}"}
-      result -> {:ok, result}
-    end
-  end
-end

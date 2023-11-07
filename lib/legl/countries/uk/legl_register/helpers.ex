@@ -281,7 +281,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
   end
 end
 
-defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchNewRecord do
+defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
   @moduledoc """
   PATCH records in a Legal Register
   """
@@ -310,6 +310,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchNewRecord do
 
   def patch([], _), do: :ok
 
+  @spec patch(list(), map()) :: :ok
   def patch(records, opts) when is_list(records) do
     IO.write("PATCH bulk - ")
     headers = [{:"Content-Type", "application/json"}]
