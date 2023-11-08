@@ -72,6 +72,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
       end
 
     records = parse_laws_affecting(records)
+
     Stats.amendment_stats(records)
   end
 
@@ -111,68 +112,106 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
   """
   @spec parse_law(list()) :: %__MODULE__{}
   def parse_law(record) do
-    Enum.with_index(record, fn cell, index -> {index, cell} end)
-    # |> IO.inspect()
-    |> Enum.reduce([], fn
-      {0, {"td", _, [{_, _, [title]}]}}, acc ->
-        [title | acc]
+    cells =
+      Enum.with_index(record, fn cell, index -> {index, cell} end)
+      |> Enum.reduce([], fn
+        {0, {"td", _, title}}, acc ->
+          Enum.map(title, fn
+            {_, _, [t]} when is_binary(t) -> t
+            {_, _, t} when is_binary(t) -> t
+            t when is_binary(t) -> t
+            [t] when is_binary(t) -> t
+            [_, t] when is_binary(t) -> t
+          end)
+          |> Enum.reverse()
+          |> Enum.join(" ")
+          |> (&[&1 | acc]).()
 
-      {1, _cell}, acc ->
-        acc
+        {1, _cell}, acc ->
+          acc
 
-      {2, {"td", _, targets}}, acc when is_list(targets) ->
-        Enum.map(targets, fn
-          {_, _, [target]} -> target
-          v when is_binary(v) -> v
-        end)
-        |> Enum.reverse()
-        |> Enum.join(" ")
-        |> (&[&1 | acc]).()
+        {2, {"td", _, target}}, acc ->
+          # IO.inspect(content, label: "CONTENT: ")
 
-      {2, {"td", _, [{_, _, [target]}, {_, _, [target2]}]}}, acc ->
-        [~s/#{target} #{target2}/ | acc]
+          Enum.map(target, fn
+            {"a", [{"href", _}, [v1]], [v2]} -> ~s/#{v1} #{v2}/
+            {"a", [{"href", _}], [v]} -> v
+            {"a", [{"href", _}], []} -> ""
+            [v] -> v
+            v when is_binary(v) -> v
+          end)
+          # |> IO.inspect(label: "AT: ")
+          |> Enum.join(" ")
+          |> String.trim()
+          |> (&[&1 | acc]).()
 
-      {2, {"td", _, [{_, _, [target]}]}}, acc ->
-        [target | acc]
+        {3, {"td", _, [affect]}}, acc ->
+          [affect | acc]
 
-      {3, {"td", _, [affect]}}, acc ->
-        [affect | acc]
+        {3, {"td", _, []}}, acc ->
+          ["" | acc]
 
-      {4, {"td", _, [{_, _, [amending_title]}]}}, acc ->
-        [amending_title | acc]
+        {4, {"td", _, [{_, _, [amending_title]}]}}, acc ->
+          [amending_title | acc]
 
-      {5, {"td", _, [{_, [{"href", path}], _}]}}, acc ->
-        {type_code, number, year} = Legl.Utility.type_number_year(path)
-        [path, year, number, type_code | acc]
+        {5, {"td", _, [{_, [{"href", path}], _}]}}, acc ->
+          {type_code, number, year} = Legl.Utility.type_number_year(path)
 
-      {6, _cell}, acc ->
-        acc
+          [path, year, number, type_code | acc]
 
-      {7, {"td", _, [{_, _, [applied?]}]}}, acc ->
-        [applied? | acc]
+        {6, _cell}, acc ->
+          acc
 
-      {7, {"td", _, [{_, _, [applied1?]}, {_, _, [applied2?]}]}}, acc ->
-        [~s/#{applied1?}. #{applied2?}/ | acc]
+        {7, {"td", _, applied?}}, acc ->
+          # IO.inspect(applied?, label: "CONTENT: ")
 
-      {7, {"td", _, [applied?]}}, acc ->
-        [applied? | acc]
+          Enum.map(applied?, fn
+            {"a", [{"href", _}, [v1]], [v2]} -> ~s/#{v1} #{v2}/
+            {"a", [{"href", _}], [v]} -> v
+            {"a", [{"href", _}], []} -> ""
+            {"span", _, [v]} -> v
+            [v] -> v
+            [] -> ""
+            v when is_binary(v) -> v
+          end)
+          # |> IO.inspect(label: "AT: ")
+          |> Enum.join(" ")
+          |> String.trim()
+          |> (&[&1 | acc]).()
 
-      {8, {"td", _, note}}, acc ->
-        [note | acc]
+        {8, {"td", _, _note}}, acc ->
+          acc
 
-      {id, row}, acc ->
+        {id, row}, acc ->
+          IO.puts(
+            "Unhandled amendment table row\nID #{id}\nROW #{inspect(row)}\n[#{__MODULE__}.amendments_table_records]\n"
+          )
+
+          acc
+
+        row, acc ->
+          IO.puts(
+            "Unhandled amendment table row\nROW #{inspect(row)}\n[#{__MODULE__}.amendments_table_records]\n"
+          )
+
+          acc
+      end)
+      |> Enum.reverse()
+
+    case Enum.count(cells) do
+      9 ->
+        cells
+        |> (&Enum.zip(
+              ~w[title target affect Title_EN type_code Number Year path applied?]a,
+              &1
+            )).()
+        # |> IO.inspect(label: "parse_law")
+        |> (&Kernel.struct(__MODULE__, &1)).()
+
+      _ ->
         IO.puts(
-          "Unhandled amendment table row\nID #{id}\nROW #{inspect(row)}\n[#{__MODULE__}.amendments_table_records]\n"
+          "ERROR: Wrong number of arguments #{inspect(Enum.with_index(cells))}\n [#{__MODULE__}.parse_law]"
         )
-
-        acc
-    end)
-    |> Enum.reverse()
-    |> (&Enum.zip(
-          ~w[title target affect Title_EN type_code Number Year path applied? note ]a,
-          &1
-        )).()
-    # |> IO.inspect(label: "parse_law")
-    |> (&Kernel.struct(__MODULE__, &1)).()
+    end
   end
 end

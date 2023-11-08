@@ -1,29 +1,37 @@
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
-  alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Countries.Uk.LeglRegister.Amend.Csv
-  alias Legl.Countries.Uk.UkTypeCode
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
-  @amended_fields_list ~s[
+  # Fields list for Airtable GET request for PATCH
+  @amend_fields_list ~w[
     Name
     Title_EN
     type_code
     Year
     Number
     amendments_checked
+
+    Amending
     Amended_by
-    leg_gov_uk_updates
+
+    stats_amendings_count
+    stats_self_amendings_count
+    stats_amended_laws_count
+    stats_amendings_count_per_law
+    stats_amendings_count_per_law_detailed
+
     stats_self_amending_count
     stats_amending_laws_count
     stats_amendments_count
     stats_amendments_count_per_law
     amended_by_change_log
-  ] |> String.split()
+  ]
 
-  @amended_fields @amended_fields_list |> Enum.join(",")
+  # Comma delimited string
+  @amend_fields @amend_fields_list |> Enum.join(",")
 
-  def amended_fields_list(), do: @amended_fields_list
-  def amended_fields(), do: @amended_fields
+  def amend_fields_list(), do: @amend_fields_list
+  def amend_fields(), do: @amend_fields
 
   @default_opts %{
     name: "",
@@ -33,7 +41,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     percent?: false,
     filesave?: false,
     # include/exclude AT records holding today's date
-    today: false,
+    today: nil,
     # patch? only works with :update workflow
     patch?: true,
     # getting existing field data from Airtable
@@ -45,80 +53,48 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     opts =
       Enum.into(opts, @default_opts)
       |> LRO.base_name()
+      |> LRO.base_table_id()
       |> LRO.type_code()
+      |> LRO.type_class()
+      |> LRO.workflow()
       |> LRO.family()
       |> LRO.today()
+      |> LRO.view()
+      |> LRO.patch?()
+      |> formula()
+      |> fields()
 
-    # workflow options are [:create, :update]
-    # :update triggers the update workflow and populates the change log
-    opts = workflow(opts)
-
-    {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
-    opts = Map.merge(opts, %{base_id: base_id, table_id: table_id})
-
-    {:ok, type_classes} = Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class)
-    {:ok, sClass} = Legl.Countries.Uk.SClass.sClass(opts.sClass)
-
-    opts =
-      Map.merge(opts, %{
-        type_class: type_classes,
-        sClass: sClass
-      })
-
-    fields = fields(opts)
-    formula = formula(opts.type_code, opts)
-
-    opts = Map.put(opts, :fields, fields)
-    opts = Map.put(opts, :formula, formula)
-
-    opts = if(opts.csv?, do: Map.put(opts, :file, Csv.openCSVfile()), else: opts)
-
-    IO.puts("AT FIELDS: #{inspect(fields)}")
-    IO.puts("AT FORMULA: #{formula}")
-    IO.puts("OPTIONS: #{inspect(opts)}")
-
-    opts
+    if(opts.csv?, do: Map.put(opts, :file, Csv.openCSVfile()), else: opts)
+    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
-  @spec workflow(map()) :: map()
-  defp workflow(opts) do
+  def fields(%{workflow: :create} = opts) do
     Map.put(
       opts,
-      :workflow,
-      case ExPrompt.choose("workflow? ", ["Update", "Delta Update"]) do
-        0 -> :create
-        1 -> :update
-      end
+      :fields,
+      ["record_id", "Name", "Title_EN", "type_code", "Year", "Number"]
     )
   end
 
-  def fields(%{workflow: :create} = _opts),
-    do: ["record_id", "Name", "Title_EN", "type_code", "Year", "Number"]
+  def fields(%{workflow: :update} = opts), do: Map.put(opts, :fields, @amend_fields_list)
 
-  def fields(%{workflow: :update} = _opts), do: @amended_fields_list
-
-  def formula(type, %{name: ""} = opts) do
-    f = LRO.formula_today(opts, "amendments_checked")
-
-    f = if opts.type_code != [""], do: [~s/{type_code}="#{type}"/ | f], else: f
-    f = if opts.type_class != "", do: [~s/{type_class}="#{opts.type_class}"/ | f], else: f
+  def formula(%{name: ""} = opts) do
+    f =
+      LRO.formula_today(opts, "amendments_checked")
+      |> LRO.formula_type_code(opts)
+      |> LRO.formula_type_class(opts)
+      |> LRO.formula_family(opts)
 
     f =
       if opts.percent? != false,
         do: [~s/{% amending law in Base}<"1",{stats_amending_laws_count}>"0"/ | f],
         else: f
 
-    f =
-      if opts.family != "",
-        do: [~s/{Family}="#{opts.family}"/ | f],
-        else: f
-
-    f =
-      if opts.sClass != "",
-        do: [~s/{sClass}="#{opts.sClass}"/ | f],
-        else: f
-
-    ~s/AND(#{Enum.join(f, ",")})/
+    Map.put(
+      opts,
+      :formula,
+      ~s/AND(#{Enum.join(f, ",")})/
+    )
   end
 
   def formula(_type, %{name: name} = _opts) do

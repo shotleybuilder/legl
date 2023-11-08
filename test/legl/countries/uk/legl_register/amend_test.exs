@@ -3,8 +3,31 @@ defmodule Legl.Countries.Uk.LeglRegister.AmendTest do
   use ExUnit.Case
   import Legl.Countries.Uk.LeglRegister.Amend
   alias Legl.Countries.Uk.LeglRegister.Amend.Patch
+  alias Legl.Countries.Uk.LeglRegister.Amend.AmendedBy
 
   describe "Legl.Countries.Uk.LeglRegister.Amend.Patch " do
+    test "parse_law/1" do
+      record = [
+        {"td", [], [{"strong", [], ["Consumer Protection Act 1987"]}]},
+        {"td", [], [{"a", [{"href", "/id/ukpga/1987/43"}], ["1987 c. 43"]}]},
+        {"td", [], [{"a", [{"href", "/id/ukpga/1987/43/schedule/2"}], ["Sch. 2"]}]},
+        {"td", [], []},
+        {"td", [{"class", "centralCol"}],
+         [
+           {"strong", [], ["The In Vitro Diagnostic Medical Devices Regulations 2000"]}
+         ]},
+        {"td", [{"class", "centralCol"}],
+         [{"a", [{"href", "/id/uksi/2000/1315"}], ["2000 No. 1315"]}]},
+        {"td", [{"class", "centralCol"}],
+         [{"a", [{"href", "/id/uksi/2000/1315/regulation/18"}], ["reg. 18"]}]},
+        {"td", [], [{"span", [{"class", "effectsApplied"}], ["Yes"]}]},
+        {"td", [], []}
+      ]
+
+      result = AmendedBy.parse_law(record)
+      assert %_{} = result
+    end
+
     test "clean/1" do
       record = %{
         Amending: "UK_ukpga_2003_17_LA,UK_ukpga_2020_16_BPA",

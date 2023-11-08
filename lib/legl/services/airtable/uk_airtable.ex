@@ -6,7 +6,7 @@ defmodule Legl.Services.Airtable.UkAirtable do
   @doc """
 
   """
-
+  @spec get_records_from_at(map()) :: {:ok, list()} | :ok
   def get_records_from_at(%{base_id: _} = opts) do
     with(
       params = %{

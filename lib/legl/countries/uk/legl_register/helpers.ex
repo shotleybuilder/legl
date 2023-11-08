@@ -312,7 +312,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
 
   @spec patch(list(), map()) :: :ok
   def patch(records, opts) when is_list(records) do
-    IO.write("PATCH bulk - ")
     headers = [{:"Content-Type", "application/json"}]
 
     params = %{

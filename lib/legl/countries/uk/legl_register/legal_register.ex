@@ -134,6 +134,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
     Live?_change_log
     md_change_log
+    amending_change_log
     amended_by_change_log
   ]a
 end

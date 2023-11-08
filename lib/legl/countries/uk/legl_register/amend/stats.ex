@@ -147,7 +147,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     Enum.map(records, fn record ->
       ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️https://legislation.gov.uk#{record.path}]
     end)
-    |> Enum.sort(:desc)
+    |> Enum.sort_by(
+      &{Regex.run(~r/\d{4}/, &1)},
+      :desc
+    )
     |> Enum.join("💚️💚️")
   end
 
@@ -164,13 +167,33 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
   end
 
   defp counts_detailed(records) do
-    Enum.map(records, fn record ->
-      detail = Enum.join(record.target_affect_applied?, "💚️ ")
-      url = ~s[https://legislation.gov.uk#{record.path}]
+    Enum.map(
+      records,
+      fn record ->
+        detail = Enum.join(record.target_affect_applied?, "💚️ ")
+        url = ~s[https://legislation.gov.uk#{record.path}]
 
-      ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️#{url}💚️ #{detail}]
-    end)
-    |> Enum.sort(:desc)
+        ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️#{url}💚️ #{detail}]
+      end
+    )
+    |> Enum.sort_by(
+      &{Regex.run(~r/\d{4}/, &1)},
+      :desc
+    )
     |> Enum.join("💚️💚️")
+    |> truncate_counts_detailed()
+  end
+
+  @spec truncate_counts_detailed(String.t()) :: String.t()
+  defp truncate_counts_detailed(record) do
+    # Maximum character count for Airtable's long text field is 100,000
+    cond do
+      String.length(record) > 100_000 ->
+        IO.puts("Counts - detailed field > 100_000")
+        String.slice(record, 0..100_000)
+
+      true ->
+        record
+    end
   end
 end

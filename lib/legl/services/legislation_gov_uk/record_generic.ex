@@ -120,15 +120,21 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
         {:error, :no_records}
 
       {:error, 307, msg} ->
-        IO.puts("CODE: 307 - temporary redirect from leg.gov.uk for: #{msg}\n#{path}\n")
+        IO.puts(
+          "CODE: 307 - temporary redirect from leg.gov.uk for: #{msg}\n#{path}\n#{__MODULE__}.leg_gov_uk_html\n"
+        )
+
         {:error, 307}
 
       {:error, 404, msg} ->
-        IO.puts("CODE: 404 - no records returned from leg.gov.uk for: #{msg}\n#{path}\n")
+        IO.puts(
+          "CODE: 404 - no records returned from leg.gov.uk for: #{msg}\n#{path}\n#{__MODULE__}.leg_gov_uk_html\n"
+        )
+
         {:error, 404}
 
       {:error, code, msg} ->
-        IO.puts("CODE: #{code} #{msg}\n#{path}\n")
+        IO.puts("CODE: #{code} #{msg}\n#{path}\n#{__MODULE__}.leg_gov_uk_html\n")
         {:error, code}
     end
   end

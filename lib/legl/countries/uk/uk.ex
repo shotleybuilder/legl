@@ -53,13 +53,17 @@ defmodule UK do
              "Single Law using :type_code, :number, :year",
              "New Laws from gov.uk",
              "Bare Laws from File",
-             "UPDATE Metadata"
+             "UPDATE Metadata",
+             "UPDATE Amend",
+             "PATCH Amend"
            ]
          ) do
       0 -> create()
       1 -> creates()
       2 -> bare()
       3 -> metadata(workflow: :update)
+      4 -> amend(workflow: :update)
+      5 -> amend(workflow: :create)
     end
   end
 

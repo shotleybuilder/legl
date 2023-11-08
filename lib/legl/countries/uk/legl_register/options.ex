@@ -62,6 +62,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   end
 
   @spec view(opts()) :: opts()
+  def view(%{view: view} = opts) when view not in ["", nil] do
+    case ExPrompt.confirm("Default View #{view}?") do
+      true -> opts
+      false -> view(Map.put(opts, :view, nil))
+    end
+  end
+
+  @spec view(opts()) :: opts()
   def view(opts) do
     Map.put(
       opts,
@@ -131,6 +139,24 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
+  # workflow options are [:create, :update]
+  # :update triggers the update workflow and populates the change log
+  @spec workflow(opts()) :: opts()
+  def workflow(%{workflow: workflow} = opts) when workflow not in ["", nil], do: opts
+
+  @spec workflow(opts()) :: opts()
+  def workflow(opts) do
+    Map.put(
+      opts,
+      :workflow,
+      case ExPrompt.choose("Workflow ", ["Update", "Delta Update"]) do
+        0 -> :create
+        1 -> :update
+        -1 -> nil
+      end
+    )
+  end
+
   @spec today(map()) :: map()
   def today(opts) do
     Map.put(
@@ -145,7 +171,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
         2 -> :today_and_blank
         3 -> :not_today
         4 -> :not_today_and_blank
+        -1 -> nil
       end
+    )
+  end
+
+  @spec today(opts()) :: opts()
+  def patch?(opts) do
+    Map.put(
+      opts,
+      :patch?,
+      ExPrompt.confirm("PATCH?", true)
     )
   end
 
@@ -158,13 +194,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
       today == :blank ->
         [~s/{#{field}}=BLANK()/]
 
-      today == :today_blank ->
+      today == :today_and_blank ->
         [~s/OR({#{field}}=BLANK(), {#{field}}=TODAY())/]
 
       today == :not_today ->
         [~s/OR({#{field}}!=BLANK(), {#{field}}!=TODAY())/]
 
-      today == :not_today_blank ->
+      today == :not_today_and_blank ->
         [~s/OR({#{field}}=BLANK(), {#{field}}!=TODAY())/]
 
       true ->
