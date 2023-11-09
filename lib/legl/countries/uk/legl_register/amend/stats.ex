@@ -46,6 +46,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     grouped = Enum.group_by(records, &{&1.path})
     uniq_records = collect_targets_affects_applied(grouped)
 
+    sorted_records =
+      Enum.sort_by(
+        uniq_records,
+        &{Map.get(&1, :year), :desc}
+      )
+
     stats =
       Map.merge(
         stats,
@@ -54,10 +60,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
           # The count of uniq laws affecting an affected law
           laws: Enum.count(uniq_records),
           # String list of each law and number of changes
-          counts: counts(uniq_records),
-          counts_detailed: counts_detailed(uniq_records),
+          counts: counts(sorted_records),
+          counts_detailed: counts_detailed(sorted_records),
           # String list of the Name fields for each law changed
-          links: links(uniq_records)
+          links: links(sorted_records)
         }
       )
 
@@ -147,10 +153,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     Enum.map(records, fn record ->
       ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️https://legislation.gov.uk#{record.path}]
     end)
-    |> Enum.sort_by(
-      &{Regex.run(~r/\d{4}/, &1)},
-      :desc
-    )
+    # |> Enum.sort_by( &{Regex.run(~r/\d{4}/, &1)}, :desc )
     |> Enum.join("💚️💚️")
   end
 
@@ -158,11 +161,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     Enum.map(records, fn record ->
       record."Name"
     end)
-    |> Enum.sort_by(
-      &{Regex.run(~r/\d{4}/, &1),
-       Regex.run(~r/UK_[a-z]*_\d{4}_(.*)_/, &1, capture: :all_but_first)},
-      :desc
-    )
+    # |> Enum.sort_by( &{Regex.run(~r/\d{4}/, &1), Regex.run(~r/UK_[a-z]*_\d{4}_(.*)_/, &1, capture: :all_but_first)}, :desc )
     |> Enum.join(",")
   end
 
@@ -173,27 +172,64 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
         detail = Enum.join(record.target_affect_applied?, "💚️ ")
         url = ~s[https://legislation.gov.uk#{record.path}]
 
-        ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️#{url}💚️ #{detail}]
+        ~s[#{record.affect_count} - #{record."Title_EN"}💚️#{url}💚️ #{detail}]
       end
     )
-    |> Enum.sort_by(
-      &{Regex.run(~r/\d{4}/, &1)},
-      :desc
-    )
+    # |> Enum.sort_by( &{Regex.run(~r/\d{4}/, &1)}, :desc )
     |> Enum.join("💚️💚️")
     |> truncate_counts_detailed()
+  end
+
+  defp truncate_counts_detailed(
+         "Text condensed to meet Airtable cell limit of 100K characters" <> record
+       ) do
+    cond do
+      String.length(record) > 50_000 ->
+        IO.puts("SLICING: Counts - detailed field > 50_000")
+
+        String.slice(
+          "Text condensed to meet Airtable cell limit of 100K characters💚️Text truncated💚️" <>
+            record,
+          0..50_000
+        )
+
+      true ->
+        record
+    end
   end
 
   @spec truncate_counts_detailed(String.t()) :: String.t()
   defp truncate_counts_detailed(record) do
     # Maximum character count for Airtable's long text field is 100,000
     cond do
-      String.length(record) > 100_000 ->
-        IO.puts("Counts - detailed field > 100_000")
-        String.slice(record, 0..100_000)
+      String.length(record) > 50_000 ->
+        IO.puts("CONDENSING: Counts - detailed field > 50_000")
+
+        String.split(record, "💚️💚️")
+        |> Enum.map(fn ref ->
+          condense_references(ref)
+        end)
+        |> Enum.reverse()
+        |> (&[~s/Text condensed to meet Airtable cell limit of 100K characters/ | &1]).()
+        |> Enum.join("💚️💚️")
+        |> truncate_counts_detailed()
 
       true ->
         record
     end
+  end
+
+  @spec condense_references(String.t()) :: String.t()
+  defp condense_references(ref) do
+    # TODDO https://t.ly/ provides an api to a url shortener $5 pcm
+    ref
+    |> (&Regex.replace(~r/(s|reg|Sch|Pt)\.[ ](\d)/m, &1, "\\g{1}.\\g{2}")).()
+    |> (&Regex.replace(~r/applied \(with modifications\)/m, &1, "app w/ mods")).()
+    |> (&Regex.replace(~r/applied/m, &1, "app")).()
+    |> (&Regex.replace(~r/modified/m, &1, "mod")).()
+    |> (&Regex.replace(~r/as inserted/m, &1, "as ins")).()
+    |> (&Regex.replace(~r/\[Yes\]/, &1, "[Y]")).()
+    |> (&Regex.replace(~r/[ ]{2,}/, &1, " ")).()
+    |> (&Regex.replace(~r/[ - ]/, &1, "-")).()
   end
 end
