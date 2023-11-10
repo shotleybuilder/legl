@@ -6,6 +6,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
   alias Legl.Countries.Uk.LeglRegister.IdField
   alias Legl.Countries.Uk.LeglRegister.Amend
   alias Legl.Countries.Uk.LeglRegister.Amend.Stats.AmendmentStats
+  alias Legl.Countries.Uk.LeglRegister.Amend.Options
 
   defmodule AmendmentStats do
     @type stats :: %__MODULE__{
@@ -42,28 +43,27 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
         }
       )
 
+    if stats.amendments > Options.results_count(), do: IO.puts("WARNING: @url record limit")
+
     # Now we need to work with unique laws
     grouped = Enum.group_by(records, &{&1.path})
     uniq_records = collect_targets_affects_applied(grouped)
+    law_count = Enum.count(uniq_records)
 
-    sorted_records =
-      Enum.sort_by(
-        uniq_records,
-        &{Map.get(&1, :year), :desc}
-      )
+    sorted_records = Enum.sort(uniq_records, fn %{Year: x}, %{Year: y} -> x > y end)
 
     stats =
       Map.merge(
         stats,
         %{
+          # String list of the Name fields for each law changed
+          links: links(sorted_records),
           # The count of uniq laws affected by an affecting law or
           # The count of uniq laws affecting an affected law
-          laws: Enum.count(uniq_records),
+          laws: law_count,
           # String list of each law and number of changes
-          counts: counts(sorted_records),
-          counts_detailed: counts_detailed(sorted_records),
-          # String list of the Name fields for each law changed
-          links: links(sorted_records)
+          counts: counts(law_count, sorted_records),
+          counts_detailed: counts_detailed(sorted_records)
         }
       )
 
@@ -149,20 +149,45 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     # |> IO.inspect(label: "uniq")
   end
 
-  defp counts(records) do
-    Enum.map(records, fn record ->
-      ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️https://legislation.gov.uk#{record.path}]
-    end)
-    # |> Enum.sort_by( &{Regex.run(~r/\d{4}/, &1)}, :desc )
-    |> Enum.join("💚️💚️")
-  end
-
   defp links(records) do
     Enum.map(records, fn record ->
       record."Name"
     end)
     # |> Enum.sort_by( &{Regex.run(~r/\d{4}/, &1), Regex.run(~r/UK_[a-z]*_\d{4}_(.*)_/, &1, capture: :all_but_first)}, :desc )
     |> Enum.join(",")
+  end
+
+  @spec counts(integer(), %Amend{}) :: String.t()
+  defp counts(law_count, records) do
+    counts =
+      Enum.map(records, fn record ->
+        ~s[#{record."Name"} - #{record.affect_count}💚️#{record."Title_EN"}💚️https://legislation.gov.uk#{record.path}]
+      end)
+      # |> Enum.sort_by( &{Regex.run(~r/\d{4}/, &1)}, :desc )
+      |> Enum.join("💚️💚️")
+
+    if law_count > 600 do
+      optimise_counts(counts)
+    else
+      counts
+    end
+  end
+
+  @spec optimise_counts(String.t()) :: String.t()
+  defp optimise_counts(record) do
+    length = String.length(record)
+
+    cond do
+      length > 95_000 ->
+        IO.puts("CONDENSING: Counts field is #{length} characters & > 95_000")
+        # Condensing involves removing "https://legislation.gov.uk/"
+
+        ~s/Text condensed to meet Airtable cell limit of 100K characters💚️💚️#{record}/
+        |> truncate_counts()
+
+      true ->
+        record
+    end
   end
 
   defp counts_detailed(records) do
@@ -177,42 +202,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     )
     # |> Enum.sort_by( &{Regex.run(~r/\d{4}/, &1)}, :desc )
     |> Enum.join("💚️💚️")
-    |> truncate_counts_detailed()
+    |> optimise_counts_detailed()
   end
 
-  defp truncate_counts_detailed(
-         "Text condensed to meet Airtable cell limit of 100K characters" <> record
-       ) do
-    cond do
-      String.length(record) > 50_000 ->
-        IO.puts("SLICING: Counts - detailed field > 50_000")
-
-        String.slice(
-          "Text condensed to meet Airtable cell limit of 100K characters💚️Text truncated💚️" <>
-            record,
-          0..50_000
-        )
-
-      true ->
-        record
-    end
-  end
-
-  @spec truncate_counts_detailed(String.t()) :: String.t()
-  defp truncate_counts_detailed(record) do
+  @spec optimise_counts_detailed(String.t()) :: String.t()
+  defp optimise_counts_detailed(record) do
+    length = String.length(record)
     # Maximum character count for Airtable's long text field is 100,000
     cond do
-      String.length(record) > 50_000 ->
-        IO.puts("CONDENSING: Counts - detailed field > 50_000")
+      length > 50_000 ->
+        IO.puts("CONDENSING: Counts - detailed field is #{length} & is > 50_000")
 
-        String.split(record, "💚️💚️")
-        |> Enum.map(fn ref ->
-          condense_references(ref)
-        end)
-        |> Enum.reverse()
-        |> (&[~s/Text condensed to meet Airtable cell limit of 100K characters/ | &1]).()
-        |> Enum.join("💚️💚️")
-        |> truncate_counts_detailed()
+        ~s/Text condensed to meet Airtable cell limit of 100K characters💚️💚️#{record}/
+        |> condense_references()
+        |> truncate_counts()
 
       true ->
         record
@@ -224,12 +227,68 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
     # TODDO https://t.ly/ provides an api to a url shortener $5 pcm
     ref
     |> (&Regex.replace(~r/(s|reg|Sch|Pt)\.[ ](\d)/m, &1, "\\g{1}.\\g{2}")).()
-    |> (&Regex.replace(~r/applied \(with modifications\)/m, &1, "app w/ mods")).()
-    |> (&Regex.replace(~r/applied/m, &1, "app")).()
+    |> (&Regex.replace(~r/applied in part \(with modifications\)/m, &1, "ap in pt w/ mods")).()
+    |> (&Regex.replace(~r/applied in part/m, &1, "ap in pt")).()
+    |> (&Regex.replace(~r/applied \(with modifications\)/m, &1, "ap w/ mods")).()
+    |> (&Regex.replace(~r/applied/m, &1, "ap")).()
     |> (&Regex.replace(~r/modified/m, &1, "mod")).()
+    |> (&Regex.replace(~r/extended/m, &1, "ext")).()
+    |> (&Regex.replace(~r/amended/m, &1, "amd")).()
+    |> (&Regex.replace(~r/repealed in part/m, &1, "rep in pt")).()
+    |> (&Regex.replace(~r/repealed/m, &1, "rep")).()
+    |> (&Regex.replace(~r/transfer of functions/m, &1, "trans func")).()
+    |> (&Regex.replace(
+          ~r/power to apply in part for certain purposes conferred/m,
+          &1,
+          "pwr to app in pt for certain purp conf"
+        )).()
     |> (&Regex.replace(~r/as inserted/m, &1, "as ins")).()
+    |> (&Regex.replace(~r/savings for effects/m, &1, "svg fr eff")).()
+    |> (&Regex.replace(
+          ~r/amendment to earlier affecting provision/m,
+          &1,
+          "amd to earlier aff prov"
+        )).()
     |> (&Regex.replace(~r/\[Yes\]/, &1, "[Y]")).()
     |> (&Regex.replace(~r/[ ]{2,}/, &1, " ")).()
-    |> (&Regex.replace(~r/[ - ]/, &1, "-")).()
+    |> (&Regex.replace(~r/[ ]-[ ]/, &1, "-")).()
+  end
+
+  defp truncate_counts(record) do
+    length = String.length(record)
+    # Step 1.  Switch from full url to path and see if that meets target
+    record =
+      cond do
+        length > 90_000 ->
+          IO.puts("URL -> PATH: Counts or Counts - detailed field is #{length} & is > 90_000")
+          condense_url(record)
+
+        true ->
+          record
+      end
+
+    length = String.length(record)
+
+    # Step 2. Truncate the string if it's still too long
+    cond do
+      length > 90_000 ->
+        IO.puts("SLICING: Counts or Counts - detailed field is #{length} & is > 90_000")
+
+        "Text condensed to meet Airtable cell limit of 100K characters💚️💚️" <> record = record
+
+        String.slice(
+          "Text condensed to meet Airtable cell limit of 100K characters💚️Text truncated💚️💚️" <>
+            record,
+          0..90_000
+        )
+
+      true ->
+        record
+    end
+  end
+
+  defp condense_url(ref) do
+    ref
+    |> (&Regex.replace(~r/https:\/\/legislation.gov.uk/m, &1, "")).()
   end
 end

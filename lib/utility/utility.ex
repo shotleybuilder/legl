@@ -101,6 +101,12 @@ defmodule Legl.Utility do
     save_at_records_to_file(~s/#{json}/, path)
   end
 
+  @spec save_json_returning(list(), binary()) :: {:ok, list()}
+  def save_json_returning(records, path) do
+    json = Map.put(%{}, "records", records) |> Jason.encode!(pretty: true)
+    {save_at_records_to_file(~s/#{json}/, path), records}
+  end
+
   @spec save_structs_as_json(list(), binary()) :: :ok
   def save_structs_as_json(records, path) do
     maps_from_structs(records)
@@ -317,4 +323,24 @@ defmodule Legl.Utility do
       record when is_map(record) -> record
     end)
   end
+
+  @doc """
+  Function to return the members
+  """
+  @spec delta_lists(list(), list()) :: :no_change | String.t()
+  def delta_lists(old, new) do
+    MapSet.difference(convert_to_mapset(new), convert_to_mapset(old))
+    |> MapSet.to_list()
+  end
+
+  def convert_to_mapset(list) when list in [nil, ""], do: MapSet.new()
+
+  def convert_to_mapset(list) when is_binary(list) do
+    list
+    |> String.split(",")
+    |> Enum.map(&String.trim(&1))
+    |> MapSet.new()
+  end
+
+  def convert_to_mapset(list), do: MapSet.new(list)
 end

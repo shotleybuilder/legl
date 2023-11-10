@@ -55,7 +55,11 @@ defmodule UK do
              "Bare Laws from File",
              "UPDATE Metadata",
              "UPDATE Amend",
-             "PATCH Amend"
+             "PATCH Amend single record",
+             "PATCH Amend",
+             "PATCH Repeal|Revoke - single record",
+             "PATCH Repeal|Revoke",
+             "PATCH Repeal|Revoke - DELTA"
            ]
          ) do
       0 -> create()
@@ -63,7 +67,11 @@ defmodule UK do
       2 -> bare()
       3 -> metadata(workflow: :update)
       4 -> amend(workflow: :update)
-      5 -> amend(workflow: :create)
+      5 -> amend_single_record(workflow: :create)
+      6 -> amend(workflow: :create)
+      7 -> repeal_revoke_single_record(workflow: :update)
+      8 -> repeal_revoke()
+      9 -> repeal_revoke(workflow: :delta)
     end
   end
 
@@ -85,10 +93,16 @@ defmodule UK do
   def enact(opts),
     do: Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run(opts)
 
+  def amend_single_record(opts \\ []),
+    do: Legl.Countries.Uk.LeglRegister.Amend.single_record(opts)
+
   def amend(opts \\ []),
     do: Legl.Countries.Uk.LeglRegister.Amend.run(opts)
 
-  def revoke(opts),
+  def repeal_revoke_single_record(opts \\ []),
+    do: Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.single_record(opts)
+
+  def repeal_revoke(opts \\ []),
     do: Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.run(opts)
 
   def metadata(opts \\ []),

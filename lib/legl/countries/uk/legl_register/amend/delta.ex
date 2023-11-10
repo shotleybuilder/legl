@@ -63,7 +63,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
   end
 
   def concatenate_change_log(new, existing) do
-    ~s/#{new} #{existing}/
+    ~s/#{new}📌#{existing}/
   end
 
   @spec compare_fields(list(), list(), list()) :: list()
@@ -75,11 +75,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
       cond do
         # find the Delta between the lists
         field in [:Amended, :Amended_by] ->
-          case compare_amend_link_fields(current, latest) do
-            :no_change ->
+          case Legl.Utility.delta_lists(current, latest) do
+            [] ->
               acc
 
-            value ->
+            values ->
+              value =
+                values
+                |> Enum.sort()
+                |> Enum.join("📌")
+
               IO.puts(
                 "NAME: #{record."Title_EN"} #{record."Year"}\nDIFF: #{inspect(value, limit: :infinity)}"
               )
@@ -97,51 +102,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
           end
       end
     end)
-  end
-
-  defp compare_amend_link_fields(current, latest) do
-    current =
-      cond do
-        current in [nil, ""] ->
-          MapSet.new()
-
-        is_binary(current) ->
-          String.split(current, ",")
-          |> Enum.map(&String.trim(&1))
-          |> MapSet.new()
-
-        true ->
-          current
-          |> MapSet.new()
-      end
-
-    latest =
-      cond do
-        latest in [nil, ""] ->
-          MapSet.new()
-
-        is_binary(latest) ->
-          String.split(latest, ",")
-          |> Enum.map(&String.trim(&1))
-          |> MapSet.new()
-
-        true ->
-          latest
-          |> MapSet.new()
-      end
-
-    # IO.puts("CURRENT:\n#{inspect(current)}\nLATEST:\n#{inspect(latest)}")
-    # IO.puts("DIFF: #{inspect(MapSet.difference(latest, current))}")
-
-    case MapSet.difference(latest, current) |> MapSet.to_list() do
-      [] ->
-        :no_change
-
-      values ->
-        values
-        |> Enum.sort()
-        |> Enum.join("📌")
-    end
   end
 
   defp changed?(current, latest) when current in [nil, "", []] and latest not in [nil, "", []] do

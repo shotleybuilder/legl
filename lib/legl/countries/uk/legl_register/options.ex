@@ -6,10 +6,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Countries.Uk.LeglRegister.Models
 
-  @type formula :: binary()
+  @type formula :: list()
   @type opts :: map()
 
   @spec base_name(map()) :: map()
+  def base_name(%{base_name: bn} = opts) when bn not in ["", nil], do: opts
+
   def base_name(opts) do
     Map.put(
       opts,
@@ -58,6 +60,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
       opts,
       :year,
       ExPrompt.string("year? ", 2023)
+    )
+  end
+
+  @spec name(opts()) :: opts()
+  def name(%{name: n} = opts) when is_binary(n), do: opts
+
+  def name(opts) do
+    Map.put(
+      opts,
+      :name,
+      ExPrompt.string("Name ")
     )
   end
 
@@ -176,7 +189,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
-  @spec today(opts()) :: opts()
+  @spec patch?(opts()) :: opts()
+  def patch?(%{patch?: p} = opts) when is_boolean(p), do: opts
+
   def patch?(opts) do
     Map.put(
       opts,
@@ -186,7 +201,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   end
 
   @spec formula_today(list(), binary()) :: list() | []
-  def(formula_today(%{today: today} = _opts, field)) do
+
+  def formula_today(%{today?: false} = _opts, _field), do: []
+
+  def formula_today(%{today: today} = _opts, field) do
     cond do
       today == :today ->
         [~s/OR({#{field}}!=BLANK(), {#{field}}=TODAY())/]

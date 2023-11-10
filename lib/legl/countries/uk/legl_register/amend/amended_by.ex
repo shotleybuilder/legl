@@ -156,6 +156,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
 
         {5, {"td", _, [{_, [{"href", path}], _}]}}, acc ->
           {type_code, number, year} = Legl.Utility.type_number_year(path)
+          year = String.to_integer(year)
 
           [path, year, number, type_code | acc]
 

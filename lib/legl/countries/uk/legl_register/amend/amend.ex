@@ -62,13 +62,21 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
   @enumeration_limit 1
 
+  def single_record(opts \\ []) do
+    Options.single_record_options(opts)
+    |> workflow()
+  end
+
   @doc """
   Run amend 'stand alone' against records returned from Airtable
   Can be used as part of the monthly update process
   """
   def run(opts \\ []) do
-    opts = Options.set_options(opts)
+    Options.set_options(opts)
+    |> workflow()
+  end
 
+  def workflow(opts) do
     records =
       AT.get_records_from_at(opts)
       |> elem(1)
@@ -224,9 +232,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
   @api_results_path ~s[lib/legl/countries/uk/legl_register/amend/api_patch_results.json]
   def patch([], _), do: :ok
 
-  def patch(_, %{patch?: false}), do: :ok
-
-  def patch(records, %{patch?: true} = opts) do
+  def patch(records, opts) do
     IO.write("PATCH bulk - ")
 
     records = Enum.map(records, &clean(&1))
@@ -236,7 +242,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
     Legl.Utility.save_at_records_to_file(~s/#{json}/, @api_results_path)
     IO.write("Records saved to json - ")
 
-    Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.patch(records, opts)
+    if opts.patch? == true,
+      do: Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.patch(records, opts)
   end
 
   def clean(%{record_id: _} = record) when is_map(record) do

@@ -4,7 +4,10 @@ defmodule Legl.Services.LegislationGovUk.Url do
   """
   @doc """
   The introduction component of the laws on leg.gov.uk
+
   """
+  alias Legl.Countries.Uk.LeglRegister.Amend.Options
+
   def introduction_url(record) do
     path = introduction_path(record)
     ~s(http://www.legislation.gov.uk#{path})
@@ -102,7 +105,7 @@ defmodule Legl.Services.LegislationGovUk.Url do
   """
   @spec affecting_path(map() | tuple()) :: binary()
   def affecting_path(param) do
-    changes_path("affecting", param)
+    changes_path({"affecting", Options.results_count()}, param)
   end
 
   @doc """
@@ -113,37 +116,44 @@ defmodule Legl.Services.LegislationGovUk.Url do
   """
   @spec affected_path(map() | tuple()) :: binary()
   def affected_path(param) do
-    changes_path("affected", param)
+    changes_path({"affected", Options.results_count()}, param)
   end
 
   @spec changes_path(binary(), map()) :: binary()
-  defp changes_path(affect, %{Number: number, type_code: type_code, Year: year})
+  defp changes_path({affect, _results_count} = params, %{
+         Number: number,
+         type_code: type_code,
+         Year: year
+       })
        when affect in ["affected", "affecting"] do
-    changes_path(affect, {type_code, year, number})
+    changes_path(params, {type_code, year, number})
   end
 
   @spec changes_path(binary(), tuple()) :: binary()
-  defp changes_path(affect, {type_code, year, number})
+  defp changes_path(
+         {affect, _results_count} = params,
+         {type_code, year, number}
+       )
        when affect in ["affected", "affecting"] and
               is_binary(type_code) and is_integer(year) and is_binary(number) do
-    changes_path(affect, {type_code, Integer.to_string(year), number})
+    changes_path(params, {type_code, Integer.to_string(year), number})
   end
 
   @spec changes_path(binary(), tuple()) :: binary()
-  defp changes_path(affect, {type_code, year, number})
+  defp changes_path({affect, results_count}, {type_code, year, number})
        when affect in ["affected", "affecting"] and
               is_binary(type_code) and is_binary(year) and is_binary(number) do
     cond do
       Regex.match?(~r/\//, number) ->
-        ~s[/changes/#{affect}/#{type_code}/#{year}/#{number}/data.xml?results-count=2000&&sort=#{affect}-year-number]
+        ~s[/changes/#{affect}/#{type_code}/#{year}/#{number}/data.xml?results-count=#{results_count}&&sort=#{affect}-year-number]
 
       Regex.match?(~r/\/(\d+$)/, number) ->
         [_, n] = Regex.run(~r/\/(\d+$)/, number)
 
-        ~s[/changes/#{affect}/#{type_code}/#{year}/#{n}/data.xml?results-count=2000&&sort=#{affect}-year-number]
+        ~s[/changes/#{affect}/#{type_code}/#{year}/#{n}/data.xml?results-count=#{results_count}&&sort=#{affect}-year-number]
 
       true ->
-        ~s[/changes/#{affect}/#{type_code}/#{year}/#{number}/data.xml?results-count=2000&&sort=#{affect}-year-number]
+        ~s[/changes/#{affect}/#{type_code}/#{year}/#{number}/data.xml?results-count=#{results_count}&&sort=#{affect}-year-number]
     end
   end
 end

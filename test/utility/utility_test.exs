@@ -1,7 +1,8 @@
-defmodule Utility.RangeCalcTest do
-  # mix test test/utility/range_calc_test.exs:7
+defmodule Legl.Utility.Test do
+  # mix test test/utility/utility_test.exs:7
   use ExUnit.Case
   import Utility.RangeCalc
+  alias Legl.Utility, as: U
 
   describe "range/1" do
     test "pattern \d+[A-Z][A-Z]" do
@@ -89,6 +90,29 @@ defmodule Utility.RangeCalcTest do
       ]
 
       assert model == result
+    end
+  end
+
+  describe "convert_to_mapset/1" do
+    test "string" do
+      result = U.convert_to_mapset([""])
+      assert %MapSet{} = result
+    end
+  end
+
+  describe "delta_lists/2" do
+    test "delta_lists - matching" do
+      old = ["foo"]
+      new = ["foo"]
+      result = U.delta_lists(old, new)
+      assert [] = result
+    end
+
+    test "delta_lists - difference" do
+      old = ["foo"]
+      new = ["foo", "bar"]
+      result = U.delta_lists(old, new)
+      assert ["bar"] = result
     end
   end
 end

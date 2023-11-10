@@ -30,6 +30,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
   # Comma delimited string
   @amend_fields @amend_fields_list |> Enum.join(",")
 
+  @results_count 4000
+
   def amend_fields_list(), do: @amend_fields_list
   def amend_fields(), do: @amend_fields
 
@@ -49,6 +51,22 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     # saving to csv?
     csv?: false
   }
+  def single_record_options(opts) do
+    opts =
+      Enum.into(opts, @default_opts)
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> LRO.workflow()
+      |> LRO.name()
+      |> LRO.view()
+      |> LRO.patch?()
+      |> formula()
+      |> fields()
+
+    if(opts.csv?, do: Map.put(opts, :file, Csv.openCSVfile()), else: opts)
+    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+  end
+
   def set_options(opts) do
     opts =
       Enum.into(opts, @default_opts)
@@ -66,6 +84,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
 
     if(opts.csv?, do: Map.put(opts, :file, Csv.openCSVfile()), else: opts)
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+  end
+
+  def results_count() do
+    case @results_count do
+      c when is_integer(c) ->
+        @results_count
+
+      c when c in [nil, ""] ->
+        ExPrompt.get("results_count?", 2000)
+    end
   end
 
   def fields(%{workflow: :create} = opts) do
@@ -97,7 +125,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     )
   end
 
-  def formula(_type, %{name: name} = _opts) do
-    ~s/{name}="#{name}"/
+  def formula(%{name: name} = opts) do
+    Map.put(
+      opts,
+      :formula,
+      ~s/{name}="#{name}"/
+    )
   end
 end
