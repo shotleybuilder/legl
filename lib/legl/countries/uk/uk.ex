@@ -54,24 +54,52 @@ defmodule UK do
              "New Laws from gov.uk",
              "Bare Laws from File",
              "UPDATE Metadata",
-             "UPDATE Amend",
-             "PATCH Amend single record",
-             "PATCH Amend",
-             "PATCH Repeal|Revoke - single record",
-             "PATCH Repeal|Revoke",
-             "PATCH Repeal|Revoke - DELTA"
+             "Amend - single record - patch",
+             "Amend - patch",
+             "DELTA Amend - single record - patch",
+             "DELTA Amend",
+             "Repeal|Revoke - single record - patch",
+             "Repeal|Revoke - patch",
+             "DELTA Repeal|Revoke - single record - patch",
+             "DELTA Repeal|Revoke - patch"
            ]
          ) do
-      0 -> create()
-      1 -> creates()
-      2 -> bare()
-      3 -> metadata(workflow: :update)
-      4 -> amend(workflow: :update)
-      5 -> amend_single_record(workflow: :create)
-      6 -> amend(workflow: :create)
-      7 -> repeal_revoke_single_record(workflow: :update)
-      8 -> repeal_revoke()
-      9 -> repeal_revoke(workflow: :delta)
+      0 ->
+        create()
+
+      1 ->
+        creates()
+
+      2 ->
+        bare()
+
+      3 ->
+        metadata(workflow: :update)
+
+      4 ->
+        amend_single_record(workflow: :create)
+
+      5 ->
+        amend(workflow: :create)
+
+      6 ->
+        IO.puts("amend_single_record(workflow: :update)")
+        amend_single_record(workflow: :update)
+
+      7 ->
+        amend(workflow: :update)
+
+      8 ->
+        repeal_revoke_single_record(workflow: :update)
+
+      9 ->
+        repeal_revoke(workflow: :update)
+
+      10 ->
+        repeal_revoke_single_record(workflow: :delta)
+
+      11 ->
+        repeal_revoke(workflow: :delta)
     end
   end
 

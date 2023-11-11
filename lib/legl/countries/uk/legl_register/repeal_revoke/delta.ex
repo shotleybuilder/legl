@@ -21,7 +21,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.Delta do
 
     date = ~s/#{Date.utc_today()}/
 
-    Kernel.struct(record,
+    Kernel.struct(latest_record,
       "Live?_change_log": change_log,
       "Live?_checked": date
     )

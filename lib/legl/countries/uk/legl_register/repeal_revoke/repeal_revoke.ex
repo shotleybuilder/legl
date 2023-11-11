@@ -69,11 +69,11 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
       |> AT.strip_id_and_createdtime_fields()
       |> AT.make_records_into_legal_register_structs()
 
-    results = workflow(records, opts)
+    records = workflow(records, opts)
 
     # UPDATED LAWS that are REVOKED / REPEALED
 
-    Legl.Utility.maps_from_structs(results)
+    Legl.Utility.maps_from_structs(records)
     |> Enum.map(&Map.put(&1, :"Live?_checked", ~s/#{Date.utc_today()}/))
     |> Legl.Utility.map_filter_out_empty_members()
     # PATCH the results to Airtable if :patch? == true
@@ -92,25 +92,32 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
         record, acc ->
           IO.puts("TITLE_EN: #{record."Title_EN"}")
 
-          {latest_record, revoking} = get_revocations(record, opts)
+          case get_revocations(record, opts) do
+            {:ok, html} ->
+              {latest_record, affecting_laws} = repeals_revocations(record, html, opts)
+
+              latest_record =
+                case opts.workflow do
+                  :update ->
+                    latest_record
+
+                  :delta ->
+                    Delta.compare(record, latest_record)
+                end
+
+              {[latest_record | elem(acc, 0)], [affecting_laws | elem(acc, 1)]}
+
+            {:error, :no_records} ->
+              {[Map.put(record, :Live?, opts.code_live) | elem(acc, 0)], elem(acc, 1)}
+          end
 
           # We :update when we need a new Live? data and :delta to change_log
-          result =
-            case opts.workflow do
-              :update ->
-                latest_record
-
-              :delta ->
-                Delta.compare(record, latest_record)
-            end
-
-          {[result | elem(acc, 0)], [revoking | elem(acc, 1)]}
       end)
 
     # Save the new laws to json for later processing
     revoking
     |> List.flatten()
-    |> Legl.Utility.save_json(
+    |> Legl.Utility.save_structs_as_json(
       ~s[lib/legl/countries/uk/legl_register/repeal_revoke/api_revoke.json]
     )
 
@@ -122,74 +129,54 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
   @spec get_revocations(%LegalRegister{}, map()) :: {%LegalRegister{}, list() | []}
   def get_revocations(record, opts) do
-    with(
-      url = Url.content_path(record),
-      {:ok, html} <- RecordGeneric.leg_gov_uk_html(url, @client, @parser),
-      # IO.inspect(html, label: "TABLE DATA", limit: :infinity), Process the
-      # html to get a list of data tuples
-      #
-      # {:ok, "Consumer Protection Act 1987",
-      # "s. 34", "applied (with modifications)", "The Personal Protective
-      # Equipment (Enforcement) Regulations 2018", "uksi", "390", 2018,
-      # "/id/uksi/2018/390"}
-      data <- proc_amd_tbl(html),
-      # Search and filter for the terms 'revoke' or 'repeal' returning {:ok, list} or :no_records
-      # List {:ok, [{title, amendment_target, amendment_effect, amending_title&path}, ...{}]
-      {:ok, rr_data} <- filter(data) |> IO.inspect(),
-      # Sets the content of the revocation / repeal "Live?_description" field
-      {:ok, record} <- RRDescription.live_description(rr_data, record, opts),
-      # Filters for laws that have been revoked / repealed in full
-      record <- full_filter(data, record, opts),
-      # The Revoked_by linked record field
-      {:ok, record} <- revoked_by(rr_data, record),
-      {:ok, new_laws} <- new_law(rr_data)
-    ) do
-      {record, new_laws}
-    else
-      :no_records ->
-        {Map.put(record, :Live?, opts.code_live), []}
+    url = Url.content_path(record)
+    RecordGeneric.leg_gov_uk_html(url, @client, @parser)
+  end
 
-      {:error, :no_records} ->
-        result =
-          case Map.has_key?(record, :fields) do
-            true ->
-              Map.merge(record[:fields], %{Live?: opts.code_live, "Live?_checked": opts.date})
-              |> (&Map.put(record, :fields, &1)).()
+  def repeals_revocations(record, html, opts) do
+    affects = proc_amd_tbl(html)
 
-            _ ->
-              Map.put(record, :Live?, opts.code_live)
-          end
+    # Filter the table of amendments to return ONLY those revoking or repealing
+    filtered_affects =
+      Enum.filter(affects, fn %{affect: affect} -> Regex.match?(~r/(repeal|revoke)/, affect) end)
 
-        {result, []}
+    filtered_affects = Enum.sort(filtered_affects, fn %{Year: x}, %{Year: y} -> x < y end)
 
-      {:live, result} ->
-        IO.puts("LIVE: #{record."Title_EN"}\n#{inspect(result)}")
+    filtered_affects =
+      Enum.map(
+        filtered_affects,
+        &Map.put(
+          &1,
+          :amending_title_and_path,
+          ~s[#{&1.amending_title}💚️https://legislation.gov.uk#{&1.path}]
+        )
+      )
 
-        {result, []}
+    live_description_field = RRDescription.live_description(filtered_affects, record, opts)
 
-      {nil, msg} ->
-        IO.puts("NIL: #{record."Title_EN"}\n#{msg}\n")
-        {record, []}
+    live_field =
+      cond do
+        repealed_revoked_in_full?(filtered_affects) ->
+          opts.code_full
 
-      {:error, code, response, _} ->
-        IO.puts("#{code} #{response}")
-        {record, []}
+        Enum.count(filtered_affects) != 0 ->
+          opts.code_part
 
-      {:error, code, response} ->
-        IO.puts("#{code} #{response}")
-        {record, []}
+        true ->
+          opts.code_live
+      end
 
-      {:error, :html} ->
-        IO.puts(".html from #{record."Title_EN"}")
-        {record, []}
+    revoked_by = revoked_by(filtered_affects)
 
-      {:error, msg} ->
-        IO.puts("ERROR: #{msg}")
-        {record, []}
+    # Latest record is built from the record received
+    latest_record =
+      Kernel.struct(record,
+        "Live?_description": live_description_field,
+        Live?: live_field,
+        Revoked_by: revoked_by
+      )
 
-      :error ->
-        {record, []}
-    end
+    {latest_record, new_laws(filtered_affects)}
   end
 
   @doc """
@@ -283,96 +270,18 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
   end
 
   @doc """
-    Function searches using a Regex for the terms 'repeal' or 'revoke' in each amendment record
-
-    If no repeal or revoke terms are found then :no_records is returned
-
-    INPUT
-      {:ok, "Consumer Protection Act 1987",
-       "s. 34", "applied (with modifications)", "The Personal Protective
-       Equipment (Enforcement) Regulations 2018", "uksi", "390", 2018,
-       "/id/uksi/2018/390"}
-    OUTPUT
-    [
-      {"Forestry Act 1967", "s. 39(5)", "repealed",
-      "Requirements of Writing (Scotland) Act 1995💚️https://legislation.gov.uk/id/ukpga/1995/7"},
-      {"Forestry Act 1967", "Act", "power to repealed or amended (prosp.)",
-      "Government of Wales Act 1998💚️https://legislation.gov.uk/id/ukpga/1998/38"},
-      ...
-    ]
-    ALT OUTPUT
-    :no_records
-  """
-  @spec rr_filter(list()) :: :no_records | {:ok, list()}
-  def rr_filter(records) do
-    case Enum.reduce(records, [], fn x, acc ->
-           case x do
-             {:ok, title, amendment_target, amendment_effect, amending_title, type_code, number,
-              year, path} ->
-               case Regex.match?(~r/(repeal|revoke)/, amendment_effect) do
-                 true ->
-                   [
-                     {title, amendment_target, amendment_effect, amending_title, type_code,
-                      number, year, path, ~s[#{amending_title}💚️https://legislation.gov.uk#{path}]}
-                     | acc
-                   ]
-
-                 false ->
-                   acc
-               end
-
-             _ ->
-               acc
-           end
-         end) do
-      [] -> :no_records
-      data -> {:ok, data}
-    end
-  end
-
-  def filter(records) do
-    Enum.filter(
-      records,
-      fn %{affect: affect} ->
-        Regex.match?(~r/(repeal|revoke)/, affect)
-      end
-    )
-    |> amending_title_and_path()
-  end
-
-  def amending_title_and_path([]), do: :no_records
-
-  def amending_title_and_path(data) do
-    Enum.map(
-      data,
-      &Map.put(
-        &1,
-        :amending_title_and_path,
-        ~s[#{&1.amending_title}💚️https://legislation.gov.uk#{&1.path}]
-      )
-    )
-    |> IO.inspect()
-    |> (&{:ok, &1}).()
-  end
-
-  @doc """
   Function filters amendment table rows for entries describing the full revocation / repeal of a law
   """
-  @spec full_filter(list(), %__MODULE__{}, map()) :: %__MODULE__{}
-  def full_filter(data, struct, opts) do
-    case Enum.reduce_while(data, false, fn x, acc ->
-           case x do
-             {:ok, _title, target, effect, _amending_title, _path}
-             when target in ["Regulations", "Order", "Act"] and effect in ["revoked", "repealed"] ->
-               {:halt, true}
+  @spec repealed_revoked_in_full?(list()) :: boolean()
+  def repealed_revoked_in_full?(data) do
+    Enum.reduce_while(data, false, fn
+      %{target: target, affect: affect}, _acc
+      when target in ["Regulations", "Order", "Act"] and affect in ["revoked", "repealed"] ->
+        {:halt, true}
 
-             _ ->
-               {:cont, acc}
-           end
-         end) do
-      true -> Map.put(struct, :Live?, opts.code_full)
-      false -> struct
-    end
+      _, acc ->
+        {:cont, acc}
+    end)
   end
 
   @doc """
@@ -380,87 +289,36 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
   # {"Consumer Protection Act 1987", "s. 45(4)", "repealed",
     "Trade Marks Act 1994💚️https://legislation.gov.uk/id/ukpga/1994/26"}
   """
-  @spec revoked_by(list(), %__MODULE__{}) :: %__MODULE__{}
-  def revoked_by(rr_data, struct) do
+  @spec revoked_by(list()) :: String.t()
+  def revoked_by(rr_data) do
     rr_data
-    # |> rr_filter()
-    # |> elem(1)
-    |> Enum.reduce([], fn {_, _, _, x}, acc ->
-      x = Regex.replace(~r/\s/u, x, " ")
-
-      [_, title] =
-        case Regex.run(~r/(.*)[ ]\d*💚️/, x) do
-          [_, title] ->
-            [nil, title]
-
-          _ ->
-            case Regex.run(~r/(.*)[ ]\d{4}[ ]\(repealed\)💚️/, x) do
-              [_, title] ->
-                [nil, title]
-
-              _ ->
-                IO.puts("PROBLEM TITLE #{x}")
-                [nil, x]
-            end
-        end
-
-      [_, type, year, number] = Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d*)/, x)
-      [ID.id(title, type, year, number) | acc]
-    end)
+    |> Enum.uniq_by(& &1.path)
+    |> Enum.reduce(
+      [],
+      fn %{amending_title: t, Year: y, Number: n, type_code: tc}, acc ->
+        [ID.id(t, tc, y, n) | acc]
+      end
+    )
     |> Enum.uniq()
     |> Enum.join(",")
-    # |> Legl.Utility.csv_quote_enclosure()
-    |> (&Map.put(struct, :Revoked_by, &1)).()
-    |> (&{:ok, &1}).()
   end
 
-  def new_law(raw_data) do
-    raw_data
-    |> Enum.reduce([], fn {_, _, _, x}, acc ->
-      x = Regex.replace(~r/\s/u, x, " ")
-
-      [_, title] =
-        case Regex.run(~r/(.*)[ ]\d*💚️/, x) do
-          [_, title] ->
-            [nil, title]
-
-          _ ->
-            case Regex.run(~r/(.*)[ ]\d{4}[ ]\(repealed\)💚️/, x) do
-              [_, title] ->
-                [nil, title]
-
-              _ ->
-                IO.puts("PROBLEM TITLE #{x}")
-                [nil, x]
-            end
-        end
-
-      title =
-        title
-        |> Title.title_clean()
-
-      # |> (fn x -> ~s/"#{x}"/ end).()
-
-      [_, type, year, number] = Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d*)/, x)
-
-      name = ID.id(title, type, year, number)
+  def new_laws(records) do
+    records
+    |> Enum.map(fn %_{Title_EN: t, Number: n, Year: y, type_code: tc} ->
+      name = ID.id(t, tc, y, n)
 
       Map.new(
         Name: name,
-        Title_EN: title,
-        type_code: type,
-        Year: String.to_integer(year),
-        Number: number
+        Title_EN: Title.title_clean(t),
+        Number: n,
+        type_code: tc,
+        Year: y
       )
-      # |> (&Map.put(%{}, :fields, &1)).()
-
-      # [id, title, type, year, number]
-      # |> Enum.join(",")
-      # |> (fn x -> ~s/"#{x}"/ end).()
-      |> (&[&1 | acc]).()
     end)
     |> Enum.uniq()
-    |> (&{:ok, &1}).()
+
+    # |> (&{:ok, &1}).()
   end
 end
 

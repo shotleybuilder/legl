@@ -15,15 +15,12 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RRDescription do
           {:ok, %LegalRegister{}}
   def live_description(records, lr_struct, opts) do
     records
-    # |> rr_filter()
-    # |> elem(1)
     |> make_repeal_revoke_data_structure()
     |> sort_on_amending_law_year()
     |> convert_to_string()
     |> string_for_at_field()
-    |> (&Map.put(lr_struct, :"Live?_description", &1)).()
-    |> Map.put(:Live?, opts.code_part)
-    |> (&{:ok, &1}).()
+
+    # |> (&{:ok, &1}).()
   end
 
   @doc """

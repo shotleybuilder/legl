@@ -64,15 +64,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   end
 
   @spec name(opts()) :: opts()
-  def name(%{name: n} = opts) when is_binary(n), do: opts
 
-  def name(opts) do
+  def name(%{name: n} = opts) when n in ["", nil] do
     Map.put(
       opts,
       :name,
       ExPrompt.string("Name ")
     )
   end
+
+  def name(%{name: n} = opts) when is_binary(n), do: opts
 
   @spec view(opts()) :: opts()
   def view(%{view: view} = opts) when view not in ["", nil] do
