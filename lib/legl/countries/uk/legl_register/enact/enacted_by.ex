@@ -181,8 +181,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy do
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Options do
-  alias Legl.Countries.Uk.UkTypeClass, as: TypeClass
-  alias Legl.Countries.Uk.UkTypeCode, as: TypeCode
+  alias Legl.Countries.Uk.LeglRegister.TypeClass
+  alias Legl.Countries.Uk.LeglRegister.TypeCode
   alias alias Legl.Services.Airtable.AtBasesTables
 
   @default_opts %{

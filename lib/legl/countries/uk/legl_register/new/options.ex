@@ -41,7 +41,9 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
              "w/o si code",
              "w/ & w/o si code",
              "amending_laws",
-             "amended laws"
+             "amended laws",
+             "amend new laws",
+             "repealing - revoking new laws"
            ]) do
         0 ->
           :web
@@ -65,6 +67,18 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
           {
             :amend,
             "lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum0.json"
+          }
+
+        6 ->
+          {
+            :repeal_revoke,
+            "lib/legl/countries/uk/legl_register/amend/api_new_laws.json"
+          }
+
+        7 ->
+          {
+            :repeal_revoke,
+            "lib/legl/countries/uk/legl_register/repeal_revoke/api_new_laws.json"
           }
       end
     )

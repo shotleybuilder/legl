@@ -114,5 +114,58 @@ defmodule Legl.Utility.Test do
       result = U.delta_lists(old, new)
       assert ["bar"] = result
     end
+
+    test "delta_lists - real data" do
+      master = [
+        "UK_uksi_2016_1142_IIFASDESACPMO",
+        "UK_asp_2016_2_IIFASDESA",
+        "UK_uksi_2015_374_RRSACMO",
+        "UK_uksi_2014_3248_MR",
+        "UK_uksi_2013_448_HSMRRAR",
+        "UK_ukpga_2008_32_EA",
+        "UK_ukpga_2008_20_HSOA",
+        "UK_ssi_2006_475_FSACMSO",
+        "UK_ukpga_2006_48_PJA",
+        "UK_uksi_2005_1541_RRFSO",
+        "UK_uksi_2005_1082_MSER",
+        "UK_ukpga_2005_14_RA",
+        "UK_ukpga_2004_17_HPAA",
+        "UK_ukpga_2003_22_FA",
+        "UK_asp_2003_8_BSA",
+        "UK_uksi_2002_794_MAFFDO",
+        "UK_uksi_1996_1513_HSCER",
+        "UK_ukpga_1995_25_EA",
+        "UK_ukpga_1995_17_HAA",
+        "UK_ukpga_1994_19_LGWA"
+      ]
+
+      copy = [
+        "UK_uksi_2016_1142_IIFASDESACPMO",
+        "UK_asp_2016_2_IIFASDESA",
+        "UK_uksi_2015_374_RRSACMO",
+        "UK_uksi_2014_3248_MR",
+        "UK_uksi_2013_448_HSMRRAR",
+        "UK_ukpga_2008_32_EA",
+        "UK_ukpga_2008_20_HSOA",
+        "UK_ssi_2006_475_FSACMSO",
+        "UK_ukpga_2006_48_PJA",
+        "UK_uksi_2005_1541_RRFSO",
+        "UK_uksi_2005_1082_MSER",
+        "UK_ukpga_2005_14_RA",
+        "UK_ukpga_2004_17_HPAA",
+        "UK_asp_2003_8_BSA",
+        "UK_uksi_2002_794_MAFFDO",
+        "UK_uksi_1996_1513_HSCER",
+        "UK_ukpga_1995_25_EA",
+        "UK_ukpga_1995_17_HAA",
+        "UK_ukpga_1994_19_LGWA"
+      ]
+
+      IO.puts("master: #{Enum.count(master)} copy: #{Enum.count(copy)}")
+      result = U.delta_lists(copy, master)
+      IO.puts("Result #{Enum.count(result)}")
+      assert is_list(result)
+      assert result == ["UK_ukpga_2003_22_FA"]
+    end
   end
 end

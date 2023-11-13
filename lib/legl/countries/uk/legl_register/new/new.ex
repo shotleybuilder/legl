@@ -14,8 +14,16 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   alias Legl.Countries.Uk.LeglRegister.New.Filters
   alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
-  alias Legl.Countries.Uk.LeglRegister.New.Create
-
+  alias Legl.Countries.Uk.Metadata, as: MD
+  alias Legl.Countries.Uk.LeglRegister.Extent
+  alias Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy
+  alias Legl.Countries.Uk.LeglRegister.Amend
+  alias Legl.Countries.Uk.LeglRegister.IdField
+  alias Legl.Countries.Uk.LeglRegister.PublicationDate
+  alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke, as: RR
+  alias Legl.Countries.Uk.LeglRegister.Tags
+  alias Legl.Countries.Uk.LeglRegister.TypeClass
+  alias Legl.Countries.Uk.LeglRegister.Year
   @source ~s[lib/legl/countries/uk/legl_register/new/source.json]
 
   # @api_path ~s[lib/legl/countries/uk/legl_register/new/api.json]
@@ -59,21 +67,70 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         api_post_path: @api_post_path
       })
 
-    # Build BARE struct to initiate the process
-    record = %LR{
+    record = %{
       Number: opts.number,
       type_code: opts.type_code,
-      Year: String.to_integer(opts.year)
+      Year: opts.year
     }
+
+    bare_record(record, opts)
+  end
+
+  def api_create_from_file_bare_wo_title(opts \\ [csv?: false, mute?: true, post?: true]) do
+    opts =
+      Enum.into(opts, %{})
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> Options.source()
+      |> Map.merge(%{
+        drop_fields: @drop_fields,
+        api_patch_path: @api_patch_path,
+        api_post_path: @api_post_path
+      })
+
+    path =
+      case opts.source do
+        # Process laws saved in .json having processed amending or amended laws
+        {:amend, path} -> path
+        {:repeal_revoke, path} -> path
+      end
+
+    %{records: records} = path |> File.read!() |> Jason.decode!(keys: :atoms)
+
+    Enum.each(records, &bare_record(&1, opts))
+  end
+
+  @doc """
+  Receives a bare Legal Register record as a map
+  Builds the Legal Register Record and either PATCHes or POSTs to AT
+  """
+  @spec bare_record(
+          %{type_code: String.t(), Number: String.t(), Year: String.t()},
+          map()
+        ) ::
+          :ok
+  def bare_record(%{Year: year} = record, opts)
+      when is_binary(year) do
+    # Build BARE struct to initiate the process
+
+    record =
+      Map.put(record, :Year, String.to_integer(year))
+      |> (&Kernel.struct(%LR{}, &1)).()
 
     record =
       case Helper.exists?(record, opts) do
         false ->
-          record = update_empty_law_fields(record, @inc_path, opts)
+          record = update_empty_law_fields(record, opts)
 
-          case ExPrompt.confirm("Save #{record."Title_EN"}?") do
+          post? =
+            if opts.post? == true, do: true, else: ExPrompt.confirm("Post #{record."Title_EN"}?")
+
+          case post? do
             true ->
-              Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(record, opts)
+              Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.post_single_record(
+                record,
+                opts
+              )
 
             false ->
               :ok
@@ -82,13 +139,22 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         true ->
           {:ok, records} = Helper.get_lr_record(record, opts)
 
-          IO.puts("Record Exists and will be PATCHED\n")
+          patch? =
+            if opts.patch? == true,
+              do: true,
+              else: ExPrompt.confirm("Patch #{record."Title_EN"}?")
 
-          Enum.map(records, fn %{fields: fields} = record ->
-            update_empty_law_fields(fields, @inc_path, opts)
-            |> (&Map.put(record, :fields, &1)).()
-          end)
-          |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(opts)
+          case patch? do
+            true ->
+              Enum.map(records, fn %{fields: fields} = record ->
+                update_empty_law_fields(fields, opts)
+                |> (&Map.put(record, :fields, &1)).()
+              end)
+              |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(opts)
+
+            false ->
+              :ok
+          end
       end
 
     record
@@ -110,12 +176,14 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         api_post_path: @api_post_path
       })
 
-    %{records: records} =
-      cond do
+    path =
+      case opts.source do
         # Process laws saved in .json having processed amending or amended laws
-        {:amend, path} = opts.source ->
-          path |> File.read!() |> Jason.decode!(keys: :atoms)
+        {:amend, path} -> path
+        {:repeal_revoke, path} -> path
       end
+
+    %{records: records} = path |> File.read!() |> Jason.decode!(keys: :atoms)
 
     {:ok, w_si_code, wo_si_code, exc} =
       Enum.map(records, &Kernel.struct(%LR{}, &1))
@@ -334,7 +402,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         |> (&Kernel.struct(%LR{}, &1)).()
         |> (&[&1 | []]).()
         |> IO.inspect(label: "RECORD: ")
-        |> complete_new_law_fields(@inc_path, opts)
+        |> complete_new_law_fields(opts)
         |> save(opts)
 
         save_exc(records, opts)
@@ -452,7 +520,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
           _ ->
             IO.puts("\nPROCESSING LAWS MATCHING Terms and SI Code\n")
-            complete_new_law_fields(inc_w_si, @inc_w_si_path, opts)
+            complete_new_law_fields(inc_w_si, opts)
         end
 
       inc_wo_si =
@@ -462,7 +530,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
           _ ->
             IO.puts("\nPROCESSING LAWS MATCHING Terms and NO MATCH SI Code\n")
-            complete_new_law_fields(inc_wo_si, @inc_wo_si_path, opts)
+            complete_new_law_fields(inc_wo_si, opts)
         end
 
       {:ok, inc_w_si, inc_wo_si, exc}
@@ -478,21 +546,21 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
     {:ok, _records} =
       Map.merge(inc_w_si, inc_wo_si)
-      |> complete_new_law_fields(@inc_path, opts)
+      |> complete_new_law_fields(opts)
   end
 
   def complete(%{source: :si_coded} = opts) do
     # Open previously saved records from file
     %{records: records} = @inc_w_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
 
-    complete_new_law_fields(records, @inc_path, opts)
+    complete_new_law_fields(records, opts)
   end
 
   def complete(%{source: :si_uncoded} = opts) do
     # Open previously saved records from file
     %{records: records} = @inc_wo_si_path |> File.read!() |> Jason.decode!(keys: :atoms)
 
-    complete_new_law_fields(records, @inc_path, opts)
+    complete_new_law_fields(records, opts)
   end
 
   @doc """
@@ -501,142 +569,45 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   Enacted_by, Amended_by, Revoked_by are overwritten if they exist.
   """
-  @spec update_empty_law_fields(map(), binary(), map()) :: map()
-  def update_empty_law_fields(record, path, opts) when is_map(record) do
-    records = [record]
-
+  @spec update_empty_law_fields(map(), map()) :: map()
+  def update_empty_law_fields(record, opts)
+      when is_map(record) do
     with(
-      # Metadata fields
-      IO.write("METADATA"),
-      records = Create.set_metadata(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # type_class field
-      IO.write("TYPE CLASS"),
-      records = Create.set_type_class(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Type field
-      IO.write("TYPE"),
-      records = Create.set_type(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Tags field
-      IO.write("TAGS"),
-      records = Create.set_tags(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Name field
-      IO.write("NAME"),
-      records = Create.set_name(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Extent fields
-      IO.write("EXTENT"),
-      records = Create.set_extent(records),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Enacted by fields
-      IO.puts("ENACTED BY"),
-      records = Create.set_enacted_by(records, opts),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Amended by fields
-      IO.puts("AMENDED BY"),
-      records = Create.set_amended_by(records, opts),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete"),
-
-      # Revoked by fields
-      IO.puts("REVOKED BY"),
-      records = Create.set_revoked_by(records, opts),
-      :ok = Legl.Utility.save_json(records, path),
-      IO.puts("...complete")
+      {:ok, record} <- MD.get_latest_metadata(record),
+      {:ok, record} <- TypeClass.set_type_class(record),
+      {:ok, record} <- TypeClass.set_type(record),
+      {:ok, record} <- Tags.set_tags(record),
+      {:ok, record} <- IdField.id(record),
+      {:ok, record} <- Extent.set_extent(record),
+      {:ok, record, _} <- GetEnactedBy.get_enacting_laws(record, opts),
+      {:ok, record} <- Amend.workflow(record, opts),
+      {:ok, record} <- RR.workflow(record, opts)
     ) do
-      # Take the record out of the list to return map
-      List.first(records)
+      record
+    else
+      error ->
+        IO.puts("ERROR: #{inspect(error)}")
     end
   end
 
-  def complete_new_law_fields(records, path, opts) do
-    with(
-      # Year field
-      IO.write("YEAR"),
-      records = Create.set_year(records),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Metadata fields
-      IO.write("METADATA"),
-      records = Create.set_metadata(records),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Publication Date field
-      if Map.has_key?(opts, :record_ids) do
-        IO.write("PUBLICATION DATE")
-        records = Create.set_publication_date_link(records, opts)
-        :ok = Legl.Utility.save_structs_as_json(records, path)
-        IO.puts("...complete")
-      end,
-
-      # Name field
-      IO.write("NAME"),
-      records = Create.set_name(records),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # type_class field
-      IO.write("TYPE CLASS"),
-      records = Create.set_type_class(records),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Type field
-      IO.write("TYPE"),
-      records = Create.set_type(records),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Tags field
-      IO.write("TAGS"),
-      records = Create.set_tags(records),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Extent fields
-      IO.write("EXTENT"),
-      records = Create.set_extent(records),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Enacted by fields
-      IO.puts("ENACTED BY"),
-      records = Create.set_enacted_by(records, opts),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Amended by fields
-      IO.puts("AMENDED BY"),
-      records = Create.set_amended_by(records, opts),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete"),
-
-      # Revoked by fields
-      IO.puts("REVOKED BY"),
-      records = Create.set_revoked_by(records, opts),
-      :ok = Legl.Utility.save_structs_as_json(records, path),
-      IO.puts("...complete")
-    ) do
-      records
-    end
+  @spec complete_new_law_fields(list(%LR{}), map()) :: list(%LR{})
+  def complete_new_law_fields(records, opts) do
+    Enum.map(records, fn record ->
+      with(
+        # Year field
+        {:ok, record} <- Year.set_year(record),
+        # Publication Date field
+        {:ok, record} <-
+          PublicationDate.set_publication_date_link(
+            record,
+            opts
+          ),
+        # All the other fields
+        record = update_empty_law_fields(record, opts)
+      ) do
+        record
+      end
+    end)
   end
 
   @doc """

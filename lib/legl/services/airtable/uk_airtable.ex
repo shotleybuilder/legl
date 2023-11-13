@@ -3,10 +3,18 @@ defmodule Legl.Services.Airtable.UkAirtable do
   alias Legl.Services.Airtable.Records
   alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
 
+  @type t :: %{
+          base_id: String.t(),
+          table: String.t(),
+          view: String.t(),
+          fields: list(String.t()),
+          formula: String.t()
+        }
+
   @doc """
 
   """
-  @spec get_records_from_at(map()) :: {:ok, list()} | :ok
+  @spec get_records_from_at(__MODULE__.t()) :: {:ok, list()} | :ok
   def get_records_from_at(%{base_id: _} = opts) do
     with(
       params = %{
@@ -44,7 +52,7 @@ defmodule Legl.Services.Airtable.UkAirtable do
     Enum.map(records, fn %{fields: fields} = _record -> fields end)
   end
 
-  @spec make_records_into_legal_register_structs(list()) :: LR.legal_register()
+  @spec make_records_into_legal_register_structs(list()) :: list(LR.legal_register())
   def make_records_into_legal_register_structs(records) do
     Enum.map(records, &Kernel.struct(%LR{}, &1))
   end

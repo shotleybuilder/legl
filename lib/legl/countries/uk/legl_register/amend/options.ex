@@ -67,6 +67,33 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
+  def new_amended_law_finder(opts) do
+    Enum.into(opts, @default_opts)
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> Map.put(:view, "viwmcByn5ccT0NzKx")
+    |> Map.put(
+      :formula,
+      ~s/AND(OR({% Amending}=0.00,{% Amending}<1),{Family}!=BLANK())/
+    )
+    |> Map.put(:fields, ["Amending (from UK) - binary", "Amending"])
+  end
+
+  @doc """
+  Gets Amending laws that are not present in the Base
+  """
+  def new_amending_law_finder(opts) do
+    Enum.into(opts, @default_opts)
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> Map.put(:view, "viw7jwACHDKcOIars")
+    |> Map.put(
+      :formula,
+      ~s/AND(OR({% Amended By}=0.00,{% Amended By}<1),{Family}!=BLANK())/
+    )
+    |> Map.put(:fields, ["Amended_by (from UK) - binary", "Amended_by"])
+  end
+
   def set_options(opts) do
     opts =
       Enum.into(opts, @default_opts)

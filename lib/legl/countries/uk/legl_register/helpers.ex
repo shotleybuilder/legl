@@ -285,6 +285,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
   @moduledoc """
   PATCH records in a Legal Register
   """
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
 
   @doc """
 
@@ -306,7 +307,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
     end
   end
 
-  def run(record, opts) when is_map(record), do: run([record], opts)
+  def run(record, %{drop_fields: _} = opts) when is_map(record),
+    do: run([record], opts)
+
+  def run(record, opts) when is_map(record) do
+    record_id = record.record_id
+    record = Map.drop(record, [:record_id])
+
+    Map.merge(%{}, %{id: record_id, fields: record})
+    |> List.wrap()
+    |> patch(opts)
+  end
 
   def patch([], _), do: :ok
 
@@ -342,6 +353,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord do
   @doc """
   Receives the map of a new Law for POST to the Legal Register BASE
   """
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
+
+  @doc """
+  Function to Post a single Legal Register record struct
+  """
+  @spec post_single_record(%LegalRegister{}, map()) :: :ok
+  def post_single_record(%LegalRegister{} = record, opts) do
+    Map.from_struct(record)
+    |> Legl.Utility.map_filter_out_empty_members()
+    |> (&Map.merge(%{}, %{fields: &1})).()
+    |> List.wrap()
+    |> run(opts)
+  end
+
   @spec run(map() | list(), map()) :: :ok
   def run([], _), do: {:error, "RECORDS: EMPTY LIST: No data to Post"}
 
@@ -361,7 +386,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord do
 
   def run(_records, _opts), do: {:error, "OPTS: No :drop_fields list in opts"}
 
-  def post(records, opts) do
+  def post(records, opts) when is_list(records) do
     headers = [{:"Content-Type", "application/json"}]
 
     params = %{

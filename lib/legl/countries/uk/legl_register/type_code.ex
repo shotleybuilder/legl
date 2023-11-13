@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.UkTypeCode do
+defmodule Legl.Countries.Uk.LeglRegister.TypeCode do
   defstruct ukpga: "ukpga",
             uksi: "uksi",
             nia: "nia",
@@ -41,35 +41,7 @@ defmodule Legl.Countries.Uk.UkTypeCode do
     do: {:error, "Types for type_code must be Atom or List. You gave #{type_code}"}
 end
 
-defmodule Legl.Countries.Uk.UkTypeClass do
-  @type_classes ~w[Act Regulations Order Rules Byelaws]
-  defstruct act: "Act",
-            regulation: "Regulation",
-            order: "Order",
-            rule: "Rules",
-            byelaw: "Byelaws",
-            measure: "Measure"
-
-  def type_class(nil), do: {:ok, ""}
-
-  def type_class(type_class) when is_atom(type_class) do
-    case Map.get(%__MODULE__{}, type_class) do
-      nil -> {:error, "No type_class result for #{type_class}"}
-      result -> {:ok, result}
-    end
-  end
-
-  def type_class(type_class)
-      when is_binary(type_class) and type_class in @type_classes,
-      do: {:ok, type_class}
-
-  def type_class(""), do: {:ok, ""}
-
-  def type_class(type_class) when is_binary(type_class),
-    do: {:error, "No type_class result for #{type_class}"}
-end
-
-defmodule Legl.Countries.Uk.SClass do
+defmodule Legl.Countries.Uk.LeglRegister.SClass do
   defstruct occupational_personal_safety: "Occupational / Personal Safety"
 
   def sClass(sClass) when is_atom(sClass) do

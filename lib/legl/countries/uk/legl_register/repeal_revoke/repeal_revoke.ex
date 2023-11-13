@@ -28,6 +28,10 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Csv
 
+  @code_full "❌ Revoked / Repealed / Abolished"
+  @code_part "⭕ Part Revocation / Repeal"
+  @code_live "✔ In force"
+
   defstruct [
     :Title_EN,
     :target,
@@ -57,7 +61,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
     |> workflow()
   end
 
-  @api_post_results_path ~s[lib/legl/countries/uk/legl_register/repeal_revoke/api_post_results.json]
+  # @api_post_results_path ~s[lib/legl/countries/uk/legl_register/repeal_revoke/api_post_results.json]
 
   @spec workflow(map()) :: :ok
   def workflow(opts) do
@@ -84,6 +88,17 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
     :ok
   end
 
+  @spec workflow(%LegalRegister{}, map()) :: {:ok, %LegalRegister{}}
+  def workflow(%LegalRegister{} = record, opts) when is_struct(record) do
+    IO.puts(" REVOKED BY")
+
+    {:ok,
+     record
+     |> List.wrap()
+     |> workflow(opts)
+     |> List.first()}
+  end
+
   @spec workflow(list(), map()) :: list()
   def workflow(records, opts) do
     # {:ok, opts} = Options.set_options(opts)
@@ -108,7 +123,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
               {[latest_record | elem(acc, 0)], [affecting_laws | elem(acc, 1)]}
 
             {:error, :no_records} ->
-              {[Map.put(record, :Live?, opts.code_live) | elem(acc, 0)], elem(acc, 1)}
+              {[Map.put(record, :Live?, @code_live) | elem(acc, 0)], elem(acc, 1)}
           end
 
           # We :update when we need a new Live? data and :delta to change_log
@@ -128,7 +143,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
   @parser &Legl.Services.LegislationGovUk.Parsers.Html.amendment_parser/1
 
   @spec get_revocations(%LegalRegister{}, map()) :: {%LegalRegister{}, list() | []}
-  def get_revocations(record, opts) do
+  def get_revocations(record, _opts) do
     url = Url.content_path(record)
     RecordGeneric.leg_gov_uk_html(url, @client, @parser)
   end
@@ -157,13 +172,13 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
     live_field =
       cond do
         repealed_revoked_in_full?(filtered_affects) ->
-          opts.code_full
+          @code_full
 
         Enum.count(filtered_affects) != 0 ->
-          opts.code_part
+          @code_part
 
         true ->
-          opts.code_live
+          @code_live
       end
 
     revoked_by = revoked_by(filtered_affects)
@@ -411,6 +426,10 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.NewLaw do
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Csv do
+  # @code_full "❌ Revoked / Repealed / Abolished"
+  # @code_part "⭕ Part Revocation / Repeal"
+  @code_live "✔ In force"
+
   @at_csv ~s[lib/legl/countries/uk/legl_register/repeal_revoke/repeal_revoke.csv]
           |> Path.absname()
   @rr_new_law ~s[lib/legl/countries/uk/legl_register/repeal_revoke/rr_new_law.csv]
@@ -431,12 +450,12 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.Csv do
 
   def save_to_csv(name, %{"Live?_description": ""}, opts) do
     # no revokes or repeals
-    ~s/#{name},#{opts.code_live}/ |> (&IO.puts(opts.file, &1)).()
+    ~s/#{name},#{@code_live}/ |> (&IO.puts(opts.file, &1)).()
   end
 
   def save_to_csv(name, %{"Live?_description": nil}, opts) do
     # no revokes or repeals
-    ~s/#{name},#{opts.code_live}/ |> (&IO.puts(opts.file, &1)).()
+    ~s/#{name},#{@code_live}/ |> (&IO.puts(opts.file, &1)).()
   end
 
   def save_to_csv(name, r, opts) do

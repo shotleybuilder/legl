@@ -26,6 +26,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   """
   @spec get_enacting_laws(list(), map()) :: {:ok, list(), list()}
   def get_enacting_laws(records, opts) when is_list(records) do
+    IO.puts(" ENACTED BY")
+
     records =
       Enum.reduce(records, [], fn
         # Acts are not Enacted

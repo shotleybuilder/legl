@@ -69,103 +69,27 @@ defmodule Legl.Countries.Uk.Metadata do
     }
   ]
 
-  @get_fields ~w[
-    Name
-    md_checked
-    md_description
-    md_subjects
-    md_modified
-    md_total_paras
-    md_body_paras
-    md_schedule_paras
-    md_attachment_paras
-    md_images
-    md_error_code
-    md_change_log
-  ]
-  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
-  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
-
-  alias Legl.Services.Airtable.Records
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
+  alias Legl.Services.LegislationGovUk.Url
+  alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.LegislationGovUk.RecordGeneric, as: Record
 
   alias Legl.Countries.Uk.Metadata.Delta
   alias Legl.Countries.Uk.Metadata.Csv
   alias Legl.Countries.Uk.LeglRegister.Metadata.Patch
+  alias Legl.Countries.Uk.LeglRegister.Metadata.Options
 
   @source_path ~s[lib/legl/countries/uk/legl_register/metadata/metadata_source.json]
   @raw_results_path ~s[lib/legl/countries/uk/legl_register/metadata/metadata_raw_results.json]
   @results_path ~s[lib/legl/countries/uk/legl_register/metadata/metadata_results.json]
 
-  @default_opts %{
-    type_code: nil,
-    type_class: nil,
-    base_name: "UK E",
-    table: "UK",
-    # source of Airtable records
-    at_source: :web,
-    # source of legislation-gov-uk records
-    leg_gov_uk_source: :web,
-    workflow: nil,
-    family: nil,
-    filesave?: true,
-    csv?: true,
-    patch?: true,
-    patch_as_you_go?: false
-  }
   @doc """
-    Legl.Countries.Uk.UkLegGovUkMetadata.workflow()
+
   """
   def run(opts \\ []) do
-    Enum.into(opts, @default_opts)
-    |> LRO.base_name()
-    |> LRO.base_table_id()
-    |> LRO.type_code()
-    |> LRO.type_class()
-    |> LRO.family()
-    |> LRO.today()
-    |> LRO.view()
-    |> LRO.at_source()
-    |> LRO.leg_gov_uk_source()
-    |> fields()
-    |> formula()
-    |> IO.inspect(label: "\nOptions: ")
+    Options.set_options(opts)
     |> workflow()
   end
-
-  defp fields(%{at_source: :web, workflow: :update} = opts) do
-    Map.merge(opts, %{
-      fields: ["Title_EN", "leg.gov.uk intro text"] ++ @get_fields
-    })
-  end
-
-  defp fields(%{at_source: :web} = opts) do
-    Map.merge(opts, %{
-      fields: ["Name", "Title_EN", "leg.gov.uk intro text"]
-    })
-  end
-
-  defp fields(opts), do: opts
-
-  defp formula(%{at_source: :web, workflow: :update} = opts) do
-    f =
-      LRO.formula_today(opts, "md_checked")
-      |> LRO.formula_type_code(opts)
-      |> LRO.formula_type_class(opts)
-      |> LRO.formula_family(opts)
-
-    Map.put(
-      opts,
-      :formula,
-      ~s/AND(#{Enum.join(f, ",")})/
-    )
-  end
-
-  defp formula(%{at_source: :web} = opts) do
-    Map.merge(opts, %{formula: ~s/AND({type_code}="#{opts.type_code}", {md_modified}=BLANK())/})
-  end
-
-  defp formula(opts), do: opts
 
   defp workflow(%{leg_gov_uk_source: :file} = opts) do
     # when legislation.gov.uk records have been saved to file
@@ -173,7 +97,19 @@ defmodule Legl.Countries.Uk.Metadata do
     Patch.patch(records, opts)
   end
 
-  defp workflow(opts) do
+  @spec workflow(map()) :: :ok
+  defp workflow(%{workflow: :update} = opts) do
+    get(opts)
+    |> AT.strip_id_and_createdtime_fields()
+    |> AT.make_records_into_legal_register_structs()
+    |> Enum.map(&get_latest_metadata(&1))
+    |> Legl.Utility.maps_from_structs()
+    |> Legl.Utility.map_filter_out_empty_members()
+    |> Legl.Utility.save_structs_as_json_returning(@results_path, opts)
+    |> Enum.each(&Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(&1, opts))
+  end
+
+  defp workflow(%{workflow: :delta} = opts) do
     with(
       {:ok, recordset} <- get(opts),
       opts = Map.put(opts, :current_records, recordset),
@@ -194,50 +130,21 @@ defmodule Legl.Countries.Uk.Metadata do
     end
   end
 
-  defp get(%{at_source: :web} = opts) do
-    with(
-      params = %{
-        base: opts.base_id,
-        table: opts.table_id,
-        options: %{
-          fields: opts.fields,
-          formula: opts.formula,
-          view: opts.view
-        }
-      },
-      {:ok, {jsonset, _recordset}} <- Records.get_records({[], []}, params)
-    ) do
-      if opts.filesave? == true,
-        do: Legl.Utility.save_at_records_to_file(~s/#{jsonset}/, @source_path)
-
-      %{records: records} = Jason.decode!(jsonset, keys: :atoms)
-      # IO.inspect(records)
-      IO.puts("#{Enum.count(records)} records returned from Airtable")
-
-      add_empty_fields(records)
-      |> (&{:ok, &1}).()
-    else
-      {:error, error} -> {:error, error}
-    end
-  end
-
   defp get(%{source: :file} = _opts) do
     json = @source_path |> Path.absname() |> File.read!()
-    %{records: records} = Jason.decode!(json, keys: :atoms)
 
-    add_empty_fields(records)
-    |> (&{:ok, &1}).()
+    %{records: records} =
+      Jason.decode!(json, keys: :atoms)
+      |> (&{:ok, &1}).()
+
+    records
   end
 
-  defp add_empty_fields(records) do
-    # Airtable doesn't return empty fields.  md_change_log starts life empty
-    Enum.reduce(records, [], fn record, acc ->
-      fields =
-        Map.put_new(record.fields, :md_change_log, "")
-        |> Map.put_new(:md_subjects, [])
-
-      [%{record | fields: fields} | acc]
-    end)
+  defp get(%{at_source: :web} = opts) do
+    AT.get_records_from_at(opts)
+    |> elem(1)
+    |> Jason.encode!()
+    |> Jason.decode!(keys: :atoms)
   end
 
   defp get_metadata(%{current_records: current_records, leg_gov_uk_source: :web} = opts) do
@@ -248,7 +155,7 @@ defmodule Legl.Countries.Uk.Metadata do
         IO.puts("#{current_fields[:Title_EN]}")
 
         metadata =
-          case opts.workflow == :update do
+          case opts.workflow == :delta do
             true ->
               md_change_log = Delta.compare_fields(current_fields, metadata)
               Map.put(metadata, :md_change_log, md_change_log)
@@ -301,8 +208,32 @@ defmodule Legl.Countries.Uk.Metadata do
 
   Returns the metadata map
   """
+  @spec get_latest_metadata(struct()) :: struct()
+  def get_latest_metadata(%LegalRegister{} = record)
+      when is_struct(record) do
+    IO.write(" METADATA")
+    url = Url.introduction_path(record)
+    {:ok, metadata} = get_latest_metadata(url)
+
+    record =
+      if metadata.title != record."Title_EN",
+        do: Map.put(record, :Title_EN, metadata.title),
+        else: record
+
+    metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
+
+    {:ok, Kernel.struct(record, metadata)}
+  rescue
+    e ->
+      IO.puts(
+        "...ERROR: #{record.type_code} #{record."Number"} #{record."Year"} #{inspect(e)}\n #{__MODULE__}.get_latest_metadata\n"
+      )
+
+      e
+  end
+
   @spec get_latest_metadata(binary()) :: {:ok, map()}
-  def get_latest_metadata(path) do
+  def get_latest_metadata(path) when is_binary(path) do
     with({:ok, :xml, metadata} <- Record.metadata(path)) do
       # save the data returned from leg.gov.uk w/o transformation
       json = Map.put(%{}, "records", metadata) |> Jason.encode!()
@@ -368,6 +299,7 @@ defmodule Legl.Countries.Uk.Metadata do
             |> Enum.map(&String.replace(&1, ", SCOTLAND", ""))
             |> Enum.map(&String.replace(&1, ", NORTHERN IRELAND", ""))
             |> Enum.map(&String.replace(&1, ", WALES", ""))
+            |> Enum.join(",")
             |> (&Map.put(metadata, :si_code, &1)).()
         end
 

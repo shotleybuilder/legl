@@ -117,8 +117,5 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RRDescription do
   def string_for_at_field(records) do
     Enum.join(records)
     |> (&Regex.replace(~r/^💚️/, &1, "")).()
-
-    # |> Legl.Utility.csv_quote_enclosure()
-    # |> (&Map.merge(struct, %{"Live?_description": &1, Live?: opts.code_part})).()
   end
 end

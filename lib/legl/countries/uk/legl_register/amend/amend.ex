@@ -119,7 +119,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   Workflow is part of a larger process setting all the fields of a legal register record
   """
   def workflow(record, opts) when is_map(record) do
-    workflow([record], opts)
+    workflow([record], opts) |> List.first()
+  end
+
+  @spec workflow(%LegalRegister{}, map()) :: {:ok, %LegalRegister{}}
+  def workflow(record, opts) when is_struct(record) do
+    IO.puts(" AMENDED BY")
+    {:ok, workflow([record], opts) |> List.first()}
   end
 
   @spec workflow(list(LegalRegister), map()) :: list(LegalRegister)
@@ -143,10 +149,15 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         results
 
       false ->
-        case ExPrompt.confirm(
-               "There are #{Enum.count(records)} laws in this iteration.  Continue?"
-             ) or
-               @enumeration_limit == 0 do
+        continue? =
+          if enumeration_limit < @enumeration_limit,
+            do: true,
+            else:
+              ExPrompt.confirm(
+                "There are #{Enum.count(records)} laws in this iteration.  Continue?"
+              )
+
+        case continue? do
           false ->
             # IO.inspect(results)
             results

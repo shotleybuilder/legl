@@ -104,6 +104,18 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.Options do
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
+  def new_law_finder(opts) do
+    Enum.into(opts, @default_opts)
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> Map.put(:view, "viwogHv5dFgDRTZhX")
+    |> Map.put(
+      :formula,
+      ~s/AND(OR({% RR (calc)}=0.00,{% RR (calc)}<1),{Family}!=BLANK())/
+    )
+    |> Map.put(:fields, ["Revoked_by (from UK) - binary", "Revoked_by"])
+  end
+
   defp fields(opts) do
     Map.put(
       opts,

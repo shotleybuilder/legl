@@ -52,7 +52,8 @@ defmodule UK do
            [
              "Single Law using :type_code, :number, :year",
              "New Laws from gov.uk",
-             "Bare Laws from File",
+             "Bare Laws w/ Title_EN from File",
+             "Bare Laws w/o Title_EN from File",
              "UPDATE Metadata",
              "Amend - single record - patch",
              "Amend - patch",
@@ -74,31 +75,33 @@ defmodule UK do
         bare()
 
       3 ->
-        metadata(workflow: :update)
+        bare_wo_title(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
 
       4 ->
-        amend_single_record(workflow: :create)
+        metadata(workflow: :update)
 
       5 ->
-        amend(workflow: :create)
+        amend_single_record(workflow: :create)
 
       6 ->
-        IO.puts("amend_single_record(workflow: :update)")
-        amend_single_record(workflow: :update)
+        amend(workflow: :create)
 
       7 ->
-        amend(workflow: :update)
+        amend_single_record(workflow: :update)
 
       8 ->
-        repeal_revoke_single_record(workflow: :update)
+        amend(workflow: :update)
 
       9 ->
-        repeal_revoke(workflow: :update)
+        repeal_revoke_single_record(workflow: :update)
 
       10 ->
-        repeal_revoke_single_record(workflow: :delta)
+        repeal_revoke(workflow: :update)
 
       11 ->
+        repeal_revoke_single_record(workflow: :delta)
+
+      12 ->
         repeal_revoke(workflow: :delta)
     end
   end
@@ -106,7 +109,9 @@ defmodule UK do
   def create(), do: New.api_create()
   def create_from_file(), do: New.api_create_from_file_bare()
   def creates(), do: New.api_creates()
+
   def bare(), do: New.api_create_from_file_bare()
+  def bare_wo_title(opts \\ []), do: New.api_create_from_file_bare_wo_title(opts)
 
   @doc """
   Function provides a shortcut to list all the members of the Dutyholders taxonomy

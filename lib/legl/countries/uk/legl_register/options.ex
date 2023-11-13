@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   @moduledoc """
   Module has common option choices for running Legal Register operations
   """
-  alias Legl.Countries.Uk.UkTypeCode
+  alias Legl.Countries.Uk.LeglRegister.TypeCode
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Countries.Uk.LeglRegister.Models
 
@@ -37,8 +37,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     Map.put(
       opts,
       :type_code,
-      case ExPrompt.choose("type_code? ", UkTypeCode.type_codes()) do
-        index when index in 0..14 -> Enum.at(UkTypeCode.type_codes(), index)
+      case ExPrompt.choose("type_code? ", TypeCode.type_codes()) do
+        index when index in 0..14 -> Enum.at(TypeCode.type_codes(), index)
         -1 -> ""
         _ -> ""
       end

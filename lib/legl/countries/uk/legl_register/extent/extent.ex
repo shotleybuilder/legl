@@ -13,6 +13,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
   alias Legl.Services.LegislationGovUk.RecordGeneric
   alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.AtBasesTables
+  alias Legl.Services.LegislationGovUk.Url
 
   @at_csv ~s[lib/legl/countries/uk/legl_register/extent/extent.csv]
           |> Path.absname()
@@ -41,8 +42,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
     {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
 
-    with {:ok, type_codes} <- Legl.Countries.Uk.UkTypeCode.type_code(opts.type_code),
-         {:ok, type_class} <- Legl.Countries.Uk.UkTypeClass.type_class(opts.type_class),
+    with {:ok, type_codes} <- Legl.Countries.Uk.LeglRegister.TypeCode.type_code(opts.type_code),
+         {:ok, type_class} <-
+           Legl.Countries.Uk.LeglRegister.TypeClass.type_class(opts.type_class),
          {:ok, sClass} <- Legl.Countries.Uk.SClass.sClass(opts.sClass),
          {:ok, file} <- @at_csv |> File.open([:utf8, :write]) do
       #
@@ -334,5 +336,86 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
       end
     end)
     |> Enum.reverse()
+  end
+
+  @doc """
+  Function to set the Extent fields: 'Geo_Pan_Region', 'Geo_Region' and 'Geo_Extent'
+  in the Legal Register
+  """
+  @spec set_extent(LR.legal_register()) :: {:ok, LR.legal_register()}
+  def set_extent(record) do
+    IO.write(" EXTENT")
+
+    record =
+      case record do
+        %_{Number: number, type_code: type_code, Year: year} = record
+        when is_binary(number) and is_binary(type_code) and is_integer(year) ->
+          path = Url.contents_xml_path(record)
+
+          with(
+            {:ok, data} <- get_extent_leg_gov_uk(path),
+            {:ok,
+             %{
+               geo_extent: geo_extent,
+               geo_region: geo_region
+             }} <- Extent.extent_transformation(data),
+            geo_pan_region = geo_pan_region(geo_region)
+          ) do
+            Kernel.struct(
+              record,
+              %{
+                Geo_Parent: "United Kingdom",
+                Geo_Pan_Region: geo_pan_region,
+                Geo_Region: geo_region,
+                Geo_Extent: geo_extent
+              }
+            )
+
+            # |> IO.inspect(label: "EXTENT: ")
+          else
+            {:no_data, []} ->
+              IO.puts(
+                "\nNO DATA: No Extent data returned from legislation.gov.uk\n Check manually"
+              )
+
+              record
+
+            {:error, msg} ->
+              IO.puts("\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record[:Title_EN])}\n")
+              record
+          end
+
+        # Pass through the record w/o setting Extent if :Number, :type_code, :Year absent
+        record ->
+          IO.puts(
+            "\nERROR: Record does not have required fields\n:Extents key cannot be set\n#{inspect(record)}"
+          )
+
+          record
+      end
+
+    {:ok, record}
+  end
+
+  defp geo_pan_region(""), do: ""
+
+  defp geo_pan_region(geo_region) do
+    regions_list =
+      geo_region
+      # String.split(geo_region, ",")
+      |> Enum.map(&String.trim(&1))
+      |> Enum.sort()
+
+    cond do
+      ["England", "Northern Ireland", "Scotland", "Wales"] == regions_list -> "UK"
+      ["England", "Scotland", "Wales"] == regions_list -> "GB"
+      ["England", "Wales"] == regions_list -> "E+W"
+      ["England", "Scotland"] == regions_list -> "E+S"
+      ["England"] == regions_list -> "E"
+      ["Wales"] == regions_list -> "W"
+      ["Scotland"] == regions_list -> "S"
+      ["Northern Ireland"] == regions_list -> "NI"
+      true -> ""
+    end
   end
 end

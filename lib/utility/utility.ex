@@ -107,12 +107,27 @@ defmodule Legl.Utility do
     {save_at_records_to_file(~s/#{json}/, path), records}
   end
 
+  @spec save_structs_as_json(list(), path :: binary(), map()) :: :ok
+  def save_structs_as_json(records, path, %{filesave?: true} = _opts) do
+    save_structs_as_json(records, path)
+  end
+
+  def save_structs_as_json(_, _, _), do: :ok
+
   @spec save_structs_as_json(list(), binary()) :: :ok
-  def save_structs_as_json(records, path) do
+  def save_structs_as_json(records, path) when is_list(records) do
     maps_from_structs(records)
     |> (&Map.put(%{}, "records", &1)).()
     |> Jason.encode!(pretty: true)
     |> save_at_records_to_file(path)
+  end
+
+  def save_structs_as_json(_, _), do: :ok
+
+  @spec save_structs_as_json_returning(list(), path :: binary(), map()) :: list()
+  def save_structs_as_json_returning(records, path, %{filesave?: true} = _opts) do
+    save_structs_as_json(records, path)
+    records
   end
 
   @doc """
@@ -183,6 +198,7 @@ defmodule Legl.Utility do
     end
   end
 
+  @spec split_name(String.t()) :: tuple()
   def split_name(name) do
     case Regex.run(~r/_([a-z]*?)_(\d{4})_(.*?)_/, name) do
       [_, type, year, number] ->
@@ -307,10 +323,13 @@ defmodule Legl.Utility do
     end
   end
 
-  def map_filter_out_empty_members(records) do
-    Enum.map(records, fn record ->
-      Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
-    end)
+  @spec map_filter_out_empty_members(list()) :: list()
+  def map_filter_out_empty_members(records) when is_list(records),
+    do: Enum.map(records, &map_filter_out_empty_members(&1))
+
+  @spec map_filter_out_empty_members(map()) :: map()
+  def map_filter_out_empty_members(record) when is_map(record) do
+    Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
   end
 
   @spec maps_from_structs([]) :: []
@@ -327,7 +346,7 @@ defmodule Legl.Utility do
   @doc """
   Function to return the members
   """
-  @spec delta_lists(list(), list()) :: :no_change | String.t()
+  @spec delta_lists(list(), list()) :: list()
   def delta_lists(old, new) do
     MapSet.difference(convert_to_mapset(new), convert_to_mapset(old))
     |> MapSet.to_list()
