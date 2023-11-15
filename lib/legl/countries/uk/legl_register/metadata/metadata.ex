@@ -216,8 +216,8 @@ defmodule Legl.Countries.Uk.Metadata do
     {:ok, metadata} = get_latest_metadata(url)
 
     record =
-      if metadata.title != record."Title_EN",
-        do: Map.put(record, :Title_EN, metadata.title),
+      if metadata."Title_EN" != record."Title_EN",
+        do: Map.put(record, :Title_EN, metadata."Title_EN"),
         else: record
 
     metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
@@ -232,12 +232,22 @@ defmodule Legl.Countries.Uk.Metadata do
       e
   end
 
+  def get_latest_metadata(record) when is_map(record) do
+    IO.write(" METADATA -> map")
+    url = Url.introduction_path(record)
+    {:ok, metadata} = get_latest_metadata(url)
+    metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv])
+    {:ok, Map.merge(record, metadata)}
+  rescue
+    _ -> {:error}
+  end
+
   @spec get_latest_metadata(binary()) :: {:ok, map()}
   def get_latest_metadata(path) when is_binary(path) do
     with({:ok, :xml, metadata} <- Record.metadata(path)) do
       # save the data returned from leg.gov.uk w/o transformation
-      json = Map.put(%{}, "records", metadata) |> Jason.encode!()
-      Legl.Utility.append_records_to_file(~s/#{json}/, @raw_results_path)
+      # json = Map.put(%{}, "records", metadata) |> Jason.encode!()
+      # Legl.Utility.append_records_to_file(~s/#{json}/, @raw_results_path)
 
       %{
         # subject shape ["foo", "bar", ...]
@@ -249,14 +259,12 @@ defmodule Legl.Countries.Uk.Metadata do
         md_images: images,
         md_modified: modified,
         si_code: si_code,
-        title: title
+        Title_EN: title
       } = metadata
-
-      # %{fields: fields} = record = struct(%__MODULE__{}, record)
 
       metadata =
         Legl.Airtable.AirtableTitleField.title_clean(title)
-        |> (&Map.put(metadata, :title, &1)).()
+        |> (&Map.put(metadata, :Title_EN, &1)).()
 
       metadata =
         case subject do

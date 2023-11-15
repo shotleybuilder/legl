@@ -4,7 +4,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Tags do
   """
   @spec set_tags(LR.legal_register()) :: {:ok, LR.legal_register()}
   def set_tags(record) do
-    IO.write("TAGS")
+    IO.write(" TAGS")
 
     record =
       case record do

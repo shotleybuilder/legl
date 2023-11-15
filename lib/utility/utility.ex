@@ -107,14 +107,14 @@ defmodule Legl.Utility do
     {save_at_records_to_file(~s/#{json}/, path), records}
   end
 
-  @spec save_structs_as_json(list(), path :: binary(), map()) :: :ok
+  @spec save_structs_as_json(list(struct() | map()), path :: binary(), map()) :: :ok
   def save_structs_as_json(records, path, %{filesave?: true} = _opts) do
     save_structs_as_json(records, path)
   end
 
   def save_structs_as_json(_, _, _), do: :ok
 
-  @spec save_structs_as_json(list(), binary()) :: :ok
+  @spec save_structs_as_json(list(struct() | map()), binary()) :: :ok
   def save_structs_as_json(records, path) when is_list(records) do
     maps_from_structs(records)
     |> (&Map.put(%{}, "records", &1)).()
@@ -206,9 +206,9 @@ defmodule Legl.Utility do
 
       _ ->
         # UK_ukpga_1960_Eliz2/8-9/34_RSA
-        case Regex.run(~r/_([a-z]*?)_\d{4}_(.*?)_/, name) do
-          [_, type, number] ->
-            {type, number}
+        case Regex.run(~r/_([a-z]*?)_(\d{4})_(.*?)_/, name) do
+          [_, type, year, number] ->
+            {type, year, number}
 
           nil ->
             {:error, ~s/no match for #{name}/}

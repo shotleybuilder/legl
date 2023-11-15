@@ -35,48 +35,55 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
   end
 
   @spec terms_filter(list(), map()) :: {:ok, {list(), list()}}
-  def terms_filter(laws, opts) do
+  def terms_filter(laws, base_name) do
+    IO.puts("Terms inside Title Filter")
+    IO.puts("# PRE_FILTERED RECORDS: #{Enum.count(laws)}")
+
     search_terms =
-      case opts.base_name do
+      case base_name do
         "UK S" -> @hs_search_terms
         "UK E" -> @e_search_terms
       end
 
-    Enum.reduce(laws, {[], []}, fn law, {inc, exc} ->
-      title = String.downcase(law."Title_EN")
+    {inc, exc} =
+      Enum.reduce(laws, {[], []}, fn law, {inc, exc} ->
+        title = String.downcase(law."Title_EN")
 
-      match? =
-        Enum.reduce_while(search_terms, false, fn {k, n}, _acc ->
-          # n = :binary.compile_pattern(v)
+        match? =
+          Enum.reduce_while(search_terms, false, fn {k, n}, _acc ->
+            # n = :binary.compile_pattern(v)
 
-          case String.contains?(title, n) do
-            true -> {:halt, {true, k}}
-            false -> {:cont, false}
-          end
-        end)
+            case String.contains?(title, n) do
+              true -> {:halt, {true, k}}
+              false -> {:cont, false}
+            end
+          end)
 
-      case match? do
-        {true, k} ->
-          case exclude?(title) do
-            true ->
-              {inc, exc}
+        case match? do
+          {true, k} ->
+            case exclude?(title) do
+              true ->
+                {inc, exc}
 
-            false ->
-              Map.put(law, :Family, Atom.to_string(k))
-              |> (&{[&1 | inc], exc}).()
-          end
+              false ->
+                Map.put(law, :Family, Atom.to_string(k))
+                |> (&{[&1 | inc], exc}).()
+            end
 
-        false ->
-          case exclude?(title) do
-            true ->
-              {inc, exc}
+          false ->
+            case exclude?(title) do
+              true ->
+                {inc, exc}
 
-            false ->
-              {inc, [law | exc]}
-          end
-      end
-    end)
-    |> (&{:ok, &1}).()
+              false ->
+                {inc, [law | exc]}
+            end
+        end
+      end)
+
+    IO.puts("# INCLUDED RECORDS: #{Enum.count(inc)}")
+    IO.puts("# EXCLUDED RECORDS: #{Enum.count(exc)}")
+    {:ok, {Enum.reverse(inc), Enum.reverse(exc)}}
   end
 
   @doc """

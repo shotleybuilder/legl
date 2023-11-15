@@ -95,7 +95,10 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         {:repeal_revoke, path} -> path
       end
 
-    %{records: records} = path |> File.read!() |> Jason.decode!(keys: :atoms)
+    %{records: records} =
+      path
+      |> File.read!()
+      |> Jason.decode!(keys: :atoms)
 
     Enum.each(records, &bare_record(&1, opts))
   end
@@ -117,47 +120,44 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       Map.put(record, :Year, String.to_integer(year))
       |> (&Kernel.struct(%LR{}, &1)).()
 
-    record =
-      case Helper.exists?(record, opts) do
-        false ->
-          record = update_empty_law_fields(record, opts)
+    case Helper.exists?(record, opts) do
+      false ->
+        {:ok, record} = update_empty_law_fields(record, opts)
 
-          post? =
-            if opts.post? == true, do: true, else: ExPrompt.confirm("Post #{record."Title_EN"}?")
+        post? =
+          if opts.post? == true, do: true, else: ExPrompt.confirm("Post #{record."Title_EN"}?")
 
-          case post? do
-            true ->
-              Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.post_single_record(
-                record,
-                opts
-              )
+        case post? do
+          true ->
+            Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.post_single_record(
+              record,
+              opts
+            )
 
-            false ->
-              :ok
-          end
+          false ->
+            :ok
+        end
 
-        true ->
-          {:ok, records} = Helper.get_lr_record(record, opts)
+      true ->
+        {:ok, %{fields: fields} = record} = Helper.get_lr_record(record, opts)
 
-          patch? =
-            if opts.patch? == true,
-              do: true,
-              else: ExPrompt.confirm("Patch #{record."Title_EN"}?")
+        patch? =
+          if opts.patch? == true,
+            do: true,
+            else: ExPrompt.confirm("Patch #{fields."Title_EN"}?")
 
-          case patch? do
-            true ->
-              Enum.map(records, fn %{fields: fields} = record ->
-                update_empty_law_fields(fields, opts)
-                |> (&Map.put(record, :fields, &1)).()
-              end)
-              |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(opts)
+        case patch? do
+          true ->
+            update_empty_law_fields(fields, opts)
+            |> (&Map.put(record, :fields, &1)).()
+            |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(opts)
 
-            false ->
-              :ok
-          end
-      end
-
-    record
+          false ->
+            :ok
+        end
+    end
+  rescue
+    e -> IO.puts("ERROR: #{inspect(e)}")
   end
 
   @doc """
@@ -166,6 +166,70 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   populated
   """
   def api_create_from_file_bare(opts \\ [csv?: false, mute?: true]) do
+    {records, opts} = from_file_set_up(opts)
+
+    {:ok, w_si_code, wo_si_code, exc} =
+      Enum.map(records, &Kernel.struct(%LR{}, &1))
+      |> workflow(opts)
+
+    save({w_si_code, wo_si_code, exc}, opts)
+  end
+
+  @doc """
+  Function to PATCH or POST to Airtable bare new law record.
+
+  These records have metadata set
+  """
+  def api_create_from_file_w_metadata(opts \\ [csv?: false, mute?: true]) do
+    {records, opts} = from_file_set_up(opts)
+
+    {inc_w_si, inc_wo_si, exc} = filter_w_metadata(records, opts)
+
+    Enum.each(
+      [inc_w_si: inc_w_si, inc_wo_si: inc_wo_si],
+      fn {k, v} ->
+        case ExPrompt.confirm("Process #{k}?") do
+          false ->
+            :ok
+
+          true ->
+            Enum.each(
+              v,
+              fn
+                %{Number: n, Title_EN: t, type_code: tc, Year: y}
+                when n in ["", nil] or t in ["", nil] or tc in ["", nil] or y in ["", nil] ->
+                  IO.puts(
+                    "ERROR:\n Title_EN: #{t}\n Year: #{y}\n Number: #{n}\n Type Code: #{tc}\n"
+                  )
+
+                  :ok
+
+                %{Number: n, Title_EN: t, type_code: tc, Year: y} = record ->
+                  IO.puts("Title_EN: #{t} Year: #{y} Number: #{n} Type Code: #{tc}")
+
+                  {:ok, record} =
+                    update_empty_law_fields_w_metadata(Kernel.struct(%LR{}, record), opts)
+
+                  case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"} #{record.si_code}") do
+                    true -> save([record], opts)
+                    _ -> nil
+                  end
+              end
+            )
+        end
+      end
+    )
+
+    case ExPrompt.confirm("Process exc?") do
+      false ->
+        :ok
+
+      true ->
+        save_exc(exc, opts)
+    end
+  end
+
+  defp from_file_set_up(opts) do
     opts =
       Enum.into(opts, %{})
       |> LRO.base_name()
@@ -181,15 +245,13 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         # Process laws saved in .json having processed amending or amended laws
         {:amend, path} -> path
         {:repeal_revoke, path} -> path
+        # default path is api_new_laws.json
+        {_, path} -> path
       end
 
     %{records: records} = path |> File.read!() |> Jason.decode!(keys: :atoms)
 
-    {:ok, w_si_code, wo_si_code, exc} =
-      Enum.map(records, &Kernel.struct(%LR{}, &1))
-      |> workflow(opts)
-
-    save({w_si_code, wo_si_code, exc}, opts)
+    {records, opts}
   end
 
   @doc """
@@ -338,20 +400,51 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   def save({w_si_code, wo_si_code, exc}, opts) do
     with(
       :ok <-
-        Enum.each(w_si_code, fn record ->
-          case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"} #{record.si_code}") do
-            true -> save([record], opts)
-            _ -> nil
-          end
-        end),
+        case w_si_code do
+          [] ->
+            :ok
+
+          _ ->
+            case ExPrompt.confirm("Process inc_w_si?") do
+              false ->
+                :ok
+
+              true ->
+                Enum.each(w_si_code, fn record ->
+                  case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"} #{record.si_code}") do
+                    true -> save([record], opts)
+                    _ -> nil
+                  end
+                end)
+            end
+        end,
       :ok <-
-        Enum.each(wo_si_code, fn record ->
-          case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"}") do
-            true -> save([record], opts)
-            _ -> nil
-          end
-        end),
-      :ok <- save_exc(exc, opts)
+        case wo_si_code do
+          [] ->
+            :ok
+
+          _ ->
+            case ExPrompt.confirm("Process inc_wo_si?") do
+              false ->
+                :ok
+
+              true ->
+                Enum.each(wo_si_code, fn record ->
+                  case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"}") do
+                    true -> save([record], opts)
+                    _ -> nil
+                  end
+                end)
+            end
+        end,
+      :ok <-
+        case ExPrompt.confirm("Process inc_wo_si?") do
+          false ->
+            :ok
+
+          true ->
+            save_exc(exc, opts)
+        end
     ) do
       :ok
     else
@@ -360,7 +453,11 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     end
   end
 
-  def save(records, opts) do
+  def save(record, opts) when is_map(record) do
+    record |> List.wrap() |> save(opts)
+  end
+
+  def save(records, opts) when is_list(records) do
     records =
       Legl.Utility.maps_from_structs(records)
       |> Legl.Utility.map_filter_out_empty_members()
@@ -400,9 +497,11 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
         Map.get(records, :"#{id}")
         |> (&Kernel.struct(%LR{}, &1)).()
-        |> (&[&1 | []]).()
-        |> IO.inspect(label: "RECORD: ")
-        |> complete_new_law_fields(opts)
+        |> update_empty_law_fields_w_metadata(opts)
+        |> elem(1)
+        # |> (&[&1 | []]).()
+        # |> IO.inspect(label: "RECORD: ")
+        # |> complete_new_law_fields(opts)
         |> save(opts)
 
         save_exc(records, opts)
@@ -456,36 +555,36 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     end)
   end
 
+  @doc """
+  Filter bare w/ title & metadata laws NOT in Base
+  """
+  def filter_w_metadata(records, opts) when is_list(records) do
+    with {:ok, inc, exc} <- filter_law_using_title(records, opts.base_name),
+         {inc_w_si, inc_wo_si} <- si_code_sorter(inc),
+         {:ok, {inc_w_si, inc_wo_si}} <-
+           Filters.si_code_filter({inc_w_si, inc_wo_si}) do
+      #
+      IO.puts("# W/O SI CODE RECORDS: #{Enum.count(inc_w_si)}")
+
+      Legl.Utility.save_json(inc_wo_si, @inc_wo_si_path)
+
+      IO.puts("# W/ SI CODE RECORDS: #{Enum.count(inc_wo_si)}")
+
+      Legl.Utility.save_json(inc_w_si, @inc_w_si_path)
+
+      {inc_w_si, inc_wo_si, exc}
+    end
+  end
+
   def workflow(records, opts) when is_list(records) do
     with(
-      :ok = IO.puts("# PRE_FILTERED RECORDS: #{Enum.count(records)}"),
       # Filter each Law record based on terms in Title_EN
-      {:ok, {inc, exc}} <- Filters.terms_filter(records, opts),
-      :ok = IO.puts("Terms inside Title Filter"),
-      :ok = IO.puts("# INCLUDED RECORDS: #{Enum.count(inc)}"),
-      :ok = IO.puts("# EXCLUDED RECORDS: #{Enum.count(exc)}"),
-      # IO.inspect(inc, label: "inc"),
-      # IO.inspect(exc, label: "exc"),
-      # Save Included records to file
-      :ok =
-        Legl.Utility.maps_from_structs(inc)
-        |> Legl.Utility.save_json(@inc_path),
-      # Save an indexed Excluded records .json
-      exc =
-        Legl.Utility.maps_from_structs(exc)
-        |> index_exc(),
-      :ok = Legl.Utility.save_json(exc, @exc_path),
+      {inc, exc} <- filter_law_using_title(records, opts.base_name),
 
       # Let's stop further workflow if we have filtered out all the records
-      :ok <-
-        if Enum.count(inc) == 0 and Enum.count(exc) == 0 do
-          {:no_data, opts}
-        else
-          :ok
-        end,
-
       # Add the SI Code(s) to each Law record
       # Those w/o SI Code 'inc_wo_si' list
+
       {:ok, {inc_w_si, inc_wo_si}} <- LegGovUk.get_si_code(inc),
 
       # Split Law records based on presence of an SI Code from our set
@@ -563,13 +662,74 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     complete_new_law_fields(records, opts)
   end
 
+  defp filter_law_using_title(records, base_name) do
+    # Filter each Law record based on terms in Title_EN
+    {:ok, {inc, exc}} = Filters.terms_filter(records, base_name)
+    # IO.inspect(inc, label: "inc"),
+    # IO.inspect(exc, label: "exc"),
+    # Save Included records to file
+    :ok = Legl.Utility.save_structs_as_json(inc, @inc_path)
+    # Save an indexed Excluded records .json
+    exc =
+      Legl.Utility.maps_from_structs(exc)
+      |> index_exc()
+
+    :ok =
+      exc
+      |> Legl.Utility.save_json(@exc_path)
+
+    if Enum.count(inc) == 0 and Enum.count(exc) == 0 do
+      {:no_data}
+    else
+      {:ok, inc, exc}
+    end
+  end
+
+  @spec si_code_sorter(list()) :: tuple()
+  defp si_code_sorter(records) do
+    Enum.reduce(records, {[], []}, fn
+      %{si_code: sic} = record, acc when sic in ["", nil] ->
+        {elem(acc, 0), [record | elem(acc, 1)]}
+
+      record, acc ->
+        {[record | elem(acc, 0)], elem(acc, 1)}
+    end)
+  end
+
+  @doc """
+  Receives a law Record with metadata set and returns a Record for PATCH or POST
+
+  Enacted_by, Amended_by, Revoked_by are overwritten if they exist.
+  """
+  @spec update_empty_law_fields_w_metadata(%LR{}, map()) :: {:ok, %LR{}} | {:error}
+  def update_empty_law_fields_w_metadata(record, opts)
+      when is_map(record) do
+    with(
+      {:ok, record} <- Year.set_year(record),
+      {:ok, record} <- TypeClass.set_type_class(record),
+      {:ok, record} <- TypeClass.set_type(record),
+      {:ok, record} <- Tags.set_tags(record),
+      {:ok, record} <- IdField.id(record),
+      {:ok, record} <- Extent.set_extent(record),
+      {:ok, record} <- GetEnactedBy.get_enacting_laws(record, opts),
+      {:ok, record} <- Amend.workflow(record, opts),
+      {:ok, record} <- RR.workflow(record, opts)
+    ) do
+      {:ok, record}
+    else
+      error ->
+        IO.puts("ERROR: #{inspect(error)}\n [#{__MODULE__}.update_empty_law_fields_w_metadata/2]")
+        {:error}
+    end
+  end
+
   @doc """
   Receives a law Record with at least :Number, :type_code and :Year fields,
   a path to save the record as json, and opts and returns a Record for PATCH or POST
 
   Enacted_by, Amended_by, Revoked_by are overwritten if they exist.
   """
-  @spec update_empty_law_fields(map(), map()) :: map()
+  @spec update_empty_law_fields(%LR{}, map()) :: {:ok, %LR{}} | {:error}
   def update_empty_law_fields(record, opts)
       when is_map(record) do
     with(
@@ -579,14 +739,15 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       {:ok, record} <- Tags.set_tags(record),
       {:ok, record} <- IdField.id(record),
       {:ok, record} <- Extent.set_extent(record),
-      {:ok, record, _} <- GetEnactedBy.get_enacting_laws(record, opts),
+      {:ok, record} <- GetEnactedBy.get_enacting_laws(record, opts),
       {:ok, record} <- Amend.workflow(record, opts),
       {:ok, record} <- RR.workflow(record, opts)
     ) do
-      record
+      {:ok, record}
     else
       error ->
-        IO.puts("ERROR: #{inspect(error)}")
+        IO.puts("ERROR: #{inspect(error)}\n [#{__MODULE__}.update_empty_law_fields/2]")
+        {:error}
     end
   end
 

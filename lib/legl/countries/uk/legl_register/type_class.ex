@@ -28,7 +28,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
   @doc """
   Function to set the value of the type_class field in the Legal Register
   """
-  @spec set_type_class(LR.legal_register()) :: list(LR.legal_register())
+  @spec set_type_class(LR.legal_register()) :: LR.legal_register()
 
   def set_type_class(%_{type_class: type_class} = record)
       when type_class in [
@@ -43,40 +43,9 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
       do: record
 
   def set_type_class(%_{Title_EN: title} = record) when title != nil do
-    IO.write(" TYPE CLASS")
-
-    type_class =
-      cond do
-        Regex.match?(~r/Act[ ]?$|Act[ ]\(Northern Ireland\)[ ]?$/, title) ->
-          "Act"
-
-        Regex.match?(~r/Regulations?[ ]?$|Regulations? \(Northern Ireland\)[ ]?$/, title) ->
-          "Regulation"
-
-        Regex.match?(~r/Order[ ]?$|Order[ ]\(Northern Ireland\)[ ]?$/, title) ->
-          "Order"
-
-        Regex.match?(~r/Rules?[ ]?$|Rules?[ ]\(Northern Ireland\)[ ]?$/, title) ->
-          "Rules"
-
-        Regex.match?(~r/Scheme$|Schem[ ]\(Northern Ireland\)$/, title) ->
-          "Scheme"
-
-        Regex.match?(
-          ~r/Confirmation[ ]Instrument$|Confirmation Instrument[ ]\(Northern Ireland\)$/,
-          title
-        ) ->
-          "Confirmation Instrument"
-
-        Regex.match?(~r/Byelaws$|Bye-?laws \(Northern Ireland\)$/, title) ->
-          "Byelaws"
-
-        true ->
-          nil
-      end
-
+    IO.write(" TYPE-CLASS")
     # A nil return means we've not been able to parse the :Title_EN field correctly
-    case type_class do
+    case get_type_class(title) do
       nil ->
         IO.puts(
           "\nERROR: :Title_EN field could not be parsed for type_class\ntype_class cannot be set\n#{inspect(record)}"
@@ -84,54 +53,86 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
 
         record
 
-      _ ->
-        Map.put(record, :type_class, type_class)
+      type_class ->
+        {:ok, Map.put(record, :type_class, type_class)}
     end
   end
 
   def set_type_class(record), do: record
 
+  defp get_type_class(title) do
+    cond do
+      Regex.match?(~r/Act[ ]?$|Act[ ]\(Northern Ireland\)[ ]?$/, title) ->
+        "Act"
+
+      Regex.match?(~r/Regulations?[ ]?$|Regulations? \(Northern Ireland\)[ ]?$/, title) ->
+        "Regulation"
+
+      Regex.match?(~r/Order[ ]?$|Order[ ]\(Northern Ireland\)[ ]?$/, title) ->
+        "Order"
+
+      Regex.match?(~r/Rules?[ ]?$|Rules?[ ]\(Northern Ireland\)[ ]?$/, title) ->
+        "Rules"
+
+      Regex.match?(~r/Scheme$|Schem[ ]\(Northern Ireland\)$/, title) ->
+        "Scheme"
+
+      Regex.match?(
+        ~r/Confirmation[ ]Instrument$|Confirmation Instrument[ ]\(Northern Ireland\)$/,
+        title
+      ) ->
+        "Confirmation Instrument"
+
+      Regex.match?(~r/Byelaws$|Bye-?laws \(Northern Ireland\)$/, title) ->
+        "Byelaws"
+
+      true ->
+        nil
+    end
+  end
+
   @doc """
   Function to set the value of the type field in the Legal Register
   """
-  @spec set_type(LR.legal_register()) :: LR.legal_register()
+  @spec set_type(LR.legal_register()) :: {:ok, LR.legal_register()}
   def set_type(%_{type_code: type_code} = record) do
     IO.write(" TYPE")
 
-    Map.put(
-      record,
-      :Type,
-      case type_code do
-        "ukpga" ->
-          "Public General Act of the United Kingdom Parliament"
+    {:ok,
+     Map.put(
+       record,
+       :Type,
+       case type_code do
+         "ukpga" ->
+           "Public General Act of the United Kingdom Parliament"
 
-        "uksi" ->
-          "UK Statutory Instrument"
+         "uksi" ->
+           "UK Statutory Instrument"
 
-        # SCOTLAND
-        "asp" ->
-          "Act of the Scottish Parliament"
+         # SCOTLAND
+         "asp" ->
+           "Act of the Scottish Parliament"
 
-        "ssi" ->
-          "Scottish Statutory Instrument"
+         "ssi" ->
+           "Scottish Statutory Instrument"
 
-        # NORTHERN IRELAND
-        "nisr" ->
-          "Northern Ireland Statutory Rule"
+         # NORTHERN IRELAND
+         "nisr" ->
+           "Northern Ireland Statutory Rule"
 
-        "nisi" ->
-          "Northern Ireland Order in Council 1972-date"
+         "nisi" ->
+           "Northern Ireland Order in Council 1972-date"
 
-        # WALES
-        "wsi" ->
-          "Wales Statutory Instrument 2018-date"
+         # WALES
+         "wsi" ->
+           "Wales Statutory Instrument 2018-date"
 
-        "mwa" ->
-          "Measure of the National Assembly for Wales 2008-2011"
+         "mwa" ->
+           "Measure of the National Assembly for Wales 2008-2011"
 
-        _ ->
-          nil
-      end
-    )
+         _ ->
+           nil
+       end
+     )}
   end
 end

@@ -1,5 +1,4 @@
 defmodule Legl.Airtable.AirtableTitleField do
-
   @doc """
   Procedure to remove the 'the' from the title string that comes back from legislation.gov.uk
   """
@@ -10,7 +9,8 @@ defmodule Legl.Airtable.AirtableTitleField do
   Procedure to remove the year from the title string that comes back from legislation.gov.uk
   """
   def remove_year(str) do
-    Regex.replace(~r/(.*?)([ ]\d{4})$/, str, "\\g{1}")
+    Regex.replace(~r/ /, str, " ")
+    |> (&Regex.replace(~r/(.*?)([ | ]\d{4})$/, &1, "\\g{1}")).()
   end
 
   def remove_repeal(str) do
@@ -36,7 +36,7 @@ defmodule Legl.Airtable.AirtableTitleField do
     |> remove_repeal()
     |> remove_revoked()
     |> remove_year()
+
     # |> lowcase |> upcaseFirst
   end
-
 end

@@ -118,14 +118,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   @doc """
   Workflow is part of a larger process setting all the fields of a legal register record
   """
-  def workflow(record, opts) when is_map(record) do
-    workflow([record], opts) |> List.first()
-  end
 
   @spec workflow(%LegalRegister{}, map()) :: {:ok, %LegalRegister{}}
-  def workflow(record, opts) when is_struct(record) do
-    IO.puts(" AMENDED BY")
-    {:ok, workflow([record], opts) |> List.first()}
+  def workflow(%LegalRegister{} = record, opts) when is_struct(record) do
+    IO.write(" AMENDED BY")
+
+    workflow([record], opts)
+    |> List.first()
+    |> (&{:ok, &1}).()
   end
 
   @spec workflow(list(LegalRegister), map()) :: list(LegalRegister)
@@ -134,11 +134,15 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     Enum.map(results, fn {nrecord, _records} -> nrecord end)
   end
 
+  def workflow(record, opts) when is_map(record) do
+    workflow([record], opts) |> List.first()
+  end
+
   @doc """
     Breadth first search up to an arbitrary number of layers of the amendments tree
   """
   @spec amendment_bfs(tuple(), map(), integer()) :: list(tuple())
-  def amendment_bfs({records, _}, _, @enumeration_limit), do: records
+  def amendment_bfs({results, _}, _, @enumeration_limit), do: results
 
   def amendment_bfs({results, records}, opts, enumeration_limit) do
     #

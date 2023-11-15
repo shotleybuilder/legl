@@ -3,7 +3,13 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
 
   def id(%LR{} = record) when is_struct(record) do
     IO.write(" NAME")
-    {:ok, id(record."Number", record."Title_EN", record.type_code, record."Year")}
+
+    {:ok,
+     Map.put(
+       record,
+       :Name,
+       id(record."Number", record."Title_EN", record.type_code, record."Year")
+     )}
   end
 
   def id(%{Number: number, Title_EN: title, type_code: type_code, Year: year})

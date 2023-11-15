@@ -8,15 +8,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw do
   And save the difference as a .json file
   """
 
+  alias Legl.Countries.Uk.Metadata
   alias Legl.Services.Airtable.UkAirtable
   alias Legl.Countries.Uk.LeglRegister.Amend.Options
 
   @doc """
   Function to get AMENDING laws that are not present in the Legal Register Table
-  Laws that are amending laws that are in the Base
+  Laws that are affecting laws that are in the Base
   """
   @spec amending(map()) :: :ok
-  def amending(opts) do
+  def amending(opts \\ []) do
     opts = Options.new_amending_law_finder(opts)
 
     records =
@@ -54,10 +55,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw do
       )
       |> List.flatten()
       |> Enum.uniq()
+      |> Enum.sort_by(& &1."Year", :desc)
+      |> Enum.map(&Metadata.get_latest_metadata(&1))
+
+    records =
+      records
+      |> Enum.reduce(
+        [],
+        fn
+          {:ok, record}, acc -> [record | acc]
+          _, acc -> acc
+        end
+      )
+      |> Enum.reverse()
 
     Legl.Utility.save_json(
       records,
-      ~s[lib/legl/countries/uk/legl_register/amend/api_new_laws.json]
+      ~s[lib/legl/countries/uk/legl_register/new/api_new_laws.json]
     )
 
     IO.puts("#{Enum.count(records)} records saved to .json")
@@ -65,7 +79,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw do
 
   @doc """
   Function to get AMENDED laws that are not present in the Legal Register Table
-  The Affecting laws are in the Base, but not all the laws affected are
+  The Affecting laws are in the Base, but not all the laws affected are nor should be
   """
   @spec amended(map()) :: :ok
   def amended(opts \\ []) do
@@ -82,7 +96,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw do
         records,
         fn
           %{fields: %{Amending: master, "Amending (from UK) - binary": copy}} ->
-            IO.inspect(copy)
             {String.split(master, ","), String.split(copy, ", ")}
 
           %{fields: %{Amending: master}} ->
@@ -93,6 +106,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw do
         end
       )
       |> Enum.map(fn {master, copy} -> Legl.Utility.delta_lists(copy, master) end)
+      |> IO.inspect()
       |> Enum.map(
         &Enum.map(
           &1,
@@ -111,12 +125,24 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw do
       |> Enum.filter(&(&1.type_code not in ["eudn", "eur", "nisr"]))
       |> Enum.uniq()
       |> Enum.sort_by(& &1."Year", :desc)
+      |> Enum.map(&Metadata.get_latest_metadata(&1))
+
+    records =
+      records
+      |> Enum.reduce(
+        [],
+        fn
+          {:ok, record}, acc -> [record | acc]
+          _, acc -> acc
+        end
+      )
+      |> Enum.reverse()
 
     Legl.Utility.save_json(
       records,
-      ~s[lib/legl/countries/uk/legl_register/amend/api_new_laws.json]
+      ~s[lib/legl/countries/uk/legl_register/new/api_new_laws.json]
     )
 
-    IO.puts("#{Enum.count(records)} records saved to .json")
+    IO.puts(" #{Enum.count(records)} records saved to .json")
   end
 end

@@ -10,6 +10,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
   UK.extent(base_name: "UK S", name: "UK_uksi_2014_1639_ASEWSR", new?: false, filesave?: true)
   """
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
   alias Legl.Services.LegislationGovUk.RecordGeneric
   alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.AtBasesTables
@@ -45,7 +46,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     with {:ok, type_codes} <- Legl.Countries.Uk.LeglRegister.TypeCode.type_code(opts.type_code),
          {:ok, type_class} <-
            Legl.Countries.Uk.LeglRegister.TypeClass.type_class(opts.type_class),
-         {:ok, sClass} <- Legl.Countries.Uk.SClass.sClass(opts.sClass),
+         {:ok, sClass} <- Legl.Countries.Uk.LeglRegister.SClass.sClass(opts.sClass),
          {:ok, file} <- @at_csv |> File.open([:utf8, :write]) do
       #
       IO.puts(file, opts.fields_update)
@@ -343,59 +344,56 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
   in the Legal Register
   """
   @spec set_extent(LR.legal_register()) :: {:ok, LR.legal_register()}
-  def set_extent(record) do
+  def set_extent(%LR{Number: number, type_code: type_code, Year: year} = record)
+      when is_binary(number) and is_binary(type_code) and is_integer(year) do
     IO.write(" EXTENT")
+    path = Url.contents_xml_path(record)
 
-    record =
-      case record do
-        %_{Number: number, type_code: type_code, Year: year} = record
-        when is_binary(number) and is_binary(type_code) and is_integer(year) ->
-          path = Url.contents_xml_path(record)
+    with(
+      {:ok, data} <- get_extent_leg_gov_uk(path),
+      {:ok,
+       %{
+         geo_extent: geo_extent,
+         geo_region: geo_region
+       }} <- extent_transformation(data),
+      geo_pan_region = geo_pan_region(geo_region)
+    ) do
+      {:ok,
+       Kernel.struct(
+         record,
+         %{
+           Geo_Parent: "United Kingdom",
+           Geo_Pan_Region: geo_pan_region,
+           Geo_Region: geo_region,
+           Geo_Extent: geo_extent
+         }
+       )}
 
-          with(
-            {:ok, data} <- get_extent_leg_gov_uk(path),
-            {:ok,
-             %{
-               geo_extent: geo_extent,
-               geo_region: geo_region
-             }} <- Extent.extent_transformation(data),
-            geo_pan_region = geo_pan_region(geo_region)
-          ) do
-            Kernel.struct(
-              record,
-              %{
-                Geo_Parent: "United Kingdom",
-                Geo_Pan_Region: geo_pan_region,
-                Geo_Region: geo_region,
-                Geo_Extent: geo_extent
-              }
-            )
+      # |> IO.inspect(label: "EXTENT: ")
+    else
+      {:no_data, _} ->
+        IO.puts(
+          "\nNO DATA: No Extent data returned from legislation.gov.uk\n #{__MODULE__}.set_extent/1"
+        )
 
-            # |> IO.inspect(label: "EXTENT: ")
-          else
-            {:no_data, []} ->
-              IO.puts(
-                "\nNO DATA: No Extent data returned from legislation.gov.uk\n Check manually"
-              )
+        {:ok, record}
 
-              record
+      {:error, msg} ->
+        IO.puts(
+          "\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record[:Title_EN])}\n #{__MODULE__}.set_extent/1"
+        )
 
-            {:error, msg} ->
-              IO.puts("\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record[:Title_EN])}\n")
-              record
-          end
-
-        # Pass through the record w/o setting Extent if :Number, :type_code, :Year absent
-        record ->
-          IO.puts(
-            "\nERROR: Record does not have required fields\n:Extents key cannot be set\n#{inspect(record)}"
-          )
-
-          record
-      end
-
-    {:ok, record}
+        {:ok, record}
+    end
   end
+
+  def set_extent(%LR{Year: year} = record)
+      when is_binary(year) do
+    Map.put(record, :Year, String.to_integer(year))
+    |> set_extent()
+  end
+
+  def set_extent(_), do: {:error, "ERROR: Number, type-code or Year is not set"}
 
   defp geo_pan_region(""), do: ""
 

@@ -13,7 +13,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
                 md_images: nil,
                 md_modified: nil,
                 si_code: "",
-                title: "",
+                Title_EN: "",
                 pdf_href: ""
               },
               si_code: false,
@@ -254,7 +254,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
     do: %{state | element_acc: ""}
 
   def sax_event_handler({:endElement, _, 'title', 'dc'}, %{main_section: :metadata} = state, _) do
-    %{state | metadata: Map.put(state.metadata, :title, state.element_acc), element_acc: ""}
+    %{state | metadata: Map.put(state.metadata, :Title_EN, state.element_acc), element_acc: ""}
   end
 
   def sax_event_handler(

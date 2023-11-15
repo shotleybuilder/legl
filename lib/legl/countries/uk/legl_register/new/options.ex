@@ -45,6 +45,9 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
              "amend new laws",
              "repealing - revoking new laws"
            ]) do
+        -1 ->
+          {:default, "lib/legl/countries/uk/legl_register/new/api_new_laws.json"}
+
         0 ->
           :web
 

@@ -121,7 +121,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
 
     with {:ok, body} <- Client.request(:get, url, []),
          %{records: records} = Jason.decode!(body, keys: :atoms) do
-      {:ok, records}
+      {:ok, List.first(records)}
     else
       {:ok, code, reason} ->
         IO.puts("#{code} #{reason}")

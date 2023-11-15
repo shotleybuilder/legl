@@ -52,8 +52,9 @@ defmodule UK do
            [
              "Single Law using :type_code, :number, :year",
              "New Laws from gov.uk",
-             "Bare Laws w/ Title_EN from File",
              "Bare Laws w/o Title_EN from File",
+             "Bare Laws w/ Title_EN from File",
+             "Bare Laws w/ metadata from File",
              "UPDATE Metadata",
              "Amend - single record - patch",
              "Amend - patch",
@@ -62,56 +63,68 @@ defmodule UK do
              "Repeal|Revoke - single record - patch",
              "Repeal|Revoke - patch",
              "DELTA Repeal|Revoke - single record - patch",
-             "DELTA Repeal|Revoke - patch"
+             "DELTA Repeal|Revoke - patch",
+             "DIFF Amending - amending laws that aren't in the Base",
+             "DIFF Amended - amended laws that aren't in the Base"
            ]
          ) do
       0 ->
-        create()
+        New.api_create(patch?: true)
 
       1 ->
         creates()
 
       2 ->
-        bare()
-
-      3 ->
         bare_wo_title(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
 
+      3 ->
+        bare()
+
       4 ->
-        metadata(workflow: :update)
+        bare_w_metadata(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
 
       5 ->
-        amend_single_record(workflow: :create)
+        metadata(workflow: :update)
 
       6 ->
-        amend(workflow: :create)
+        amend_single_record(workflow: :create)
 
       7 ->
-        amend_single_record(workflow: :update)
+        amend(workflow: :create)
 
       8 ->
-        amend(workflow: :update)
+        amend_single_record(workflow: :update)
 
       9 ->
-        repeal_revoke_single_record(workflow: :update)
+        amend(workflow: :update)
 
       10 ->
-        repeal_revoke(workflow: :update)
+        repeal_revoke_single_record(workflow: :update)
 
       11 ->
-        repeal_revoke_single_record(workflow: :delta)
+        repeal_revoke(workflow: :update)
 
       12 ->
+        repeal_revoke_single_record(workflow: :delta)
+
+      13 ->
         repeal_revoke(workflow: :delta)
+
+      14 ->
+        Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw.amending()
+
+      15 ->
+        Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw.amended()
     end
   end
 
-  def create(), do: New.api_create()
+  def create(opts), do: New.api_create(opts)
   def create_from_file(), do: New.api_create_from_file_bare()
   def creates(), do: New.api_creates()
 
   def bare(), do: New.api_create_from_file_bare()
   def bare_wo_title(opts \\ []), do: New.api_create_from_file_bare_wo_title(opts)
+  def bare_w_metadata(opts \\ []), do: New.api_create_from_file_w_metadata(opts)
 
   @doc """
   Function provides a shortcut to list all the members of the Dutyholders taxonomy

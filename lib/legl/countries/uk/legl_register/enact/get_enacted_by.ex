@@ -1,4 +1,5 @@
 defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
   alias Legl.Services.LegislationGovUk.Url, as: Url
   alias Legl.Services.LegislationGovUk.RecordGeneric
 
@@ -24,10 +25,30 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     These processes search for the ef-codes and read the url from the map of
     urls returned from leg,gov.uk
   """
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
+
+  def get_enacting_laws(%LegalRegister{type_code: type_code} = record, _opts)
+      when is_struct(record) and type_code in ["ukpga", "anaw", "asp", "nia", "apni"] do
+    IO.puts(" x_ENACTED_BY")
+    {:ok, record}
+  end
+
+  def get_enacting_laws(
+        %LegalRegister{type_code: type_code, Number: number, Year: year} = record,
+        opts
+      )
+      when is_struct(record) do
+    IO.puts(" ENACTED_BY")
+
+    {:ok, result} =
+      %{type_code: type_code, Number: number, Year: year}
+      |> get_enacting_laws(opts)
+
+    {:ok, Kernel.struct(record, result)}
+  end
+
   @spec get_enacting_laws(list(), map()) :: {:ok, list(), list()}
   def get_enacting_laws(records, opts) when is_list(records) do
-    IO.puts(" ENACTED BY")
-
     records =
       Enum.reduce(records, [], fn
         # Acts are not Enacted
@@ -85,8 +106,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     end
   end
 
-  def get_enacting_laws(%{type_code: _type, Year: _year, Number: _number} = record, opts)
-      when is_map(record) do
+  @spec get_enacting_laws(map(), map()) :: {:ok, map()}
+  def get_enacting_laws(record, opts) do
     with(
       record = Map.merge(record, %{enacting_laws: [], urls: nil, text: ""}),
       {:ok, record} <- get_leg_gov_uk(record),
@@ -100,19 +121,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
       {:ok, record}
     else
       {:error, error} ->
-        {:error,
-         "\nERROR: #{error} #{record[:Title_EN]}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n",
-         record}
+        {:error, "\nERROR: #{error}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n"}
 
       {:error, code, error} ->
-        {:error,
-         "\nERROR: #{code}, #{error} #{record[:Title_EN]}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n",
-         record}
+        {:error, "\nERROR: #{code}, #{error}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n"}
 
-      {:no_text, record} ->
+      {:no_text, _} ->
         {:no_text,
-         "\nNO TEXT: No enacting text for this law FUNCTION: #{__MODULE__}.get_enacting_laws/1\n",
-         record}
+         "\nNO TEXT: No enacting text for this law FUNCTION: #{__MODULE__}.get_enacting_laws/1\n"}
     end
   end
 
@@ -394,7 +410,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
 
   defp get_title(path) do
     case RecordGeneric.metadata(path) do
-      {:ok, :xml, %{title: title}} ->
+      {:ok, :xml, %{Title_EN: title}} ->
         {:ok, title}
 
       {:ok, :html} ->
