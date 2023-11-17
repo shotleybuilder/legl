@@ -1,6 +1,8 @@
 defmodule Legl.Utility do
   @moduledoc false
 
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
+
   @doc """
   Utility function to time the parser.
   Arose when rm_header was taking 5 seconds!  Faster now :)
@@ -83,8 +85,14 @@ defmodule Legl.Utility do
   @doc """
   Receives a path as string and returns atom keyed map
   """
+  @spec read_json_records(binary()) :: list(map())
+  def read_json_records(path) do
+    %{records: records} = open_and_parse_json_file(path)
+    records
+  end
+
   @spec open_and_parse_json_file(binary()) :: map()
-  def open_and_parse_json_file(path) do
+  defp open_and_parse_json_file(path) do
     path
     |> Path.absname()
     |> File.read()
@@ -176,6 +184,22 @@ defmodule Legl.Utility do
       |> File.read!()
 
     binary |> String.graphemes() |> Enum.count(&(&1 == "\n"))
+  end
+
+  def legislation_gov_uk_id_url(
+        %LegalRegister{type_code: type_code, Number: number, Year: year} = record
+      )
+      when is_struct(record) do
+    legislation_gov_uk_id_url(number, type_code, year)
+  end
+
+  def legislation_gov_uk_id_url(%{type_code: type_code, Number: number, Year: year} = record)
+      when is_map(record) do
+    legislation_gov_uk_id_url(number, type_code, year)
+  end
+
+  def legislation_gov_uk_id_url(number, type_code, year) do
+    ~s[https://legislation.gov.uk/id/#{type_code}/#{year}/#{number}]
   end
 
   def resource_path(url) do
@@ -337,11 +361,12 @@ defmodule Legl.Utility do
 
   @spec maps_from_structs(list()) :: list()
   def maps_from_structs(records) when is_list(records) do
-    Enum.map(records, fn
-      record when is_struct(record) -> Map.from_struct(record)
-      record when is_map(record) -> record
-    end)
+    Enum.map(records, &map_from_struct/1)
   end
+
+  @spec map_from_struct(struct() | map()) :: map()
+  def map_from_struct(record) when is_struct(record), do: Map.from_struct(record)
+  def map_from_struct(record) when is_map(record), do: record
 
   @doc """
   Function to return the members

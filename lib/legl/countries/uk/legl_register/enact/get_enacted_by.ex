@@ -116,19 +116,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
       {:ok, record} <- enacting_law_in_match(record),
       {:ok, record} <- enacting_law_in_enacting_text(record),
       {:ok, record} <- dedupe(record),
-      {:ok, record} <- enacted_by(record)
+      {:ok, record} <- enacted_by(record),
+      {:ok, record} <- enacted_by_description(record)
     ) do
       {:ok, record}
     else
       {:error, error} ->
-        {:error, "\nERROR: #{error}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n"}
+        IO.puts("\nERROR: #{error}\n #{__MODULE__}.get_enacting_laws/1\n")
+        {:ok, Map.put(record, :enact_error, "ERROR: #{error}")}
 
       {:error, code, error} ->
-        {:error, "\nERROR: #{code}, #{error}\nFUNCTION: #{__MODULE__}.get_enacting_laws/1\n"}
+        IO.puts("\nERROR: #{code}, #{error}\n #{__MODULE__}.get_enacting_laws/1\n")
+        {:ok, Map.put(record, :enact_error, "ERROR: #{code}, #{error}")}
 
       {:no_text, _} ->
-        {:no_text,
-         "\nNO TEXT: No enacting text for this law FUNCTION: #{__MODULE__}.get_enacting_laws/1\n"}
+        IO.puts("\nNO TEXT: No enacting text for this law\n #{__MODULE__}.get_enacting_laws/1\n")
+
+        {:ok, Map.put(record, :enact_error, "NO TEXT. No enacting text for this law")}
     end
   end
 
@@ -461,5 +465,19 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     end)
     |> List.flatten()
     |> Enum.uniq()
+  end
+
+  def enacted_by_description(%{enacting_laws: e_laws} = record) do
+    enacted_by_description =
+      Enum.map(
+        e_laws,
+        fn %{Name: name, Title_EN: title} = e_law ->
+          ~s/#{name}📌#{title}📌#{Legl.Utility.legislation_gov_uk_id_url(e_law)}📌📌/
+        end
+      )
+      |> Enum.join()
+      |> String.trim_trailing("📌📌")
+
+    {:ok, Map.put(record, :enacted_by_description, enacted_by_description)}
   end
 end

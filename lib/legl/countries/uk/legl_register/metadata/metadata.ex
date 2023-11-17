@@ -226,10 +226,10 @@ defmodule Legl.Countries.Uk.Metadata do
   rescue
     e ->
       IO.puts(
-        "...ERROR: #{record.type_code} #{record."Number"} #{record."Year"} #{inspect(e)}\n #{__MODULE__}.get_latest_metadata\n"
+        "\nERROR: #{record.type_code} #{record."Number"} #{record."Year"} #{inspect(e)}\n #{__MODULE__}.get_latest_metadata\n"
       )
 
-      e
+      {:ok, record}
   end
 
   def get_latest_metadata(record) when is_map(record) do

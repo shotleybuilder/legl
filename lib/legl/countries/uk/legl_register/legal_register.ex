@@ -50,19 +50,28 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           Revoked_by: String.t(),
           amendments_checked: String.t(),
 
+          # Enacting fields
+          enact_error: String.t(),
+          enacted_by_description: String.t(),
+
           # Amending fields
-          stats_amendings_count: integer(),
-          stats_self_amendings_count: integer(),
-          stats_amended_laws_count: integer(),
-          stats_amendings_count_per_law: String.t(),
-          stats_amendings_count_per_law_detailed: String.t(),
+          "🔺_stats_affects_count": integer(),
+          "🔺_stats_self_affects_count": integer(),
+          "🔺_stats_affected_laws_count": integer(),
+          "🔺_stats_affects_count_per_law": String.t(),
+          "🔺_stats_affects_count_per_law_detailed": String.t(),
 
           # Amended By fields
-          stats_amendments_count: integer(),
-          stats_self_amending_count: integer(),
-          stats_amending_laws_count: integer(),
-          stats_amendments_count_per_law: String.t(),
-          stats_amendments_count_per_law_detailed: String.t(),
+          "🔻_stats_affected_by_count": integer(),
+          "🔻_stats_self_affected_by_count": integer(),
+          "🔻_stats_affected_by_laws_count": integer(),
+          "🔻_stats_affected_by_count_per_law": String.t(),
+          "🔻_stats_affected_by_count_per_law_detailed": String.t(),
+
+          # Live? Re[voke|peal] fields
+          "🔺_stats_revoking_laws_count": integer(),
+          "🔺_stats_revoking_count_per_law": String.t(),
+          "🔺_stats_revoking_count_per_law_detailed": String.t(),
 
           # New law fields
           publication_date: String.t(),
@@ -116,19 +125,26 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     Enacting
     Revoking
 
+    enact_error
+    enacted_by_description
+
     amendments_checked
 
-    stats_amendings_count
-    stats_self_amendings_count
-    stats_amended_laws_count
-    stats_amendings_count_per_law
-    stats_amendings_count_per_law_detailed
+    🔺_stats_affects_count
+    🔺_stats_self_affects_count
+    🔺_stats_affected_laws_count
+    🔺_stats_affects_count_per_law
+    🔺_stats_affects_count_per_law_detailed
 
-    stats_amendments_count
-    stats_amending_laws_count
-    stats_self_amending_count
-    stats_amendments_count_per_law
-    stats_amendments_count_per_law_detailed
+    🔻_stats_affected_by_count
+    🔻_stats_self_affected_by_count
+    🔻_stats_affected_by_laws_count
+    🔻_stats_affected_by_count_per_law
+    🔻_stats_affected_by_count_per_law_detailed
+
+    🔺_stats_revoking_laws_count
+    🔺_stats_revoking_count_per_law
+    🔺_stats_revoking_count_per_law_detailed
 
     publication_date
 

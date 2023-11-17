@@ -18,6 +18,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers do
         |> (&Map.put(%{}, :fields, &1)).()
     end)
   end
+
+  def clean_record(record, drop_fields) when is_map(record) do
+    Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
+    |> Map.drop(drop_fields)
+  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
@@ -293,30 +298,57 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
   @spec run(map() | list(), map()) :: :ok
   def run([], _), do: {:error, "RECORDS: EMPTY LIST: No data to PATCH"}
 
-  def run(records, %{drop_fields: drop_fields} = opts) when is_list(records) do
+  def run(records, %{drop_fields: _} = opts) when is_list(records) do
     # IO.inspect(records, label: "PATCH")
-
-    with(
-      records <- Legl.Countries.Uk.LeglRegister.Helpers.clean_records(records, drop_fields),
-      json =
-        Map.merge(%{}, %{"records" => records, "typecast" => true}) |> Jason.encode!(pretty: true),
-      :ok = Legl.Utility.save_at_records_to_file(json, opts.api_patch_path),
-      :ok <- patch(records, opts)
-    ) do
-      :ok
-    end
+    records
+    |> Enum.map(&build(&1, opts))
+    |> patch(opts)
   end
 
-  def run(record, %{drop_fields: _} = opts) when is_map(record),
-    do: run([record], opts)
+  def run(%LegalRegister{} = record, opts) when is_struct(record) do
+    record
+    |> Legl.Utility.map_from_struct()
+    |> build(opts)
+    |> patch(opts)
+  end
 
   def run(record, opts) when is_map(record) do
-    record_id = record.record_id
-    record = Map.drop(record, [:record_id])
+    build(record, opts)
+    |> patch(opts)
+  end
+
+  def build(%{id: _, fields: fields} = record, %{drop_fields: drop_fields})
+      when is_map(record) do
+    fields
+    |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(drop_fields)
+    |> (&Map.put(record, :fields, &1)).()
+    |> Map.drop([:createdTime])
+  end
+
+  def build(%{record_id: record_id} = record, %{drop_fields: drop_fields}) when is_map(record) do
+    record =
+      Map.drop(record, [:record_id])
+      |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(drop_fields)
 
     Map.merge(%{}, %{id: record_id, fields: record})
-    |> List.wrap()
-    |> patch(opts)
+  end
+
+  @spec patch(map(), map()) :: :ok
+  def patch(record, opts) when is_map(record) do
+    headers = [{:"Content-Type", "application/json"}]
+
+    params = %{
+      base: opts.base_id,
+      table: opts.table_id,
+      options: %{}
+    }
+
+    # Airtable only accepts sets of 10x records in a single PATCH request
+    record =
+      Map.merge(%{}, %{"records" => List.wrap(record), "typecast" => true})
+      |> Jason.encode!()
+
+    Legl.Services.Airtable.AtPatch.patch_records(record, headers, params)
   end
 
   def patch([], _), do: :ok

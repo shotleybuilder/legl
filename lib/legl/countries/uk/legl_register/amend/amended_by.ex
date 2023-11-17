@@ -37,11 +37,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
       # amendments_checked: ~s/#{Date.utc_today()}/,
       Amended_by: stats.links,
       # leg_gov_uk_updates: "",
-      stats_amendments_count: stats.amendments,
-      stats_self_amending_count: stats.self,
-      stats_amending_laws_count: stats.laws,
-      stats_amendments_count_per_law: stats.counts,
-      stats_amendments_count_per_law_detailed: stats.counts_detailed
+      "🔻_stats_affected_by_count": stats.amendments,
+      "🔻_stats_self_affected_by_count": stats.self,
+      "🔺_stats_affected_laws_count": stats.laws,
+      "🔻_stats_affected_by_count_per_law": stats.counts,
+      "🔻_stats_affected_by_count_per_law_detailed": stats.counts_detailed
     }
   end
 

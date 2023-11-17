@@ -1,9 +1,9 @@
 defmodule Legl.Services.Airtable.UkAirtable do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
-  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister
 
-  @type t :: %{
+  @type opts() :: %{
           base_id: String.t(),
           table: String.t(),
           view: String.t(),
@@ -11,10 +11,20 @@ defmodule Legl.Services.Airtable.UkAirtable do
           formula: String.t()
         }
 
+  @spec get_legal_register_records(opts()) :: list(LegalRegister.legal_register())
+  def get_legal_register_records(opts) do
+    get_records_from_at(opts)
+    |> elem(1)
+    |> Jason.encode!()
+    |> Jason.decode!(keys: :atoms)
+    |> strip_id_and_createdtime_fields()
+    |> make_records_into_legal_register_structs()
+  end
+
   @doc """
 
   """
-  @spec get_records_from_at(__MODULE__.t()) :: {:ok, list()} | :ok
+  @spec get_records_from_at(__MODULE__.opts()) :: {:ok, list()} | :ok
   def get_records_from_at(%{base_id: _} = opts) do
     with(
       params = %{
@@ -52,9 +62,9 @@ defmodule Legl.Services.Airtable.UkAirtable do
     Enum.map(records, fn %{fields: fields} = _record -> fields end)
   end
 
-  @spec make_records_into_legal_register_structs(list()) :: list(LR.legal_register())
+  @spec make_records_into_legal_register_structs(list()) :: list(LegalRegister.legal_register())
   def make_records_into_legal_register_structs(records) do
-    Enum.map(records, &Kernel.struct(%LR{}, &1))
+    Enum.map(records, &Kernel.struct(%LegalRegister{}, &1))
   end
 
   def enumerate_at_records({file, records}, func) do

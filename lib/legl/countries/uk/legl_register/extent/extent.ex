@@ -380,7 +380,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
       {:error, msg} ->
         IO.puts(
-          "\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record[:Title_EN])}\n #{__MODULE__}.set_extent/1"
+          "\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record."Title_EN")}\n #{__MODULE__}.set_extent/1"
         )
 
         {:ok, record}

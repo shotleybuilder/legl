@@ -5,6 +5,7 @@ defmodule Legl.Services.Airtable.AtPatch do
   def patch_records(body, headers, params) do
     with(
       {:ok, url} <- Url.url(params.base, params.table, params.options),
+      # print(url, headers, body),
       {:ok, response} <- Client.patch(url, body, headers)
     ) do
       case response do
@@ -23,5 +24,11 @@ defmodule Legl.Services.Airtable.AtPatch do
       {:error, error} ->
         {:error, error}
     end
+  end
+
+  defp print(url, headers, body) do
+    IO.inspect(url)
+    IO.inspect(headers)
+    IO.inspect(body)
   end
 end

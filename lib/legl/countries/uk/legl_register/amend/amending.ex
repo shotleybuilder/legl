@@ -7,6 +7,21 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
   alias Legl.Countries.Uk.LeglRegister.Amend.Stats
 
+  @type t :: %__MODULE__{
+          Name: String.t(),
+          Title_EN: String.t(),
+          type_code: String.t(),
+          Number: String.t(),
+          Year: integer(),
+          path: String.t(),
+          target: String.t(),
+          affect: String.t(),
+          applied?: String.t(),
+          target_affect_applied?: String.t(),
+          note: String.t(),
+          affecting_count: String.t()
+        }
+
   defstruct ~w[
     Name
     Title_EN
@@ -25,7 +40,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
   @spec get_laws_amended_by_this_law(map()) :: {LegalRegister, LegalRegister}
   def get_laws_amended_by_this_law(record) do
     # call to legislation.gov.uk to get the laws that have amended this
-    {:ok, stats, affected} = affecting(record)
+    records = get_affecting(record)
+    records = parse_laws_affected(records)
+    {:ok, stats, affected} = Stats.amendment_stats(records)
     record = Kernel.struct(record, update_record(stats))
     # Merge with the LegalRegister struct removes all scaffolding members
     affected = convert_amend_structs_to_legal_register_structs(affected)
@@ -39,11 +56,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
     %{
       # amendments_checked: ~s/#{Date.utc_today()}/,
       Amending: stats.links,
-      stats_amendings_count: stats.amendments,
-      stats_self_amendings_count: stats.self,
-      stats_amended_laws_count: stats.laws,
-      stats_amendings_count_per_law: stats.counts,
-      stats_amendings_count_per_law_detailed: stats.counts_detailed
+      "🔺_stats_affects_count": stats.amendments,
+      "🔺_stats_self_affects_count": stats.self,
+      "🔺_stats_affected_laws_count": stats.laws,
+      "🔺_stats_affects_count_per_law": stats.counts,
+      "🔺_stats_affects_count_per_law_detailed": stats.counts_detailed
     }
   end
 
@@ -53,37 +70,38 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
     end)
   end
 
-  @spec affecting(map()) :: Stats.AmendmentStats
-  def affecting(record) do
+  @spec get_affecting(map()) :: list()
+  def get_affecting(record) do
     url = Url.affecting_path(record)
 
-    records =
-      case LegGovUk.leg_gov_uk_html(url, @client, @parser) do
-        {:ok, response} ->
-          case response do
-            [{"tbody", _, records}] -> records
-            [] -> []
-          end
+    case LegGovUk.leg_gov_uk_html(url, @client, @parser) do
+      {:ok, response} ->
+        case response do
+          [{"tbody", _, records}] -> records
+          [] -> []
+        end
 
-        {:error, :no_records} ->
-          []
+      {:error, :no_records} ->
+        []
 
-        {:error, msg} ->
-          IO.puts("ERROR: #{msg}")
-          []
-      end
-
-    # IO.inspect(records, limit: :infinity)
-    records = parse_laws_affected(records)
-    Stats.amendment_stats(records)
+      {:error, msg} ->
+        IO.puts("ERROR: #{msg}")
+        []
+    end
   end
 
   def parse_laws_affected([]), do: []
 
+  @spec parse_laws_affected(list()) :: list(__MODULE__.t())
   def parse_laws_affected(records) do
     Enum.reduce(records, [], fn {_, _, x}, acc ->
       [parse_law(x) | acc]
     end)
+  end
+
+  def proc_amd_tbl([{"tbody", _, rows}]) do
+    Enum.map(rows, fn {_, _, x} -> x end)
+    |> Enum.map(&parse_law(&1))
   end
 
   @doc """
@@ -114,7 +132,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
   Returns
     %Amending{}
   """
-  @spec parse_law(list()) :: %__MODULE__{}
+  @spec parse_law(list()) :: __MODULE__.t()
   def parse_law(record) do
     Enum.with_index(record, fn cell, index -> {index, cell} end)
     |> Enum.reduce([], fn

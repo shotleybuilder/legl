@@ -149,6 +149,20 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
   end
 
   def repeals_revocations(record, html, opts) do
+    # Laws REPEALED or REVOKED by this law
+    records = Legl.Countries.Uk.LeglRegister.Amend.Amending.get_affecting(record)
+
+    revoking =
+      Legl.Countries.Uk.LeglRegister.Amend.Amending.parse_laws_affected(records)
+      |> Enum.filter(fn %{affect: affect} ->
+        Regex.match?(~r/(repeal|revoke)/, affect)
+      end)
+      |> IO.inspect()
+
+    {:ok, stats, _revoking} =
+      Legl.Countries.Uk.LeglRegister.Amend.Stats.amendment_stats(revoking) |> IO.inspect()
+
+    # Laws REVOKING or REPEALING this law
     affects = proc_amd_tbl(html)
 
     # Filter the table of amendments to return ONLY those revoking or repealing
@@ -188,6 +202,10 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
       Kernel.struct(record,
         "Live?_description": live_description_field,
         Live?: live_field,
+        Revoking: stats.links,
+        "🔺_stats_revoking_laws_count": stats.laws,
+        "🔺_stats_revoking_count_per_law": stats.counts,
+        "🔺_stats_revoking_count_per_law_detailed": stats.counts_detailed,
         Revoked_by: revoked_by
       )
 
@@ -297,6 +315,19 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
       _, acc ->
         {:cont, acc}
     end)
+  end
+
+  @spec revoking(list()) :: list()
+  def revoking(data) do
+    data
+    |> Enum.uniq_by(& &1.path)
+    |> Enum.reduce(
+      [],
+      fn %{Title_EN: t, Year: y, Number: n, type_code: tc}, acc ->
+        [ID.id(t, tc, y, n) | acc]
+      end
+    )
+    |> Enum.uniq()
   end
 
   @doc """

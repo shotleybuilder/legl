@@ -32,6 +32,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     Map.merge(opts, %{base_id: base_id, table_id: table_id})
   end
 
+  def type_code(%{name: name} = opts) when name not in ["", nil], do: opts
+
   @spec type_code(map()) :: map()
   def type_code(opts) do
     Map.put(
@@ -63,17 +65,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
-  @spec name(opts()) :: opts()
-
   def name(%{name: n} = opts) when n in ["", nil] do
     Map.put(
       opts,
       :name,
-      ExPrompt.string("Name ")
+      ExPrompt.string(~s/Name ("")/)
     )
   end
 
   def name(%{name: n} = opts) when is_binary(n), do: opts
+
+  @spec view(opts(), String.t()) :: opts()
+  def view(opts, view) when is_binary(view), do: Map.put(opts, :view, view)
 
   @spec view(opts()) :: opts()
   def view(%{view: view} = opts) when view not in ["", nil] do
@@ -117,7 +120,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
-  @spec type_class(map()) :: map()
+  def type_class(%{name: name} = opts) when name not in ["", nil], do: opts
+
+  @spec type_class(opts()) :: map()
   def type_class(opts) do
     Map.put(
       opts,
@@ -163,9 +168,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     Map.put(
       opts,
       :workflow,
-      case ExPrompt.choose("Workflow ", ["Update", "Delta Update"]) do
+      case ExPrompt.choose("Workflow ", ["Create", "Update", "Delta Update"]) do
         0 -> :create
         1 -> :update
+        2 -> :delta
         -1 -> nil
       end
     )
@@ -250,4 +256,104 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   end
 
   def formula_family(f, _), do: f
+
+  @spec formula_name(formula(), opts()) :: list(formula())
+  def formula_name(f, %{name: name}) when name not in ["", nil],
+    do: [~s/{Name}="#{name}"/ | f]
+
+  def formula_name(f, _), do: f
+
+  @spec formula_name(opts()) :: opts()
+  def formula_name(%{name: name} = opts) do
+    Map.put(
+      opts,
+      :formula,
+      ~s/{Name}="#{name}"/
+    )
+  end
+
+  @spec formula_name(opts()) :: list(formula())
+  def formula_empty_metadata(f, _opts) do
+    [
+      case ExPrompt.choose(
+             "Empty Metadata Field? (rtn for ALL)",
+             ~w[md_subjects md_description md_modified md_total_paras si_code]
+           ) do
+        -1 ->
+          ~s/AND({md_subjects}=BLANK(),{md_description}=BLANK(),{md_modified}=BLANK(),{md_total_paras}=BLANK(),{si_code}=BLANK())/
+
+        0 ->
+          ~s/{md_subjects}=BLANK()/
+
+        1 ->
+          ~s/{md_description}=BLANK()/
+
+        2 ->
+          ~s/{md_modified}=BLANK()/
+
+        3 ->
+          ~s/{md_total_paras}=BLANK()/
+
+        4 ->
+          ~s/{si_code}=BLANK()/
+      end
+      | f
+    ]
+  end
+
+  def formula_empty_extent() do
+    case ExPrompt.choose(
+           "Empty Geo Field? (rtn for ALL)",
+           ~w[Geo_Region Geo_Extent All]
+         ) do
+      -1 -> ""
+      0 -> ~s/{Geo_Region}=BLANK()/
+      1 -> ~s/{Geo_Extent}=BLANK()/
+      2 -> ~s/AND({Geo_Region}=BLANK(),{Geo_Extent}=BLANK())/
+    end
+  end
+
+  def formula_empty_amend(f, _) do
+    [
+      case ExPrompt.choose(
+             "Empty Amend Field? (rtn for none)",
+             ~w[🔺_stats_affected_laws_count 🔻_stats_affected_by_laws_count Both]
+           ) do
+        -1 ->
+          ""
+
+        0 ->
+          ~s/{🔺_stats_affected_laws_count}=BLANK()/
+
+        1 ->
+          ~s/{🔻_stats_affected_by_laws_count}=BLANK()/
+
+        2 ->
+          ~s/AND({🔺_stats_affected_laws_count}=BLANK(),{🔻_stats_affected_by_laws_count}=BLANK())/
+      end
+      | f
+    ]
+  end
+
+  def formula_empty_repeal_revoke(f, _) do
+    [
+      case ExPrompt.choose(
+             "Empty Re[peal|voke] Field? (rtn for none)",
+             ~w[Revoking Revoked_by Both]
+           ) do
+        -1 ->
+          ""
+
+        0 ->
+          ~s/{Revoking}=BLANK()/
+
+        1 ->
+          ~s/{Revoked_by}=BLANK()/
+
+        2 ->
+          ~s/AND({Revoking}=BLANK(),{Revoked_by}=BLANK())/
+      end
+      | f
+    ]
+  end
 end

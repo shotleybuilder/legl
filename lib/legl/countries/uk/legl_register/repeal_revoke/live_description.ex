@@ -13,7 +13,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RRDescription do
   """
   @spec live_description(list(%RepealRevoke{}), %LegalRegister{}, map()) ::
           {:ok, %LegalRegister{}}
-  def live_description(records, lr_struct, opts) do
+  def live_description(records, _lr_struct, _opts) do
     records
     |> make_repeal_revoke_data_structure()
     |> sort_on_amending_law_year()

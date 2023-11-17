@@ -46,11 +46,37 @@ defmodule UK do
   def country(), do: @country_regex
   def geo(), do: @geo_regex
 
+  def update do
+    case ExPrompt.choose(
+           "Update Choices",
+           ~W/Metadata Extent Enact Amend Re[peal|voke]/
+         ) do
+      0 ->
+        New.api_update_metadata_fields([])
+
+      1 ->
+        New.api_update_extent_fields([])
+
+      2 ->
+        New.api_update_enact_fields(patch?: true, csv?: false)
+
+      3 ->
+        New.api_update_amend_fields(patch?: true, csv?: false, mute?: true)
+
+      4 ->
+        New.api_update_repeal_revoke_fields(patch?: true, csv?: false, mute?: true)
+
+      -1 ->
+        :ok
+    end
+  end
+
   def api do
     case ExPrompt.choose(
            "API Choices",
            [
-             "Single Law using :type_code, :number, :year",
+             "POST or PATCH Single Law using :type_code, :number, :year",
+             "PATCH Single Law using 'Name'",
              "New Laws from gov.uk",
              "Bare Laws w/o Title_EN from File",
              "Bare Laws w/ Title_EN from File",
@@ -69,56 +95,58 @@ defmodule UK do
            ]
          ) do
       0 ->
-        New.api_create(patch?: true)
+        New.api_create_update_single_record(patch?: true, csv?: false)
 
       1 ->
-        creates()
+        New.api_update_single_name()
 
       2 ->
-        bare_wo_title(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
+        creates()
 
       3 ->
-        bare()
+        bare_wo_title(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
 
       4 ->
-        bare_w_metadata(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
+        bare()
 
       5 ->
-        metadata(workflow: :update)
+        bare_w_metadata(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
 
       6 ->
-        amend_single_record(workflow: :create)
+        metadata(workflow: :update)
 
       7 ->
-        amend(workflow: :create)
+        amend_single_record(workflow: :create)
 
       8 ->
-        amend_single_record(workflow: :update)
+        amend(workflow: :create)
 
       9 ->
-        amend(workflow: :update)
+        amend_single_record(workflow: :update)
 
       10 ->
-        repeal_revoke_single_record(workflow: :update)
+        amend(workflow: :update)
 
       11 ->
-        repeal_revoke(workflow: :update)
+        repeal_revoke_single_record(workflow: :update)
 
       12 ->
-        repeal_revoke_single_record(workflow: :delta)
+        repeal_revoke(workflow: :update)
 
       13 ->
-        repeal_revoke(workflow: :delta)
+        repeal_revoke_single_record(workflow: :delta)
 
       14 ->
-        Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw.amending()
+        repeal_revoke(workflow: :delta)
 
       15 ->
+        Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw.amending()
+
+      16 ->
         Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw.amended()
     end
   end
 
-  def create(opts), do: New.api_create(opts)
   def create_from_file(), do: New.api_create_from_file_bare()
   def creates(), do: New.api_creates()
 
