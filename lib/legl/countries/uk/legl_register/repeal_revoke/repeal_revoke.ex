@@ -150,17 +150,15 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke do
 
   def repeals_revocations(record, html, opts) do
     # Laws REPEALED or REVOKED by this law
-    records = Legl.Countries.Uk.LeglRegister.Amend.Amending.get_affecting(record)
+    # Making use of the Amending module
 
     revoking =
-      Legl.Countries.Uk.LeglRegister.Amend.Amending.parse_laws_affected(records)
-      |> Enum.filter(fn %{affect: affect} ->
-        Regex.match?(~r/(repeal|revoke)/, affect)
-      end)
-      |> IO.inspect()
+      record
+      |> Legl.Countries.Uk.LeglRegister.Amend.Amending.get_affecting()
+      |> Legl.Countries.Uk.LeglRegister.Amend.Amending.parse_laws_affected()
+      |> Enum.filter(fn %{affect: affect} -> Regex.match?(~r/(repeal|revoke)/, affect) end)
 
-    {:ok, stats, _revoking} =
-      Legl.Countries.Uk.LeglRegister.Amend.Stats.amendment_stats(revoking) |> IO.inspect()
+    {:ok, stats, _revoking} = Legl.Countries.Uk.LeglRegister.Amend.Stats.amendment_stats(revoking)
 
     # Laws REVOKING or REPEALING this law
     affects = proc_amd_tbl(html)

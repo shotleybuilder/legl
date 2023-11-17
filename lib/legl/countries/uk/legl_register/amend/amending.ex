@@ -99,11 +99,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
     end)
   end
 
-  def proc_amd_tbl([{"tbody", _, rows}]) do
-    Enum.map(rows, fn {_, _, x} -> x end)
-    |> Enum.map(&parse_law(&1))
-  end
-
   @doc """
   Receives
   {"tr", [{"class", "oddRow"}],
