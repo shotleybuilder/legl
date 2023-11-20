@@ -173,10 +173,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode do
   # todo: check that we've got the right piece of law by comparing title
   def get_si_code(path) do
     case Legl.Services.LegislationGovUk.RecordGeneric.metadata(path) do
-      {:ok, :xml, %{title: _title, si_code: si_code} = _metadata} ->
+      {:ok, :xml, %{Title_EN: _title, si_code: si_code} = _metadata} ->
         {:ok, si_code}
 
-      {:ok, :xml, %{title: title}} ->
+      {:ok, :xml, %{Title_EN: title}} ->
         {:none, "no SI codes for #{title}"}
 
       {:ok, :html} ->

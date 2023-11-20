@@ -382,10 +382,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord do
   Module to POST new records to the Legal Register
 
   """
-  @doc """
-  Receives the map of a new Law for POST to the Legal Register BASE
-  """
+
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
+  alias Legl.Countries.Uk.LeglRegister.Helpers.Create
 
   @doc """
   Function to Post a single Legal Register record struct
@@ -402,7 +401,15 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord do
   @spec run(map() | list(), map()) :: :ok
   def run([], _), do: {:error, "RECORDS: EMPTY LIST: No data to Post"}
 
-  def run(record, opts) when is_map(record), do: run([record], opts)
+  def run(record, opts) when is_map(record) do
+    with false <- Create.exists?(record, opts) do
+      run([record], opts)
+    else
+      true ->
+        IO.puts("RECORD EXISTS IN BASE")
+        :ok
+    end
+  end
 
   def run(records, %{drop_fields: drop_fields} = opts) when is_list(records) do
     with(

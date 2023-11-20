@@ -120,11 +120,20 @@ defmodule Legl.Countries.Uk.UkSearch do
 
   @doc """
         {
-          "tr", [{"class", "oddRow"}],
+          "tr",
+  [{"class",
+  "oddRow"}],
           [
-            {"td", _, [{"a", [{"href", _path}], [var!(title)]}]},
-            {"td", _, [{"a", [{"href", _path}], [var!(year_number)]}]},
-            {"td", _, [_typedescription]}
+            {"td",
+  _, [{"a",
+  [{"href",
+  _path}], [var!(title)]}]},
+            {"td",
+  _, [{"a",
+  [{"href",
+  _path}], [var!(year_number)]}]},
+            {"td",
+  _, [_typedescription]}
           ]
         }
 
@@ -229,6 +238,12 @@ defmodule Legl.Countries.Uk.UkSearch.Terms do
 end
 
 defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
+  @air ~w[
+    air\u00a0quality
+    sulphur
+    smoke\u00a0control
+  ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
   @climate_change ~w[
       carbon\u00a0accounting
       climate\u00a0change
@@ -244,6 +259,9 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       solar\u00a0farm
       solar\u00a0park
       heat\u00a0network
+      energy\u00a0performance
+      renewable
+      non-fossil\u00a0fuel
     ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @finance ~w[
@@ -283,6 +301,12 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       prevention\u00a0of\u00a0pollution
       control\u00a0of\u00a0agricultural\u00a0pollution
     ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
+  @radiological ~w[
+    nuclear
+    radioactive
+    atomic\u00a0energy
+  ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @waste ~w[
       waste\u00a0management
@@ -337,6 +361,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
   def e_search_terms() do
     # putting the likely most popular matching terms first
     [
+      Air: @air,
       "Climate Change": @climate_change,
       Energy: @energy,
       "Environmental Protection": @general,
@@ -344,6 +369,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       "Marine & Riverine": @marine,
       Planning: @planning,
       Pollution: @pollution,
+      Radiological: @radiological,
       Waste: @waste,
       "Water & Wastewater": @water,
       "Wildlife & Countryside": @wildlife_countryside
@@ -561,5 +587,174 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.SICodes do
               "SAFETY, HEALTH AND WELFARE"
             ])
 
+  @e_si_codes MapSet.new([
+                "ACCESS TO THE COUNTRYSIDE",
+                "ACQUISITION OF LAND",
+                "AGGREGATES LEVY",
+                "AGRICULTURAL FOODSTUFFS (WASTE)",
+                "AGRICULTURE",
+                "AGRICULTURE HORTICULTURE",
+                "AIRPORTS",
+                "ANCIENT MONUMENTS",
+                "ANIMAL DISEASE",
+                "ANIMAL HEALTH",
+                "ANIMAL WELFARE",
+                "ANIMALS",
+                "ANIMALS HEALTH",
+                "ANTARCTICA",
+                "AQUACULTURE",
+                "AQUATIC ANIMAL HEALTH",
+                "ATOMIC ENERGY AND RADIOACTIVE SUBSTANCES",
+                "BEE DISEASES",
+                "BOATS AND METHODS OF FISHING",
+                "CANALS AND INLAND WATERWAYS",
+                "CLEAN AIR",
+                "CLIMATE CHANGE",
+                "CLIMATE CHANGE LEVY",
+                "COAST PROTECTION",
+                "COMMON",
+                "COMMONS",
+                "CONSERVATION",
+                "CONSERVATION AREAS",
+                "CONSERVATION OF SEA FISH",
+                "CONTINENTAL SHELF",
+                "CONTROL OF DOGS",
+                "CONTROL OF FUEL AND ELECTRICITY",
+                "COUNTRYSIDE",
+                "CREMATION",
+                "CROFTERS, COTTARS AND SMALL LANDHOLDERS",
+                "DANGEROUS WILD ANIMALS",
+                "DEEP SEA MINING",
+                "DEER",
+                "DESTRUCTIVE ANIMALS",
+                "DEVELOPMENT COMMISSION",
+                "DISEASES OF ANIMALS",
+                "DISEASES OF FISH",
+                "DOGS",
+                "DRAINAGE",
+                "DUMPING AT SEA",
+                "EMISSIONS TRADING",
+                "ENERGY",
+                "ENERGY CONSERVATION",
+                "ENVIRONMENT",
+                "ENVIRONMENTAL PROTECTION",
+                "ENVIRONMENTAL PROTECTION;MARINE LICENSING",
+                "ENVIRONMENTAL PROTECTIONS",
+                "FISH FARMING",
+                "FISHERIES",
+                "FISHERY LIMITS",
+                "FLOOD RISK MANAGEMENT",
+                "FORESTRY",
+                "FUEL",
+                "GAME",
+                "GENERAL WASTE MATERIALS",
+                "GENERAL WASTE MATERIALS RECLAMATION",
+                "HARBOUR",
+                "HARBOURS",
+                "HARBOURS, DOCKS, PIERS AND FERRIES",
+                "HEAT NETWORKS",
+                "HIGHWAYS",
+                "HILL LANDS",
+                "HISTORIC BUILDINGS AND MONUMENTS COMMISSION ARTS COUNCIL",
+                "HORTICULTURE",
+                "HUNTING",
+                "INDUSTRIAL DEVELOPMENT",
+                "INDUSTRIAL POLLUTION CONTROL",
+                "INFRASTRUCTURE PLANNING",
+                "LAND",
+                "LAND DRAINAGE",
+                "LAND POLLUTION",
+                "LAND REFORM",
+                "LAND REGISTRATION",
+                "LAND SEARCHES",
+                "LANDFILL TAX",
+                "LANDING AND SALE OF SEA FISH",
+                "LICENSING (LIQUOR)",
+                "LICENSING (MARINE)",
+                "LONDON PLANNING",
+                "MARINE CONSERVATION",
+                "MARINE ENVIRONMENT",
+                "MARINE LICENSING",
+                "MARINE MANAGEMENT",
+                "MARINE POLLUTION",
+                "NATIONAL PARKS",
+                "NATURAL ENVIRONMENT",
+                "NATURE CONSERVATION",
+                "NEW TOWNS",
+                "NOISE",
+                "NUCLEAR ENERGY",
+                "NUCLEAR SAFEGUARDS",
+                "NUCLEAR SECURITY",
+                "OIL TAX",
+                "OPEN SPACES",
+                "PESTICIDES",
+                "PLANNING",
+                "PLANNING FEES",
+                "PLANT BREEDERS' RIGHTS",
+                "PLANT HEALTH",
+                "PLASTIC PACKAGING TAX",
+                "POLLUTION",
+                "PORT HEALTH AUTHORITIES",
+                "PREVENTION OF CRUELTY",
+                "PREVENTION OF HARM",
+                "PRIVATE HIRE VEHICLES",
+                "PROTECTION OF WRECKS",
+                "RACE RELATIONS",
+                "RADIOACTIVE SUBSTANCES",
+                "RESTRICTION OF SEA FISHING",
+                "RIGHTS OF WAY",
+                "RISK ASSESSMENT",
+                "RIVER",
+                "RIVER,SALMON AND FRESHWATER FISHERIES",
+                "RIVER;SALMON AND FRESHWATER FISHERIES",
+                "RIVERS",
+                "ROAD TRAFFIC",
+                "ROAD TRAFFIC AND VEHICLES",
+                "ROADS",
+                "ROADS AND BRIDGES",
+                "RURAL AFFAIRS",
+                "RURAL DEVELOPMENT",
+                "SALMON AND FRESHWATER FISHERIES",
+                "SCRAP METAL DEALERS",
+                "SEA FISH INDUSTRY",
+                "SEA FISHERIES",
+                "SEEDS",
+                "SHELLFISH",
+                "SMOKE",
+                "STAMP DUTY LAND TAX",
+                "STATUTORY NUISANCES AND CLEAN AIR",
+                "STREET TRADING",
+                "SUGAR",
+                "SUSTAINABLE AND RENEWABLE FUELS",
+                "TITLE CONDITIONS",
+                "TOWN AND COUNTRY PLANNING",
+                "TRANSPORT",
+                "TRANSPORT AND WORKS",
+                "TRANSPORT ENGLAND",
+                "TRUSTS OF LAND",
+                "URBAN DEVELOPMENT",
+                "VETERINARY SURGEONS",
+                "WASTE",
+                "WASTE PRODUCTS RECLAMATION",
+                "WATER",
+                "WATER AND SEWERAGE",
+                "WATER AND SEWERAGE SERVICES",
+                "WATER INDUSTRY",
+                "WATER RESOURCES",
+                "WATER SUPPLY",
+                "WEEDS AND AGRICULTURAL SEEDS",
+                "WELFARE OF ANIMALS",
+                "WILD BIRDS",
+                "WILD BIRDS PROTECTION",
+                "WILD BIRDS SALE FOR CONSUMPTION",
+                "WILD BIRDS-CLASSIFICATION",
+                "WILD BIRDS.",
+                "WILD BIRDS: BIRD SANCTUARY",
+                "WILD BIRDS: SALE FOR CONSUMPTION",
+                "WILDLIFE",
+                "ZOOS"
+              ])
+
   def si_codes(), do: @si_codes
+  def e_si_codes(), do: @e_si_codes
 end

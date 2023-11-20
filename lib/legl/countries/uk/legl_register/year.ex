@@ -3,7 +3,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Year do
 
   @spec set_year(LR.legal_register()) :: {:ok, LR.legal_register()}
   def set_year(%LR{Year: year} = record) when is_struct(record) do
-    IO.write("YEAR")
+    IO.write(" YEAR")
 
     {:ok,
      cond do

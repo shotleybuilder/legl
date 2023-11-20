@@ -5,6 +5,12 @@ defmodule UK do
 
   alias Types.AirtableSchema
   alias Legl.Countries.Uk.LeglRegister.New.New
+  alias Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput
+  alias Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile
+  alias Legl.Countries.Uk.LeglRegister.Crud.Update
+  alias Legl.Countries.Uk.LeglRegister.Amend
+  alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke, as: RR
+  alias Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw
 
   @typedoc """
   A part of a piece of legislation.
@@ -46,113 +52,111 @@ defmodule UK do
   def country(), do: @country_regex
   def geo(), do: @geo_regex
 
+  @api [
+    "Update Menu": {:update},
+    "POST or PATCH Single Law using :type_code, :number, :year":
+      {Update, :api_create_update_single_record, [patch?: true, csv?: false]},
+    "PATCH Single Law using 'Name'": {Update, :api_update_single_name},
+    "Newly Published Laws from gov.uk": {New, :api_create_newly_published_laws},
+    "Newly Published Laws from File":
+      {CreateFromFile, :api_create_newly_published_laws,
+       [
+         [
+           workflow: :update,
+           csv?: false,
+           mute?: true,
+           post?: false,
+           patch?: false
+         ]
+       ]},
+    "Excluded Laws from File": {New, :save_bare_excluded, [[patch?: true, csv?: false]]},
+    "Bare Laws from File":
+      {CreateFromFile, :api_create_from_file_bare,
+       [
+         [
+           workflow: :update,
+           csv?: false,
+           mute?: true,
+           post?: false,
+           patch?: false
+         ]
+       ]},
+    "Bare Laws w/ metadata from File":
+      {CreateFromFile, :api_create_from_file_w_metadata,
+       [
+         workflow: :update,
+         csv?: false,
+         mute?: true,
+         post?: false,
+         patch?: false
+       ]},
+    "UPDATE Metadata": {Legl.Countries.Uk.Metadata, :run, [workflow: :update]},
+    "Amend - single record - patch":
+      {Legl.Countries.Uk.LeglRegister.Amend, :single_record, [workflow: :create]},
+    "Amend - patch": {Amend, :run, [workflow: :create]},
+    "DELTA Amend - single record - patch": {Amend, :single_record, [workflow: :update]},
+    "DELTA Amend": {Amend, :run, [workflow: :update]},
+    "Repeal|Revoke - single record - patch": {RR, :single_record, [workflow: :update]},
+    "Repeal|Revoke - patch": {RR, :run, [workflow: :update]},
+    "DELTA Repeal|Revoke - single record - patch": {RR, :single_record, [workflow: :update]},
+    "DELTA Repeal|Revoke - patch": {RR, :run, [workflow: :delta]},
+    "DIFF Amending - amending laws that aren't in the Base": {FindNewLaw, :amending},
+    "DIFF Amended - amended laws that aren't in the Base": {FindNewLaw, :amended}
+  ]
+
+  def api do
+    case ExPrompt.choose("spongl API", Enum.map(@api, fn {k, _} -> k end)) do
+      -1 ->
+        :ok
+
+      n ->
+        run =
+          Enum.map(@api, fn {_k, v} -> v end)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+
+        # |> IO.inspect()
+
+        case run do
+          {module, function, args} when is_atom(function) ->
+            apply(module, function, args)
+
+          {module, function} when is_atom(module) and is_atom(function) ->
+            apply(module, function, [])
+
+          {function, args} when is_atom(function) and is_list(args) ->
+            apply(__MODULE__, function, args)
+
+          {function} ->
+            apply(__MODULE__, function, [])
+        end
+    end
+  end
+
+  @update [
+            {Update, :api_update_metadata_fields, [[]]},
+            {Update, :api_update_extent_fields, [[]]},
+            {Update, :api_update_enact_fields, [patch?: true, csv?: false]},
+            {Update, :api_update_amend_fields, [patch?: true, csv?: false, mute?: true]},
+            {Update, :api_update_repeal_revoke_fields, [patch?: true, csv?: false, mute?: true]}
+          ]
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+
   def update do
     case ExPrompt.choose(
            "Update Choices",
            ~W/Metadata Extent Enact Amend Re[peal|voke]/
          ) do
-      0 ->
-        New.api_update_metadata_fields([])
-
-      1 ->
-        New.api_update_extent_fields([])
-
-      2 ->
-        New.api_update_enact_fields(patch?: true, csv?: false)
-
-      3 ->
-        New.api_update_amend_fields(patch?: true, csv?: false, mute?: true)
-
-      4 ->
-        New.api_update_repeal_revoke_fields(patch?: true, csv?: false, mute?: true)
-
       -1 ->
         :ok
+
+      n ->
+        {module, function, args} = Map.get(@update, n)
+        apply(module, function, args)
     end
   end
-
-  def api do
-    case ExPrompt.choose(
-           "API Choices",
-           [
-             "POST or PATCH Single Law using :type_code, :number, :year",
-             "PATCH Single Law using 'Name'",
-             "New Laws from gov.uk",
-             "Bare Laws w/o Title_EN from File",
-             "Bare Laws w/ Title_EN from File",
-             "Bare Laws w/ metadata from File",
-             "UPDATE Metadata",
-             "Amend - single record - patch",
-             "Amend - patch",
-             "DELTA Amend - single record - patch",
-             "DELTA Amend",
-             "Repeal|Revoke - single record - patch",
-             "Repeal|Revoke - patch",
-             "DELTA Repeal|Revoke - single record - patch",
-             "DELTA Repeal|Revoke - patch",
-             "DIFF Amending - amending laws that aren't in the Base",
-             "DIFF Amended - amended laws that aren't in the Base"
-           ]
-         ) do
-      0 ->
-        New.api_create_update_single_record(patch?: true, csv?: false)
-
-      1 ->
-        New.api_update_single_name()
-
-      2 ->
-        creates()
-
-      3 ->
-        bare_wo_title(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
-
-      4 ->
-        bare()
-
-      5 ->
-        bare_w_metadata(workflow: :update, csv?: false, mute?: true, post?: false, patch?: false)
-
-      6 ->
-        metadata(workflow: :update)
-
-      7 ->
-        amend_single_record(workflow: :create)
-
-      8 ->
-        amend(workflow: :create)
-
-      9 ->
-        amend_single_record(workflow: :update)
-
-      10 ->
-        amend(workflow: :update)
-
-      11 ->
-        repeal_revoke_single_record(workflow: :update)
-
-      12 ->
-        repeal_revoke(workflow: :update)
-
-      13 ->
-        repeal_revoke_single_record(workflow: :delta)
-
-      14 ->
-        repeal_revoke(workflow: :delta)
-
-      15 ->
-        Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw.amending()
-
-      16 ->
-        Legl.Countries.Uk.LeglRegister.Amend.FindNewAmendingLaw.amended()
-    end
-  end
-
-  def create_from_file(), do: New.api_create_from_file_bare()
-  def creates(), do: New.api_creates()
-
-  def bare(), do: New.api_create_from_file_bare()
-  def bare_wo_title(opts \\ []), do: New.api_create_from_file_bare_wo_title(opts)
-  def bare_w_metadata(opts \\ []), do: New.api_create_from_file_w_metadata(opts)
 
   @doc """
   Function provides a shortcut to list all the members of the Dutyholders taxonomy
@@ -174,10 +178,10 @@ defmodule UK do
     do: Legl.Countries.Uk.LeglRegister.Amend.run(opts)
 
   def repeal_revoke_single_record(opts \\ []),
-    do: Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.single_record(opts)
+    do: RR.single_record(opts)
 
   def repeal_revoke(opts \\ []),
-    do: Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke.run(opts)
+    do: RR.run(opts)
 
   def metadata(opts \\ []),
     do: Legl.Countries.Uk.Metadata.run(opts)

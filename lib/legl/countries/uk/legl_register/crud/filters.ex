@@ -7,10 +7,19 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
   @hs_search_terms HS.hs_search_terms()
   @e_search_terms E.e_search_terms()
 
-  def si_code_filter({inc_w_si, inc_wo_si}) do
+  @hs_si_codes SICodes.si_codes()
+  @e_si_codes SICodes.e_si_codes()
+
+  def si_code_filter({inc_w_si, inc_wo_si}, base_name) do
+    lib_si_codes =
+      case base_name do
+        "UK S" -> @hs_si_codes
+        "UK E" -> @e_si_codes
+      end
+
     Enum.reduce(inc_w_si, {[], inc_wo_si}, fn
       %{si_code: si_codes} = law, {inc, exc} ->
-        case si_code_member?(si_codes) do
+        case si_code_member?(si_codes, lib_si_codes) do
           true -> {[law | inc], exc}
           _ -> {inc, [law | exc]}
         end
@@ -22,12 +31,12 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
     |> (&{:ok, &1}).()
   end
 
-  def si_code_member?(si_code) when is_binary(si_code),
-    do: MapSet.member?(SICodes.si_codes(), si_code)
+  def si_code_member?(si_code, lib_si_codes) when is_binary(si_code),
+    do: MapSet.member?(lib_si_codes, si_code)
 
-  def si_code_member?(si_codes) when is_list(si_codes) do
+  def si_code_member?(si_codes, lib_si_codes) when is_list(si_codes) do
     Enum.reduce_while(si_codes, false, fn si_code, _acc ->
-      case MapSet.member?(SICodes.si_codes(), si_code) do
+      case MapSet.member?(lib_si_codes, si_code) do
         true -> {:halt, true}
         _ -> {:cont, false}
       end

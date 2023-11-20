@@ -1,9 +1,9 @@
-defmodule Legl.Countries.Uk.LeglRegister.New.Options do
+defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   @default_opts %{
-    base_name: "UK S",
+    base_name: nil,
     table_name: "Publication Date",
     type_code: [""],
     name: nil,
@@ -17,7 +17,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
     # Trigger .csv saving?
     csv?: false,
     # Global mute msg
-    mute?: true
+    mute?: true,
+    paste?: false
   }
 
   def default_opts, do: @default_opts
@@ -61,6 +62,14 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
     |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
     |> drop_fields()
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+  end
+
+  def from_file_set_up(opts) do
+    Enum.into(opts, @default_opts)
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> source()
+    |> drop_fields()
   end
 
   def api_create_from_file_bare_wo_title_options(opts) do
@@ -190,59 +199,33 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
     Map.merge(opts, %{base_id: base_id, table_id: table_id, pub_table_id: pub_table_id})
   end
 
+  @source [
+            {:exc, "lib/legl/countries/uk/legl_register/crud/exc.json"},
+            {:source, "lib/legl/countries/uk/legl_register/crud/source.json"},
+            {:inc, "lib/legl/countries/uk/legl_register/crud/inc.json"},
+            {:amend, "lib/legl/countries/uk/legl_register/amend/new_amending_laws_enum0.json"},
+            {:amend, "lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum0.json"},
+            {:repeal_revoke, "lib/legl/countries/uk/legl_register/amend/api_new_laws.json"},
+            {:repeal_revoke,
+             "lib/legl/countries/uk/legl_register/repeal_revoke/api_new_laws.json"}
+          ]
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+
   @spec source(map()) :: map()
   def source(opts) do
     Map.put(
       opts,
       :source,
-      case ExPrompt.choose("Source Records", [
-             "legislation.gov.uk",
-             "w/ si code",
-             "w/o si code",
-             "w/ & w/o si code",
-             "amending_laws",
-             "amended laws",
-             "amend new laws",
-             "repealing - revoking new laws"
-           ]) do
+      case ExPrompt.choose(
+             "Source Records (default new/api_new_law.json)",
+             Enum.map(@source, fn {_, {_, v}} -> v end)
+           ) do
         -1 ->
-          {:default, "lib/legl/countries/uk/legl_register/new/api_new_laws.json"}
+          {:default, "lib/legl/countries/uk/legl_register/crud/api_new_laws.json"}
 
-        0 ->
-          :web
-
-        1 ->
-          :si_code
-
-        2 ->
-          :x_si_code
-
-        3 ->
-          :both
-
-        4 ->
-          {
-            :amend,
-            "lib/legl/countries/uk/legl_register/amend/new_amending_laws_enum0.json"
-          }
-
-        5 ->
-          {
-            :amend,
-            "lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum0.json"
-          }
-
-        6 ->
-          {
-            :repeal_revoke,
-            "lib/legl/countries/uk/legl_register/amend/api_new_laws.json"
-          }
-
-        7 ->
-          {
-            :repeal_revoke,
-            "lib/legl/countries/uk/legl_register/repeal_revoke/api_new_laws.json"
-          }
+        n ->
+          Map.get(@source, n)
       end
     )
   end
@@ -318,7 +301,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
     {:ok, [~s/{Month}="#{month}"/ | f]}
   end
 
-  defp drop_fields(opts) do
+  def drop_fields(opts) do
     Map.merge(opts, %{
       drop_fields: @drop_fields,
       api_patch_path: @api_patch_path,
@@ -334,11 +317,27 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Options do
     )
   end
 
+  def view_amend(%{base_name: "UK E"} = opts) do
+    Map.put(
+      opts,
+      :view,
+      "viwm2Y9monasmyRGo"
+    )
+  end
+
   def view_live(%{base_name: "UK S"} = opts) do
     Map.put(
       opts,
       :view,
       "viwwYu7jgUN3x9va7"
+    )
+  end
+
+  def view_live(%{base_name: "UK E"} = opts) do
+    Map.put(
+      opts,
+      :view,
+      "viwSdG15vYgfTIjDk"
     )
   end
 end

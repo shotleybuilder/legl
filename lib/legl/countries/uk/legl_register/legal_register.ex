@@ -72,6 +72,9 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           "🔺_stats_revoking_laws_count": integer(),
           "🔺_stats_revoking_count_per_law": String.t(),
           "🔺_stats_revoking_count_per_law_detailed": String.t(),
+          "🔻_stats_revoked_by_laws_count": integer(),
+          "🔻_stats_revoked_by_count_per_law": String.t(),
+          "🔻_stats_revoked_by_count_per_law_detailed": String.t(),
 
           # New law fields
           publication_date: String.t(),
@@ -145,6 +148,10 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     🔺_stats_revoking_laws_count
     🔺_stats_revoking_count_per_law
     🔺_stats_revoking_count_per_law_detailed
+
+    🔻_stats_revoked_by_laws_count
+    🔻_stats_revoked_by_count_per_law
+    🔻_stats_revoked_by_count_per_law_detailed
 
     publication_date
 

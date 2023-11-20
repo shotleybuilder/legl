@@ -42,26 +42,42 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
     # call to legislation.gov.uk to get the laws that have amended this
     records = get_affecting(record)
     records = parse_laws_affected(records)
-    {:ok, stats, affected} = Stats.amendment_stats(records)
-    record = Kernel.struct(record, update_record(stats))
+
+    # Function to separate affected laws into two groups - revoked affected
+    {revocations, affectations} =
+      Enum.split_with(records, fn %{affect: affect} ->
+        Regex.match?(~r/(repeal|revoke)/, affect)
+      end)
+
+    # Process the revoked laws
+    {:ok, stats, revoked} = Stats.amendment_stats(revocations)
+
+    record =
+      Kernel.struct(record,
+        Revoking: stats.links,
+        "🔺_stats_revoking_laws_count": stats.laws,
+        "🔺_stats_revoking_count_per_law": stats.counts,
+        "🔺_stats_revoking_count_per_law_detailed": stats.counts_detailed
+      )
+
+    # Process the affected laws
+    {:ok, stats, affected} = Stats.amendment_stats(affectations)
+
+    record =
+      Kernel.struct(record,
+        Amending: stats.links,
+        "🔺_stats_affects_count": stats.amendments,
+        "🔺_stats_self_affects_count": stats.self,
+        "🔺_stats_affected_laws_count": stats.laws,
+        "🔺_stats_affects_count_per_law": stats.counts,
+        "🔺_stats_affects_count_per_law_detailed": stats.counts_detailed
+      )
+
     # Merge with the LegalRegister struct removes all scaffolding members
-    affected = convert_amend_structs_to_legal_register_structs(affected)
+    affected = convert_amend_structs_to_legal_register_structs(affected ++ revoked)
 
     {record, affected}
     # |> IO.inspect()
-  end
-
-  @spec update_record(AmendmentStats.stats()) :: map()
-  defp update_record(stats) do
-    %{
-      # amendments_checked: ~s/#{Date.utc_today()}/,
-      Amending: stats.links,
-      "🔺_stats_affects_count": stats.amendments,
-      "🔺_stats_self_affects_count": stats.self,
-      "🔺_stats_affected_laws_count": stats.laws,
-      "🔺_stats_affects_count_per_law": stats.counts,
-      "🔺_stats_affects_count_per_law_detailed": stats.counts_detailed
-    }
   end
 
   defp convert_amend_structs_to_legal_register_structs(records) do

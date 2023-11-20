@@ -7,6 +7,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
   alias Legl.Countries.Uk.LeglRegister.Amend.Stats
 
+  @code_full "❌ Revoked / Repealed / Abolished"
+  @code_part "⭕ Part Revocation / Repeal"
+  @code_live "✔ In force"
+
   defstruct ~w[
     title
     target
@@ -22,27 +26,56 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
 
   @spec get_laws_amending_this_law(map()) :: {LegalRegister, LegalRegister}
   def get_laws_amending_this_law(record) do
-    # call to legislation.gov.uk to get the laws that have amended this
-    {:ok, stats, affecting} = affected(record)
-    record = Kernel.struct(record, update_record(stats))
-    affecting = convert_amend_structs_to_legal_register_structs(affecting)
+    records = get_affected(record)
+    records = parse_laws_affecting(records)
+
+    # Function to separate affected laws into two groups - revoked affected
+    {revocations, affectations} =
+      Enum.split_with(records, fn %{affect: affect} ->
+        Regex.match?(~r/(repeal|revoke)/, affect)
+      end)
+
+    # Process the revoked laws
+    {:ok, stats, revoked_by} = Stats.amendment_stats(revocations)
+
+    live_field =
+      cond do
+        repealed_revoked_in_full?(revocations) ->
+          @code_full
+
+        Enum.count(revocations) != 0 ->
+          @code_part
+
+        true ->
+          @code_live
+      end
+
+    record =
+      Kernel.struct(record,
+        Live?: live_field,
+        "Live?_description": stats.counts,
+        Revoked_by: stats.links,
+        "🔻_stats_revoked_by_laws_count": stats.laws,
+        "🔻_stats_revoked_by_count_per_law": stats.counts,
+        "🔻_stats_revoked_by_count_per_law_detailed": stats.counts_detailed
+      )
+
+    {:ok, stats, affected_by} = Stats.amendment_stats(affectations)
+
+    record =
+      Kernel.struct(record,
+        Amended_by: stats.links,
+        "🔻_stats_affected_by_count": stats.amendments,
+        "🔻_stats_self_affected_by_count": stats.self,
+        "🔺_stats_affected_laws_count": stats.laws,
+        "🔻_stats_affected_by_count_per_law": stats.counts,
+        "🔻_stats_affected_by_count_per_law_detailed": stats.counts_detailed
+      )
+
+    affecting = convert_amend_structs_to_legal_register_structs(affected_by ++ revoked_by)
 
     {record, affecting}
     # |> IO.inspect()
-  end
-
-  @spec update_record(AmendmentStats.stats()) :: map()
-  defp update_record(stats) do
-    %{
-      # amendments_checked: ~s/#{Date.utc_today()}/,
-      Amended_by: stats.links,
-      # leg_gov_uk_updates: "",
-      "🔻_stats_affected_by_count": stats.amendments,
-      "🔻_stats_self_affected_by_count": stats.self,
-      "🔺_stats_affected_laws_count": stats.laws,
-      "🔻_stats_affected_by_count_per_law": stats.counts,
-      "🔻_stats_affected_by_count_per_law_detailed": stats.counts_detailed
-    }
   end
 
   defp convert_amend_structs_to_legal_register_structs(records) do
@@ -51,29 +84,39 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
     end)
   end
 
-  @spec affected(map()) :: Stats.AmendmentStats
-  def affected(record) do
+  @spec get_affected(map()) :: Stats.AmendmentStats
+  def get_affected(record) do
     url = Url.affected_path(record)
 
-    records =
-      case LegGovUk.leg_gov_uk_html(url, @client, @parser) do
-        {:ok, response} ->
-          case response do
-            [{"tbody", _, records}] -> records
-            [] -> []
-          end
+    case LegGovUk.leg_gov_uk_html(url, @client, @parser) do
+      {:ok, response} ->
+        case response do
+          [{"tbody", _, records}] -> records
+          [] -> []
+        end
 
-        {:error, :no_records} ->
-          []
+      {:error, :no_records} ->
+        []
 
-        {:error, msg} ->
-          IO.puts("ERROR: #{msg}")
-          []
-      end
+      {:error, msg} ->
+        IO.puts("ERROR: #{msg}")
+        []
+    end
+  end
 
-    records = parse_laws_affecting(records)
+  @doc """
+  Function filters amendment table rows for entries describing the full revocation / repeal of a law
+  """
+  @spec repealed_revoked_in_full?(list()) :: boolean()
+  def repealed_revoked_in_full?(data) do
+    Enum.reduce_while(data, false, fn
+      %{target: target, affect: affect}, _acc
+      when target in ["Regulations", "Order", "Act"] and affect in ["revoked", "repealed"] ->
+        {:halt, true}
 
-    Stats.amendment_stats(records)
+      _, acc ->
+        {:cont, acc}
+    end)
   end
 
   @spec parse_laws_affecting([]) :: []
