@@ -108,7 +108,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw do
 
     Legl.Utility.save_json(
       records,
-      ~s[lib/legl/countries/uk/legl_register/new/api_new_laws.json]
+      ~s[lib/legl/countries/uk/legl_register/crud/api_new_laws.json]
     )
 
     IO.puts("\n#{Enum.count(records)} records saved to .json")
@@ -120,8 +120,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw do
   The Affecting laws are in the Base, but not all the laws affected are nor should be
   Calc of the DIFF between Affecting set and Revoking set fields
   """
-  @spec amended(map()) :: :ok
-  def amended(opts \\ []) do
+  @spec new_amended_law(map()) :: :ok
+  def new_amended_law(opts \\ []) do
     opts = Options.new_amending_law_finder(opts)
 
     records =
@@ -180,7 +180,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw do
         end
       )
       |> Enum.map(fn {master, copy} -> Legl.Utility.delta_lists(copy, master) end)
-      # |> IO.inspect()
+      |> IO.inspect()
       |> Enum.map(
         &Enum.map(
           &1,
@@ -214,7 +214,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw do
 
     Legl.Utility.save_json(
       records,
-      ~s[lib/legl/countries/uk/legl_register/new/api_new_laws.json]
+      ~s[lib/legl/countries/uk/legl_register/crud/api_new_laws.json]
     )
 
     IO.puts(" #{Enum.count(records)} records saved to .json")

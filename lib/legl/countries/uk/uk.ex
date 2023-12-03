@@ -11,6 +11,7 @@ defmodule UK do
   alias Legl.Countries.Uk.LeglRegister.Amend
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke, as: RR
   alias Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw
+  alias Legl.Countries.Uk.LeglRegister.PublicationDate
 
   @typedoc """
   A part of a piece of legislation.
@@ -54,8 +55,9 @@ defmodule UK do
 
   @api [
     "Update Menu": {:update},
+    UPDATE: {Update, :api_update, [[patch?: true, csv?: false, workflow: :update]]},
     "POST or PATCH Single Law using :type_code, :number, :year":
-      {Update, :api_create_update_single_record, [patch?: true, csv?: false]},
+      {CreateFromInput, :api_create_update_single_record, [[patch?: true, csv?: false]]},
     "PATCH Single Law using 'Name'": {Update, :api_update_single_name},
     "Newly Published Laws from gov.uk": {New, :api_create_newly_published_laws},
     "Newly Published Laws from File":
@@ -84,13 +86,15 @@ defmodule UK do
     "Bare Laws w/ metadata from File":
       {CreateFromFile, :api_create_from_file_w_metadata,
        [
-         workflow: :update,
-         csv?: false,
-         mute?: true,
-         post?: false,
-         patch?: false
+         [
+           workflow: :update,
+           csv?: false,
+           mute?: true,
+           post?: false,
+           patch?: false
+         ]
        ]},
-    "UPDATE Metadata": {Legl.Countries.Uk.Metadata, :run, [workflow: :update]},
+    "FIND Publication Date": {PublicationDate, :find_publication_date, []},
     "Amend - single record - patch":
       {Legl.Countries.Uk.LeglRegister.Amend, :single_record, [workflow: :create]},
     "Amend - patch": {Amend, :run, [workflow: :create]},
@@ -100,8 +104,10 @@ defmodule UK do
     "Repeal|Revoke - patch": {RR, :run, [workflow: :update]},
     "DELTA Repeal|Revoke - single record - patch": {RR, :single_record, [workflow: :update]},
     "DELTA Repeal|Revoke - patch": {RR, :run, [workflow: :delta]},
-    "DIFF Amending - amending laws that aren't in the Base": {FindNewLaw, :amending},
-    "DIFF Amended - amended laws that aren't in the Base": {FindNewLaw, :amended}
+    "DIFF Amended by - amending laws that aren't in the Base 'EARM Amended by & Revoked by'":
+      {FindNewLaw, :amending},
+    "DIFF Amending - amended by laws that aren't in the Base VIEW: '% DIFF Amending' 'EARM Amending & Revoking'":
+      {FindNewLaw, :new_amended_law}
   ]
 
   def api do

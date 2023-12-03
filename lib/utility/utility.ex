@@ -387,4 +387,7 @@ defmodule Legl.Utility do
   end
 
   def convert_to_mapset(list), do: MapSet.new(list)
+
+  def year_as_integer(year) when is_integer(year), do: year
+  def year_as_integer(year) when is_binary(year), do: String.to_integer(year)
 end

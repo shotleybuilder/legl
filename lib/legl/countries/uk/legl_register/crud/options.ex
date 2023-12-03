@@ -80,16 +80,32 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> drop_fields()
   end
 
-  def api_update_extent_fields_options(opts) do
-    Enum.into(opts, @default_opts)
-    |> LRO.base_name()
-    |> LRO.base_table_id()
-    |> LRO.view()
-    |> Map.put(:formula, LRO.formula_empty_extent())
-    |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
-    |> drop_fields()
+  def api_update_options(opts) do
+    opts =
+      Enum.into(opts, @default_opts)
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> LRO.type_class()
+      |> LRO.type_code()
+      |> LRO.family()
+      |> (&Map.put(&1, :view, api_update_options_view(&1))).()
+      |> LRO.patch?()
+      |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
+      |> drop_fields()
+
+    formula =
+      []
+      |> LRO.formula_type_class(opts)
+      |> LRO.formula_type_code(opts)
+      |> LRO.formula_family(opts)
+
+    Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
+
+  # VS_CODE_METADATA
+  defp api_update_options_view(%{base_name: "UK S"} = _opts), do: "viwxEzSun5nPWzGQB"
+  defp api_update_options_view(%{base_name: "UK E"} = _opts), do: "viwMy1UQEZO1x62cK"
 
   def api_update_metadata_fields_options(opts) do
     opts =
@@ -110,6 +126,17 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> LRO.formula_empty_metadata(opts)
 
     Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
+    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+  end
+
+  def api_update_extent_fields_options(opts) do
+    Enum.into(opts, @default_opts)
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> LRO.view()
+    |> Map.put(:formula, LRO.formula_empty_extent())
+    |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
+    |> drop_fields()
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 

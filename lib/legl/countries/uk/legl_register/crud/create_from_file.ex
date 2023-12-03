@@ -114,15 +114,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
                 %{Number: n, Title_EN: t, type_code: tc, Year: y} = record ->
                   IO.puts("Title_EN: #{t} Year: #{y} Number: #{n} Type Code: #{tc}")
 
-                  {:ok, record} =
-                    New.update_empty_law_fields_w_metadata(
-                      Kernel.struct(%LegalRegister{}, record),
-                      opts
-                    )
+                  case Legl.Countries.Uk.LeglRegister.Helpers.Create.exists?(record, opts) do
+                    false ->
+                      {:ok, record} =
+                        New.update_empty_law_fields_w_metadata(
+                          Kernel.struct(%LegalRegister{}, record),
+                          opts
+                        )
 
-                  case ExPrompt.confirm("SAVE to BASE?: #{record."Title_EN"} #{record.si_code}") do
-                    true -> New.save([record], opts)
-                    _ -> nil
+                      case ExPrompt.confirm(
+                             "SAVE to BASE?: #{record."Title_EN"} #{record.si_code}"
+                           ) do
+                        true -> New.save([record], opts)
+                        _ -> nil
+                      end
+
+                    true ->
+                      :ok
                   end
               end
             )

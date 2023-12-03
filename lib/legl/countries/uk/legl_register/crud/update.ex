@@ -39,6 +39,41 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   end
 
   @doc """
+  Function to update a set of records retrieved from AT
+
+
+  """
+  @spec api_update(opts()) :: :ok
+  def api_update(opts \\ []) do
+    opts = Options.api_update_options(opts)
+
+    records = AT.get_legal_register_records(opts)
+
+    Enum.each(
+      records,
+      fn record ->
+        with(
+          {:ok, record} <- MD.get_latest_metadata(record),
+          record = Map.put(record, :md_checked, ~s/#{Date.utc_today()}/),
+          {:ok, record} <- Amend.workflow(record, opts),
+          record = Map.put(record, :amendments_checked, ~s/#{Date.utc_today()}/)
+        ) do
+          patch? =
+            if opts.patch?, do: true, else: ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
+
+          case patch? do
+            true ->
+              Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+
+            false ->
+              :ok
+          end
+        end
+      end
+    )
+  end
+
+  @doc """
   Function to update Legal Register meatadata fields
   """
   @spec api_update_metadata_fields(opts()) :: :ok

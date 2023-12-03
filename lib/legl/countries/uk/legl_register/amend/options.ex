@@ -71,44 +71,63 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
   Gets Amending laws that are not present in the Base
   """
   def new_amending_law_finder(opts) do
-    Enum.into(opts, @default_opts)
-    |> LRO.base_name()
-    |> LRO.base_table_id()
-    |> (&Map.put(&1, :view, new_amending_law_finder_view(&1))).()
-    |> Map.put(
-      :formula,
-      ~s/AND(OR({% Amending (calc)}=0.00,{% Amending (calc)}<1, {% Revoking (calc)}=0.00, {% Revoking (calc)}<1),{Family}!=BLANK())/
-    )
-    |> Map.put(:fields, [
-      "Amending (from UK) - binary",
-      "Amending",
-      "Revoking (from UK) - binary",
-      "Revoking"
-    ])
-  end
+    opts =
+      Enum.into(opts, @default_opts)
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> (&Map.put(&1, :view, new_amending_law_finder_view(&1))).()
+      |> LRO.family()
+      |> Map.put(:fields, [
+        "Amending (from UK) - binary",
+        "Amending",
+        "Revoking (from UK) - binary",
+        "Revoking"
+      ])
 
-  defp new_amending_law_finder_view(%{base_name: "UK S"}), do: "viw3rPYsQImsIVUjM"
-  defp new_amending_law_finder_view(%{base_name: "UK E"}), do: "viwEiBh5ygBoaAvE3"
+    formula =
+      []
+      |> LRO.formula_family(opts)
+      |> (&[
+            ~s/OR({% Amending (calc)}=0.00,{% Amending (calc)}<1, {% Revoking (calc)}=0.00, {% Revoking (calc)}<1)/
+            | &1
+          ]).()
 
-  def new_amended_by_law_finder(opts) do
-    Enum.into(opts, @default_opts)
-    |> LRO.base_name()
-    |> LRO.base_table_id()
-    |> (&Map.put(&1, :view, new_amended_law_finder_view(&1))).()
-    |> Map.put(
-      :formula,
-      ~s/AND(OR({% Affected By (calc)}=0.00,{% Affected By (calc)}<1, {% Revoked By (calc)}=0.00,{% Revoked By (calc)}<1),{Family}!=BLANK())/
-    )
-    |> Map.put(:fields, [
-      "Amended_by (from UK) - binary",
-      "Amended_by",
-      "Revoked_by (from UK) - binary",
-      "Revoked_by"
-    ])
+    Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
     |> IO.inspect(label: "OPTIONS: ")
   end
 
-  defp new_amended_law_finder_view(%{base_name: "UK S"}), do: "viwrxrH3pofEIXDu5"
+  # % DIFF Amending
+  defp new_amending_law_finder_view(%{base_name: "UK S"}), do: "viwkGW5JF0YiNUlJQ"
+  defp new_amending_law_finder_view(%{base_name: "UK E"}), do: "viwEiBh5ygBoaAvE3"
+
+  def new_amended_by_law_finder(opts) do
+    opts =
+      Enum.into(opts, @default_opts)
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> (&Map.put(&1, :view, new_amended_law_finder_view(&1))).()
+      |> LRO.family()
+      |> Map.put(:fields, [
+        "Amended_by (from UK) - binary",
+        "Amended_by",
+        "Revoked_by (from UK) - binary",
+        "Revoked_by"
+      ])
+
+    formula =
+      []
+      |> LRO.formula_family(opts)
+      |> (&[
+            ~s/OR({% Affected By (calc)}=0.00,{% Affected By (calc)}<1, {% Revoked By (calc)}=0.00,{% Revoked By (calc)}<1)/
+            | &1
+          ]).()
+
+    Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
+    |> IO.inspect(label: "OPTIONS: ")
+  end
+
+  # % DIFF Amended by
+  defp new_amended_law_finder_view(%{base_name: "UK S"}), do: "viwAkbFl4dB4txpxx"
   defp new_amended_law_finder_view(%{base_name: "UK E"}), do: "viwou7VrF2rAevrDt"
 
   def set_options(opts) do

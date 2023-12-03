@@ -64,7 +64,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       Enum.into(opts, Options.default_opts())
       |> LRO.base_name()
       |> Options.legal_register_base_id_table_id()
-      |> Options.source()
+      # |> Options.source()
       |> Options.month()
       |> Options.day_groups()
       |> Options.formula()

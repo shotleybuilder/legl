@@ -10,13 +10,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
     "FIRE",
     "FIRE: Dangerous and Explosive Substances",
     "FOOD",
-    "GAS & ELECTRIC",
     "HEALTH: Drug & Medicine Safety",
     "HEALTH: Patient Safety",
     "HEALTH: Public",
     "HR: Employment",
     "HR: Insurance / Compensation / Wages / Benefits",
     "HR: Working Time",
+    "OH&S: Gas & Electrical Safety",
     "OH&S: Mines & Quarries",
     "OH&S: Occupational / Personal Safety",
     "OH&S: Offshore Safety",
@@ -26,20 +26,36 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
     "TRANS: Air Safety",
     "TRANS: Rail Safety",
     "TRANS: Road Safety",
-    "TRANS: Ship Safety"
+    "TRANS: Maritime Safety"
   ]
 
   def hs_family, do: @hsfamily
 
   @efamily [
+    "Agriculture",
     "Air",
+    "Animals & Animal Health",
+    "Antarctica",
+    "Aviation",
+    "Buildings",
     "Climate Change",
     "Energy",
     "Environmental Protection",
     "Finance",
+    "Fisheries & Fishing",
+    "GMOs",
+    "Historic Environment",
     "Marine & Riverine",
+    "Merchant Shipping",
+    "Noise",
     "Planning",
+    "Plant Health",
     "Pollution",
+    "Nuclear & Radiological",
+    "Railways & Rail Transport",
+    "Roads & Vehicles",
+    "Town & Country Planning",
+    "Trees, Forestry & Timber",
     "Waste",
     "Water & Wastewater",
     "Wildlife & Countryside"

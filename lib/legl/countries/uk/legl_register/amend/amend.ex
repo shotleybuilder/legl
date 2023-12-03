@@ -95,13 +95,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
     # IO.inspect(latest_records, label: "LATEST RECORDS:")
 
     cond do
-      opts.workflow == :create ->
+      opts.workflow == :update ->
         Legl.Utility.maps_from_structs(nrecords)
         |> Enum.map(&Map.put(&1, :amendments_checked, ~s/#{Date.utc_today()}/))
         |> Legl.Utility.map_filter_out_empty_members()
         |> Patch.patch(opts)
 
-      opts.workflow == :update ->
+      opts.workflow == :delta ->
         Delta.compare(results)
         # |> IO.inspect()
         |> Legl.Utility.maps_from_structs()

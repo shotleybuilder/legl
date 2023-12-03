@@ -78,7 +78,12 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
   @spec split_title(binary) :: binary
   def split_title(title) do
     String.trim(title)
-    |> (&Regex.replace(~r/\(|\)|\/|\"|\-|[A-Za-z]+\.?\d+|\d+|:|\.|,|—|\*|&|\[|\]|\+/, &1, "")).()
+    |> (&Regex.replace(~r/\(revoked\)/, &1, "")).()
+    |> (&Regex.replace(
+          ~r/\(|\)|\/|\"|\-|[A-Za-z]+\.?\d+|\d+|:|\.|,|—|\*|&|\[|\]|\+|’|'/,
+          &1,
+          ""
+        )).()
     |> (&Regex.replace(~r/[ ][T|t]o[ ]|[ ][T|t]h[a|e|i|o]t?s?e?[ ]/, &1, " ")).()
     |> (&Regex.replace(
           ~r/[ ][A|a][ ]|[ ][A|a]n[ ]|[ ][A|a]nd[ ]|[ ][A|a]t[ ]|[ ][A|a]re[ ]/,
@@ -93,7 +98,7 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
     |> (&Regex.replace(~r/[ ][W|w]i?t?ho?[ ]/, &1, " ")).()
     |> (&Regex.replace(~r/[ ][A-Z|a-z][ |\\.|,]/, &1, " ")).()
     |> (&Regex.replace(~r/[H| h]as?v?e?[ ]/, &1, " ")).()
-    |> (&Regex.replace(~r/[ ]+/, &1, ", ")).()
+    |> (&Regex.replace(~r/[ –]+/, &1, ", ")).()
     |> (&Regex.replace(~r/^,[ ]/, &1, "")).()
   end
 

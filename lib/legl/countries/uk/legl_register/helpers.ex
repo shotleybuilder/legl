@@ -95,8 +95,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
     with {:ok, body} <- Client.request(:get, url, []),
          %{records: records} = Jason.decode!(body, keys: :atoms) do
       case records do
-        [] -> false
-        _ -> true
+        [] ->
+          IO.puts(~s/#{record."Title_EN"} MISSING in the Base/)
+          false
+
+        _ ->
+          IO.puts(~s/#{record."Title_EN"} EXISTS in the Base/)
+          true
       end
     else
       {:ok, _, _} ->
@@ -405,15 +410,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord do
     with false <- Create.exists?(record, opts) do
       run([record], opts)
     else
-      true ->
-        IO.puts("RECORD EXISTS IN BASE")
-        :ok
+      true -> :ok
     end
   end
 
   def run(records, %{drop_fields: drop_fields} = opts) when is_list(records) do
     with(
       records <- Legl.Countries.Uk.LeglRegister.Helpers.clean_records(records, drop_fields),
+      # {:ok, records} <- Create.filter_delta(records, opts),
       json =
         Map.merge(%{}, %{"records" => records, "typecast" => true}) |> Jason.encode!(pretty: true),
       :ok = Legl.Utility.save_at_records_to_file(json, opts.api_post_path),

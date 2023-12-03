@@ -19,6 +19,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
 
     Enum.reduce(inc_w_si, {[], inc_wo_si}, fn
       %{si_code: si_codes} = law, {inc, exc} ->
+        si_codes = if is_binary(si_codes), do: String.split(si_codes, ","), else: si_codes
+
         case si_code_member?(si_codes, lib_si_codes) do
           true -> {[law | inc], exc}
           _ -> {inc, [law | exc]}
@@ -103,6 +105,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
     restriction\u00a0of\u00a0flying
     correction\u00a0slip
     trunk\u00a0road
+    harbour\u00a0empowerment\u00a0order
+    harbour\u00a0revision\u00a0order
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
     Enum.reduce_while(search_terms, false, fn n, _acc ->

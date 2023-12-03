@@ -51,7 +51,8 @@ defmodule Legl.Countries.Uk.LeglRegister.PublicationDate do
                  )
 
                  case number == opts.number and type_code == opts.type_code and
-                        year == String.to_integer(opts.year) do
+                        Legl.Utility.year_as_integer(year) ==
+                          Legl.Utility.year_as_integer(opts.year) do
                    true -> {:halt, [record | acc]}
                    false -> {:cont, acc}
                  end
