@@ -98,7 +98,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
 
   # % DIFF Amending
   defp new_amending_law_finder_view(%{base_name: "UK S"}), do: "viwkGW5JF0YiNUlJQ"
-  defp new_amending_law_finder_view(%{base_name: "UK E"}), do: "viwEiBh5ygBoaAvE3"
+  defp new_amending_law_finder_view(%{base_name: "UK EHS"}), do: "viwEiBh5ygBoaAvE3"
 
   def new_amended_by_law_finder(opts) do
     opts =
@@ -128,7 +128,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
 
   # % DIFF Amended by
   defp new_amended_law_finder_view(%{base_name: "UK S"}), do: "viwAkbFl4dB4txpxx"
-  defp new_amended_law_finder_view(%{base_name: "UK E"}), do: "viwou7VrF2rAevrDt"
+  defp new_amended_law_finder_view(%{base_name: "UK EHS"}), do: "viwou7VrF2rAevrDt"
 
   def set_options(opts) do
     opts =

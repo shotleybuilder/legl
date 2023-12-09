@@ -125,6 +125,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
 
     workflow([record], opts)
     |> List.first()
+    |> Map.put(:amendments_checked, ~s/#{Date.utc_today()}/)
     |> (&{:ok, &1}).()
   end
 
@@ -207,19 +208,21 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
             # amended_laws = filter(amended_laws, opts)
 
             # Capture details of new laws for the Base in json for later processing
-            json_path =
-              ~s[lib/legl/countries/uk/legl_register/amend/new_amending_laws_enum#{enumeration_limit - 1}.json]
+            if opts.json? == true do
+              json_path =
+                ~s[lib/legl/countries/uk/legl_register/amend/new_amending_laws_enum#{enumeration_limit - 1}.json]
 
-            Map.put(%{}, "records", amending_laws)
-            |> Jason.encode!(pretty: true)
-            |> Legl.Utility.save_at_records_to_file(json_path)
+              Map.put(%{}, "records", amending_laws)
+              |> Jason.encode!(pretty: true)
+              |> Legl.Utility.save_at_records_to_file(json_path)
 
-            json_path =
-              ~s[lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum#{enumeration_limit - 1}.json]
+              json_path =
+                ~s[lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum#{enumeration_limit - 1}.json]
 
-            Map.put(%{}, "records", amended_laws)
-            |> Jason.encode!(pretty: true)
-            |> Legl.Utility.save_at_records_to_file(json_path)
+              Map.put(%{}, "records", amended_laws)
+              |> Jason.encode!(pretty: true)
+              |> Legl.Utility.save_at_records_to_file(json_path)
+            end
 
             # IO.inspect(nlinks, limit: :infinity)
 

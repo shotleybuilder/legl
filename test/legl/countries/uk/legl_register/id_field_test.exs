@@ -1,37 +1,38 @@
 defmodule Legl.Countries.Uk.LeglRegister.IdFieldTest do
+  alias Legl.Countries.Uk.LeglRegister
   # mix test test/legl/countries/uk/legl_register/id_field_test.exs
 
   use ExUnit.Case
   import Legl.Countries.Uk.LeglRegister.IdField
 
-  @title "Environmental Protection (Controls on Ozone–Depleting Substances) (Amendment) Regulations"
-
-  test "w/ title" do
-    with(
-      title = Legl.Airtable.AirtableTitleField.remove_the(@title),
-      downcased = downcase(title),
-      split = split_title(downcased),
-      proper = proper_title(split),
-      acronym = acronym(proper)
-    ) do
-      assert downcased ==
-               "Environmental Protection (Controls on Ozone–Depleting Substances) (Amendment) Regulations"
-
-      assert split ==
-               "Environmental, Protection, Controls, Ozone, Depleting, Substances, Amendment, Regulations"
-
-      assert proper ==
-               "Environmental, Protection, Controls, Ozone, Depleting, Substances, Amendment, Regulations"
-
-      assert acronym == "EPCODSAR"
-    end
-  end
+  @titles [
+    {"Health and Safety at Work etc. Act", 1974, "uksi", "37", "UK_HSWA_uksi_1974_37"},
+    {"Environmental Protection (Controls on Ozone–Depleting Substances) (Amendment) Regulations",
+     2008, "uksi", "91", "UK_EPCODSAR_uksi_2008_91"},
+    {"Wildlife and Natural Environment (Scotland) Act 2011 (Commencement No. 2) Amendment (No. 2) Order",
+     2012, "ssi", "281", "UK_WNESACNANO_ssi_2012_281"},
+    {"Fishing Vessels (Safety of 15–24 Metre Vessels) Regulations", 2002, "uksi", 2201,
+     "UK_FVSMVR_uksi_2002_2201"},
+    {"Merchant Shipping (Passenger Ship Construction: Ships of Classes I, II and II(A)) Regulations",
+     1998, "uksi", "2514", "UK_MSPSCSCIIIIIAR_uksi_1998_2514"}
+  ]
 
   test "id/4" do
-    title =
-      "Wildlife and Natural Environment (Scotland) Act 2011 (Commencement No. 2) Amendment (No. 2) Order"
+    Enum.each(
+      @titles,
+      fn {t, y, tc, n, result} ->
+        assert id(t, tc, y, n) == result
+      end
+    )
+  end
 
-    result = id(title, "ssi", 2012, "281")
-    assert result == ""
+  test "id/1" do
+    record =
+      %LeglRegister.LegalRegister{}
+      |> Kernel.struct(%{Title_EN: "Foo Bar", type_code: "uksi", Year: "2023", Number: "100"})
+
+    {:ok, result} = id(record)
+
+    assert result."Name" == "UK_FB_uksi_2023_100"
   end
 end

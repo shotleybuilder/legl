@@ -135,6 +135,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
             })
         end)
 
+      # IO.puts(
+      #  ~s/#{__MODULE__} #{record."Title_EN"} #{record.type_code} #{record."Year"} #{record."Number"}/
+      # )
+
       %{
         record
         | target: Enum.uniq(record.target),

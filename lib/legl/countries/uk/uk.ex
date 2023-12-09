@@ -55,7 +55,7 @@ defmodule UK do
 
   @api [
     "Update Menu": {:update},
-    UPDATE: {Update, :api_update, [[patch?: true, csv?: false, workflow: :update]]},
+    UPDATE: {Update, :api_update, [[csv?: false, workflow: :update]]},
     "POST or PATCH Single Law using :type_code, :number, :year":
       {CreateFromInput, :api_create_update_single_record, [[patch?: true, csv?: false]]},
     "PATCH Single Law using 'Name'": {Update, :api_update_single_name},
@@ -110,7 +110,7 @@ defmodule UK do
       {FindNewLaw, :new_amended_law}
   ]
 
-  def api do
+  def api(opts \\ []) do
     case ExPrompt.choose("spongl API", Enum.map(@api, fn {k, _} -> k end)) do
       -1 ->
         :ok
@@ -126,6 +126,7 @@ defmodule UK do
 
         case run do
           {module, function, args} when is_atom(function) ->
+            args = [List.first(args) ++ opts]
             apply(module, function, args)
 
           {module, function} when is_atom(module) and is_atom(function) ->

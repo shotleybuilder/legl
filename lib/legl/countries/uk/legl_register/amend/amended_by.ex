@@ -67,7 +67,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
         Amended_by: stats.links,
         "🔻_stats_affected_by_count": stats.amendments,
         "🔻_stats_self_affected_by_count": stats.self,
-        "🔺_stats_affected_laws_count": stats.laws,
+        "🔻_stats_affected_by_laws_count": stats.laws,
         "🔻_stats_affected_by_count_per_law": stats.counts,
         "🔻_stats_affected_by_count_per_law_detailed": stats.counts_detailed
       )

@@ -15,10 +15,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   alias Legl.Countries.Uk.LeglRegister.PublicationDate
   alias Legl.Countries.Uk.LeglRegister.Year
 
-  @exc_path ~s[lib/legl/countries/uk/legl_register/crud/exc.json]
-  @inc_wo_si_path ~s[lib/legl/countries/uk/legl_register/crud/inc_wo_si.json]
-  @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/crud/inc_w_si.json]
-  @inc_path ~s[lib/legl/countries/uk/legl_register/crud/inc.json]
+  @exc_path ~s[lib/legl/countries/uk/legl_register/crud/api_exc.json]
+  @inc_wo_si_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc_wo_si.json]
+  @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc_w_si.json]
+  @inc_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc.json]
 
   def api_create_newly_published_laws(opts) do
     opts = Options.from_file_set_up(opts)
@@ -88,7 +88,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
 
     {_, path} = opts.source
 
-    records = Legl.Utility.read_json_records(path)
+    records =
+      Legl.Utility.read_json_records(path)
+      |> convert_exc_to_list()
 
     {inc_w_si, inc_wo_si, exc} = filter_w_metadata(records, opts)
 
@@ -146,6 +148,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
         New.save_exc(exc, opts)
     end
   end
+
+  defp convert_exc_to_list(records) when is_map(records) do
+    Enum.map(records, fn {_k, v} -> v end)
+  end
+
+  defp convert_exc_to_list(records) when is_list(records), do: records
 
   defp filter_w_metadata(records, opts) when is_list(records) do
     with {:ok, {inc, exc}} <- Filters.terms_filter(records, opts.base_name),

@@ -238,6 +238,33 @@ defmodule Legl.Countries.Uk.UkSearch.Terms do
 end
 
 defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
+  @agriculture ~w[
+    agricultur
+    heather\u00a0and\u00a0grass
+    organic
+    feed
+    feeding\u00a0stuff
+    arable
+    pastoral
+    animal\u00a0feed
+    potato
+    pigs
+    croft
+    farmer
+    farm\u00a0and\u00a0conservation
+    hill\u00a0farm
+    farmland
+    moor
+    set-aside
+    fertiliser
+    milk
+    carcase
+    products\u00a0of\u00a0animal\u00a0origin
+    less\u00a0favoured\u00a0area\u00a0support\u00a0scheme
+    rural\u00a0support
+    rural\u00a0payments
+  ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
   @air ~w[
     air\u00a0quality
     sulphur
@@ -308,6 +335,10 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
     atomic\u00a0energy
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
+  @tft ~w[
+    farm\u00a0woodland
+  ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
   @waste ~w[
       waste\u00a0management
       special\u00a0waste
@@ -361,6 +392,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
   def e_search_terms() do
     # putting the likely most popular matching terms first
     [
+      Agriculture: @agriculture,
       Air: @air,
       "Climate Change": @climate_change,
       Energy: @energy,
@@ -370,6 +402,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       Planning: @planning,
       Pollution: @pollution,
       Radiological: @radiological,
+      "Trees, Forestry & Timber": @tft,
       Waste: @waste,
       "Water & Wastewater": @water,
       "Wildlife & Countryside": @wildlife_countryside

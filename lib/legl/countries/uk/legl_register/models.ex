@@ -7,26 +7,26 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
   def type_class, do: @typeclass
 
   @hsfamily [
-    "FIRE",
-    "FIRE: Dangerous and Explosive Substances",
-    "FOOD",
-    "HEALTH: Drug & Medicine Safety",
-    "HEALTH: Patient Safety",
-    "HEALTH: Public",
-    "HR: Employment",
-    "HR: Insurance / Compensation / Wages / Benefits",
-    "HR: Working Time",
-    "OH&S: Gas & Electrical Safety",
-    "OH&S: Mines & Quarries",
-    "OH&S: Occupational / Personal Safety",
-    "OH&S: Offshore Safety",
-    "PUBLIC",
-    "PUBLIC: Building Safety",
-    "PUBLIC: Consumer / Product Safety",
-    "TRANS: Air Safety",
-    "TRANS: Rail Safety",
-    "TRANS: Road Safety",
-    "TRANS: Maritime Safety"
+    "💙 FIRE",
+    "💙 FIRE: Dangerous and Explosive Substances",
+    "💙 FOOD",
+    "💙 HEALTH: Drug & Medicine Safety",
+    "💙 HEALTH: Patient Safety",
+    "💙 HEALTH: Public",
+    "💙 HR: Employment",
+    "💙 HR: Insurance / Compensation / Wages / Benefits",
+    "💙 HR: Working Time",
+    "💙 OH&S: Gas & Electrical Safety",
+    "💙 OH&S: Mines & Quarries",
+    "💙 OH&S: Occupational / Personal Safety",
+    "💙 OH&S: Offshore Safety",
+    "💙 PUBLIC",
+    "💙 PUBLIC: Building Safety",
+    "💙 PUBLIC: Consumer / Product Safety",
+    "💙 TRANS: Air Safety",
+    "💙 TRANS: Rail Safety",
+    "💙 TRANS: Road Safety",
+    "💙 TRANS: Maritime Safety"
   ]
 
   def hs_family, do: @hsfamily
@@ -62,4 +62,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
   ]
 
   def e_family, do: @efamily
+
+  def ehs_family, do: @hsfamily ++ @efamily
 end

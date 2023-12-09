@@ -1,5 +1,6 @@
 defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   alias Legl.Services.Airtable.AtBasesTables
+  alias Legl.Countries.Uk.LeglRegister.DropFields, as: DF
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   @default_opts %{
@@ -17,22 +18,15 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     # Trigger .csv saving?
     csv?: false,
     # Global mute msg
+    json?: false,
     mute?: true,
-    paste?: false
+    paste?: false,
+    patch?: false
   }
 
   def default_opts, do: @default_opts
 
-  @drop_fields ~w[affecting_path
-  affected_path
-  enacting_laws
-  enacting_text
-  introductory_text
-  amending_title
-  Name
-  text
-  path
-  urls]a
+  @drop_fields DF.drop_fields()
 
   @api_patch_path ~s[lib/legl/countries/uk/legl_register/new/api_patch_results.json]
   @api_post_path ~s[lib/legl/countries/uk/legl_register/new/api_post_results.json]
@@ -91,7 +85,8 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> (&Map.put(&1, :view, api_update_options_view(&1))).()
       |> LRO.patch?()
       |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
-      |> drop_fields()
+
+    # |> drop_fields()
 
     formula =
       []
@@ -100,12 +95,11 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> LRO.formula_family(opts)
 
     Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
-    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
   # VS_CODE_METADATA
   defp api_update_options_view(%{base_name: "UK S"} = _opts), do: "viwxEzSun5nPWzGQB"
-  defp api_update_options_view(%{base_name: "UK E"} = _opts), do: "viwMy1UQEZO1x62cK"
+  defp api_update_options_view(%{base_name: "UK EHS"} = _opts), do: "viwMy1UQEZO1x62cK"
 
   def api_update_metadata_fields_options(opts) do
     opts =
@@ -227,8 +221,8 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   end
 
   @source [
-            {:exc, "lib/legl/countries/uk/legl_register/crud/exc.json"},
-            {:source, "lib/legl/countries/uk/legl_register/crud/source.json"},
+            {:exc, "lib/legl/countries/uk/legl_register/crud/api_exc.json"},
+            {:source, "lib/legl/countries/uk/legl_register/crud/api_source.json"},
             {:inc, "lib/legl/countries/uk/legl_register/crud/inc.json"},
             {:amend, "lib/legl/countries/uk/legl_register/amend/new_amending_laws_enum0.json"},
             {:amend, "lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum0.json"},
@@ -344,7 +338,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     )
   end
 
-  def view_amend(%{base_name: "UK E"} = opts) do
+  def view_amend(%{base_name: "UK EHS"} = opts) do
     Map.put(
       opts,
       :view,
@@ -360,7 +354,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     )
   end
 
-  def view_live(%{base_name: "UK E"} = opts) do
+  def view_live(%{base_name: "UK EHS"} = opts) do
     Map.put(
       opts,
       :view,

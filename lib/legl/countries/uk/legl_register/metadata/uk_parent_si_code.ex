@@ -3,7 +3,7 @@ defmodule Legl.Countries.Uk.UkParentSiCode do
   alias Legl.Services.Airtable.AtBasesTables
 
   @doc """
-    Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode.get_parent_at_records_with_multi_si_codes("UK E")
+    Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode.get_parent_at_records_with_multi_si_codes("UK EHS")
   """
   def get_parent_at_records_with_multi_si_codes(base_name, filesave? \\ false) do
     with(

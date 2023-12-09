@@ -27,13 +27,13 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   alias Legl.Countries.Uk.LeglRegister.Year
 
   # @api_path ~s[lib/legl/countries/uk/legl_register/new/api.json]
-  @source ~s[lib/legl/countries/uk/legl_register/crud/source.json]
+  @source ~s[lib/legl/countries/uk/legl_register/crud/api_source.json]
   @api_patch_path ~s[lib/legl/countries/uk/legl_register/crud/api_patch_results.json]
   @api_post_path ~s[lib/legl/countries/uk/legl_register/crud/api_post_results.json]
-  @exc_path ~s[lib/legl/countries/uk/legl_register/crud/exc.json]
-  @inc_wo_si_path ~s[lib/legl/countries/uk/legl_register/crud/inc_wo_si.json]
-  @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/crud/inc_w_si.json]
-  @inc_path ~s[lib/legl/countries/uk/legl_register/crud/inc.json]
+  @exc_path ~s[lib/legl/countries/uk/legl_register/crud/api_exc.json]
+  @inc_wo_si_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc_wo_si.json]
+  @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc_w_si.json]
+  @inc_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc.json]
 
   @drop_fields ~w[affecting_path
     affected_path
@@ -52,7 +52,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   @doc """
   Function to get newly published laws from legislation.gov.uk
 
-  Saves returned records to lib/legl/countries/uk/legl_register/crud/source.json
+  Saves returned records to lib/legl/countries/uk/legl_register/crud/api_source.json
 
   Run 'UK.api' and select "Newly Published Laws from gov.uk"
 

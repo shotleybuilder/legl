@@ -222,7 +222,10 @@ defmodule Legl.Countries.Uk.Metadata do
 
     metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
 
-    {:ok, Kernel.struct(record, metadata)}
+    {:ok,
+     record
+     |> Kernel.struct(metadata)
+     |> Map.put(:md_checked, ~s/#{Date.utc_today()}/)}
   rescue
     e ->
       IO.puts(

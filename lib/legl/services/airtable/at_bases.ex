@@ -38,8 +38,9 @@ defmodule Legl.Services.Airtable.AtBases do
   defp base_ids() do
     %{
       # UK
-      # UK 🇬🇧️ E 💚️
-      "uk_e" => "appq5OQW9bTHC1zO5",
+      # 🖤 EHS -  🇬🇧️ UK
+      "uk_ehs" => "appq5OQW9bTHC1zO5",
+
       # 💚️ EP - 🇬🇧️ UK Environmental Protection
       "uk_e_environmental_protection" => "appPFUz8wfo9RU7gN",
       # UK 🇬🇧️ E 💚️ - Climate Change

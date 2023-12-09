@@ -29,7 +29,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
   @default_opts %{
     name: "",
     new?: true,
-    base_name: "UK E",
+    base_name: "UK EHS",
     type_code: [""],
     type_class: "",
     sClass: "",

@@ -14,7 +14,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode do
   @at_csv ~s[lib/legl/countries/uk/legl_register/metadata/si_code.csv]
           |> Path.absname()
   @default_opts %{
-    base_name: "UK E"
+    base_name: "UK EHS"
   }
   @doc """
     Can be called with an optional view name
@@ -89,7 +89,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode do
   end
 
   @doc """
-    Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode.get_parent_at_records_with_multi_si_codes("UK E")
+    Legl.Countries.Uk.LeglRegister.Metadata.UkSiCode.get_parent_at_records_with_multi_si_codes("UK EHS")
   """
 
   def get_and_save_si_code_from_legl_gov_uk(at_records, file) do

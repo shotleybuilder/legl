@@ -8,6 +8,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
   alias Legl.Countries.Uk.LeglRegister.New.New
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   alias Legl.Countries.Uk.Metadata, as: MD
   alias Legl.Countries.Uk.LeglRegister.Extent
@@ -38,13 +39,51 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
     end
   end
 
+  def api_update(opts \\ [])
+
+  def api_update(opts) do
+    opts =
+      opts
+      |> Options.api_update_options()
+      |> LRO.update_workflow()
+      |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+
+    records = AT.get_legal_register_records(opts)
+
+    Enum.each(
+      records,
+      fn record ->
+        record =
+          Enum.reduce(opts.update_workflow, record, fn f, acc ->
+            {:ok, record} =
+              case :erlang.fun_info(f)[:arity] do
+                1 -> f.(acc)
+                2 -> f.(acc, opts)
+              end
+
+            record
+          end)
+
+        patch? = if opts.patch?, do: true, else: ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
+
+        case patch? do
+          true ->
+            Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+
+          false ->
+            :ok
+        end
+      end
+    )
+  end
+
   @doc """
   Function to update a set of records retrieved from AT
 
 
   """
   @spec api_update(opts()) :: :ok
-  def api_update(opts \\ []) do
+  def api_update(opts) do
     opts = Options.api_update_options(opts)
 
     records = AT.get_legal_register_records(opts)

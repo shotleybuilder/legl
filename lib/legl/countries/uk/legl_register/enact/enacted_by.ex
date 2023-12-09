@@ -191,7 +191,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.Options do
     # target single record Enacted_by field by providing the Name (key/ID)
     name: "",
     # set this as an option or get an error!
-    base_name: "UK E",
+    base_name: "UK EHS",
     type_code: [""],
     type_class: nil,
     year: nil,

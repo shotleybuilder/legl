@@ -16,12 +16,15 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     Map.put(
       opts,
       :base_name,
-      case ExPrompt.choose("Choose Base", ["HEALTH & SAFETY", "ENVIRONMENT"]) do
+      case ExPrompt.choose("Choose Base (default EHS)", ["HEALTH & SAFETY", "EHS"]) do
         0 ->
           "UK S"
 
         1 ->
-          "UK E"
+          "UK EHS"
+
+        -1 ->
+          "UK EHS"
       end
     )
   end
@@ -92,6 +95,19 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
       opts,
       :view,
       ExPrompt.string("View ID (from url bar)")
+    )
+  end
+
+  @spec family(map()) :: map()
+  def family(%{base_name: "UK EHS"} = opts) do
+    Map.put(
+      opts,
+      :family,
+      case ExPrompt.choose("Choose Family", Models.ehs_family()) do
+        index when index in 0..20 -> Enum.at(Models.ehs_family(), index)
+        -1 -> ""
+        _ -> ""
+      end
     )
   end
 
@@ -205,6 +221,78 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
       :patch?,
       ExPrompt.confirm("PATCH?", true)
     )
+  end
+
+  @doc """
+  Function to assemble the update functions into a list
+
+  """
+  @year &Legl.Countries.Uk.LeglRegister.Year.set_year/1
+  @name &Legl.Countries.Uk.LeglRegister.IdField.id/1
+  @md &Legl.Countries.Uk.Metadata.get_latest_metadata/1
+  @tags &Legl.Countries.Uk.LeglRegister.Tags.set_tags/1
+  @type_law &Legl.Countries.Uk.LeglRegister.TypeClass.set_type/1
+  @type_class &Legl.Countries.Uk.LeglRegister.TypeClass.set_type_class/1
+  @extent &Legl.Countries.Uk.LeglRegister.Extent.set_extent/1
+  @enact &Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws/2
+  @affect &Legl.Countries.Uk.LeglRegister.Amend.workflow/2
+
+  @workflow_choices [
+    "New (w/ Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @enact, @affect],
+    "Update (w/o Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @affect],
+    "Changes (w/o Extent, Enact)": [@year, @name, @md, @affect],
+    Metadata: [@year, @name, @md, @type_law, @type_class],
+    Extent: [@name, @extent],
+    Enact: [@enact],
+    Affect: [@affect]
+  ]
+
+  @drop_fields_params [:new, :update, :changes, :metadata, :extent, :enact, :affect]
+
+  @view ~w[
+    viwMy1UQEZO1x62cK
+    viwMy1UQEZO1x62cK
+    viwMy1UQEZO1x62cK
+    viwt9PuFLhUpyFEv1
+    viw1XkiLMnNB2xc6A
+    viwMy1UQEZO1x62cK
+    viwMy1UQEZO1x62cK
+  ]
+
+  @spec update_workflow(opts()) :: opts()
+  def update_workflow(opts) do
+    case ExPrompt.choose(
+           "Update Workflow",
+           Enum.map(@workflow_choices, fn {k, _} -> k end)
+         ) do
+      -1 ->
+        :ok
+
+      n ->
+        opts
+        |> Map.put(
+          :update_workflow,
+          Enum.map(@workflow_choices, fn {_k, v} -> v end)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+        )
+        |> Map.put(
+          :drop_fields,
+          @drop_fields_params
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+          |> Legl.Countries.Uk.LeglRegister.DropFields.drop_fields()
+        )
+        |> Map.put(
+          :view,
+          @view
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+        )
+    end
   end
 
   @spec formula_today(list(), binary()) :: list() | []

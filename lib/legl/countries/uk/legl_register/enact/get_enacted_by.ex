@@ -205,7 +205,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
   def specific_enacting_clauses(record, %{base_name: "UK S"} = _opts),
     do: specific_enacting_clauses(record, s_regexes())
 
-  def specific_enacting_clauses(record, %{base_name: "UK E"} = _opts),
+  def specific_enacting_clauses(record, %{base_name: "UK EHS"} = _opts),
     do: specific_enacting_clauses(record, e_regexes())
 
   def specific_enacting_clauses(record, []), do: {:ok, record}

@@ -6,17 +6,31 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers do
     Enum.map(records, fn
       # Airtable records w/ :id & :fields param
       %{fields: fields} = record ->
-        Map.filter(fields, fn {_k, v} -> v not in [nil, "", []] end)
-        |> Map.drop(drop_fields)
+        clean_record(fields, drop_fields)
         |> (&Map.put(record, :fields, &1)).()
         |> Map.drop([:createdTime])
 
       # Flat records map
       record ->
-        Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
-        |> Map.drop(drop_fields)
+        clean_record(record, drop_fields)
         |> (&Map.put(%{}, :fields, &1)).()
     end)
+  end
+
+  def clean_record(record, %{drop_fields: drop_fields, update_workflow: _uw} = _opts)
+      when is_map(record) do
+    drop_if_null = Legl.Countries.Uk.LeglRegister.DropFields.drop_if_null()
+
+    #
+    Map.merge(
+      Map.filter(record, fn {k, v} -> k in drop_if_null and v not in [nil, "", []] end),
+      Map.drop(record, drop_fields ++ drop_if_null)
+    )
+  end
+
+  def clean_record(record, %{drop_fields: drop_fields} = _opts) when is_map(record) do
+    Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
+    |> Map.drop(drop_fields)
   end
 
   def clean_record(record, drop_fields) when is_map(record) do
@@ -322,18 +336,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
     |> patch(opts)
   end
 
-  def build(%{id: _, fields: fields} = record, %{drop_fields: drop_fields})
+  def build(%{id: _, fields: fields} = record, opts)
       when is_map(record) do
     fields
-    |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(drop_fields)
+    |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(opts)
     |> (&Map.put(record, :fields, &1)).()
     |> Map.drop([:createdTime])
   end
 
-  def build(%{record_id: record_id} = record, %{drop_fields: drop_fields}) when is_map(record) do
+  def build(%{record_id: record_id} = record, opts) when is_map(record) do
     record =
       Map.drop(record, [:record_id])
-      |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(drop_fields)
+      |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(opts)
 
     Map.merge(%{}, %{id: record_id, fields: record})
   end
@@ -348,12 +362,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
       options: %{}
     }
 
-    # Airtable only accepts sets of 10x records in a single PATCH request
-    record =
-      Map.merge(%{}, %{"records" => List.wrap(record), "typecast" => true})
-      |> Jason.encode!()
+    record = Map.merge(%{}, %{"records" => List.wrap(record), "typecast" => true})
 
-    Legl.Services.Airtable.AtPatch.patch_records(record, headers, params)
+    with({:ok, json} <- Jason.encode(record)) do
+      # IO.inspect(record, label: "#{__MODULE__}")
+
+      Legl.Services.Airtable.AtPatch.patch_records(json, headers, params)
+    else
+      {:error, %Jason.EncodeError{message: error}} ->
+        # IO.puts(~s/#{error}\n#{inspect(record)}/)
+        IO.puts(~s/#{error}/)
+        :ok
+    end
   end
 
   def patch([], _), do: :ok
@@ -414,9 +434,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord do
     end
   end
 
-  def run(records, %{drop_fields: drop_fields} = opts) when is_list(records) do
+  def run(records, opts) when is_list(records) do
     with(
-      records <- Legl.Countries.Uk.LeglRegister.Helpers.clean_records(records, drop_fields),
+      records <- Legl.Countries.Uk.LeglRegister.Helpers.clean_records(records, opts),
       # {:ok, records} <- Create.filter_delta(records, opts),
       json =
         Map.merge(%{}, %{"records" => records, "typecast" => true}) |> Jason.encode!(pretty: true),

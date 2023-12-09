@@ -37,6 +37,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
              "Order",
              "Rules",
              "Scheme",
+             "Measure",
              "Confirmation Statement",
              "Byelaws"
            ],
@@ -74,7 +75,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
       Regex.match?(~r/Rules?[ ]?$|Rules?[ ]\(Northern Ireland\)[ ]?$/, title) ->
         "Rules"
 
-      Regex.match?(~r/Scheme$|Schem[ ]\(Northern Ireland\)$/, title) ->
+      Regex.match?(~r/Scheme$|Scheme[ ]\(Northern Ireland\)$/, title) ->
         "Scheme"
 
       Regex.match?(
@@ -124,11 +125,31 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
            "Northern Ireland Order in Council 1972-date"
 
          # WALES
+         "wca" ->
+           "Act of the National Assembly for Wales"
+
+         "asc" ->
+           "Act of the Senedd Cyrmu 2020-date"
+
+         "anaw" ->
+           "Act of the National Assembly for Wales 2012-2020"
+
          "wsi" ->
            "Wales Statutory Instrument 2018-date"
 
          "mwa" ->
            "Measure of the National Assembly for Wales 2008-2011"
+
+         # CHURCH
+         "ukci" ->
+           "Church Instrument"
+
+         # Other
+         "ukla" ->
+           "UK Local Act"
+
+         "ukmo" ->
+           "UK Ministerial Order"
 
          _ ->
            nil

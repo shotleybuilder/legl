@@ -8,7 +8,7 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
      Map.put(
        record,
        :Name,
-       id(record."Number", record."Title_EN", record.type_code, record."Year")
+       id(record."Title_EN", record.type_code, record."Year", record."Number")
      )}
   end
 
@@ -25,11 +25,23 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
   def id(title, type, year, number) do
     title
     |> Legl.Airtable.AirtableTitleField.remove_the()
+    |> (&Regex.replace(~r/ /, &1, " ")).()
+    |> (&Regex.scan(~r/[[:upper:]]/, &1)).()
+    |> List.flatten()
+    |> Enum.join()
+    |> (&Kernel.<>(&1, "_#{type}_#{year}_#{number}")).()
+    |> (&Kernel.<>("UK_", &1)).()
+  end
+
+  def id(title, type, year, number) do
+    title
+    |> Legl.Airtable.AirtableTitleField.remove_the()
     |> downcase()
     |> split_title()
     |> proper_title()
     |> acronym()
-    |> (&Kernel.<>("UK_#{type}_#{year}_#{number}_", &1)).()
+    |> (&Kernel.<>(&1, "_#{type}_#{year}_#{number}")).()
+    |> (&Kernel.<>("UK_", &1)).()
   end
 
   @spec downcase(binary) :: binary
@@ -79,11 +91,12 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
   def split_title(title) do
     String.trim(title)
     |> (&Regex.replace(~r/\(revoked\)/, &1, "")).()
-    |> (&Regex.replace(
-          ~r/\(|\)|\/|\"|\-|[A-Za-z]+\.?\d+|\d+|:|\.|,|—|\*|&|\[|\]|\+|’|'/,
-          &1,
-          ""
-        )).()
+    |> (&Regex.replace(~r/[[:punct:][:digit:]]/, &1, "")).()
+    # |> (&Regex.replace(
+    #     ~r/\(|\)|\/|\"|\-|[A-Za-z]+\.?\d+|\d+|:|\.|,|—|\*|&|\[|\]|\+|’|'|–/,
+    #    &1,
+    #   ""
+    # )).()
     |> (&Regex.replace(~r/[ ][T|t]o[ ]|[ ][T|t]h[a|e|i|o]t?s?e?[ ]/, &1, " ")).()
     |> (&Regex.replace(
           ~r/[ ][A|a][ ]|[ ][A|a]n[ ]|[ ][A|a]nd[ ]|[ ][A|a]t[ ]|[ ][A|a]re[ ]/,

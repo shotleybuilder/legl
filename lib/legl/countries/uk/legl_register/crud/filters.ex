@@ -15,6 +15,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
       case base_name do
         "UK S" -> @hs_si_codes
         "UK E" -> @e_si_codes
+        "UK EHS" -> @hs_si_codes ++ @e_si_codes
       end
 
     Enum.reduce(inc_w_si, {[], inc_wo_si}, fn
@@ -54,6 +55,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
       case base_name do
         "UK S" -> @hs_search_terms
         "UK E" -> @e_search_terms
+        "UK EHS" -> @hs_search_terms ++ @e_search_terms
       end
 
     {inc, exc} =
