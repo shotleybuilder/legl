@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
   # A struct to represent a Legal Register record
 
   @type legal_register :: %__MODULE__{
-          Name: String.t(),
+          Acronym: String.t(),
 
           # id fields
           record_id: String.t(),
@@ -35,6 +35,11 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           md_total_paras: integer(),
           md_images: integer(),
           md_dct_valid_date: String.t(),
+          md_restrict_start_date: String.t(),
+          md_restrict_extent: String.t(),
+          md_made_date: String.t(),
+          md_enactment_date: String.t(),
+          md_coming_into_force_date: String.t(),
           md_attachment_paras: integer(),
           md_modified: String.t(),
           md_subjects: list(),
@@ -86,7 +91,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
         }
 
   defstruct ~w[
-    Name
+    Acronym
 
     record_id
     Title_EN
@@ -115,6 +120,11 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     md_total_paras
     md_images
     md_dct_valid_date
+    md_restrict_start_date
+    md_restrict_extent
+    md_made_date
+    md_enactment_date
+    md_coming_into_force_date
     md_attachment_paras
     md_modified
     md_subjects

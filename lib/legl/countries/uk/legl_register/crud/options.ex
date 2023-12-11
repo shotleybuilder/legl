@@ -53,9 +53,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.view()
     # |> LRO.patch?()
     |> LRO.formula_name()
-    |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
-    |> drop_fields()
-    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+    |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year])
   end
 
   def from_file_set_up(opts) do
@@ -84,7 +82,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> LRO.family()
       |> (&Map.put(&1, :view, api_update_options_view(&1))).()
       |> LRO.patch?()
-      |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
+      |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year])
 
     # |> drop_fields()
 

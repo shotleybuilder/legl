@@ -228,7 +228,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
 
   """
   @year &Legl.Countries.Uk.LeglRegister.Year.set_year/1
-  @name &Legl.Countries.Uk.LeglRegister.IdField.id/1
+  @name &Legl.Countries.Uk.LeglRegister.IdField.lrt_acronym/1
   @md &Legl.Countries.Uk.Metadata.get_latest_metadata/1
   @tags &Legl.Countries.Uk.LeglRegister.Tags.set_tags/1
   @type_law &Legl.Countries.Uk.LeglRegister.TypeClass.set_type/1

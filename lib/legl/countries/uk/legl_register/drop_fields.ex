@@ -16,6 +16,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
   ]a
 
   @drop_if_null ~w[
+    Acronym
     Title_EN
     type_code
     Number
@@ -35,6 +36,11 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     md_dct_valid_date
     md_attachment_paras
     md_modified
+    md_restrict_start_date
+    md_restrict_extent
+    md_made_date
+    md_enactment_date
+    md_coming_into_force_date
     md_subjects
     md_schedule_paras
     si_code

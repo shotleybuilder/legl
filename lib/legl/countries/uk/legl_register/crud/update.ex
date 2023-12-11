@@ -24,19 +24,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   """
   @spec api_update_single_name(opts()) :: :ok
   def api_update_single_name(opts \\ [csv?: false, mute?: true]) do
-    opts = Options.api_update_single_name_options(opts)
+    opts =
+      Options.api_update_single_name_options(opts)
+      |> LRO.update_workflow()
+      |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
 
     [%LegalRegister{} = record] = AT.get_legal_register_records(opts)
 
-    case ExPrompt.confirm("Patch #{record."Title_EN"}?") do
-      true ->
-        New.update_empty_law_fields(record, opts)
-        |> elem(1)
-        |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(opts)
-
-      false ->
-        :ok
-    end
+    update(record, opts)
   end
 
   def api_update(opts \\ [])
@@ -50,66 +45,37 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
     records = AT.get_legal_register_records(opts)
 
+    update(records, opts)
+  end
+
+  defp update(records, opts) when is_list(records) do
     Enum.each(
       records,
-      fn record ->
-        record =
-          Enum.reduce(opts.update_workflow, record, fn f, acc ->
-            {:ok, record} =
-              case :erlang.fun_info(f)[:arity] do
-                1 -> f.(acc)
-                2 -> f.(acc, opts)
-              end
-
-            record
-          end)
-
-        patch? = if opts.patch?, do: true, else: ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
-
-        case patch? do
-          true ->
-            Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
-
-          false ->
-            :ok
-        end
-      end
+      fn record -> update(record, opts) end
     )
   end
 
-  @doc """
-  Function to update a set of records retrieved from AT
-
-
-  """
-  @spec api_update(opts()) :: :ok
-  def api_update(opts) do
-    opts = Options.api_update_options(opts)
-
-    records = AT.get_legal_register_records(opts)
-
-    Enum.each(
-      records,
-      fn record ->
-        with(
-          {:ok, record} <- MD.get_latest_metadata(record),
-          record = Map.put(record, :md_checked, ~s/#{Date.utc_today()}/),
-          {:ok, record} <- Amend.workflow(record, opts),
-          record = Map.put(record, :amendments_checked, ~s/#{Date.utc_today()}/)
-        ) do
-          patch? =
-            if opts.patch?, do: true, else: ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
-
-          case patch? do
-            true ->
-              Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
-
-            false ->
-              :ok
+  defp update(record, opts) do
+    record =
+      Enum.reduce(opts.update_workflow, record, fn f, acc ->
+        {:ok, record} =
+          case :erlang.fun_info(f)[:arity] do
+            1 -> f.(acc)
+            2 -> f.(acc, opts)
           end
-        end
-      end
-    )
+
+        record
+      end)
+
+    patch? = if opts.patch?, do: true, else: ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
+
+    case patch? do
+      true ->
+        Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+
+      false ->
+        :ok
+    end
   end
 
   @doc """

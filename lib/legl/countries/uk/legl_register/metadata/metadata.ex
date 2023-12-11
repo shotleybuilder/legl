@@ -60,6 +60,8 @@ defmodule Legl.Countries.Uk.Metadata do
       md_description: "",
       md_subjects: "",
       md_modified: "",
+      md_made_date: "",
+      md_coming_into_force_date: "",
       md_total_paras: nil,
       md_body_paras: nil,
       md_schedule_paras: nil,
@@ -209,16 +211,17 @@ defmodule Legl.Countries.Uk.Metadata do
   Returns the metadata map
   """
   @spec get_latest_metadata(struct()) :: struct()
-  def get_latest_metadata(%LegalRegister{} = record)
-      when is_struct(record) do
+  def get_latest_metadata(%LegalRegister{} = record) when is_struct(record) do
     IO.write(" METADATA")
     url = Url.introduction_path(record)
     {:ok, metadata} = get_latest_metadata(url)
 
+    """
     record =
-      if metadata."Title_EN" != record."Title_EN",
-        do: Map.put(record, :Title_EN, metadata."Title_EN"),
-        else: record
+    if metadata."Title_EN" != record."Title_EN",
+    do: Map.put(record, :Title_EN, metadata."Title_EN"),
+    else: record
+    """
 
     metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
 
@@ -229,7 +232,7 @@ defmodule Legl.Countries.Uk.Metadata do
   rescue
     e ->
       IO.puts(
-        "\nERROR: #{record.type_code} #{record."Number"} #{record."Year"} #{inspect(e)}\n #{__MODULE__}.get_latest_metadata\n"
+        ~s/\nERROR: #{record."Title_EN"}\n#{record.type_code} #{record."Number"} #{record."Year"} #{inspect(e)}\n #{__MODULE__}.get_latest_metadata\n\n/
       )
 
       {:ok, record}
@@ -252,6 +255,8 @@ defmodule Legl.Countries.Uk.Metadata do
       # json = Map.put(%{}, "records", metadata) |> Jason.encode!()
       # Legl.Utility.append_records_to_file(~s/#{json}/, @raw_results_path)
 
+      # IO.inspect(metadata)
+
       %{
         # subject shape ["foo", "bar", ...]
         md_subjects: subject,
@@ -261,6 +266,9 @@ defmodule Legl.Countries.Uk.Metadata do
         md_attachment_paras: attachment,
         md_images: images,
         md_modified: modified,
+        # md_made_date: made,
+        # md_coming_into_force_date: force,
+        # md_restrict_start_date,
         si_code: si_code,
         Title_EN: title
       } = metadata

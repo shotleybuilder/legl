@@ -26,6 +26,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Metadata.Options do
     md_description
     md_subjects
     md_modified
+    md_made_date
+    md_coming_into_force_date
     md_total_paras
     md_body_paras
     md_schedule_paras

@@ -41,7 +41,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
              "Confirmation Statement",
              "Byelaws"
            ],
-      do: record
+      do: {:ok, record}
 
   def set_type_class(%_{Title_EN: title} = record) when title != nil do
     IO.write(" TYPE-CLASS")
@@ -49,17 +49,17 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
     case get_type_class(title) do
       nil ->
         IO.puts(
-          "\nERROR: :Title_EN field could not be parsed for type_class\ntype_class cannot be set\n#{inspect(record)}"
+          "\nERROR: :Title_EN field could not be parsed for type_class\n#{title}\n#{__MODULE__}\n"
         )
 
-        record
+        {:ok, record}
 
       type_class ->
         {:ok, Map.put(record, :type_class, type_class)}
     end
   end
 
-  def set_type_class(record), do: record
+  def set_type_class(record), do: {:ok, record}
 
   defp get_type_class(title) do
     cond do
