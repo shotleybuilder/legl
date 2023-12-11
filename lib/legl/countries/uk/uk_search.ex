@@ -555,7 +555,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
     # putting the likely most popular matching terms first
     # Replacing \u00a0 because it will not match an empty space
     [
-      "OH&S: Occupational / Personal Safety": @oh_s,
+      "💙 OH&S: Occupational / Personal Safety": @oh_s,
       FIRE: @fire_safety,
       FOOD: @food_safety,
       "PUBLIC: Consumer / Product Safety": @product_safety,

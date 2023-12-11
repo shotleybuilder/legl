@@ -203,7 +203,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       {:ok, record} <- TypeClass.set_type_class(record),
       {:ok, record} <- TypeClass.set_type(record),
       {:ok, record} <- Tags.set_tags(record),
-      {:ok, record} <- IdField.id(record),
+      {:ok, record} <- IdField.lrt_acronym(record),
       {:ok, record} <- Extent.set_extent(record),
       {:ok, record} <- GetEnactedBy.get_enacting_laws(record, opts),
       {:ok, record} <- Amend.workflow(record, opts)
@@ -231,7 +231,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       {:ok, record} <- TypeClass.set_type_class(record),
       {:ok, record} <- TypeClass.set_type(record),
       {:ok, record} <- Tags.set_tags(record),
-      {:ok, record} <- IdField.id(record),
+      {:ok, record} <- IdField.lrt_acronym(record),
       {:ok, record} <- Extent.set_extent(record),
       {:ok, record} <- GetEnactedBy.get_enacting_laws(record, opts),
       {:ok, record} <- Amend.workflow(record, opts)
@@ -251,7 +251,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       |> Legl.Utility.map_filter_out_empty_members()
 
     opts = Map.merge(opts, %{drop_fields: @drop_fields, api_post_path: @api_post_path})
-    Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(record, opts)
+    Legl.Countries.Uk.LeglRegister.PostRecord.run(record, opts)
   end
 
   def save(records, opts) when is_list(records) do
@@ -262,7 +262,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     IO.puts("#{Enum.count(records)} to be POSTed to Airtable\n")
 
     opts = Map.merge(opts, %{drop_fields: @drop_fields, api_post_path: @api_post_path})
-    Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(records, opts)
+    Legl.Countries.Uk.LeglRegister.PostRecord.run(records, opts)
   end
 
   @doc """

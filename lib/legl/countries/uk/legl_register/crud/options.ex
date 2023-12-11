@@ -4,7 +4,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   @default_opts %{
-    base_name: nil,
+    base_name: "UK EHS",
     table_name: "Publication Date",
     type_code: [""],
     name: nil,
@@ -21,7 +21,8 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     json?: false,
     mute?: true,
     paste?: false,
-    patch?: false
+    patch?: false,
+    post?: false
   }
 
   def default_opts, do: @default_opts
@@ -32,7 +33,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   @api_post_path ~s[lib/legl/countries/uk/legl_register/new/api_post_results.json]
 
   def api_create_update_single_record_options(opts) do
-    Enum.into(opts, %{})
+    Enum.into(opts, @default_opts)
     |> LRO.base_name()
     |> LRO.base_table_id()
     |> LRO.type_code()
@@ -62,6 +63,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.base_table_id()
     |> source()
     |> drop_fields()
+    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
   def api_create_from_file_bare_wo_title_options(opts) do
@@ -219,9 +221,11 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   end
 
   @source [
-            {:exc, "lib/legl/countries/uk/legl_register/crud/api_exc.json"},
             {:source, "lib/legl/countries/uk/legl_register/crud/api_source.json"},
-            {:inc, "lib/legl/countries/uk/legl_register/crud/inc.json"},
+            {:inc, "lib/legl/countries/uk/legl_register/crud/api_inc.json"},
+            {:exc, "lib/legl/countries/uk/legl_register/crud/api_exc.json"},
+            {:inc_w_si, "lib/legl/countries/uk/legl_register/crud/api_inc_w_si.json"},
+            {:inc_wo_si, "lib/legl/countries/uk/legl_register/crud/api_inc_wo_si.json"},
             {:amend, "lib/legl/countries/uk/legl_register/amend/new_amending_laws_enum0.json"},
             {:amend, "lib/legl/countries/uk/legl_register/amend/new_amended_laws_enum0.json"},
             {:repeal_revoke, "lib/legl/countries/uk/legl_register/amend/api_new_laws.json"},
@@ -237,7 +241,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       opts,
       :source,
       case ExPrompt.choose(
-             "Source Records (default new/api_new_law.json)",
+             "Source Records (default new/api_new_laws.json)",
              Enum.map(@source, fn {_, {_, v}} -> v end)
            ) do
         -1 ->

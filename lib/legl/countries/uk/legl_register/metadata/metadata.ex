@@ -216,12 +216,10 @@ defmodule Legl.Countries.Uk.Metadata do
     url = Url.introduction_path(record)
     {:ok, metadata} = get_latest_metadata(url)
 
-    """
     record =
-    if metadata."Title_EN" != record."Title_EN",
-    do: Map.put(record, :Title_EN, metadata."Title_EN"),
-    else: record
-    """
+      if record."Title_EN" == "",
+        do: Map.put(record, :Title_EN, metadata."Title_EN"),
+        else: record
 
     metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
 

@@ -52,6 +52,35 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   end
 
   @doc """
+  Function POST to Airtable bare new law records These records might
+  have the minimal :type_code, :Number, :Year and all other fields need to be
+  populated
+  """
+  def api_create_from_file_categorised(opts) do
+    opts = Options.from_file_set_up(opts)
+
+    {_, path} = opts.source
+
+    records = Legl.Utility.read_json_records(path)
+
+    records = Enum.map(records, &Kernel.struct(%LegalRegister{}, &1))
+
+    Enum.each(records, fn record ->
+      {:ok, record} = New.update_empty_law_fields(record, opts)
+
+      post? = if opts.post?, do: true, else: ExPrompt.confirm("\nPost #{record."Title_EN"}?")
+
+      case post? do
+        true ->
+          Legl.Countries.Uk.LeglRegister.PostRecord.post_single_record(record, opts)
+
+        false ->
+          :ok
+      end
+    end)
+  end
+
+  @doc """
   Function to PATCH or POST to Airtable fully formed new law records stored in
   "inc.json"
   Receives list of options
@@ -70,11 +99,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
         Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(update, opts)
 
       {new, []} ->
-        Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(new, opts)
+        Legl.Countries.Uk.LeglRegister.PostRecord.run(new, opts)
 
       {new, update} ->
         Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(update, opts)
-        Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.run(new, opts)
+        Legl.Countries.Uk.LeglRegister.PostRecord.run(new, opts)
     end
   end
 

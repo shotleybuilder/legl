@@ -55,10 +55,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
 
         case post? do
           true ->
-            Legl.Countries.Uk.LeglRegister.Helpers.PostNewRecord.post_single_record(
-              record,
-              opts
-            )
+            Legl.Countries.Uk.LeglRegister.PostRecord.post_single_record(record, opts)
 
           false ->
             :ok
@@ -82,7 +79,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
             :ok
         end
     end
-  rescue
-    e -> IO.puts("ERROR: #{inspect(e)}")
+
+    # rescue
+    #  e -> IO.puts("ERROR: #{inspect(e)}")
   end
 end

@@ -71,6 +71,8 @@ defmodule UK do
            patch?: false
          ]
        ]},
+    "Categorised Bare Laws from File":
+      {CreateFromFile, :api_create_from_file_categorised, [[csv?: false]]},
     "Excluded Laws from File": {New, :save_bare_excluded, [[patch?: true, csv?: false]]},
     "Bare Laws from File":
       {CreateFromFile, :api_create_from_file_bare,

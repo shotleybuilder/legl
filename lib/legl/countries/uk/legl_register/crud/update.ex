@@ -6,7 +6,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
   alias Legl.Services.Airtable.UkAirtable, as: AT
 
-  alias Legl.Countries.Uk.LeglRegister.New.New
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
