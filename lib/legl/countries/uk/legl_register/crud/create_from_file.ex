@@ -14,20 +14,89 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   alias Legl.Countries.Uk.LeglRegister.New.Filters
   alias Legl.Countries.Uk.LeglRegister.PublicationDate
   alias Legl.Countries.Uk.LeglRegister.Year
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
+  @newlaws ~s[lib/legl/countries/uk/legl_register/crud/api_new_laws.json]
   @exc_path ~s[lib/legl/countries/uk/legl_register/crud/api_exc.json]
   @inc_wo_si_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc_wo_si.json]
   @inc_w_si_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc_w_si.json]
   @inc_path ~s[lib/legl/countries/uk/legl_register/crud/api_inc.json]
 
-  def api_create_newly_published_laws(opts) do
-    opts = Options.from_file_set_up(opts)
+  @type opts() :: keyword()
+
+  @doc """
+  Function to read new laws from file, categorise new laws into 3x sets based on matching
+  terms and SI Codes, and save to separate files
+  """
+  @spec api_read_new_laws_and_categorise(opts()) :: :ok
+  def api_read_new_laws_and_categorise(opts \\ [source: {:default, @newlaws}]) do
+    opts =
+      opts
+      |> Enum.into(Options.default_opts())
+      |> LRO.base_name()
+      |> LRO.base_table_id()
 
     {_, path} = opts.source
 
-    Legl.Utility.read_json_records(path)
-    |> Enum.map(&Kernel.struct(%LegalRegister{}, &1))
-    |> New.process_newly_published_laws(opts)
+    records = Legl.Utility.read_json_records(path)
+
+    {:ok, records} = New.categoriser(records, opts)
+
+    Enum.each(records, &New.count_categorised(&1))
+
+    Enum.each(records, &New.save_categorised_to_file(&1))
+  end
+
+  @doc """
+  Function to read new law .json from single file, process and save to AT
+
+  The source files are: inc_w_si_code.json, inc_wo_si_code.json, exc.json
+  """
+  @spec api_create_newly_published_laws(opts()) :: :ok
+  def api_create_newly_published_laws(opts \\ []) do
+    opts =
+      opts
+      |> Options.from_file_set_up()
+      |> LRO.create_workflow()
+
+    {_, path} = opts.source
+    records = Legl.Utility.read_json_records(path)
+
+    case opts.source do
+      {:exc, _} ->
+        save_exc(records, opts)
+
+      _ ->
+        records
+        |> Enum.map(&Kernel.struct(%LegalRegister{}, &1))
+        |> New.api_create(opts)
+    end
+
+    case ExPrompt.confirm(~s/Create from another Source File?/) do
+      true ->
+        api_create_newly_published_laws()
+
+      false ->
+        IO.puts("EXIT")
+        :ok
+    end
+  end
+
+  defp save_exc(records, opts) do
+    case ExPrompt.get("Enter ID number for any excluded laws to process and save: ") do
+      "" ->
+        IO.puts("EXIT")
+        :ok
+
+      id ->
+        # IO.inspect(records, label: "EXC RECORDS: ")
+
+        Map.get(records, :"#{id}")
+        |> (&Kernel.struct(%LegalRegister{}, &1)).()
+        |> New.api_create(opts)
+
+        save_exc(records, opts)
+    end
   end
 
   @doc """
@@ -185,7 +254,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   defp convert_exc_to_list(records) when is_list(records), do: records
 
   defp filter_w_metadata(records, opts) when is_list(records) do
-    with {:ok, {inc, exc}} <- Filters.terms_filter(records, opts.base_name),
+    with {:ok, {inc, exc}} <- Filters.terms_filter(records),
          :ok = Legl.Utility.save_structs_as_json(inc, @inc_path),
          :ok =
            Legl.Utility.maps_from_structs(exc)
@@ -193,7 +262,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
            |> Legl.Utility.save_json(@exc_path),
          {inc_w_si, inc_wo_si} <- si_code_sorter(inc),
          {:ok, {inc_w_si, inc_wo_si}} <-
-           Filters.si_code_filter({inc_w_si, inc_wo_si}, opts.base_name) do
+           Filters.si_code_filter({inc_w_si, inc_wo_si}) do
       #
       IO.puts("# W/O SI CODE RECORDS: #{Enum.count(inc_wo_si)}")
 

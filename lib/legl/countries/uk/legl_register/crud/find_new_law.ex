@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw do
+defmodule Legl.Countries.Uk.LeglRegister.CRUD.FindNewLaw do
   @moduledoc """
   Module to find the difference between these two fields:
 

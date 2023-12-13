@@ -10,7 +10,7 @@ defmodule UK do
   alias Legl.Countries.Uk.LeglRegister.Crud.Update
   alias Legl.Countries.Uk.LeglRegister.Amend
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke, as: RR
-  alias Legl.Countries.Uk.LeglRegister.Amend.FindNewLaw
+  alias Legl.Countries.Uk.LeglRegister.CRUD.FindNewLaw
   alias Legl.Countries.Uk.LeglRegister.PublicationDate
 
   @typedoc """
@@ -59,6 +59,10 @@ defmodule UK do
     "POST or PATCH Single Law using :type_code, :number, :year":
       {CreateFromInput, :api_create_update_single_record, [[patch?: true, csv?: false]]},
     "PATCH Single Law using 'Name'": {Update, :api_update_single_name},
+    "***NEW PUBLISHED LAWS WORKFLOW***": nil,
+    "GET Newly Published Laws from gov.uk": {New, :api_get_newly_published_laws},
+    "CATEGORISE New Laws from File": {CreateFromFile, :api_read_new_laws_and_categorise},
+    "CREATE New Laws from File": {CreateFromFile, :api_create_newly_published_laws},
     "Newly Published Laws from gov.uk": {New, :api_create_newly_published_laws},
     "Newly Published Laws from File":
       {CreateFromFile, :api_create_newly_published_laws,
@@ -106,6 +110,7 @@ defmodule UK do
     "Repeal|Revoke - patch": {RR, :run, [workflow: :update]},
     "DELTA Repeal|Revoke - single record - patch": {RR, :single_record, [workflow: :update]},
     "DELTA Repeal|Revoke - patch": {RR, :run, [workflow: :delta]},
+    "***NEW LAWS FROM AT AMENDS & REVOKES WORKFLOW***": nil,
     "DIFF Amended by - amending laws that aren't in the Base 'EARM Amended by & Revoked by'":
       {FindNewLaw, :amending},
     "DIFF Amending - amended by laws that aren't in the Base VIEW: '% DIFF Amending' 'EARM Amending & Revoking'":

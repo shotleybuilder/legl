@@ -16,6 +16,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
   alias Legl.Countries.Uk.Metadata, as: MD
+  alias Legl.Countries.Uk.Metadata
   alias Legl.Countries.Uk.LeglRegister.Extent
   alias Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy
   alias Legl.Countries.Uk.LeglRegister.Amend
@@ -28,6 +29,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   # @api_path ~s[lib/legl/countries/uk/legl_register/new/api.json]
   @source ~s[lib/legl/countries/uk/legl_register/crud/api_source.json]
+  @newlaws ~s[lib/legl/countries/uk/legl_register/crud/api_new_laws.json]
   @api_patch_path ~s[lib/legl/countries/uk/legl_register/crud/api_patch_results.json]
   @api_post_path ~s[lib/legl/countries/uk/legl_register/crud/api_post_results.json]
   @exc_path ~s[lib/legl/countries/uk/legl_register/crud/api_exc.json]
@@ -48,6 +50,50 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   @type opts() :: keyword()
   @type bare_record() :: %{type_code: String.t(), Number: String.t(), Year: Integer}
+
+  @doc """
+  Function to get newly published laws from legislation.gov.uk
+
+  Saves returned records to lib/legl/countries/uk/legl_register/crud/api_new_laws.json
+
+  Run 'UK.api' and select "GET Newly Published Laws from gov.uk"
+
+  """
+  def api_get_newly_published_laws(opts \\ []) do
+    opts =
+      Enum.into(opts, Options.default_opts())
+      |> Options.legal_register_base_id_table_id()
+      |> Options.month()
+      |> Options.day_groups()
+      |> Options.formula()
+      |> PDT.get()
+
+    with(
+      {:ok, records} <- LegGovUk.getNewLaws(opts.days, opts),
+      records <-
+        records
+        |> Filters.title_filter()
+        |> Enum.map(&Metadata.get_latest_metadata(&1))
+    ) do
+      records =
+        records
+        |> Enum.reduce(
+          [],
+          fn
+            {:ok, record}, acc -> [record | acc]
+            _, acc -> acc
+          end
+        )
+        |> Enum.reverse()
+
+      Legl.Utility.save_json(records, @newlaws)
+
+      IO.puts("\n#{Enum.count(records)} records saved to .json")
+    else
+      {:no_data, opts} -> {:no_data, opts}
+      {:error, msg} -> {:error, msg}
+    end
+  end
 
   @doc """
   Function to get newly published laws from legislation.gov.uk
@@ -113,50 +159,112 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   end
 
   @spec categoriser(list(), opts()) :: {:ok, tuple()}
-  def categoriser(records, opts) when is_list(records) do
+  def categoriser(records, _opts) when is_list(records) do
     with(
       # Filter each Law record based on terms in Title_EN
-      {:ok, {inc, exc}} <- Filters.terms_filter(records, opts.base_name),
-      :ok = Legl.Utility.save_structs_as_json(inc, @inc_path),
-      :ok =
-        Legl.Utility.maps_from_structs(exc)
-        |> index_exc()
-        |> Legl.Utility.save_json(@exc_path),
+      {:ok, {inc, exc}} <- Filters.terms_filter(records),
 
       # Let's stop further workflow if we have filtered out all the records
       # Add the SI Code(s) to each Law record
       # Those w/o SI Code 'inc_wo_si' list
 
-      {:ok, {inc_w_si, inc_wo_si}} <- LegGovUk.get_si_code(inc),
+      # {:ok, {inc_w_si, inc_wo_si}} <- LegGovUk.get_si_code(inc),
 
       # Split Law records based on presence of an SI Code from our set
       # We end up with 3 sets:
       # 1. inc_w_si -> w/ SI Code and Term match
       # 2. inc_wo_si -> w/ only Term match
       # 3. ex -> neither SI Code or Term match
-      {:ok, {inc_w_si, inc_wo_si}} <-
-        Filters.si_code_filter({inc_w_si, inc_wo_si}, opts.base_name),
+      {:ok, {inc_w_si, inc_wo_si}} <- Filters.si_code_filter(inc)
 
       # Filter out laws that are already in the Base
-      {:ok, inc_wo_si} <- Helper.filter_delta(inc_wo_si, opts),
-      {:ok, inc_w_si} <- Helper.filter_delta(inc_w_si, opts),
-      inc_w_si_count = Enum.count(inc_w_si),
-      inc_wo_si_count = Enum.count(inc_wo_si),
-
-      # Save the results to 2x .json files for manual QA
-      :ok = IO.puts("# W SI CODE RECORDS: #{inc_w_si_count}"),
-      :ok =
-        Legl.Utility.maps_from_structs(inc_wo_si)
-        |> Legl.Utility.save_json(@inc_wo_si_path),
-      :ok = IO.puts("# W/O SI CODE RECORDS: #{inc_wo_si_count}"),
-      :ok =
-        Legl.Utility.maps_from_structs(inc_w_si)
-        |> Legl.Utility.save_json(@inc_w_si_path)
+      # {:ok, inc_wo_si} <- Helper.filter_delta(inc_wo_si, opts),
+      # {:ok, inc_w_si} <- Helper.filter_delta(inc_w_si, opts),
     ) do
-      {:ok, {inc_w_si, inc_wo_si, exc}}
+      {:ok, inc: inc, inc_w_si: inc_w_si, inc_wo_si: inc_wo_si, exc: exc}
     else
       {:no_data, opts} -> {:no_data, opts}
       {:error, msg} -> {:error, msg}
+    end
+  end
+
+  def count_categorised({name, records}) do
+    count = Enum.count(records)
+
+    case name do
+      :inc -> IO.puts("# INC RECORDS: #{count}")
+      :inc_w_si -> IO.puts("# W SI CODE RECORDS: #{count}")
+      :inc_wo_si -> IO.puts("# W/O SI CODE RECORDS: #{count}")
+      :exc -> IO.puts("# EXC RECORDS: #{count}")
+    end
+  end
+
+  def save_categorised_to_file({name, records}) do
+    records = Legl.Utility.maps_from_structs(records)
+
+    case name do
+      :exc ->
+        records
+        |> index_exc()
+        |> Legl.Utility.save_json(@exc_path)
+
+      :inc ->
+        Legl.Utility.save_json(records, @inc_path)
+
+      :inc_w_si ->
+        Legl.Utility.save_json(records, @inc_w_si_path)
+
+      :inc_wo_si ->
+        Legl.Utility.save_json(records, @inc_wo_si_path)
+    end
+  end
+
+  def api_create(records, opts) do
+    create(records, opts)
+  end
+
+  defp create(records, opts) when is_list(records) do
+    Enum.each(
+      records,
+      fn record ->
+        create(record, opts)
+      end
+    )
+  end
+
+  defp create(record, opts) do
+    case ExPrompt.confirm(~s/Process #{record."Title_EN"}?/) do
+      true ->
+        exists? = Legl.Countries.Uk.LeglRegister.Helpers.Create.exists?(record, opts)
+        create(record, opts, exists?)
+
+      false ->
+        :ok
+    end
+  end
+
+  defp create(_record, _opts, true), do: :ok
+
+  defp create(record, opts, false) do
+    record =
+      Enum.reduce(opts.create_workflow, record, fn f, acc ->
+        {:ok, record} =
+          case :erlang.fun_info(f)[:arity] do
+            1 -> f.(acc)
+            2 -> f.(acc, opts)
+          end
+
+        record
+      end)
+
+    post? = if opts.post?, do: true, else: ExPrompt.confirm("\Post #{record."Title_EN"}?")
+
+    case post? do
+      true ->
+        Legl.Countries.Uk.LeglRegister.PostRecord.post_single_record(record, opts, false)
+
+      false ->
+        :ok
     end
   end
 

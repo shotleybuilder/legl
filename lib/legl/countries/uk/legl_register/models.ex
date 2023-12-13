@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
   @moduledoc """
 
   """
-  @typeclass ~w[Act Regulation Order Rules Byelaws Measure]
+  @typeclass ~w[Act Regulation Order Rules Byelaws Measure Scheme]
 
   def type_class, do: @typeclass
 
@@ -32,33 +32,33 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
   def hs_family, do: @hsfamily
 
   @efamily [
-    "Agriculture",
-    "Air",
-    "Animals & Animal Health",
-    "Antarctica",
-    "Aviation",
-    "Buildings",
-    "Climate Change",
-    "Energy",
-    "Environmental Protection",
-    "Finance",
-    "Fisheries & Fishing",
-    "GMOs",
-    "Historic Environment",
-    "Marine & Riverine",
-    "Merchant Shipping",
-    "Noise",
-    "Planning",
-    "Plant Health",
-    "Pollution",
-    "Nuclear & Radiological",
-    "Railways & Rail Transport",
-    "Roads & Vehicles",
-    "Town & Country Planning",
-    "Trees, Forestry & Timber",
-    "Waste",
-    "Water & Wastewater",
-    "Wildlife & Countryside"
+    "💚 Agriculture",
+    "💚 Air Quality",
+    "💚 Animals & Animal Health",
+    "💚 Antarctica",
+    "💚 Aviation",
+    "💚 Buildings",
+    "💚 Climate Change",
+    "💚 Energy",
+    "💚 Environmental Protection",
+    "💚 Finance",
+    "💚 Fisheries & Fishing",
+    "💚 GMOs",
+    "💚 Historic Environment",
+    "💚 Marine & Riverine",
+    "💚 Merchant Shipping",
+    "💚 Noise",
+    "💚 Planning",
+    "💚 Plant Health",
+    "💚 Pollution",
+    "💚 Nuclear & Radiological",
+    "💚 Railways & Rail Transport",
+    "💚 Roads & Vehicles",
+    "💚 Town & Country Planning",
+    "💚 Trees, Forestry & Timber",
+    "💚 Waste",
+    "💚 Water & Wastewater",
+    "💚 Wildlife & Countryside"
   ]
 
   def e_family, do: @efamily

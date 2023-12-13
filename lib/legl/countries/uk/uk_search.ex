@@ -392,20 +392,20 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
   def e_search_terms() do
     # putting the likely most popular matching terms first
     [
-      Agriculture: @agriculture,
-      Air: @air,
-      "Climate Change": @climate_change,
-      Energy: @energy,
-      "Environmental Protection": @general,
-      Finance: @finance,
-      "Marine & Riverine": @marine,
-      Planning: @planning,
-      Pollution: @pollution,
-      Radiological: @radiological,
-      "Trees, Forestry & Timber": @tft,
-      Waste: @waste,
-      "Water & Wastewater": @water,
-      "Wildlife & Countryside": @wildlife_countryside
+      "💚 Agriculture": @agriculture,
+      "💚 Air Quality": @air,
+      "💚 Climate Change": @climate_change,
+      "💚 Energy": @energy,
+      "💚 Environmental Protection": @general,
+      "💚 Finance": @finance,
+      "💚 Marine & Riverine": @marine,
+      "💚 Planning": @planning,
+      "💚 Pollution": @pollution,
+      "💚 Radiological": @radiological,
+      "💚 Trees, Forestry & Timber": @tft,
+      "💚 Waste": @waste,
+      "💚 Water & Wastewater": @water,
+      "💚 Wildlife & Countryside": @wildlife_countryside
     ]
   end
 end
@@ -556,25 +556,25 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
     # Replacing \u00a0 because it will not match an empty space
     [
       "💙 OH&S: Occupational / Personal Safety": @oh_s,
-      FIRE: @fire_safety,
-      FOOD: @food_safety,
-      "PUBLIC: Consumer / Product Safety": @product_safety,
-      "TRANS: Road Safety": @road_safety,
-      "HEALTH: Public": @public_health,
-      "HR: Employment": @hr_employment,
-      PUBLIC: @public_safety,
-      "PUBLIC: Building Safety": @building_safety,
-      "FIRE: Dangerous and Explosive Substances": @dangerous_explosive_substances,
-      "OH&S: Gas & Electrical Safety": @gas_electric_safety,
-      "HEALTH: Drug & Medicine Safety": @drug_safety,
-      "HEALTH: Patient Safety": @patient_safety,
-      "HR: Insurance / Compensation / Wages / Benefits": @hr_pay,
-      "TRANS: Rail Safety": @rail_safety,
-      "TRANS: Maritime Safety": @ship_safety,
-      "OH&S: Offshore Safety": @offshore_safety,
-      "HR: Working Time": @hr_working_time,
-      "TRANS: Air Safety": @air_safety,
-      "OH&S: Mines & Quarries": @mine_quarry_safety
+      "💙 FIRE": @fire_safety,
+      "💙 FOOD": @food_safety,
+      "💙 PUBLIC: Consumer / Product Safety": @product_safety,
+      "💙 TRANS: Road Safety": @road_safety,
+      "💙 HEALTH: Public": @public_health,
+      "💙 HR: Employment": @hr_employment,
+      "💙 PUBLIC": @public_safety,
+      "💙 PUBLIC: Building Safety": @building_safety,
+      "💙 FIRE: Dangerous and Explosive Substances": @dangerous_explosive_substances,
+      "💙 OH&S: Gas & Electrical Safety": @gas_electric_safety,
+      "💙 HEALTH: Drug & Medicine Safety": @drug_safety,
+      "💙 HEALTH: Patient Safety": @patient_safety,
+      "💙 HR: Insurance / Compensation / Wages / Benefits": @hr_pay,
+      "💙 TRANS: Rail Safety": @rail_safety,
+      "💙 TRANS: Maritime Safety": @ship_safety,
+      "💙 OH&S: Offshore Safety": @offshore_safety,
+      "💙 HR: Working Time": @hr_working_time,
+      "💙 TRANS: Air Safety": @air_safety,
+      "💙 OH&S: Mines & Quarries": @mine_quarry_safety
     ]
   end
 end
@@ -788,6 +788,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.SICodes do
                 "ZOOS"
               ])
 
-  def si_codes(), do: @si_codes
+  def h_s_si_codes(), do: @si_codes
   def e_si_codes(), do: @e_si_codes
+  def si_codes, do: MapSet.union(@si_codes, @e_si_codes)
 end

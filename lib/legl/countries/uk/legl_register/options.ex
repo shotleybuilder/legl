@@ -144,7 +144,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
       opts,
       :type_class,
       case ExPrompt.choose("Choose Type Class (Default \"\")", Models.type_class()) do
-        index when index in 0..5 -> Enum.at(Models.type_class(), index)
+        index when index in 0..6 -> Enum.at(Models.type_class(), index)
         -1 -> ""
       end
     )
@@ -238,18 +238,30 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   @affect &Legl.Countries.Uk.LeglRegister.Amend.workflow/2
 
   @workflow_choices [
-    "New (w/ Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @enact, @affect],
+    "New (w/Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @enact, @affect],
+    "New (w/Enact w/oMD)": [
+      @year,
+      @name,
+      @md,
+      @tags,
+      @type_law,
+      @type_class,
+      @extent,
+      @enact,
+      @affect
+    ],
     "Update (w/o Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @affect],
-    "Changes (w/o Extent, Enact)": [@year, @name, @md, @affect],
+    "Changes (w/o Extent & Enact)": [@year, @name, @md, @affect],
     Metadata: [@year, @name, @md, @type_law, @type_class],
     Extent: [@name, @extent],
     Enact: [@enact],
     Affect: [@affect]
   ]
 
-  @drop_fields_params [:new, :update, :changes, :metadata, :extent, :enact, :affect]
+  @drop_fields_params [:new, :new, :update, :changes, :metadata, :extent, :enact, :affect]
 
   @view ~w[
+    viwMy1UQEZO1x62cK
     viwMy1UQEZO1x62cK
     viwMy1UQEZO1x62cK
     viwMy1UQEZO1x62cK
@@ -291,6 +303,35 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
           |> Enum.with_index()
           |> Enum.into(%{}, fn {k, v} -> {v, k} end)
           |> Map.get(n)
+        )
+    end
+  end
+
+  @spec create_workflow(opts()) :: opts()
+  def create_workflow(opts) do
+    case ExPrompt.choose(
+           "Create Workflow",
+           Enum.map(@workflow_choices, fn {k, _} -> k end)
+         ) do
+      -1 ->
+        :ok
+
+      n ->
+        opts
+        |> Map.put(
+          :create_workflow,
+          Enum.map(@workflow_choices, fn {_k, v} -> v end)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+        )
+        |> Map.put(
+          :drop_fields,
+          @drop_fields_params
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+          |> Legl.Countries.Uk.LeglRegister.DropFields.drop_fields()
         )
     end
   end

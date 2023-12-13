@@ -12,8 +12,18 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
   @doc """
   Function to Post a single Legal Register record struct
   """
-  @spec post_single_record(%LegalRegister{}, map()) :: :ok
   def post_single_record(%LegalRegister{} = record, opts) do
+    case Create.exists?(record, opts) do
+      true ->
+        :ok
+
+      _ ->
+        post_single_record(record, opts, false)
+    end
+  end
+
+  @spec post_single_record(%LegalRegister{}, map()) :: :ok
+  def post_single_record(%LegalRegister{} = record, opts, false) do
     params = %{base: opts.base_id, table: opts.table_id, options: %{}}
 
     record =
