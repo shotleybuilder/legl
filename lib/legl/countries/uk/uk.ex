@@ -12,6 +12,8 @@ defmodule UK do
   alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke, as: RR
   alias Legl.Countries.Uk.LeglRegister.CRUD.FindNewLaw
   alias Legl.Countries.Uk.LeglRegister.PublicationDate
+  # ARTICLES
+  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa, as: Taxa
 
   @typedoc """
   A part of a piece of legislation.
@@ -54,7 +56,8 @@ defmodule UK do
   def geo(), do: @geo_regex
 
   @api [
-    "Update Menu": {:update},
+    "MENU: Update": {:update},
+    "MENU: Taxa": {:taxa},
     UPDATE: {Update, :api_update, [[csv?: false, workflow: :update]]},
     "POST or PATCH Single Law using :type_code, :number, :year":
       {CreateFromInput, :api_create_update_single_record, [[patch?: true, csv?: false]]},
@@ -168,6 +171,26 @@ defmodule UK do
 
       n ->
         {module, function, args} = Map.get(@update, n)
+        apply(module, function, args)
+    end
+  end
+
+  @taxa [
+          {Taxa, :workflow, [[]]}
+        ]
+        |> Enum.with_index()
+        |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+
+  def taxa do
+    case ExPrompt.choose(
+           "Taxa Choices",
+           ~W/Workflow/
+         ) do
+      -1 ->
+        :ok
+
+      n ->
+        {module, function, args} = Map.get(@taxa, n)
         apply(module, function, args)
     end
   end

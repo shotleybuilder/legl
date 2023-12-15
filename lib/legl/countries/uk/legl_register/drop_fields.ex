@@ -92,19 +92,44 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     amendments_checked
   ]a
 
+  @models ~w[
+    dutyholder
+    dutyholder_state
+    duty_actor
+    duty_actor_state
+    duty_type
+    popimar
+
+    Dutyholder
+    Dutyholder_State
+    Duty_Actor
+    Duty_Actor_State
+    Duty_Type
+    POPIMAR
+
+    dutyholder_article
+    article_dutyholder
+    duty_actor_article
+    article_duty_actor
+    duty_type_article
+    article_duty_type
+    popimar_article
+    article_popimar
+  ]a
+
   def drop_fields(update_workflow) do
     case update_workflow do
-      :new -> @default
-      :update -> @enact ++ @default
-      :changes -> @extent ++ @enact ++ @default
-      :metadata -> @extent ++ @enact ++ @affect ++ @default
-      :extent -> @metadata ++ @enact ++ @affect ++ @default
-      :enact -> @metadata ++ @extent ++ @affect ++ @default
-      :affect -> @metadata ++ @extent ++ @enact ++ @default
+      :new -> @models ++ @default
+      :update -> @enact ++ @models ++ @default
+      :changes -> @extent ++ @enact ++ @models ++ @default
+      :metadata -> @extent ++ @enact ++ @affect ++ @models ++ @default
+      :extent -> @metadata ++ @enact ++ @affect ++ @models ++ @default
+      :enact -> @metadata ++ @extent ++ @affect ++ @models ++ @default
+      :affect -> @metadata ++ @extent ++ @enact ++ @models ++ @default
     end
   end
 
-  def drop_fields, do: @default
+  def drop_fields, do: @models ++ @default
 
   def drop_if_null, do: @drop_if_null
 end

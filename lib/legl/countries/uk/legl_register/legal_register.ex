@@ -87,7 +87,33 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           # Change Logs fields
           "Live?_change_log": String.t(),
           md_change_log: String.t(),
-          amended_by_change_log: String.t()
+          amended_by_change_log: String.t(),
+
+          # .csv strings
+          dutyholder: String.t(),
+          dutyholder_gvt: String.t(),
+          duty_actor: String.t(),
+          duty_actor_gvt: String.t(),
+          duty_type: String.t(),
+          popimar: String.t(),
+
+          #
+          Dutyholder: list(),
+          Dutyholder_Gvt: list(),
+          Duty_Actor: list(),
+          Duty_Actor_Gvt: list(),
+          Duty_Type: list(),
+          POPIMAR: list(),
+
+          # Descriptions ordered using model or article
+          dutyholder_article: String.t(),
+          article_dutyholder: String.t(),
+          duty_actor_article: String.t(),
+          article_duty_actor: String.t(),
+          duty_type_article: String.t(),
+          article_duty_type: String.t(),
+          popimar_article: String.t(),
+          article_popimar: String.t()
         }
 
   defstruct ~w[
@@ -169,5 +195,28 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     md_change_log
     amending_change_log
     amended_by_change_log
+
+    dutyholder
+    dutyholder_gvt
+    duty_actor
+    duty_actor_gvt
+    duty_type
+    popimar
+
+    Dutyholder
+    Dutyholder_Gvt
+    Duty_Actor
+    Duty_Actor_Gvt
+    Duty_Type
+    POPIMAR
+
+    dutyholder_article
+    article_dutyholder
+    duty_actor_article
+    article_duty_actor
+    duty_type_article
+    article_duty_type
+    popimar_article
+    article_popimar
   ]a
 end

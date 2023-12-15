@@ -35,6 +35,10 @@ defmodule Legl.Utility do
     |> Legl.Utility.write_to_csv(at_csv)
   end
 
+  def csv_quote_enclosure(list) when is_list(list) do
+    Enum.map(list, &csv_quote_enclosure/1)
+  end
+
   def csv_quote_enclosure(string) do
     string = string |> to_string() |> String.trim()
 

@@ -74,4 +74,31 @@ defmodule Legl.Services.Airtable.AtBases do
       "uk_fire" => "app0bGzy4uDbKrCF5"
     }
   end
+
+  @bases [
+           {"💙💚️ LRT - Environment, Health & Safety - UK", "appRhQoz94zyVh2LR"},
+           {"💙 Occupational / Personal Health and Safety - UK", "appiwDnCNQaZOSaVR"},
+           {"💙 Fire Safety - UK", "app0bGzy4uDbKrCF5"},
+           {"💙 Product Safety & Consumer Protection - UK", ""},
+           {"💙 Gas & Electrical Safety - UK", ""},
+           {"💙 Offshore Safety - UK", ""},
+           {"💙 Mine & Quarry Safety - UK", ""},
+           {"💙 Dangerous & Explosive Substances - UK", ""},
+           {"💚️ Climate Change - UK", "appGv6qmDJK2Kdr3U"},
+           {"💚️ Energy - UK", "app4L95N2NbK7x4M0"},
+           {"💚️ Environmental Protection - UK Environmental Protection", "appPFUz8wfo9RU7gN"},
+           {"💚️ Finance - UK", "appokFoa6ERUUAIkF"},
+           {"💚️ M&R - UK - Marine & Riverine", "appLXqkeiiqrOXwWw"},
+           {"💚️ Planning - UK", "appJ3UVvRHEGIpNi4"},
+           {"💚️ Pollution - UK", "appj4oaimWQfwtUri"},
+           {"💚️ Radiological - UK", "appozWdOMaGdp77eL"},
+           {"💚️ Town & Country Planning - UK", ""},
+           {"️💚️ Waste - UK", "appfXbCYZmxSFQ6uY"},
+           {"💚️ Water - UK", "appCZkMT3VlCLtBjy"},
+           {"💚️ Wildlife & Countryside - UK", "appXXwjSS8KgDySB6"}
+         ]
+         |> Enum.with_index()
+         |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+
+  def bases, do: @bases
 end

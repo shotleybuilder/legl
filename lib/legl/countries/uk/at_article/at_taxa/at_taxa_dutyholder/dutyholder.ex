@@ -96,12 +96,19 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
     opts = Enum.into(opts, @process_opts)
 
     records =
-      Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
-        classes = Lib.workflow(Map.get(fields, :aText), :actor)
+      Enum.reduce(records, [], fn record, acc ->
+        text =
+          case record.aText do
+            nil -> record."Text"
+            _ -> record.aText
+          end
 
-        fields = Map.put(fields, opts.field, classes)
-
-        [Map.put(record, :fields, fields) | acc]
+        Map.put(
+          record,
+          opts.field,
+          Lib.workflow(text, :actor)
+        )
+        |> (&[&1 | acc]).()
       end)
       |> Enum.reverse()
 

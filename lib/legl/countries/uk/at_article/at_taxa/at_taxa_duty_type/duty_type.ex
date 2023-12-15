@@ -128,12 +128,18 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     # IO.inspect(records)
 
     records =
-      Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
-        {dutyholders, duty_types} = classes(fields)
-        fields = Map.merge(fields, %{Dutyholder: dutyholders, "Duty Type": duty_types})
+      Enum.reduce(records, [], fn record, acc ->
+        text =
+          case record.aText do
+            nil -> record."Text"
+            _ -> record.aText
+          end
+
+        {dutyholders, duty_types} = classes(record, text)
+        record = Map.merge(record, %{Dutyholder: dutyholders, "Duty Type": duty_types})
         # fields = Map.put(fields, opts.field, classes)
 
-        [Map.put(record, :fields, fields) | acc]
+        [record | acc]
       end)
       |> Enum.reverse()
 
@@ -142,24 +148,24 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     {:ok, records}
   end
 
-  defp classes(%{Record_Type: record_type} = fields)
-       when record_type in [["part"], ["chapter"]] and is_map(fields),
+  defp classes(%{Record_Type: record_type} = record, _)
+       when record_type in [["part"], ["chapter"]] and is_map(record),
        do: {[], []}
 
-  defp classes(%{Record_Type: ["section"], aText: aText, "Duty Actor": actors} = fields)
-       when is_map(fields) do
-    case Regex.match?(~r/\n/, aText) do
-      true -> classes(aText, actors)
+  defp classes(%{Record_Type: ["section"], "Duty Actor": actors} = record, text)
+       when is_map(record) do
+    case Regex.match?(~r/\n/, text) do
+      true -> classes(text, actors)
       false -> {[], []}
     end
   end
 
-  defp classes(%{aText: aText, "Duty Actor": actors} = fields) when is_map(fields) do
-    classes(aText, actors)
+  defp classes(%{"Duty Actor": actors} = record, text) when is_map(record) do
+    classes(text, actors)
   end
 
-  defp classes(aText, actors) when is_binary(aText) and is_list(actors) do
-    Lib.workflow(aText, actors)
+  defp classes(text, actors) when is_binary(text) and is_list(actors) do
+    Lib.workflow(text, actors)
   end
 
   def save_results_as_json(records) do
@@ -246,11 +252,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   """
   def revise_dutyholder(records) do
     records
-    |> Enum.reduce([], fn %{fields: fields} = record, acc ->
-      case Map.get(fields, :"Duty Type") do
+    |> Enum.reduce([], fn record, acc ->
+      case Map.get(record, :"Duty Type") do
         x when x in [["Amendment"], ["Repeal, Revocation"], ["Interpretation, Definition"], []] ->
-          Map.put(fields, :Dutyholder, [])
-          |> (&Map.put(record, :fields, &1)).()
+          Map.put(record, :Dutyholder, [])
           |> (&[&1 | acc]).()
 
         _ ->

@@ -126,9 +126,15 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
     # IO.inspect(records)
 
     records =
-      Enum.reduce(records, [], fn %{fields: fields} = record, acc ->
+      Enum.reduce(records, [], fn record, acc ->
+        text =
+          case record.aText do
+            nil -> record."Text"
+            _ -> record.aText
+          end
+
         classes =
-          case Enum.any?(Map.get(fields, :"Duty Type"), fn x ->
+          case Enum.any?(Map.get(record, :"Duty Type"), fn x ->
                  Enum.member?(
                    [
                      "Duty",
@@ -141,15 +147,13 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
                  )
                end) do
             true ->
-              popimar_type?({Map.get(fields, :Record_Type), Map.get(fields, :aText)})
+              popimar_type?({Map.get(record, :Record_Type), text})
 
             _ ->
               []
           end
 
-        fields = Map.put(fields, opts.field, classes)
-
-        [Map.put(record, :fields, fields) | acc]
+        [Map.put(record, opts.field, classes) | acc]
       end)
       |> Enum.reverse()
 

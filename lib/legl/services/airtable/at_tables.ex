@@ -2,6 +2,11 @@ defmodule Legl.Services.Airtable.AtTables do
   @doc """
   Returns a map of the Airtable Base Table Names and IDs for a given Base ID.
   """
+  @type base_id :: binary()
+  @type table_name :: binary()
+  @type table_id :: binary()
+
+  @spec get_table_id(base_id(), table_name()) :: {:ok, table_id()}
   def get_table_id(base_id, table_name) do
     case String.starts_with?(base_id, "app") and String.length(base_id) == 17 do
       false ->

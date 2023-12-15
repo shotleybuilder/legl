@@ -26,12 +26,19 @@ defmodule Legl.Services.Airtable.Records do
     when more records than pageSize or default of 100 are returned
   """
   def get_records({jsonset, recordset}, params) when is_list(recordset) do
+    params = Map.put_new(params, :atom?, false)
+
     with(
       {:ok, url} <- Url.url(params.base, params.table, params.options),
       # IO.inspect(url),
       {:ok, json} <- get(url),
       # IO.inspect(json),
-      data <- Jason.decode!(json),
+      data <-
+        if params.atom? do
+          Jason.decode!(json, keys: :atoms)
+        else
+          Jason.decode!(json)
+        end,
       %{
         "json" => json,
         "records" => records,
