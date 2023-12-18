@@ -5,8 +5,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa do
 
   alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
 
+  @spec workflow(list()) :: %LR{}
   def workflow(records) do
-    result = %LR{}
+    workflow(records, %LR{})
+  end
+
+  @spec workflow(list(), %LR{}) :: %LR{}
+  def workflow(records, result) do
     result = Kernel.struct(result, __MODULE__.DutyActor.duty_actor(records))
     result = Kernel.struct(result, __MODULE__.DutyActor.duty_actor_article(records))
     result = Kernel.struct(result, __MODULE__.DutyActor.article_duty_actor(records))

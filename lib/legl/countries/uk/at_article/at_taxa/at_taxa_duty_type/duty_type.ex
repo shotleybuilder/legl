@@ -5,9 +5,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   Duty type for 'sections' is a roll-up (aggregate) of the duty types for seb-sections
   """
   alias Legl.Services.Airtable.AtBasesTables
-  # alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.Records
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib, as: Lib
+  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib
 
   @duty_type_taxa [
     # Why of the law
@@ -40,8 +40,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
   def print_duty_types_to_console, do: Enum.each(@duty_type_taxa, &IO.puts(~s/"#{&1}"/))
 
-  @default_duty_type "Process, Rule, Constraint, Condition"
-
   @default_opts %{
     base_name: "uk_e_environmental_protection",
     table_name: "Articles",
@@ -52,6 +50,111 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/at_duty_type_taxa/duty.json]
   @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/at_duty_type_taxa/records_results.json]
+
+  @process_opts %{filesave?: false, field: :"Duty Type"}
+
+  @type records :: list(%AtTaxa{})
+
+  def process() do
+    json = @path |> Path.absname() |> File.read!()
+    %{"records" => records} = Jason.decode!(json)
+    process(records)
+  end
+
+  @spec process(records()) :: {:ok, records()}
+  def process(records) do
+    opts = @process_opts
+
+    records =
+      records
+      |> Enum.map(&process_record(&1))
+      |> Enum.reverse()
+      |> revise_dutyholder()
+
+    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, @results_path)
+    IO.puts("Duty Type complete")
+    {:ok, records}
+  end
+
+  @spec process_record(%AtTaxa{}) :: %AtTaxa{}
+  defp process_record(%AtTaxa{Record_Type: record_type} = record)
+       when record_type in [["part"], ["chapter"], ["heading"]] and is_map(record),
+       do: record
+
+  defp process_record(%AtTaxa{Record_Type: ["section"], Text: text} = record) do
+    case Regex.match?(~r/\n/, text) do
+      true -> classes(record, text)
+      false -> record
+    end
+  end
+
+  defp process_record(%AtTaxa{Text: text} = record)
+       when is_binary(text) and text not in ["", nil] do
+    classes(record, text)
+  end
+
+  defp process_record(record), do: record
+
+  @spec classes(%AtTaxa{}, binary()) :: %AtTaxa{}
+  defp classes(record, text) do
+    {dutyholders, duty_types} = get_dutyholders_and_duty_types(record, text)
+    {dutyholders_gvt, duty_types_gvt} = get_dutyholders_gvt_and_duty_types(record, text)
+
+    IO.inspect(text)
+    IO.puts(~s/Dutyholders: #{Enum.join(dutyholders)}/)
+    IO.puts(~s/Dutyholders gvt: #{Enum.join(dutyholders_gvt)}/)
+    IO.puts(~s/Duty types: #{Enum.join(duty_types)}/)
+    IO.puts(~s/Duty types gvt: #{Enum.join(duty_types_gvt)}/)
+
+    duty_type =
+      if duty_types ++ duty_types_gvt == [],
+        do: ["Process, Rule, Constraint, Condition"],
+        else:
+          (duty_types ++ duty_types_gvt)
+          |> Enum.filter(fn x -> x != nil end)
+          # |> Enum.reverse()
+          |> Enum.uniq()
+
+    Map.merge(
+      record,
+      %{
+        Dutyholder: dutyholders,
+        "Dutyholder Gvt": dutyholders_gvt,
+        "Duty Type": duty_type
+      }
+    )
+  end
+
+  defp get_dutyholders_and_duty_types(%{"Duty Actor": []}, _text), do: {[], []}
+
+  defp get_dutyholders_and_duty_types(%{"Duty Actor": actors}, text) when is_list(actors) do
+    DutyTypeLib.workflow(text, actors)
+  end
+
+  defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": []}, _text), do: {[], []}
+
+  defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": actors}, text)
+       when is_list(actors) do
+    DutyTypeLib.workflow_gvt(text, actors)
+  end
+
+  @doc """
+  Function that revises the dutyholder tag based on the outcome of the duty type tag.
+  Eg, amendment clauses to not have dutyholders
+  """
+  def revise_dutyholder(records) do
+    records
+    |> Enum.reduce([], fn record, acc ->
+      case Map.get(record, :"Duty Type") do
+        x when x in [["Amendment"], ["Repeal, Revocation"], ["Interpretation, Definition"], []] ->
+          Map.put(record, :Dutyholder, [])
+          |> (&[&1 | acc]).()
+
+        _ ->
+          [record | acc]
+      end
+    end)
+  end
 
   def workflow(opts \\ []) do
     with(
@@ -109,67 +212,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
       {:error, error} ->
         {:error, error}
     end
-  end
-
-  @process_opts %{filesave?: false, field: :"Duty Type"}
-
-  def process() do
-    json = @path |> Path.absname() |> File.read!()
-    %{"records" => records} = Jason.decode!(json)
-    process(records)
-  end
-
-  def process(records, opts \\ [])
-
-  def process(records, %{workflow: %{dutyType: false}} = _opts), do: {:ok, records}
-
-  def process(records, opts) do
-    opts = Enum.into(opts, @process_opts)
-    # IO.inspect(records)
-
-    records =
-      Enum.reduce(records, [], fn record, acc ->
-        text =
-          case record.aText do
-            nil -> record."Text"
-            _ -> record.aText
-          end
-
-        {dutyholders, duty_types} = classes(record, text)
-        record = Map.merge(record, %{Dutyholder: dutyholders, "Duty Type": duty_types})
-        # fields = Map.put(fields, opts.field, classes)
-
-        [record | acc]
-      end)
-      |> Enum.reverse()
-
-    if opts.filesave? == true, do: save_results_as_json(records)
-
-    {:ok, records}
-  end
-
-  defp classes(%{Record_Type: record_type} = record, _)
-       when record_type in [["part"], ["chapter"]] and is_map(record),
-       do: {[], []}
-
-  defp classes(%{Record_Type: ["section"], "Duty Actor": actors} = record, text)
-       when is_map(record) do
-    case Regex.match?(~r/\n/, text) do
-      true -> classes(text, actors)
-      false -> {[], []}
-    end
-  end
-
-  defp classes(%{"Duty Actor": actors} = record, text) when is_map(record) do
-    classes(text, actors)
-  end
-
-  defp classes(text, actors) when is_binary(text) and is_list(actors) do
-    Lib.workflow(text, actors)
-  end
-
-  def save_results_as_json(records) do
-    Legl.Utility.save_at_records_to_file(~s/#{Jason.encode!(records)}/, @results_path)
   end
 
   @doc """
@@ -238,25 +280,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
               [Map.put(record, :fields, fields) | acc]
           end
-
-        _ ->
-          [record | acc]
-      end
-    end)
-    |> (&{:ok, &1}).()
-  end
-
-  @doc """
-  Function that revises the dutyholder tag based on the outcome of the duty type tag.
-  Eg, amendment clauses to not have dutyholders
-  """
-  def revise_dutyholder(records) do
-    records
-    |> Enum.reduce([], fn record, acc ->
-      case Map.get(record, :"Duty Type") do
-        x when x in [["Amendment"], ["Repeal, Revocation"], ["Interpretation, Definition"], []] ->
-          Map.put(record, :Dutyholder, [])
-          |> (&[&1 | acc]).()
 
         _ ->
           [record | acc]

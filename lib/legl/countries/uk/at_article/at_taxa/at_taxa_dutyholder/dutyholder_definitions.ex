@@ -1,4 +1,7 @@
 defmodule DutyholderDefinitions do
+  @moduledoc """
+  Functions to build search Regex expressions
+  """
   def dutyholder_library() do
     # Adds the separate dutyholder libraries together into a single keyword list
     government() ++ governed()
@@ -6,14 +9,15 @@ defmodule DutyholderDefinitions do
 
   def governed(),
     do:
-      business() ++
-        person() ++
-        public() ++
-        specialist() ++
-        cdm() ++
-        supply_chain() ++
-        servicer() ++
-        environmentalist()
+      (business() ++
+         person() ++
+         public() ++
+         specialist() ++
+         cdm() ++
+         supply_chain() ++
+         servicer() ++
+         environmentalist())
+      |> process_library()
 
   def government() do
     authority =
@@ -58,6 +62,7 @@ defmodule DutyholderDefinitions do
       "Gvt: Judiciary": ["court", "justice of the peace"],
       "Gvt: Police": "[Cc]onstable"
     ]
+    |> process_library()
   end
 
   def blacklist() do
@@ -74,7 +79,7 @@ defmodule DutyholderDefinitions do
       "Org: Owner": "[Oo]wner",
       "Org: Lessee": "[Ll]essee",
       "Org: Occupier": ["[Oo]ccupiers?", "[Pp]erson who is in occupation"],
-      "Org: Employer": "[Ee]mployers",
+      "Org: Employer": "[Ee]mployers?",
       "Org: Company": [
         "[Cc]ompany?i?e?s?",
         "[Bb]usinesse?s?",
@@ -173,5 +178,33 @@ defmodule DutyholderDefinitions do
       "Env: Disposer": "[Dd]isposer",
       "Env: Polluter": "[Pp]olluter"
     ]
+  end
+
+  @doc """
+  Function pre-process a library to the correct shape to be consumed by
+  process/2 eg [ {"[ “][Ii]nvestors[ \\.,:;”]", "Investor"}, {"[ “][Oo]wner[
+  \\.,:;”]", "Owner"}, {"[ “][Ll]essee[ \\.,:;”]", "Lessee"}, {"(?:[ “][Pp]erson
+  who is in occupation[ \\.,:;”]|[ “][Oo]ccupiers?[ \\.,:;”])", "Occupier"}, {"[
+  “][Ee]mployers[ \\.,:;”]", "Employer"}, {"(?:[ “][Ee]nterprises?[ \\.,:;”]|[
+  “][Bb]usinesse?s?[ \\.,:;”]|[ “][Cc]ompany?i?e?s?[ \\.,:;”])", "Company"}, {"[
+  “][Oo]rganisations?[ \\.,:;”]", "Organisation"}]
+  """
+  @spec process_library(list()) :: list()
+  def process_library(library) do
+    library
+    |> Enum.reduce([], fn
+      {k, v}, acc when is_binary(v) ->
+        [{"[ “]#{v}[ \\.,:;”\\]]", Atom.to_string(k) |> Legl.Utility.upcaseFirst()} | acc]
+
+      {k, v}, acc when is_list(v) ->
+        Enum.reduce(v, [], fn x, accum ->
+          ["[ “]#{x}[ \\.,:;”\\]]" | accum]
+        end)
+        |> Enum.join("|")
+        |> (fn x -> ~s/(?:#{x})/ end).()
+        |> (&{&1, Atom.to_string(k) |> Legl.Utility.upcaseFirst()}).()
+        |> (&[&1 | acc]).()
+    end)
+    |> Enum.reverse()
   end
 end

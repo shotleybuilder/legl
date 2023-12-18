@@ -1,6 +1,41 @@
 defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib
 
+  def workflow_gvt(text, actors) do
+    {text, {[], duty_types}} =
+      {text, {[], []}}
+      # has to process first to ensure the amending text for other law doesn't get tagged
+      |> process(amendment())
+
+    {text, {dutyholders, duty_types}} =
+      if actors != [] do
+        {gvt_regex, gvt_lib} = _government = DutyholderLib.custom_dutyholders(actors, :government)
+
+        {text, {[], duty_types}}
+        |> pre_process(blacklist(gvt_regex))
+        |> process_dutyholder(responsibility(gvt_regex), gvt_lib)
+        |> process(power_conferred(gvt_regex))
+        |> process_dutyholder(discretionary(gvt_regex), gvt_lib)
+      else
+        {text, {[], duty_types}}
+      end
+
+    {text, {dutyholders, duty_types}}
+    # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
+    |> process(extent())
+    |> process(enaction_citation_commencement())
+    |> process(interpretation_definition())
+    |> process(application_scope())
+    |> process(exemption())
+    |> process(repeal_revocation())
+    # |> process("Transitional Arrangement", transitional_arrangement())
+    |> process(charge_fee())
+    |> process(offence())
+    |> process(enforcement_prosecution())
+    |> process(defence_appeal())
+    |> elem(1)
+  end
+
   def workflow(text, actors) do
     {text, {[], duty_types}} =
       {text, {[], []}}
@@ -10,42 +45,32 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     {text, {dutyholders, duty_types}} =
       if actors != [] do
         {regex, lib} = _governed = DutyholderLib.custom_dutyholders(actors, :governed)
-        {gvt_regex, gvt_lib} = _government = DutyholderLib.custom_dutyholders(actors, :government)
+
+        {gvt_regex, _gvt_lib} =
+          _government = DutyholderLib.custom_dutyholders(actors, :government)
 
         {text, {[], duty_types}}
         |> pre_process(blacklist(regex))
-        |> process_dutyholder(responsibility(gvt_regex), gvt_lib)
-        |> process(power_conferred(gvt_regex))
-        |> process_dutyholder(discretionary(gvt_regex), gvt_lib)
         |> process_dutyholder(right(regex), lib)
         |> process_dutyholder(duty(regex, gvt_regex), lib)
       else
         {text, {[], duty_types}}
       end
 
-    {_text, {dutyholders, duty_types}} =
-      {text, {dutyholders, duty_types}}
-      # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
-      |> process(extent())
-      |> process(enaction_citation_commencement())
-      |> process(interpretation_definition())
-      |> process(application_scope())
-      |> process(exemption())
-      |> process(repeal_revocation())
-      # |> process("Transitional Arrangement", transitional_arrangement())
-      |> process(charge_fee())
-      |> process(offence())
-      |> process(enforcement_prosecution())
-      |> process(defence_appeal())
-
-    if duty_types == [],
-      do: {dutyholders, ["Process, Rule, Constraint, Condition"]},
-      else:
-        duty_types
-        |> Enum.filter(fn x -> x != nil end)
-        # |> Enum.reverse()
-        |> Enum.uniq()
-        |> (&{dutyholders, &1}).()
+    {text, {dutyholders, duty_types}}
+    # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
+    |> process(extent())
+    |> process(enaction_citation_commencement())
+    |> process(interpretation_definition())
+    |> process(application_scope())
+    |> process(exemption())
+    |> process(repeal_revocation())
+    # |> process("Transitional Arrangement", transitional_arrangement())
+    |> process(charge_fee())
+    |> process(offence())
+    |> process(enforcement_prosecution())
+    |> process(defence_appeal())
+    |> elem(1)
   end
 
   def pre_process({text, collector}, blacklist) do
@@ -106,11 +131,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   end
 
   @doc """
-  Function to tag sub-sections that impose a duty on persons other than government, regulators and agencies
-  The function is a repository of phrases used to assign these duties.
-  The phrases are joined together to form a valid regular expression.
+  Function to tag sub-sections that impose a duty on persons other than
+  government, regulators and agencies The function is a repository of phrases
+  used to assign these duties. The phrases are joined together to form a valid
+  regular expression.
 
-  params.  Dutyholder should accommodate intial capitalisation eg [Pp]erson, [Ee]mployer
+  params.  Dutyholder should accommodate intial capitalisation eg [Pp]erson,
+  [Ee]mployer
   """
   def duty(governed, government) do
     [
@@ -118,7 +145,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       {"#{governed}shall not be (?:guilty|liable)", "Defence, Appeal"},
       {"#{governed}[\\s\\S]*?it shall (?:also )?.*?be a defence", "Defence, Appeal"},
       {"[Nn]o#{governed}shall", "Duty"},
-      {"(?:[Aa]n?|[Tt]he)#{governed}.*?must", "Duty"},
+      {"(?:[Aa]n?|[Tt]he|Each)#{governed}.*?must", "Duty"},
       {"(?:[Aa]n?|[Tt]he)#{governed}.*?shall", "Duty"},
       {"#{governed}(?:shall notify|shall furnish the authority)", "Duty"},
       {"shall be the duty of any#{governed}", "Duty"},

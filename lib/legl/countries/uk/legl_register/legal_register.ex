@@ -99,10 +99,10 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
           #
           Dutyholder: list(),
-          Dutyholder_Gvt: list(),
-          Duty_Actor: list(),
-          Duty_Actor_Gvt: list(),
-          Duty_Type: list(),
+          "Dutyholder Gvt": list(),
+          "Duty Actor": list(),
+          "Duty Actor Gvt": list(),
+          "Duty Type": list(),
           POPIMAR: list(),
 
           # Descriptions ordered using model or article
@@ -116,7 +116,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           article_popimar: String.t()
         }
 
-  defstruct ~w[
+  @struct ~w[
     Acronym
 
     record_id
@@ -204,10 +204,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     popimar
 
     Dutyholder
-    Dutyholder_Gvt
-    Duty_Actor
-    Duty_Actor_Gvt
-    Duty_Type
+
     POPIMAR
 
     dutyholder_article
@@ -219,4 +216,12 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     popimar_article
     article_popimar
   ]a
+
+  defstruct @struct ++
+              [
+                :"Dutyholder Gvt",
+                :"Duty Actor",
+                :"Duty Actor Gvt",
+                :"Duty Type"
+              ]
 end

@@ -18,52 +18,30 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
       "Number",
       "Section||Regulation"
     ],
+    view: "",
     name: "",
     filesave?: true,
     patch?: false,
-    source: :web,
+    source: :file,
     part: "",
     chapter: "",
     section: "",
-    workflow: [actor: true, dutyType: true, popimar: true, aggregate: true],
     # Set to :false for ID with this pattern UK_ukpga_1949_Geo6/12-13-14/74_CPA
     old_id?: false
   }
 
   def set_workflow_opts(opts) do
-    opts =
-      case Keyword.has_key?(opts, :workflow) do
-        true ->
-          Keyword.put(
-            opts,
-            :workflow,
-            Keyword.merge(@default_opts.workflow, Keyword.get(opts, :workflow))
-          )
-
-        _ ->
-          opts
-      end
-
     opts = Enum.into(opts, @default_opts)
-
-    opts = Map.put(opts, :workflow, Enum.into(opts.workflow, %{}))
 
     opts = LAO.base_name(opts)
 
     opts = LAO.table_id(opts)
 
-    opts = LAO.name(opts)
+    opts = if opts.source == :web, do: LAO.name(opts), else: opts
 
     opts = Map.put(opts, :at_id, opts.name)
 
-    opts =
-      Enum.reduce(opts.workflow, opts.fields, fn
-        {_k, true}, acc -> acc
-        {:actor, false}, acc -> ["Duty Actor" | acc]
-        {:dutyType, false}, acc -> ["Duty Type" | acc]
-        {:popimar, false}, acc -> ["POPIMAR" | acc]
-      end)
-      |> (&Map.put(opts, :fields, &1)).()
+    opts = taxa_workflow(opts)
 
     opts =
       Map.put(
@@ -72,11 +50,68 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
         formula(opts)
       )
 
-    IO.inspect(opts, label: "OPTIONS")
+    label =
+      if Map.has_key?(opts, :opts_label) do
+        opts.opts_label
+      else
+        "OPTIONS"
+      end
+
+    IO.inspect(opts, label: label)
   end
 
   def patch(opts) do
     Enum.into(opts, @default_opts)
+  end
+
+  @duty_actor &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder.process/1
+  @duty_type &Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.process/1
+  @popimar &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar.process/1
+
+  @dutyholder_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.dutyholder_aggregate/1
+  @duty_actor_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_actor_aggregate/1
+  @duty_type_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_type_aggregate/1
+  @popimar_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.popimar_aggregate/1
+
+  @workflow_choices [
+    Update: [
+      @duty_actor,
+      @duty_type,
+      @popimar,
+      @dutyholder_aggregate,
+      @duty_actor_aggregate,
+      @duty_type_aggregate,
+      @popimar_aggregate
+    ],
+    "Duty Actor": [@duty_actor],
+    "Duty Type & Dutyholder": [@duty_type],
+    POPIMAR: [@duty_type, @popimar, @popimar_aggregate],
+    Aggregates: [
+      @dutyholder_aggregate,
+      @duty_actor_aggregate,
+      @duty_type_aggregate,
+      @popimar_aggregate
+    ]
+  ]
+
+  def taxa_workflow(opts) do
+    case ExPrompt.choose(
+           "LAT Taxa Workflow",
+           Enum.map(@workflow_choices, fn {k, _} -> k end)
+         ) do
+      -1 ->
+        :ok
+
+      n ->
+        opts
+        |> Map.put(
+          :taxa_workflow,
+          Enum.map(@workflow_choices, fn {_k, v} -> v end)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+        )
+    end
   end
 
   defp formula(opts) do

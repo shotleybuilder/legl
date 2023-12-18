@@ -126,6 +126,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
       :extent -> @metadata ++ @enact ++ @affect ++ @models ++ @default
       :enact -> @metadata ++ @extent ++ @affect ++ @models ++ @default
       :affect -> @metadata ++ @extent ++ @enact ++ @models ++ @default
+      :taxa -> @metadata ++ @extent ++ @enact ++ @affect ++ @default
     end
   end
 

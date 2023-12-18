@@ -236,29 +236,21 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   @extent &Legl.Countries.Uk.LeglRegister.Extent.set_extent/1
   @enact &Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws/2
   @affect &Legl.Countries.Uk.LeglRegister.Amend.workflow/2
+  @taxa &Legl.Countries.Uk.LeglRegister.Taxa.set_taxa/2
 
   @workflow_choices [
     "New (w/Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @enact, @affect],
-    "New (w/Enact w/oMD)": [
-      @year,
-      @name,
-      @md,
-      @tags,
-      @type_law,
-      @type_class,
-      @extent,
-      @enact,
-      @affect
-    ],
+    "New (w/Enact w/oMD)": [@year, @name, @tags, @type_law, @type_class, @extent, @enact, @affect],
     "Update (w/o Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @affect],
     "Changes (w/o Extent & Enact)": [@year, @name, @md, @affect],
     Metadata: [@year, @name, @md, @type_law, @type_class],
     Extent: [@name, @extent],
     Enact: [@enact],
-    Affect: [@affect]
+    Affect: [@affect],
+    Taxa: [@taxa]
   ]
 
-  @drop_fields_params [:new, :new, :update, :changes, :metadata, :extent, :enact, :affect]
+  @drop_fields_params [:new, :new, :update, :changes, :metadata, :extent, :enact, :affect, :taxa]
 
   @view ~w[
     viwMy1UQEZO1x62cK
@@ -267,6 +259,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     viwMy1UQEZO1x62cK
     viwt9PuFLhUpyFEv1
     viw1XkiLMnNB2xc6A
+    viwMy1UQEZO1x62cK
     viwMy1UQEZO1x62cK
     viwMy1UQEZO1x62cK
   ]

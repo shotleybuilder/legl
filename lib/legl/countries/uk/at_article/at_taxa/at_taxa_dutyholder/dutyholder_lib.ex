@@ -17,18 +17,37 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     |> Enum.each(fn x -> IO.puts(x) end)
   end
 
+  @spec workflow(binary()) :: []
   def workflow(""), do: []
 
+  @spec workflow(binary(), :actor) :: list()
   def workflow(text, :actor) do
-    {_, classes} =
-      {text, []}
-      |> blacklister(blacklist())
-      |> process(@dutyholder_library, true)
-
-    classes
+    {text, []}
+    |> blacklister(blacklist())
+    |> process(@dutyholder_library, true)
+    |> elem(1)
     |> Enum.reverse()
   end
 
+  @spec workflow(binary(), :"Duty Actor") :: list()
+  def workflow(text, :"Duty Actor") do
+    {text, []}
+    |> blacklister(blacklist())
+    |> process(@governed, true)
+    |> elem(1)
+    |> Enum.reverse()
+  end
+
+  @spec workflow(binary(), :"Duty Actor Gvt") :: list()
+  def workflow(text, :"Duty Actor Gvt") do
+    {text, []}
+    |> blacklister(blacklist())
+    |> process(@government, true)
+    |> elem(1)
+    |> Enum.reverse()
+  end
+
+  @spec workflow(binary(), list()) :: list()
   def workflow(text, library) when is_list(library) do
     {text, []}
     |> process(library, true)
@@ -43,8 +62,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     |> (&{&1, collector}).()
   end
 
+  @spec process({binary(), []}, list(), boolean()) :: {binary(), list()}
   defp process(collector, library, rm?) do
-    library = process_library(library)
+    # library = process_library(library)
 
     Enum.reduce(library, collector, fn {regex, class}, {text, classes} = acc ->
       # if class == "Gvt: Authority", do: IO.puts("#{regex}")
@@ -118,33 +138,5 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     end)
     |> Enum.join("|")
     |> (fn x -> ~s/(?:#{x})/ end).()
-  end
-
-  @doc """
-  Function pre-process a library to the correct shape to be consumed by
-  process/2 eg [ {"[ “][Ii]nvestors[ \\.,:;”]", "Investor"}, {"[ “][Oo]wner[
-  \\.,:;”]", "Owner"}, {"[ “][Ll]essee[ \\.,:;”]", "Lessee"}, {"(?:[ “][Pp]erson
-  who is in occupation[ \\.,:;”]|[ “][Oo]ccupiers?[ \\.,:;”])", "Occupier"}, {"[
-  “][Ee]mployers[ \\.,:;”]", "Employer"}, {"(?:[ “][Ee]nterprises?[ \\.,:;”]|[
-  “][Bb]usinesse?s?[ \\.,:;”]|[ “][Cc]ompany?i?e?s?[ \\.,:;”])", "Company"}, {"[
-  “][Oo]rganisations?[ \\.,:;”]", "Organisation"}]
-  """
-
-  def process_library(library) do
-    library
-    |> Enum.reduce([], fn
-      {k, v}, acc when is_binary(v) ->
-        [{"[ “]#{v}[ \\.,:;”\\]]", Atom.to_string(k) |> Legl.Utility.upcaseFirst()} | acc]
-
-      {k, v}, acc when is_list(v) ->
-        Enum.reduce(v, [], fn x, accum ->
-          ["[ “]#{x}[ \\.,:;”\\]]" | accum]
-        end)
-        |> Enum.join("|")
-        |> (fn x -> ~s/(?:#{x})/ end).()
-        |> (&{&1, Atom.to_string(k) |> Legl.Utility.upcaseFirst()}).()
-        |> (&[&1 | acc]).()
-    end)
-    |> Enum.reverse()
   end
 end

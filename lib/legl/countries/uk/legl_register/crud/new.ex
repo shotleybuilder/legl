@@ -14,7 +14,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
   alias Legl.Countries.Uk.LeglRegister.New.Filters
   alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
-  alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
   alias Legl.Countries.Uk.Metadata, as: MD
   alias Legl.Countries.Uk.Metadata
   alias Legl.Countries.Uk.LeglRegister.Extent
@@ -22,7 +21,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   alias Legl.Countries.Uk.LeglRegister.Amend
   alias Legl.Countries.Uk.LeglRegister.IdField
   alias Legl.Countries.Uk.LeglRegister.PublicationDate
-  # alias Legl.Countries.Uk.LeglRegister.RepealRevoke.RepealRevoke, as: RR
   alias Legl.Countries.Uk.LeglRegister.Tags
   alias Legl.Countries.Uk.LeglRegister.TypeClass
   alias Legl.Countries.Uk.LeglRegister.Year

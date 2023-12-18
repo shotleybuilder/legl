@@ -58,10 +58,10 @@ defmodule UK do
   @api [
     "MENU: Update": {:update},
     "MENU: Taxa": {:taxa},
+    "PATCH Single Law using 'Name'": {Update, :api_update_single_name},
     UPDATE: {Update, :api_update, [[csv?: false, workflow: :update]]},
     "POST or PATCH Single Law using :type_code, :number, :year":
       {CreateFromInput, :api_create_update_single_record, [[patch?: true, csv?: false]]},
-    "PATCH Single Law using 'Name'": {Update, :api_update_single_name},
     "***NEW PUBLISHED LAWS WORKFLOW***": nil,
     "GET Newly Published Laws from gov.uk": {New, :api_get_newly_published_laws},
     "CATEGORISE New Laws from File": {CreateFromFile, :api_read_new_laws_and_categorise},
@@ -176,7 +176,8 @@ defmodule UK do
   end
 
   @taxa [
-          {Taxa, :workflow, [[]]}
+          {Taxa, :workflow, [[]]},
+          {Taxa, :api_update_lat_taxa, [[]]}
         ]
         |> Enum.with_index()
         |> Enum.into(%{}, fn {k, v} -> {v, k} end)
@@ -184,7 +185,7 @@ defmodule UK do
   def taxa do
     case ExPrompt.choose(
            "Taxa Choices",
-           ~W/Workflow/
+           ~W/Workflow Update/
          ) do
       -1 ->
         :ok

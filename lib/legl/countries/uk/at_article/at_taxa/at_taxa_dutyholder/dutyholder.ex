@@ -6,6 +6,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
   """
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
+  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib, as: Lib
 
   @at_id "UK_ukpga_1990_43_EPA"
@@ -21,6 +22,44 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
 
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/at_taxa_dutyholder/dutyholder.json]
   @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/at_taxa_dutyholder/records_results.json]
+
+  @type records :: list(%AtTaxa{})
+
+  @process_opts %{filesave?: true, path: @results_path}
+
+  def process() do
+    json = @path |> Path.absname() |> File.read!()
+    %{"records" => records} = Jason.decode!(json)
+    process(records)
+  end
+
+  @spec process(records()) :: {:ok, records()}
+  def process(records) when is_list(records) do
+    opts = @process_opts
+
+    records = process_records(records)
+
+    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, opts.path)
+    IO.puts("Duty Actor complete")
+    {:ok, records}
+  end
+
+  @spec process_records(records()) :: records()
+  defp process_records(records) when is_list(records) do
+    records
+    |> Enum.map(&process_record(&1, :"Duty Actor"))
+    |> Enum.map(&process_record(&1, :"Duty Actor Gvt"))
+    |> Enum.reverse()
+  end
+
+  defp process_record(%AtTaxa{Text: text} = record, field)
+       when is_struct(record) and text not in ["", nil] do
+    Map.put(
+      record,
+      field,
+      Lib.workflow(text, field)
+    )
+  end
 
   def workflow(opts \\ []) do
     with(
@@ -78,49 +117,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
       {:error, error} ->
         {:error, error}
     end
-  end
-
-  @process_opts %{filesave?: false, path: @results_path}
-
-  def process() do
-    json = @path |> Path.absname() |> File.read!()
-    %{"records" => records} = Jason.decode!(json)
-    process(records)
-  end
-
-  def process(records, opts \\ [])
-
-  def process(records, %{workflow: %{actor: false}} = _opts), do: {:ok, records}
-
-  def process(records, opts) do
-    opts = Enum.into(opts, @process_opts)
-
-    records =
-      Enum.reduce(records, [], fn record, acc ->
-        text =
-          case record.aText do
-            nil -> record."Text"
-            _ -> record.aText
-          end
-
-        Map.put(
-          record,
-          opts.field,
-          Lib.workflow(text, :actor)
-        )
-        |> (&[&1 | acc]).()
-      end)
-      |> Enum.reverse()
-
-    if opts.filesave? == true, do: save_results_as_json(records, opts.path)
-
-    {:ok, records}
-  end
-
-  def save_results_as_json(records_results, path) do
-    results_json = Jason.encode!(records_results)
-
-    Legl.Utility.save_at_records_to_file(~s/#{results_json}/, path)
   end
 
   @doc """

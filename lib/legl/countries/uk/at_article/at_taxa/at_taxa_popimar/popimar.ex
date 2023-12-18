@@ -7,6 +7,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
   alias Legl.Services.Airtable.AtBasesTables
   # alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.Records
+  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib, as: Lib
 
   @popimar_taxa [
@@ -43,6 +44,70 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
 
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/at_taxa_popimar/popimar.json]
   @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/at_taxa_popimar/records_results.json]
+
+  @process_opts %{filesave?: false, field: :POPIMAR, path: @results_path}
+
+  @duty_types [
+    "Duty",
+    "Right",
+    "Responsibility",
+    "Discretionary",
+    "Process, Rule, Constraint, Condition"
+  ]
+
+  def process() do
+    json = @path |> Path.absname() |> File.read!()
+    %{"records" => records} = Jason.decode!(json)
+    process(records)
+  end
+
+  def process(records) do
+    opts = @process_opts
+
+    records =
+      Enum.map(records, &Map.put(&1, :POPIMAR, process_record(&1)))
+      |> Enum.reverse()
+
+    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, opts.path)
+    IO.puts("POPIMAR complete")
+    {:ok, records}
+  end
+
+  @spec process_record(%AtTaxa{}) :: %AtTaxa{}
+  defp process_record(%AtTaxa{Text: text, Record_Type: rt, "Duty Type": dt})
+       when text not in ["", nil] and dt in @duty_types do
+    popimar_type?({rt, text})
+  end
+
+  defp process_record(_), do: []
+
+  @doc """
+  Function returns all the members of the duty types taxonomy that match the
+  text. Duty Types is a multi-select field and therefore can support multiple
+  entries, but this comes at the cost time to parse
+  """
+  def popimar_type?({["section"], text}) do
+    case String.contains?(text, "\n") do
+      true -> popimar_type?({nil, text})
+      false -> []
+    end
+  end
+
+  def popimar_type?({_, text}) do
+    Enum.reduce(@popimar_taxa, [], fn class, acc ->
+      function = duty_type_taxa_functions(class)
+      regex = Lib.regex(function)
+
+      if regex != nil do
+        case Regex.match?(regex, text) do
+          true -> acc ++ [class]
+          false -> acc
+        end
+      else
+        acc
+      end
+    end)
+  end
 
   def workflow(opts \\ []) do
     with(
@@ -107,91 +172,6 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
       {:error, error} ->
         {:error, error}
     end
-  end
-
-  @process_opts %{filesave?: false, field: :POPIMAR, path: @results_path}
-
-  def process() do
-    json = @path |> Path.absname() |> File.read!()
-    %{"records" => records} = Jason.decode!(json)
-    process(records)
-  end
-
-  def process(records, opts \\ [])
-
-  def process(records, %{workflow: %{popimar: false}} = _opts), do: {:ok, records}
-
-  def process(records, opts) do
-    opts = Enum.into(opts, @process_opts)
-    # IO.inspect(records)
-
-    records =
-      Enum.reduce(records, [], fn record, acc ->
-        text =
-          case record.aText do
-            nil -> record."Text"
-            _ -> record.aText
-          end
-
-        classes =
-          case Enum.any?(Map.get(record, :"Duty Type"), fn x ->
-                 Enum.member?(
-                   [
-                     "Duty",
-                     "Right",
-                     "Responsibility",
-                     "Discretionary",
-                     "Process, Rule, Constraint, Condition"
-                   ],
-                   x
-                 )
-               end) do
-            true ->
-              popimar_type?({Map.get(record, :Record_Type), text})
-
-            _ ->
-              []
-          end
-
-        [Map.put(record, opts.field, classes) | acc]
-      end)
-      |> Enum.reverse()
-
-    if opts.filesave? == true, do: save_results_as_json(records, opts.path)
-
-    {:ok, records}
-  end
-
-  def save_results_as_json(records, path) do
-    Legl.Utility.save_at_records_to_file(~s/#{Jason.encode!(records)}/, path)
-  end
-
-  @doc """
-  Function returns all the members of the duty types taxonomy that match the
-  text. Duty Types is a multi-select field and therefore can support multiple
-  entries, but this comes at the cost time to parse
-  """
-  def popimar_type?({["section"], text}) do
-    case String.contains?(text, "\n") do
-      true -> popimar_type?({nil, text})
-      false -> []
-    end
-  end
-
-  def popimar_type?({_, text}) do
-    Enum.reduce(@popimar_taxa, [], fn class, acc ->
-      function = duty_type_taxa_functions(class)
-      regex = Lib.regex(function)
-
-      if regex != nil do
-        case Regex.match?(regex, text) do
-          true -> acc ++ [class]
-          false -> acc
-        end
-      else
-        acc
-      end
-    end)
   end
 
   @doc """
