@@ -35,6 +35,15 @@ defmodule Legl.Utility do
     |> Legl.Utility.write_to_csv(at_csv)
   end
 
+  def quote_list(list) when is_list(list) do
+    Enum.map(list, fn string ->
+      cond do
+        String.contains?(string, ",") -> ~s/"#{string}"/
+        true -> string
+      end
+    end)
+  end
+
   def csv_quote_enclosure(list) when is_list(list) do
     Enum.map(list, &csv_quote_enclosure/1)
   end

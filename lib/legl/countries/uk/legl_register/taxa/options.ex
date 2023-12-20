@@ -28,6 +28,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
       "Record_Type",
       "Text",
       "Record_ID",
+      "Heading",
       "Section||Regulation"
     ],
     opts_label: "LAT OPTIONS"

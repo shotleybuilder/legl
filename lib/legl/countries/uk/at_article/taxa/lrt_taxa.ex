@@ -33,13 +33,23 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     result
   end
 
-  def leg_gov_uk(
-        %{type_code: [tc], Year: [y], Number: [number], "Section||Regulation": sr} = _record
-      ) do
+  def leg_gov_uk(%{type_code: [tc], Year: [y], Number: [number], Heading: h} = _record) do
     case tc do
       "uksi" ->
-        ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/regulation/#{sr}]
+        ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/regulation/#{h}]
     end
+  end
+
+  @spec article_taxa(tuple()) :: binary()
+  def article_taxa({k, v}) do
+    v =
+      v
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.sort()
+      |> Enum.join(", ")
+
+    ~s/#{k}📌[#{v}]/
   end
 
   defmodule DutyActor do
@@ -55,8 +65,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
         |> Enum.sort()
 
       %{
-        duty_actor: Enum.join(result, ","),
-        Duty_Actor: Legl.Utility.csv_quote_enclosure(result)
+        duty_actor: Legl.Utility.quote_list(result) |> Enum.join(","),
+        "Duty Actor": result
       }
     end
 
@@ -82,9 +92,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
       |> Enum.group_by(& &1.url, & &1."Duty Actor Aggregate")
       |> Enum.sort()
-      |> Enum.map(fn {k, v} ->
-        ~s/#{k}📌[#{List.flatten(v) |> Enum.sort() |> Enum.join(", ")}]/
-      end)
+      |> Enum.map(&LRTT.article_taxa/1)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :article_duty_actor, &1)).()
 
@@ -105,8 +113,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
         |> Enum.sort()
 
       %{
-        duty_actor_gvt: Enum.join(result, ","),
-        "Duty Actor Gvt": Legl.Utility.csv_quote_enclosure(result)
+        duty_actor_gvt: Legl.Utility.quote_list(result) |> Enum.join(","),
+        "Duty Actor Gvt": result
       }
     end
 
@@ -132,9 +140,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
       |> Enum.group_by(& &1.url, & &1."Duty Actor Gvt Aggregate")
       |> Enum.sort()
-      |> Enum.map(fn {k, v} ->
-        ~s/#{k}📌[#{List.flatten(v) |> Enum.sort() |> Enum.join(", ")}]/
-      end)
+      |> Enum.map(&LRTT.article_taxa/1)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :article_duty_actor_gvt, &1)).()
 
@@ -155,8 +161,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
         |> Enum.sort()
 
       %{
-        duty_holder: Enum.join(result, ","),
-        Dutyholder: Legl.Utility.csv_quote_enclosure(result)
+        duty_holder: Legl.Utility.quote_list(result) |> Enum.join(","),
+        Dutyholder: result
       }
     end
 
@@ -168,7 +174,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       end)
       |> Enum.sort()
       |> Enum.map(fn {k, v} ->
-        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.join("📌")}/
+        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.uniq() |> Enum.join("📌")}/
       end)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :dutyholder_article, &1)).()
@@ -182,9 +188,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
       |> Enum.group_by(& &1.url, & &1."Dutyholder Aggregate")
       |> Enum.sort()
-      |> Enum.map(fn {k, v} ->
-        ~s/#{k}📌[#{List.flatten(v) |> Enum.uniq() |> Enum.sort() |> Enum.join(", ")}]/
-      end)
+      |> Enum.map(&LRTT.article_taxa/1)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :article_dutyholder, &1)).()
 
@@ -205,8 +209,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
         |> Enum.sort()
 
       %{
-        duty_holder_gvt: Enum.join(result, ","),
-        "Dutyholder Gvt": Legl.Utility.csv_quote_enclosure(result)
+        duty_holder_gvt: Legl.Utility.quote_list(result) |> Enum.join(","),
+        "Dutyholder Gvt": result
       }
     end
 
@@ -218,7 +222,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       end)
       |> Enum.sort()
       |> Enum.map(fn {k, v} ->
-        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.join("📌")}/
+        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.uniq() |> Enum.join("📌")}/
       end)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :dutyholder_gvt_article, &1)).()
@@ -232,9 +236,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
       |> Enum.group_by(& &1.url, & &1."Dutyholder Gvt Aggregate")
       |> Enum.sort()
-      |> Enum.map(fn {k, v} ->
-        ~s/#{k}📌[#{List.flatten(v) |> Enum.sort() |> Enum.join(", ")}]/
-      end)
+      |> Enum.map(&LRTT.article_taxa/1)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :article_dutyholder_gvt, &1)).()
 
@@ -255,8 +257,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
         |> Enum.sort()
 
       %{
-        duty_type: Enum.join(result, ","),
-        Duty_Type: Legl.Utility.csv_quote_enclosure(result)
+        duty_type: Legl.Utility.quote_list(result) |> Enum.join(","),
+        "Duty Type": result
       }
     end
 
@@ -268,7 +270,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       end)
       |> Enum.sort()
       |> Enum.map(fn {k, v} ->
-        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.join("📌")}/
+        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.uniq() |> Enum.join("📌")}/
       end)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :duty_type_article, &1)).()
@@ -282,9 +284,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
       |> Enum.group_by(& &1.url, & &1."Duty Type Aggregate")
       |> Enum.sort()
-      |> Enum.map(fn {k, v} ->
-        ~s/#{k}📌[#{List.flatten(v) |> Enum.sort() |> Enum.join(", ")}]/
-      end)
+      |> Enum.map(&LRTT.article_taxa/1)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :article_duty_type, &1)).()
 
@@ -305,8 +305,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
         |> Enum.sort()
 
       %{
-        popimar_: Enum.join(result, ","),
-        POPIMAR: Legl.Utility.csv_quote_enclosure(result)
+        popimar_: Legl.Utility.quote_list(result) |> Enum.join(","),
+        POPIMAR: result
       }
     end
 
@@ -318,7 +318,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       end)
       |> Enum.sort()
       |> Enum.map(fn {k, v} ->
-        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.join("📌")}/
+        ~s/[#{Enum.join(k, ", ")}]📌#{Enum.sort(v) |> Enum.uniq() |> Enum.join("📌")}/
       end)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :popimar_article, &1)).()
@@ -332,9 +332,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
       |> Enum.group_by(& &1.url, & &1."POPIMAR Aggregate")
       |> Enum.sort()
-      |> Enum.map(fn {k, v} ->
-        ~s/#{k}📌[#{List.flatten(v) |> Enum.sort() |> Enum.join(", ")}]/
-      end)
+      |> Enum.map(&LRTT.article_taxa/1)
       |> Enum.join("📌📌")
       |> (&Map.put(%{}, :article_popimar, &1)).()
 

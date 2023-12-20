@@ -34,7 +34,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
           type_code: String.t(),
           Year: integer(),
           Number: String.t(),
-          "Section||Regulation": String.t()
+          "Section||Regulation": String.t(),
+          Heading: String.t()
         }
 
   defstruct ID: "",
@@ -45,6 +46,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
             Year: nil,
             Number: nil,
             "Section||Regulation": nil,
+            Heading: nil,
             #
             Dutyholder: [],
             "Dutyholder Gvt": [],
