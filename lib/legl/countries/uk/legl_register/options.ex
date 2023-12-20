@@ -68,15 +68,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
+  @name "UK_MHOR_uksi_1992_2793"
+
   def name(%{name: n} = opts) when n in ["", nil] do
-    Map.put(
-      opts,
-      :name,
-      ExPrompt.string(~s/Name ("")/)
-    )
+    name = if @name != "", do: @name, else: ExPrompt.string(~s/Name ("")/)
+    Map.put(opts, :name, name)
   end
 
   def name(%{name: n} = opts) when is_binary(n), do: opts
+
+  def name(opts), do: name(%{opts | name: ""})
 
   @spec view(opts(), String.t()) :: opts()
   def view(opts, view) when is_binary(view), do: Map.put(opts, :view, view)
