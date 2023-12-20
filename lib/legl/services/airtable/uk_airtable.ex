@@ -22,6 +22,7 @@ defmodule Legl.Services.Airtable.UkAirtable do
     |> make_records_into_legal_register_structs()
   end
 
+  @spec get_legal_article_taxa_records(opts()) :: list(LegalRegister.legal_register())
   def get_legal_article_taxa_records(opts) do
     get_records_from_at(opts)
     |> elem(1)
@@ -49,7 +50,7 @@ defmodule Legl.Services.Airtable.UkAirtable do
       # IO.inspect(params),
       {:ok, {_, recordset}} <- Records.get_records({[], []}, params)
     ) do
-      IO.puts("#{Enum.count(recordset)} Records returned from Airtable")
+      IO.puts("\n#{Enum.count(recordset)} Records returned from Airtable")
       {:ok, recordset}
     else
       {:error, error} ->

@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
+defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
   @moduledoc """
   Functions to ETL airtable 'Article' table records and code the duty type field
 
@@ -7,7 +7,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib, as: Lib
+  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib
 
   @at_id "UK_ukpga_1990_43_EPA"
 
@@ -20,8 +20,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
     filesave?: true
   }
 
-  @path ~s[lib/legl/countries/uk/at_article/at_taxa/at_taxa_dutyholder/dutyholder.json]
-  @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/at_taxa_dutyholder/records_results.json]
+  @path ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/duty_actor.json]
+  @results_path ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/duty_actor_results.json]
 
   @type records :: list(%AtTaxa{})
 
@@ -57,7 +57,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder do
     Map.put(
       record,
       field,
-      Lib.workflow(text, field)
+      DutyholderLib.workflow(text, field)
     )
   end
 

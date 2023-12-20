@@ -46,15 +46,20 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   end
 
   def api_update_single_name_options(opts) do
+    IO.puts(
+      ~s/_____\nSetting Options from [CRUD.Options.api_update_single_name_options]\n:update_workflow, :name, :view, :patch?, :formula, :fields/
+    )
+
     Enum.into(opts, @default_opts)
+    |> LRO.update_workflow()
     |> LRO.base_name()
     |> LRO.base_table_id()
-    # |> LRO.workflow()
     |> LRO.name()
     |> LRO.view()
-    # |> LRO.patch?()
+    |> LRO.patch?()
     |> LRO.formula_name()
     |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year])
+    |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end
 
   def from_file_set_up(opts) do
@@ -75,15 +80,28 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   end
 
   def api_update_options(opts) do
+    opts = Enum.into(opts, @default_opts)
+
+    IO.puts(
+      ~s/_____\nSetting Options from __LegalRegister.Options__\n:update_workflow, :drop_fields, :view, :type_class, :type_code, :family, :patch?/
+    )
+
     opts =
-      Enum.into(opts, @default_opts)
+      opts
+      # sets :update_workflow, :drop_fields, :view
+      |> LRO.update_workflow()
       |> LRO.base_name()
       |> LRO.base_table_id()
       |> LRO.type_class()
       |> LRO.type_code()
       |> LRO.family()
-      |> (&Map.put(&1, :view, api_update_options_view(&1))).()
       |> LRO.patch?()
+
+    IO.puts(~s/______\nSettng Options from __CRUD.Options__\n:formula, :fields/)
+
+    opts =
+      opts
+      # |> (&Map.put(&1, :view, api_update_options_view(&1))).()
       |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year])
 
     # |> drop_fields()
@@ -95,6 +113,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> LRO.formula_family(opts)
 
     Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
+    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
   # VS_CODE_METADATA

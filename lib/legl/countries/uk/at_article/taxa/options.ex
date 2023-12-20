@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
+defmodule Legl.Countries.Uk.Article.Taxa.Options do
   @moduledoc """
   Functions to set the options for all taxa modules and functions
   """
@@ -20,9 +20,12 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
     ],
     view: "",
     name: "",
+    type_code: "",
+    Year: nil,
+    Number: "",
     filesave?: true,
     patch?: false,
-    source: :file,
+    source: :web,
     part: "",
     chapter: "",
     section: "",
@@ -31,12 +34,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
   }
 
   def set_workflow_opts(opts) do
-    opts = Enum.into(opts, @default_opts)
+    opts =
+      opts
+      |> Enum.into(@default_opts)
+      |> LAO.base_name()
+      |> LAO.table_id()
 
-    opts = LAO.base_name(opts)
-
-    opts = LAO.table_id(opts)
-
+    # uses opt.name if exists or prompts if missing
     opts = if opts.source == :web, do: LAO.name(opts), else: opts
 
     opts = Map.put(opts, :at_id, opts.name)
@@ -64,12 +68,14 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
     Enum.into(opts, @default_opts)
   end
 
-  @duty_actor &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.Dutyholder.process/1
+  @duty_actor &Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor.process/1
   @duty_type &Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.process/1
   @popimar &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar.process/1
 
   @dutyholder_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.dutyholder_aggregate/1
+  @dutyholder_gvt_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.dutyholder_gvt_aggregate/1
   @duty_actor_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_actor_aggregate/1
+  @duty_actor_gvt_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_actor_gvt_aggregate/1
   @duty_type_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_type_aggregate/1
   @popimar_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.popimar_aggregate/1
 
@@ -79,7 +85,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
       @duty_type,
       @popimar,
       @dutyholder_aggregate,
+      @dutyholder_gvt_aggregate,
       @duty_actor_aggregate,
+      @duty_actor_gvt_aggregate,
       @duty_type_aggregate,
       @popimar_aggregate
     ],
@@ -133,9 +141,20 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.Options do
     formula = formula ++ [~s/OR(#{record_type})/]
 
     formula =
-      case opts.at_id do
-        "" -> formula
-        _ -> formula ++ [~s/{UK}="#{opts.at_id}"/]
+      cond do
+        Regex.match?(~r/[a-z]+/, opts.type_code) and is_integer(opts."Year") and
+            Regex.match?(~r/\d+/, opts."Number") ->
+          [
+            ~s/{type_code}="#{opts.type_code}"/,
+            ~s/{Year}="#{opts."Year"}"/,
+            ~s/{Number}="#{opts."Number"}"/ | formula
+          ]
+
+        opts.at_id == "" ->
+          formula
+
+        true ->
+          [~s/{UK}="#{opts.at_id}"/ | formula]
       end
 
     formula =

@@ -10,6 +10,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   @government government()
   @governed governed()
 
+  @type actor :: atom()
+  @type regex :: binary()
+  @type library :: keyword({actor(), regex()})
+
   def print_dutyholders_to_console() do
     classes = @dutyholder_library
 
@@ -35,7 +39,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     |> blacklister(blacklist())
     |> process(@governed, true)
     |> elem(1)
-    |> Enum.reverse()
+    |> Enum.sort()
   end
 
   @spec workflow(binary(), :"Duty Actor Gvt") :: list()
@@ -44,7 +48,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     |> blacklister(blacklist())
     |> process(@government, true)
     |> elem(1)
-    |> Enum.reverse()
+    |> Enum.sort()
   end
 
   @spec workflow(binary(), list()) :: list()
@@ -52,7 +56,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     {text, []}
     |> process(library, true)
     |> elem(1)
-    |> Enum.reverse()
+    |> Enum.sort()
   end
 
   defp blacklister({text, collector}, blacklist) do
@@ -62,21 +66,23 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     |> (&{&1, collector}).()
   end
 
-  @spec process({binary(), []}, list(), boolean()) :: {binary(), list()}
-  defp process(collector, library, rm?) do
+  @spec process({binary(), []}, library(), boolean()) :: {binary(), list()}
+  def process(collector, library, rm?) do
     # library = process_library(library)
 
-    Enum.reduce(library, collector, fn {regex, class}, {text, classes} = acc ->
+    Enum.reduce(library, collector, fn {actor, regex}, {text, actors} = acc ->
       # if class == "Gvt: Authority", do: IO.puts("#{regex}")
 
       case Regex.match?(~r/#{regex}/, text) do
         true ->
+          actor = Atom.to_string(actor)
+
           case rm? do
             true ->
-              {Regex.replace(~r/#{regex}/m, text, ""), [class | classes]}
+              {Regex.replace(~r/#{regex}/m, text, ""), [actor | actors]}
 
             false ->
-              {text, [class | classes]}
+              {text, [actor | actors]}
           end
 
         false ->
@@ -86,14 +92,15 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   end
 
   def custom_dutyholders(actors, library) do
-    lib = custom_dutyholder_library(actors, library)
-    {dutyholders_regex(lib), lib}
+    custom_dutyholder_library(actors, library)
+    |> dutyholders_regex()
   end
 
   @doc """
-  Function builds a custom library based on the results of the Duty Actor tagging
+  Function builds a custom library using a list of Duty Actors
   This library is used for Duty Type and Dutyholder tagging
   """
+  @spec custom_dutyholder_library(list(), keyword()) :: keyword({actor(), binary()})
   def custom_dutyholder_library(actors, library) when is_list(actors) do
     library =
       cond do
@@ -126,17 +133,18 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   def dutyholders_regex(library) do
     library
     |> Enum.reduce([], fn
-      {_k, v}, acc when is_binary(v) ->
-        ["[ “]#{v}[ \\.,:;”\\]]" | acc]
+      {k, v}, acc when is_binary(v) ->
+        "[ “]#{v}[ \\.,:;”\\]]"
+        |> (fn x -> ~s/(?:#{x})/ end).()
+        |> (&[{k, {v, &1}} | acc]).()
 
-      {_k, v}, acc when is_list(v) ->
+      {k, v}, acc when is_list(v) ->
         Enum.reduce(v, [], fn x, accum ->
           ["[ “]#{x}[ \\.,:;”\\]]" | accum]
         end)
         |> Enum.join("|")
-        |> (&[&1 | acc]).()
+        |> (fn x -> ~s/(?:#{x})/ end).()
+        |> (&[{k, {v, &1}} | acc]).()
     end)
-    |> Enum.join("|")
-    |> (fn x -> ~s/(?:#{x})/ end).()
   end
 end

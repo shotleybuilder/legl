@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
   @moduledoc """
   Functions to set the options for the Taxa update
   """
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.Options
+  alias Legl.Countries.Uk.Article.Taxa.Options
 
   @type opts :: map()
 
@@ -10,13 +10,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
     source: :web,
     fields: [
       "Dutyholder",
+      "Dutyholder Gvt",
       "Duty Actor",
+      "Duty Actor Gvt",
       "Duty Type",
       "POPIMAR",
       "Dutyholder Aggregate",
+      "Dutyholder Gvt Aggregate",
       "Duty Actor Aggregate",
+      "Duty Actor Gvt Aggregate",
       "Duty Type Aggregate",
-      "POPIMAR Aggregate"
+      "POPIMAR Aggregate",
+      "type_code",
+      "Number",
+      "Year"
     ],
     opts_label: "LAT OPTIONS"
   ]

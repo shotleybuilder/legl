@@ -1,64 +1,117 @@
 defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib
 
+  @type duty_types :: list()
+  @type dutyholders :: list()
+  @type article_text :: binary()
+
   def workflow_gvt(text, actors) do
-    {text, {[], duty_types}} =
-      {text, {[], []}}
-      # has to process first to ensure the amending text for other law doesn't get tagged
-      |> process(amendment())
+    # has to process first to ensure the amending text for other law doesn't get tagged
+    {text, {[], duty_types}} = process_amendment(text)
 
     {text, {dutyholders, duty_types}} =
       if actors != [] do
-        {gvt_regex, gvt_lib} = _government = DutyholderLib.custom_dutyholders(actors, :government)
+        government = DutyholderLib.custom_dutyholders(actors, :government)
+
+        text = blacklist(government, text)
+
+        responsibility = build_lib(government, &responsibility/1)
+        discretionary = build_lib(government, &discretionary/1)
+        power_conferred = build_lib(government, &power_conferred/1)
 
         {text, {[], duty_types}}
-        |> pre_process(blacklist(gvt_regex))
-        |> process_dutyholder(responsibility(gvt_regex), gvt_lib)
-        |> process(power_conferred(gvt_regex))
-        |> process_dutyholder(discretionary(gvt_regex), gvt_lib)
+        |> process_dutyholder(responsibility)
+        |> process_dutyholder(power_conferred)
+        |> process_dutyholder(discretionary)
       else
         {text, {[], duty_types}}
       end
 
-    {text, {dutyholders, duty_types}}
-    # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
-    |> process(extent())
-    |> process(enaction_citation_commencement())
-    |> process(interpretation_definition())
-    |> process(application_scope())
-    |> process(exemption())
-    |> process(repeal_revocation())
-    # |> process("Transitional Arrangement", transitional_arrangement())
-    |> process(charge_fee())
-    |> process(offence())
-    |> process(enforcement_prosecution())
-    |> process(defence_appeal())
-    |> elem(1)
+    process_duty_types({text, {dutyholders, duty_types}})
   end
 
   def workflow(text, actors) do
-    {text, {[], duty_types}} =
-      {text, {[], []}}
-      # has to process first to ensure the amending text for other law doesn't get tagged
-      |> process(amendment())
+    {text, {[], duty_types}} = process_amendment(text)
 
     {text, {dutyholders, duty_types}} =
       if actors != [] do
-        {regex, lib} = _governed = DutyholderLib.custom_dutyholders(actors, :governed)
+        # governed == [actor: {regex, regex++}]
+        governed = DutyholderLib.custom_dutyholders(actors, :governed)
 
-        {gvt_regex, _gvt_lib} =
-          _government = DutyholderLib.custom_dutyholders(actors, :government)
+        text = blacklist(governed, text)
+
+        right = build_lib(governed, &right/1)
+        duty = build_lib(governed, &duty/1)
 
         {text, {[], duty_types}}
-        |> pre_process(blacklist(regex))
-        |> process_dutyholder(right(regex), lib)
-        |> process_dutyholder(duty(regex, gvt_regex), lib)
+        |> process_dutyholder(right)
+        |> process_dutyholder(duty)
       else
         {text, {[], duty_types}}
       end
 
-    {text, {dutyholders, duty_types}}
-    # |> process("Process , Rule, Constraint, Condition", process_rule_constraint_condition())
+    process_duty_types({text, {dutyholders, duty_types}})
+  end
+
+  @spec process_amendment(binary()) :: {binary(), {dutyholders(), duty_types()}}
+  def process_amendment(text), do: process({text, {[], []}}, amendment())
+
+  @spec blacklist(list(), binary()) :: binary()
+  def blacklist(govern, text) when is_list(govern) do
+    Enum.reduce(govern, text, fn
+      {_k, {_, regex}}, acc -> blacklist(acc, regex)
+    end)
+  end
+
+  @spec blacklist(binary(), binary()) :: binary()
+  def blacklist(text, gvn_regex) do
+    blacklist_regex = blacklist_regex(gvn_regex)
+
+    Enum.reduce(blacklist_regex, text, fn regex, acc ->
+      Regex.replace(~r/#{regex}/, acc, "")
+    end)
+  end
+
+  @spec blacklist_regex(binary()) :: list(binary())
+  defp blacklist_regex(regex) do
+    [
+      "area of the authority",
+      "#{regex}may (?:be|not)"
+    ]
+  end
+
+  def build_lib(governed, f) do
+    Enum.map(governed, fn
+      {k, {_, regex}} -> {k, f.(regex)}
+    end)
+    |> List.flatten()
+  end
+
+  def process_dutyholder(collector, library) do
+    Enum.reduce(library, collector, fn {actor, regexes}, acc ->
+      Enum.reduce(regexes, acc, fn {regex, duty_type}, {text, {dutyholders, duty_types}} = acc2 ->
+        case Regex.run(~r/#{regex}/m, text) do
+          [_match] ->
+            actor = Atom.to_string(actor)
+
+            {Regex.replace(~r/#{regex}/m, text, ""),
+             {[actor | dutyholders], [duty_type | duty_types]}}
+
+          nil ->
+            # IO.puts(~s/"#{regex}" did not match "#{text}"/)
+            acc2
+
+          match ->
+            IO.puts("ERROR process_dutyholder/3: #{text} #{inspect(match)}")
+        end
+      end)
+    end)
+  end
+
+  @spec process_duty_types({article_text(), {dutyholders(), duty_types()}}) ::
+          {dutyholders(), duty_types()}
+  def process_duty_types(collector) do
+    collector
     |> process(extent())
     |> process(enaction_citation_commencement())
     |> process(interpretation_definition())
@@ -71,50 +124,19 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     |> process(enforcement_prosecution())
     |> process(defence_appeal())
     |> elem(1)
+    |> dedupe()
   end
 
-  def pre_process({text, collector}, blacklist) do
-    Enum.reduce(blacklist, text, fn regex, acc ->
-      Regex.replace(~r/#{regex}/, acc, "")
-    end)
-    |> (&{&1, collector}).()
+  defp dedupe({dutyholders, duty_types}) do
+    {Enum.uniq(dutyholders), Enum.uniq(duty_types)}
   end
 
-  defp blacklist(governed) do
-    [
-      "area of the authority",
-      "#{governed}may (?:be|not)"
-    ]
-  end
-
-  defp process_dutyholder(collector, _regexes, []), do: collector
-
-  defp process_dutyholder(collector, regexes, library) do
-    Enum.reduce(regexes, collector, fn {regex, duty_type},
-                                       {text, {dutyholders, duty_types}} = acc ->
-      case Regex.run(~r/#{regex}/m, text) do
-        [match] ->
-          dutyholder = DutyholderLib.workflow(match, library)
-
-          duty_type = if is_binary(duty_type), do: [duty_type], else: duty_type
-
-          {Regex.replace(~r/#{regex}/m, text, ""),
-           {dutyholders ++ dutyholder, duty_types ++ duty_type}}
-
-        nil ->
-          acc
-
-        match ->
-          IO.puts("ERROR process_dutyholder/3: #{text} #{inspect(match)}")
-      end
-    end)
-  end
-
-  defp process(collector, regexes) do
+  def process(collector, regexes) do
     Enum.reduce(regexes, collector, fn {regex, duty_type},
                                        {text, {dutyholders, duty_types}} = acc ->
       case Regex.match?(~r/#{regex}/, text) do
         true ->
+          # IO.puts(~s/#{text} #{duty_type}/)
           duty_type = if is_binary(duty_type), do: [duty_type], else: duty_type
 
           # A specific term (approved person) should be removed from the text to avoid matching on 'person'
@@ -139,18 +161,21 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   params.  Dutyholder should accommodate intial capitalisation eg [Pp]erson,
   [Ee]mployer
   """
-  def duty(governed, government) do
+  @spec duty(binary()) :: list(binary())
+  def duty(governed) do
     [
       {"#{governed}.*?(?:shall be|is) liable", "Liability"},
       {"#{governed}shall not be (?:guilty|liable)", "Defence, Appeal"},
       {"#{governed}[\\s\\S]*?it shall (?:also )?.*?be a defence", "Defence, Appeal"},
       {"[Nn]o#{governed}shall", "Duty"},
       {"(?:[Aa]n?|[Tt]he|Each)#{governed}.*?must", "Duty"},
-      {"(?:[Aa]n?|[Tt]he)#{governed}.*?shall", "Duty"},
+      {"(?:[Aa]n?|[Tt]he|Each)#{governed}.*?shall", "Duty"},
       {"#{governed}(?:shall notify|shall furnish the authority)", "Duty"},
       {"shall be the duty of any#{governed}", "Duty"},
+      {"shall be reviewed by the#{governed}", "Duty"},
+      {"shall also be imposed on a#{governed}", "Duty"},
       {"requiring a#{governed}.*?to", "Duty"},
-      {"[Aa]pplication.*?shall be made to ?(?:the )?#{government}", "Duty"}
+      {"[Aa]pplication.*?shall be made to ?(?:the )?", "Duty"}
     ]
   end
 
@@ -246,9 +271,12 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       ]
       |> Enum.join("|")
 
+    duty_type = "Interpretation, Definition"
+
     [
       {"[A-Za-z\\d ]”.*?(?:#{defn})[ —,]", "Interpretation, Definition"},
       {"“.*?” is.*?[ —,]", "Interpretation, Definition"},
+      {~s/In these Regulations.*?—/, ~s/#{duty_type}/},
       {" has?v?e? the (?:same )?meanings? ", "Interpretation, Definition"},
       {" [Ff]or the purpose of determining ", "Interpretation, Definition"},
       {" any reference in this .*?to ", "Interpretation, Definition"},
@@ -280,7 +308,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   def exemption() do
     [
       {" shall not apply to (Scotland|Wales|Northern Ireland)", "Exemption"},
-      {" shall not apply in any case where[, ]", "Exemption"}
+      {" shall not apply in any case where[, ]", "Exemption"},
+      {" by a certificate in writing exempt", "Exemption"}
     ]
   end
 

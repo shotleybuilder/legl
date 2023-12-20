@@ -61,13 +61,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
             "POPIMAR Aggregate": []
 
   alias Legl.Services.Airtable.UkAirtable, as: AT
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.Options
+  alias Legl.Countries.Uk.Article.Taxa.Options
 
   @type taxa :: atom()
   @type opts :: map()
 
-  @path ~s[lib/legl/countries/uk/at_article/at_taxa/api_source.json]
-  @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/api_results.json]
+  @path ~s[lib/legl/countries/uk/at_article/taxa/api_source.json]
+  @results_path ~s[lib/legl/countries/uk/at_article/taxa/api_results.json]
 
   def api_update_lat_taxa(opts \\ []) do
     opts = Options.set_workflow_opts(opts)
@@ -80,15 +80,20 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   defp update_lat_taxa(records, opts) do
     records =
       Enum.reduce(opts.taxa_workflow, records, fn f, acc ->
+        IO.puts(
+          ~s/#{:erlang.fun_info(f)[:module]} #{:erlang.fun_info(f)[:name]} #{Enum.count(records)}/
+        )
+
         {:ok, records} =
           case :erlang.fun_info(f)[:arity] do
             1 -> f.(acc)
             2 -> f.(acc, opts)
           end
 
-        IO.puts(~s/#{:erlang.fun_info(f)[:name]} #{Enum.count(records)}/)
         records
       end)
+
+    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, @results_path)
 
     records =
       Enum.sort_by(records, & &1."ID")
@@ -111,8 +116,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
         %{"id" => record."Record_ID", "fields" => Map.drop(record, [:Record_ID])}
       end)
 
-    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, @results_path)
-
     patch? = if opts.patch?, do: opts.patch?, else: ExPrompt.confirm("Patch?")
 
     if patch? == true, do: patch(records, opts), else: :ok
@@ -125,6 +128,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   def get(%{source: :file} = _opts) do
     json = @path |> Path.absname() |> File.read!()
     %{records: records} = Jason.decode!(json, keys: :atoms)
+    IO.puts("\n#{Enum.count(records)} Records returned from FILE")
     Enum.map(records, &struct(%__MODULE__{}, &1))
   end
 
@@ -158,8 +162,14 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   def dutyholder_aggregate(records),
     do: aggregate(records, {:Dutyholder, :"Dutyholder Aggregate"})
 
+  def dutyholder_gvt_aggregate(records),
+    do: aggregate(records, {:"Dutyholder Gvt", :"Dutyholder Gvt Aggregate"})
+
   def duty_actor_aggregate(records),
     do: aggregate(records, {:"Duty Actor", :"Duty Actor Aggregate"})
+
+  def duty_actor_gvt_aggregate(records),
+    do: aggregate(records, {:"Duty Actor Gvt", :"Duty Actor Gvt Aggregate"})
 
   def duty_type_aggregate(records), do: aggregate(records, {:"Duty Type", :"Duty Type Aggregate"})
 
@@ -241,10 +251,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
     # Airtable only accepts sets of 10x records in a single PATCH request
     results =
-      results =
       Enum.chunk_every(results, 10)
       |> Enum.reduce([], fn set, acc ->
-        Map.put(%{}, "records", set)
+        %{"records" => set, "typecast" => true}
         |> Jason.encode!()
         |> (&[&1 | acc]).()
       end)

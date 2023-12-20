@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa do
+defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
   @moduledoc """
   Functions to build the content of the Taxa family of fields in the Legal Register Table
   """
@@ -37,7 +37,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa do
   end
 
   defmodule DutyActor do
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa, as: LRTT
+    alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
 
     def duty_actor(records) do
       result =
@@ -87,7 +87,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa do
   end
 
   defmodule DutyHolder do
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa, as: LRTT
+    alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
 
     def dutyholder(records) do
       result =
@@ -137,7 +137,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa do
   end
 
   defmodule DutyType do
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa, as: LRTT
+    alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
 
     def duty_type(records) do
       result =
@@ -187,7 +187,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa do
   end
 
   defmodule POPIMAR do
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa, as: LRTT
+    alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
 
     def popimar(records) do
       result =

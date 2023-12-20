@@ -2,6 +2,7 @@ defmodule DutyholderDefinitions do
   @moduledoc """
   Functions to build search Regex expressions
   """
+
   def dutyholder_library() do
     # Adds the separate dutyholder libraries together into a single keyword list
     government() ++ governed()
@@ -9,15 +10,16 @@ defmodule DutyholderDefinitions do
 
   def governed(),
     do:
-      (business() ++
-         person() ++
-         public() ++
-         specialist() ++
-         cdm() ++
-         supply_chain() ++
-         servicer() ++
-         environmentalist())
-      |> process_library()
+      business() ++
+        person() ++
+        public() ++
+        specialist() ++
+        cdm() ++
+        supply_chain() ++
+        servicer() ++
+        environmentalist()
+
+  # |> process_library()
 
   def government() do
     authority =
@@ -31,38 +33,46 @@ defmodule DutyholderDefinitions do
       ]
       |> Enum.join("|")
 
+    ([
+       "Gvt: Minister": [
+         "Secretary of State",
+         "[Mm]iniste?ry?s?",
+         "National Assembly for Wales",
+         "Assembly"
+       ],
+       "Gvt: Treasury": "[Tt]reasury",
+       "Gvt: Commissioners": "[Cc]ommissioners",
+       "Gvt: Agency": [
+         "Environment Agency",
+         "SEPA",
+         "Scottish Environment Protection Agency",
+         "Office for Environmental Protection",
+         "OEP",
+         "Natural Resources Body for Wales",
+         "Department of the Environment",
+         "[Tt]he Department",
+         "[Aa]gency"
+       ],
+       "Gvt: Officer": ["[Aa]uthorised [Oo]fficer", "[Oo]fficer of a local authority"],
+       "Gvt: Authority": [
+         "(?:[Rr]egulati?on?r?y?|[Ee]nforce?(?:ment|ing)) [Aa]uthority?i?e?s?",
+         "(?:[Tt]he|[Aa]n|appropriate|allocating) authority",
+         "[Rr]egulators?",
+         "(?:#{authority}) [Aa]uthority?i?e?s?"
+       ],
+       "Gvt: Appropriate Person": "[Aa]ppropriate [Pp]ersons?",
+       "Gvt: Judiciary": ["court", "justice of the peace"],
+       "Gvt: Police": "[Cc]onstable"
+     ] ++ secretary_of_state())
+    |> Enum.sort()
+
+    # |> process_library()
+  end
+
+  defp secretary_of_state() do
     [
-      "Gvt: Minister": [
-        "Secretary of State",
-        "[Mm]iniste?ry?s?",
-        "National Assembly for Wales",
-        "Assembly"
-      ],
-      "Gvt: Treasury": "[Tt]reasury",
-      "Gvt: Commissioners": "[Cc]ommissioners",
-      "Gvt: Agency": [
-        "Environment Agency",
-        "SEPA",
-        "Scottish Environment Protection Agency",
-        "Office for Environmental Protection",
-        "OEP",
-        "Natural Resources Body for Wales",
-        "Department of the Environment",
-        "[Tt]he Department",
-        "[Aa]gency"
-      ],
-      "Gvt: Officer": ["[Aa]uthorised [Oo]fficer", "[Oo]fficer of a local authority"],
-      "Gvt: Authority": [
-        "(?:[Rr]egulati?on?r?y?|[Ee]nforce?(?:ment|ing)) [Aa]uthority?i?e?s?",
-        "(?:[Tt]he|[Aa]n|appropriate|allocating) authority",
-        "[Rr]egulators?",
-        "(?:#{authority}) [Aa]uthority?i?e?s?"
-      ],
-      "Gvt: Appropriate Person": "[Aa]ppropriate [Pp]ersons?",
-      "Gvt: Judiciary": ["court", "justice of the peace"],
-      "Gvt: Police": "[Cc]onstable"
+      "Gvt: Minister: Secretary of State for Defence": "Secretary of State for Defence"
     ]
-    |> process_library()
   end
 
   def blacklist() do
@@ -98,6 +108,7 @@ defmodule DutyholderDefinitions do
     [
       "Ind: Employee": "[Ee]mployees?",
       "Ind: Worker": "[Ww]orkers?",
+      "Ind: Self-employed Worker": "[Ss]elf-employed [Pp]ersons?",
       "Ind: Responsible Person": "[Rr]esponsible [Pp]ersons?",
       "Ind: Competent Person": "[Cc]ompetent [Pp]ersons?",
       "Ind: Authorised Person": ["[Aa]uthorised [Pp]erson", "[Aa]uthorised [Bb]ody"],

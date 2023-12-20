@@ -8,7 +8,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
-
   alias Legl.Countries.Uk.Metadata, as: MD
   alias Legl.Countries.Uk.LeglRegister.Extent
   alias Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy
@@ -23,10 +22,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   """
   @spec api_update_single_name(opts()) :: :ok
   def api_update_single_name(opts \\ [csv?: false, mute?: true]) do
-    opts =
-      Options.api_update_single_name_options(opts)
-      |> LRO.update_workflow()
-      |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+    opts = Options.api_update_single_name_options(opts)
 
     [%LegalRegister{} = record] = AT.get_legal_register_records(opts)
 
@@ -36,11 +32,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   def api_update(opts \\ [])
 
   def api_update(opts) do
-    opts =
-      opts
-      |> Options.api_update_options()
-      |> LRO.update_workflow()
-      |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+    opts = Options.api_update_options(opts)
 
     records = AT.get_legal_register_records(opts)
 

@@ -100,11 +100,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     {dutyholders, duty_types} = get_dutyholders_and_duty_types(record, text)
     {dutyholders_gvt, duty_types_gvt} = get_dutyholders_gvt_and_duty_types(record, text)
 
-    IO.inspect(text)
-    IO.puts(~s/Dutyholders: #{Enum.join(dutyholders)}/)
-    IO.puts(~s/Dutyholders gvt: #{Enum.join(dutyholders_gvt)}/)
-    IO.puts(~s/Duty types: #{Enum.join(duty_types)}/)
-    IO.puts(~s/Duty types gvt: #{Enum.join(duty_types_gvt)}/)
+    # IO.inspect(text)
+    # IO.puts(~s/Dutyholders: #{Enum.join(dutyholders)}/)
+    # IO.puts(~s/Dutyholders gvt: #{Enum.join(dutyholders_gvt)}/)
+    # IO.puts(~s/Duty types: #{Enum.join(duty_types)}/)
+    # IO.puts(~s/Duty types gvt: #{Enum.join(duty_types_gvt)}/)
 
     duty_type =
       if duty_types ++ duty_types_gvt == [],
@@ -125,13 +125,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     )
   end
 
-  defp get_dutyholders_and_duty_types(%{"Duty Actor": []}, _text), do: {[], []}
+  # defp get_dutyholders_and_duty_types(%{"Duty Actor": []}, _text), do: {[], []}
 
   defp get_dutyholders_and_duty_types(%{"Duty Actor": actors}, text) when is_list(actors) do
     DutyTypeLib.workflow(text, actors)
   end
 
-  defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": []}, _text), do: {[], []}
+  # defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": []}, _text), do: {[], []}
 
   defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": actors}, text)
        when is_list(actors) do

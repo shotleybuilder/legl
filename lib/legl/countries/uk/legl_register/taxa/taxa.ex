@@ -16,7 +16,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
   """
 
   alias Legl.Countries.Uk.LeglRegister.Taxa.Options
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.LRTTaxa
+  alias Legl.Countries.Uk.Article.Taxa.LRTTaxa
+  alias Legl.Services.Airtable.UkAirtable, as: AT
 
   @doc """
   Function to set the Taxa fields for the Legal Register Table
@@ -25,15 +26,21 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
   and LAT and each has a base_name etc.
   """
   def set_taxa(lrt_record, lrt_opts) do
-    lat_opts = [name: lrt_opts.name]
+    lat_opts = [
+      name: lrt_opts.name,
+      type_code: lrt_record.type_code,
+      Year: lrt_record."Year",
+      Number: lrt_record."Number"
+    ]
+
     lat_opts = Options.set_taxa_options(lat_opts)
 
     # Lets not carry extra fields we don't need
     lrt_record =
       Legl.Countries.Uk.LeglRegister.Helpers.clean_record(lrt_record, lrt_opts)
-      |> IO.inspect(label: "lrt_record")
+      |> IO.inspect(label: "Legal Register Table - record")
 
-    {:ok, lat_articles} = Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.get(lat_opts)
+    lat_articles = AT.get_legal_article_taxa_records(lat_opts) |> IO.inspect()
 
     LRTTaxa.workflow(lat_articles, lrt_record) |> IO.inspect(limit: :infinity)
 
