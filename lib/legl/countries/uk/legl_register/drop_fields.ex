@@ -93,28 +93,38 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
   ]a
 
   @models ~w[
-    dutyholder
-    dutyholder_state
+    duty_holder
+    duty_holder_gvt
     duty_actor
-    duty_actor_state
+    duty_actor_gvt
     duty_type
-    popimar
+    popimar_
 
     Dutyholder
-    Dutyholder_State
-    Duty_Actor
-    Duty_Actor_State
-    Duty_Type
+
     POPIMAR
 
     dutyholder_article
     article_dutyholder
+
+    dutyholder_gvt_article
+    article_dutyholder_gvt
+
     duty_actor_article
     article_duty_actor
+
+    duty_actor_gvt_article
+    article_duty_actor_gvt
+
     duty_type_article
     article_duty_type
     popimar_article
     article_popimar
+
+    Dutyholder\u00a0Gvt
+    Duty\u00a0Actor
+    Duty\u00a0Actor\u00a0State
+    Duty\u00a0Type
   ]a
 
   def drop_fields(update_workflow) do

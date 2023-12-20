@@ -362,7 +362,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
       options: %{}
     }
 
-    record = Map.merge(%{}, %{"records" => List.wrap(record), "typecast" => true})
+    record =
+      Map.merge(%{}, %{"records" => List.wrap(record), "typecast" => true})
+      |> IO.inspect(label: "Record Cleaned for Patch")
 
     with({:ok, json} <- Jason.encode(record)) do
       # IO.inspect(record, label: "#{__MODULE__}")

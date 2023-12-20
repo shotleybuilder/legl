@@ -90,12 +90,12 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           amended_by_change_log: String.t(),
 
           # .csv strings
-          dutyholder: String.t(),
-          dutyholder_gvt: String.t(),
+          duty_holder: String.t(),
+          duty_holder_gvt: String.t(),
           duty_actor: String.t(),
           duty_actor_gvt: String.t(),
           duty_type: String.t(),
-          popimar: String.t(),
+          popimar_: String.t(),
 
           #
           Dutyholder: list(),
@@ -196,12 +196,12 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     amending_change_log
     amended_by_change_log
 
-    dutyholder
-    dutyholder_gvt
+    duty_holder
+    duty_holder_gvt
     duty_actor
     duty_actor_gvt
     duty_type
-    popimar
+    popimar_
 
     Dutyholder
 
@@ -209,8 +209,16 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
     dutyholder_article
     article_dutyholder
+
+    dutyholder_gvt_article
+    article_dutyholder_gvt
+
     duty_actor_article
     article_duty_actor
+
+    duty_actor_gvt_article
+    article_duty_actor_gvt
+
     duty_type_article
     article_duty_type
     popimar_article

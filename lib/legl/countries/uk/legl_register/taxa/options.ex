@@ -23,7 +23,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
       "POPIMAR Aggregate",
       "type_code",
       "Number",
-      "Year"
+      "Year",
+      "ID",
+      "Record_Type",
+      "Text",
+      "Record_ID",
+      "Section||Regulation"
     ],
     opts_label: "LAT OPTIONS"
   ]

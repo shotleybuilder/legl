@@ -40,9 +40,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
       Legl.Countries.Uk.LeglRegister.Helpers.clean_record(lrt_record, lrt_opts)
       |> IO.inspect(label: "Legal Register Table - record")
 
-    lat_articles = AT.get_legal_article_taxa_records(lat_opts) |> IO.inspect()
+    lat_articles = AT.get_legal_article_taxa_records(lat_opts)
+    # |> IO.inspect()
 
-    LRTTaxa.workflow(lat_articles, lrt_record) |> IO.inspect(limit: :infinity)
+    lrt_record =
+      LRTTaxa.workflow(lat_articles, lrt_record)
+      |> IO.inspect(limit: :infinity, label: "Legal Register Table - record")
 
     {:ok, lrt_record}
   end
