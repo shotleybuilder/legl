@@ -47,13 +47,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
 
   @process_opts %{filesave?: false, field: :POPIMAR, path: @results_path}
 
-  @duty_types [
-    "Duty",
-    "Right",
-    "Responsibility",
-    "Discretionary",
-    "Process, Rule, Constraint, Condition"
-  ]
+  @duty_types MapSet.new([
+                "Duty",
+                # "Right",
+                # "Responsibility",
+                # "Discretionary",
+                "Process, Rule, Constraint, Condition"
+              ])
 
   def process() do
     json = @path |> Path.absname() |> File.read!()
@@ -73,17 +73,28 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
     {:ok, records}
   end
 
-  @spec process_record(%AtTaxa{}) :: %AtTaxa{}
+  @spec process_record(%AtTaxa{}) :: list()
   defp process_record(%AtTaxa{Text: text, Record_Type: rt, "Duty Type": dt})
-       when text not in ["", nil] and dt in @duty_types do
-    popimar_type?({rt, text})
+       when text not in ["", nil] do
+    # IO.inspect(dt, label: "duty_types")
+    case member?(dt) do
+      true -> popimar_type?({rt, text})
+      false -> []
+    end
   end
 
   defp process_record(_), do: []
 
+  defp member?([]), do: false
+
+  defp member?(dt) do
+    Enum.map(dt, &MapSet.member?(@duty_types, &1))
+    |> Enum.all?()
+  end
+
   @doc """
-  Function returns all the members of the duty types taxonomy that match the
-  text. Duty Types is a multi-select field and therefore can support multiple
+  Function returns all the members of the POPIMAR taxonomy that match the
+  text. POPIMAR is a multi-select field and therefore can support multiple
   entries, but this comes at the cost time to parse
   """
   def popimar_type?({["section"], text}) do

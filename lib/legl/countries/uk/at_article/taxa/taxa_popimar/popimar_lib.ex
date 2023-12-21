@@ -69,7 +69,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
     [
       "[Cc]ompetent?c?e?y?",
       "[Tt]raining",
-      "[Ii]nformation, instruction and training"
+      "[Ii]nformation, instruction and training",
+      "provide.*?information"
     ]
   end
 
@@ -126,15 +127,19 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Bb]usiness plan",
       "[Ii]mpact [Aa]ssessment",
       "[Rr]isk [Aa]ssessment",
-      "assessment of any risks"
+      "assessment of any risks",
+      "suitable and sufficient assessment"
     ]
   end
 
   def risk_control() do
     [
+      "avoid the need",
       "[Rr]isk [Cc]ontrol",
       "[Rr]isk mitigation",
-      "use the best available techniques not entailing excessive cost"
+      "use the best available techniques not entailing excessive cost",
+      "reduce the risk",
+      "shall make full and proper use"
     ]
   end
 
@@ -164,7 +169,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
 
   def review() do
     [
-      "[Mm]anagement review"
+      "[Mm]anagement review",
+      "shall be reviewed"
     ]
   end
 end
