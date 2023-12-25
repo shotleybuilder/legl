@@ -81,21 +81,14 @@ defmodule Legl.Countries.Uk.LeglArticle.Taxa.DutyTypeTest do
   describe "DutyholderLib.custom_dutyholder_library/2" do
     test "Org: Employer @governed" do
       result = DutyholderLib.custom_dutyholder_library(["Org: Employer"], :governed)
-      assert ["Org: Employer": "[Ee]mployers?"] = result
+      assert ["Org: Employer": "[[:blank:][:punct:]“][Ee]mployers?[[:blank:][:punct:]”]"] = result
       result = DutyholderLib.custom_dutyholders(["Org: Employer"], :government)
       assert [] = result
     end
   end
 
   @text """
-  2.—(1) In these Regulations, unless the context otherwise requires—
-  “injury” does not include injury caused by any toxic or corrosive substance which—
-  (a) has leaked or spilled from a load;
-  (b) is present on the surface of a load but has not leaked or spilled from it; or
-  (c) is a constituent part of a load;
-  and “injured” shall be construed accordingly;
-  “load” includes any person and any animal;
-  “manual handling operations” means any transporting or supporting of a load (including the lifting, putting down, pushing, pulling, carrying or moving thereof) by hand or by bodily force.
+  2.—(1) The provisions of this regulation apply for the purposes of interpreting these Regulations.
   """
 
   describe "DutyTypeLib.process_duty_types/1" do
@@ -109,7 +102,9 @@ defmodule Legl.Countries.Uk.LeglArticle.Taxa.DutyTypeTest do
 
   describe "DutyTypeLib.process/2" do
     test "process/2 -> interpretation_definition" do
-      regexes = DutyTypeLib.interpretation_definition()
+      regexes =
+        Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn.interpretation_definition()
+
       collector = {@text, {[], []}}
       result = DutyTypeLib.process(collector, regexes)
       assert {_text, {[], ["Interpretation, Definition"]}} = result

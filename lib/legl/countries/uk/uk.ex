@@ -145,10 +145,11 @@ defmodule UK do
             apply(module, function, [])
 
           {function, args} when is_atom(function) and is_list(args) ->
+            args = [List.first(args) ++ opts]
             apply(__MODULE__, function, args)
 
           {function} ->
-            apply(__MODULE__, function, [])
+            apply(__MODULE__, function, [opts])
         end
     end
   end
@@ -178,23 +179,29 @@ defmodule UK do
   end
 
   @taxa [
-          {Taxa, :workflow, [[]]},
-          {Taxa, :api_update_lat_taxa, [[]]}
+          {Taxa, :api_update_lat_taxa}
         ]
         |> Enum.with_index()
         |> Enum.into(%{}, fn {k, v} -> {v, k} end)
 
-  def taxa do
+  def taxa(opts) do
     case ExPrompt.choose(
            "Taxa Choices",
-           ~W/Workflow Update/
+           ~W/Update/
          ) do
       -1 ->
         :ok
 
       n ->
-        {module, function, args} = Map.get(@taxa, n)
-        apply(module, function, args)
+        case Map.get(@taxa, n) do
+          {module, function, args} ->
+            args = [List.first(args) ++ opts]
+            IO.inspect(args, label: "args")
+            apply(module, function, [args])
+
+          {module, function} ->
+            apply(module, function, [opts])
+        end
     end
   end
 

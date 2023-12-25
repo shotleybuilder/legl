@@ -70,6 +70,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Cc]ompetent?c?e?y?",
       "[Tt]raining",
       "[Ii]nformation, instruction and training",
+      "[Ii]nformation.*?provided to every person",
       "provide.*?information"
     ]
   end
@@ -96,7 +97,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Ii]ventory",
       "[Dd]atabase",
       "([Ee]nforcement|[Pp]rohibition|[Ii]mprovement) notice",
-      "[Dd]ocuments?"
+      "[Dd]ocuments?",
+      "publish the report",
+      "labelled"
     ]
   end
 
@@ -122,13 +125,19 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
 
   def planning_risk_impact_assessment() do
     [
+      # Plan
       "[Aa]nnual plan",
       "[Ss]trategic plan",
       "[Bb]usiness plan",
+      "[Pp]lan of work",
+      "written plan",
+      "measures? to be specified in the plan",
+      # Assessment
       "[Ii]mpact [Aa]ssessment",
       "[Rr]isk [Aa]ssessment",
       "assessment of any risks",
-      "suitable and sufficient assessment"
+      "suitable and sufficient assessment",
+      "[Ii]n making the assessment"
     ]
   end
 
@@ -137,9 +146,12 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "avoid the need",
       "[Rr]isk [Cc]ontrol",
       "[Rr]isk mitigation",
+      "steps as are reasonable in the circumstances must be taken",
       "use the best available techniques not entailing excessive cost",
       "reduce the risk",
-      "shall make full and proper use"
+      "shall make full and proper use",
+      "measures?.*?specified.*?plan",
+      "provided to.*?employees"
     ]
   end
 
@@ -155,22 +167,27 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
   def maintenance_examination_and_testing() do
     [
       "[Mm]aintenance",
+      "[Mm]aintaine?d?",
       "[Ee]xamination",
-      "[Tt]esting"
+      "[Tt]esting",
+      "must be kept"
     ]
   end
 
   def checking_monitoring() do
     [
       "[Cc]heck",
-      "[Mm]onitor"
+      "[Mm]onitor",
+      "medical exam",
+      "at least once every.*?years"
     ]
   end
 
   def review() do
     [
       "[Mm]anagement review",
-      "shall be reviewed"
+      "shall be reviewed",
+      "carry out a review"
     ]
   end
 end

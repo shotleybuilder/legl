@@ -9,6 +9,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib
 
+  @type duty_types :: list()
+  @type dutyholders :: list()
+  @type dutyholders_gvt :: list()
+
   @duty_type_taxa [
     # Why of the law
     "Purpose",
@@ -88,8 +92,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     end
   end
 
-  defp process_record(%AtTaxa{Text: text} = record)
-       when is_binary(text) and text not in ["", nil] do
+  defp process_record(%AtTaxa{Record_Type: record_type, Text: text} = record)
+       when is_binary(text) and text not in ["", nil] and
+              record_type in [["sub-section"], ["article"], ["sub-article"]] do
     classes(record, text)
   end
 
@@ -97,45 +102,67 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
   @spec classes(%AtTaxa{}, binary()) :: %AtTaxa{}
   defp classes(record, text) do
-    {dutyholders, duty_types} = get_dutyholders_and_duty_types(record, text)
+    {dutyholders, duty_types_gvd} = get_dutyholders_and_duty_types(record, text)
     {dutyholders_gvt, duty_types_gvt} = get_dutyholders_gvt_and_duty_types(record, text)
+    duty_types_generic = DutyTypeLib.duty_types_generic(text)
 
     # IO.inspect(text)
     # IO.puts(~s/Dutyholders: #{Enum.join(dutyholders)}/)
     # IO.puts(~s/Dutyholders gvt: #{Enum.join(dutyholders_gvt)}/)
     # IO.puts(~s/Duty types: #{Enum.join(duty_types)}/)
     # IO.puts(~s/Duty types gvt: #{Enum.join(duty_types_gvt)}/)
+    # IO.puts(~s/#{duty_types_gvd} #{duty_types_gvt} #{duty_types_generic}/)
+    duty_types = duty_types_gvd ++ duty_types_gvt ++ duty_types_generic
 
-    duty_type =
-      if duty_types ++ duty_types_gvt == [],
+    duty_types =
+      if duty_types == [],
         do: ["Process, Rule, Constraint, Condition"],
         else:
-          (duty_types ++ duty_types_gvt)
+          duty_types
           |> Enum.filter(fn x -> x != nil end)
           # |> Enum.reverse()
           |> Enum.uniq()
+          |> Enum.sort()
 
-    Map.merge(
-      record,
-      %{
-        Dutyholder: dutyholders,
-        "Dutyholder Gvt": dutyholders_gvt,
-        "Duty Type": duty_type
-      }
-    )
+    record =
+      Map.merge(
+        record,
+        %{
+          Dutyholder: dutyholders,
+          "Dutyholder Gvt": dutyholders_gvt,
+          "Duty Type": duty_types
+        }
+      )
+
+    #    if record."Duty Actor" not in [nil, "", []] and
+    #         record."Duty Type" == ["Process, Rule, Constraint, Condition"] and
+    #         record."Record_Type" in [["article"], ["sub-article"]],
+    #       do: IO.puts(~s/
+    #      Text: #{record."Text"}
+    #      Duty Actor: #{record."Duty Actor"}
+    #      Duty Actor Gvt: #{record."Duty Actor Gvt"}
+    #      Dutyholder: #{record."Dutyholder"}
+    #      Dutyholder Gvt: #{record."Dutyholder Gvt"}
+    #      Duty Type: #{record."Duty Type"}
+    #      /)
+
+    record
   end
 
-  # defp get_dutyholders_and_duty_types(%{"Duty Actor": []}, _text), do: {[], []}
+  defp get_dutyholders_and_duty_types(%{"Duty Actor": []}, _text), do: {[], []}
 
+  @spec get_dutyholders_and_duty_types(%AtTaxa{}, binary()) :: {dutyholders(), duty_types()}
   defp get_dutyholders_and_duty_types(%{"Duty Actor": actors}, text) when is_list(actors) do
-    DutyTypeLib.workflow(text, actors)
+    DutyTypeLib.duty_types_for_dutyholders(text, actors)
   end
 
-  # defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": []}, _text), do: {[], []}
+  defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": []}, _text), do: {[], []}
 
+  @spec get_dutyholders_gvt_and_duty_types(%AtTaxa{}, binary()) ::
+          {dutyholders_gvt(), duty_types()}
   defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": actors}, text)
        when is_list(actors) do
-    DutyTypeLib.workflow_gvt(text, actors)
+    DutyTypeLib.duty_types_for_dutyholders_gvt(text, actors)
   end
 
   @doc """

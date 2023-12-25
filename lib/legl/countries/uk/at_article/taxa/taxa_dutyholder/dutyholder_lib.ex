@@ -93,7 +93,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
 
   def custom_dutyholders(actors, library) do
     custom_dutyholder_library(actors, library)
-    |> dutyholders_regex()
+    # |> dutyholders_regex()
   end
 
   @doc """
@@ -117,6 +117,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
           [{actor, Keyword.get(library, actor)} | acc]
 
         false ->
+          IO.puts(~s/ERROR: #{actor} not found in library\n#{inspect(library)}/)
           acc
       end
     end)

@@ -74,7 +74,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   def api_update_lat_taxa(opts \\ []) do
     opts = Options.set_workflow_opts(opts)
     records = get(opts)
-    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, @path)
+
+    if opts.filesave? == true and opts.source == :web,
+      do: Legl.Utility.save_structs_as_json(records, @path)
 
     update_lat_taxa(records, opts)
   end
@@ -188,19 +190,25 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       records
       |> Enum.reduce([], fn
         %{Record_Type: rt} = record, acc when rt == ["section"] or rt == ["article"] ->
-          [_, id] = Regex.run(~r/(.*?)(?:_{2}|_\d+_)$/, record."ID")
-          [{id, record."Record_ID"} | acc]
+          case Regex.run(~r/(.*?)(?:_{2}|_A?\d+A?_|__{2}[A-Z]+|_A?\d+A?_[A-Z]+)$/, record."ID") do
+            [_, id] ->
+              [{id, record."Record_ID"} | acc]
+
+            _ ->
+              IO.puts(~s/ERROR: Regex failed to parse this Record ID: #{record."ID"}/)
+              acc
+          end
 
         %{Record_Type: rt} = record, acc when rt == ["part"] ->
-          [_, id] = Regex.run(~r/(.*?)(?:_{5})$/, record."ID")
+          [_, id] = Regex.run(~r/(.*?)(?:_{5}|_{5}[A-Z]+)$/, record."ID")
           [{id, record."Record_ID"} | acc]
 
         %{Record_Type: rt} = record, acc when rt == ["chapter"] ->
-          [_, id] = Regex.run(~r/(.*?)(?:_{4})$/, record."ID")
+          [_, id] = Regex.run(~r/(.*?)(?:_{4}|_{4}[A-Z]+)$/, record."ID")
           [{id, record."Record_ID"} | acc]
 
         %{Record_Type: rt} = record, acc when rt == ["heading"] ->
-          [_, id] = Regex.run(~r/(.*?)(?:_{3})$/, record."ID")
+          [_, id] = Regex.run(~r/(.*?)(?:_{3}|_{3}[A-Z]+)$/, record."ID")
           [{id, record."Record_ID"} | acc]
 
         _record, acc ->

@@ -40,7 +40,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
     records = process_records(records)
 
     if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, opts.path)
-    IO.puts("Duty Actor complete")
+    IO.puts("Duty Actor & Duty Actor Gvt complete")
     {:ok, records}
   end
 
@@ -54,11 +54,24 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
 
   defp process_record(%AtTaxa{Text: text} = record, field)
        when is_struct(record) and text not in ["", nil] do
-    Map.put(
-      record,
-      field,
-      DutyholderLib.workflow(text, field)
+    record =
+      Map.put(
+        record,
+        field,
+        DutyholderLib.workflow(text, field)
+      )
+
+    # Use to QA duty actor Regex
+    """
+    if record."Duty Actor" in [nil, "", []] and record."Duty Actor Gvt" in [nil, "", []] and
+    record."Record_Type" in [["article"], ["sub-article"]],
+    do:
+    IO.puts(
+      ~s/Text: #{record."Text"}\nDuty Actor: #{record."Duty Actor"}\nDuty Actor Gvt: #{record."Duty Actor Gvt"}\n/
     )
+    """
+
+    record
   end
 
   def workflow(opts \\ []) do
