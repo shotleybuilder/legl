@@ -12,7 +12,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
 
   @type actor :: atom()
   @type regex :: binary()
-  @type library :: keyword({actor(), regex()})
+  @type library() :: keyword({actor(), regex()})
 
   def print_dutyholders_to_console() do
     classes = @dutyholder_library
@@ -91,16 +91,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     end)
   end
 
-  def custom_dutyholders(actors, library) do
-    custom_dutyholder_library(actors, library)
-    # |> dutyholders_regex()
-  end
-
   @doc """
   Function builds a custom library using a list of Duty Actors
   This library is used for Duty Type and Dutyholder tagging
   """
-  @spec custom_dutyholder_library(list(), keyword()) :: keyword({actor(), binary()})
+  @spec custom_dutyholder_library(list(), keyword()) :: keyword({actor(), regex()})
   def custom_dutyholder_library(actors, library) when is_list(actors) do
     library =
       cond do

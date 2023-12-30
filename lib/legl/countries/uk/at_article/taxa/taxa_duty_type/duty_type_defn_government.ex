@@ -6,14 +6,16 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
     duty_type = "Responsibility"
 
     [
-      "#{government} (?:must|shall)",
+      "#{government}(?:must|shall)",
+      "#{government}.*?(?:must|shall)(?:co-operate)",
       "#{government}[^—\\.]*?(?:must|shall)",
+      "must be (?:carried out|reviewed|sent|prepared).*?#{government}",
       "#{government}[^—\\.]*?has determined",
       "[Ii]t shall be the duty of a?n?[^—\\.]*?#{government}",
       "#{government}[^—\\.]*?(?:must|shall)",
       "#{government} owes a duty to",
       "is to be.*?by a#{government}",
-      "#{government}is to have regard",
+      "#{government}is to (?:perform|have regard)",
       "#{government}may not bring to an end"
     ]
     |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
@@ -27,7 +29,8 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
 
     [
       "#{government}may",
-      "#{government}[^—\\.]*?may"
+      "#{government}[^—\\.]*?may",
+      "#{government}is not required"
     ]
     |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end

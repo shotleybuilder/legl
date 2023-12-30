@@ -14,10 +14,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
           {dutyholders_gvt(), duty_types()}
   def duty_types_for_dutyholders_gvt(text, actors) do
     # has to process first to ensure the amending text for other law doesn't get tagged
-    {text, {[], duty_types}} = process_amendment(text)
+    {text, duty_types} = process({text, []}, DutyTypeDefn.amendment())
 
     if actors != [] do
-      government = DutyholderLib.custom_dutyholders(actors, :government)
+      government = DutyholderLib.custom_dutyholder_library(actors, :government)
 
       text = blacklist(government, text)
 
@@ -37,18 +37,21 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     end
   end
 
+  @doc """
+  Function to set duty type for 'governed' dutyholders
+  """
   @spec duty_types_for_dutyholders(article_text(), list()) :: {dutyholders(), duty_types()}
   def duty_types_for_dutyholders(text, actors) do
-    {text, {[], duty_types}} = process_amendment(text)
+    {text, duty_types} = process({text, []}, DutyTypeDefn.amendment())
 
     if actors != [] do
-      # governed == [actor: {regex, regex++}]
-      governed = DutyholderLib.custom_dutyholders(actors, :governed)
-
-      text = blacklist(governed, text)
+      # A subset of the full 'governed' library of duty actors
+      governed = DutyholderLib.custom_dutyholder_library(actors, :governed)
 
       right = build_lib(governed, &DutyTypeDefnGoverned.right/1)
       duty = build_lib(governed, &DutyTypeDefnGoverned.duty/1)
+
+      text = blacklist(governed, text)
 
       {_text, {dutyholders, duty_types}} =
         {text, {[], duty_types}}
@@ -68,9 +71,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       {[], duty_types}
     end
   end
-
-  @spec process_amendment(binary()) :: {binary(), {dutyholders(), duty_types()}}
-  def process_amendment(text), do: process({text, {[], []}}, DutyTypeDefn.amendment())
 
   @spec blacklist(list(), binary()) :: binary()
   def blacklist(govern, text) when is_list(govern) do
@@ -97,10 +97,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     ]
   end
 
+  @spec build_lib(list(), function()) :: keyword()
   def build_lib(governed, f) do
     Enum.map(governed, fn
-      # {k, {_, regex}} -> {k, f.(regex)}
-      {k, regex} -> {k, f.(regex)}
+      {actor, regex} -> {actor, f.(regex)}
     end)
     |> List.flatten()
   end
@@ -108,11 +108,34 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   def process_dutyholder(collector, library) do
     Enum.reduce(library, collector, fn {actor, regexes}, acc ->
       Enum.reduce(regexes, acc, fn {regex, duty_type}, {text, {dutyholders, duty_types}} = acc2 ->
-        case Regex.run(~r/#{regex}/m, text) do
-          [_match] ->
-            # actor = Atom.to_string(actor)
+        {regex, rm_matched_text?} =
+          case regex do
+            {regex, true} -> {regex, true}
+            _ -> {regex, false}
+          end
 
-            # {Regex.replace(~r/#{regex}/m, text, ""), {[actor | dutyholders], [duty_type | duty_types]}}
+        regex_c =
+          case Regex.compile(regex, "m") do
+            {:ok, regex} ->
+              # IO.puts(~s/#{inspect(regex)}/)
+              regex
+
+            {:error, error} ->
+              IO.puts(~s/ERROR: Regex doesn't compile\n#{error}\n#{regex}/)
+          end
+
+        case Regex.run(regex_c, text) do
+          [match] ->
+            text =
+              case rm_matched_text? do
+                false -> text
+                true -> Regex.replace(regex_c, text, "")
+              end
+
+            IO.puts(~s/DUTYHOLDER: #{actor}/)
+            IO.puts(~s/MATCH: #{inspect(match)}/)
+            IO.puts(~s/REGEX: #{regex}\n/)
+
             {text, {[actor | dutyholders], [duty_type | duty_types]}}
 
           nil ->

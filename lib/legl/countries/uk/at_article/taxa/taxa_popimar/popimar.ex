@@ -49,11 +49,14 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
 
   @duty_types MapSet.new([
                 "Duty",
-                # "Right",
-                # "Responsibility",
-                # "Discretionary",
+                "Right",
+                "Responsibility",
+                "Discretionary",
                 "Process, Rule, Constraint, Condition"
               ])
+
+  # Paste the first line of the article of interest
+  @qa_text "2 A person involved in the carriage of dangerous goods—"
 
   def process() do
     json = @path |> Path.absname() |> File.read!()
@@ -78,18 +81,21 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
        when text not in ["", nil] do
     # IO.inspect(dt, label: "duty_types")
     case member?(dt) do
-      true -> popimar_type?({rt, text})
-      false -> []
+      true ->
+        popimar_type?({dt, rt, text})
+
+      false ->
+        []
     end
   end
 
   defp process_record(_), do: []
 
-  defp member?([]), do: false
+  def member?([]), do: false
 
-  defp member?(dt) do
+  def member?(dt) do
     Enum.map(dt, &MapSet.member?(@duty_types, &1))
-    |> Enum.all?()
+    |> Enum.any?()
   end
 
   @doc """
@@ -97,27 +103,42 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
   text. POPIMAR is a multi-select field and therefore can support multiple
   entries, but this comes at the cost time to parse
   """
-  def popimar_type?({["section"], text}) do
+  def popimar_type?({dt, ["section"], text}) do
     case String.contains?(text, "\n") do
-      true -> popimar_type?({nil, text})
+      true -> popimar_type?({dt, nil, text})
       false -> []
     end
   end
 
-  def popimar_type?({_, text}) do
-    Enum.reduce(@popimar_taxa, [], fn class, acc ->
-      function = duty_type_taxa_functions(class)
-      regex = Lib.regex(function)
+  def popimar_type?({dt, _, text}) do
+    type =
+      Enum.reduce(@popimar_taxa, [], fn class, acc ->
+        function = duty_type_taxa_functions(class)
+        regex = Lib.regex(function)
 
-      if regex != nil do
-        case Regex.match?(regex, text) do
-          true -> acc ++ [class]
-          false -> acc
+        # if String.starts_with?(text, @qa_text), do: IO.puts(~s/#{inspect(regex)}\n#{text}/)
+
+        if regex != nil do
+          case Regex.match?(regex, text) do
+            true ->
+              # IO.puts(~s/#{inspect(regex)}\n#{text}/)
+              acc ++ [class]
+
+            false ->
+              acc
+          end
+        else
+          acc
         end
-      else
-        acc
-      end
-    end)
+      end)
+
+    # Default POPIMAR
+    if type == [] and
+         Enum.any?(dt, fn x ->
+           Enum.member?(["Duty", "Process, Rule, Constraint, Condition"], x)
+         end),
+       do: type ++ ["Risk Control"],
+       else: type
   end
 
   def workflow(opts \\ []) do

@@ -44,7 +44,8 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn do
       "“.*?” is.*?[ —,]",
       ~s/In these Regulations.*?—/,
       "has?v?e? the (?:same )?meanings?",
-      " [Ff]or the purposes? of (?:determining|these Regulations) ",
+      # ?<! Negative Lookbehind
+      "(?<!prepared) [Ff]or the purposes? of (?:determining|these Regulations) ",
       "(?:any reference|references?).*?to",
       "[Ii]nterpretation",
       "interpreting these Regulation",
@@ -67,10 +68,13 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn do
       "does not apply",
       "shall.*?apply",
       "application of this (?:Part|Chapter|[Ss]ection)",
-      "Section.*?apply for the purposes",
       "apply to any work outside",
       "apply to a self-employed person",
+      # For the Purposes
+      "Section.*?apply for the purposes",
       "[Ff]or the purposes of.*?the requirements? (?:of|set out in)",
+      "[Ff]or the purposes of paragraph",
+      # Other
       "requirements.*?which cannot be complied with are to be disregarded",
       "[Rr]egulations referred to"
     ]
@@ -81,7 +85,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn do
     [
       {"shall have effect", "Extent"},
       {"(?:Act|Regulation|section)(?: does not | do not | )extends? to", "Extent"},
-      {"(?:Act|Section).*?extends? (?:only )?to", "Extent"},
+      {"(?:Act|Regulations?|Section).*?extends? (?:only )?to", "Extent"},
       {"[Oo]nly.*?extend to", "Extent"},
       {"do not extend to", "Extent"},
       {"[R|r]egulations under", "Extent"},
@@ -99,38 +103,51 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn do
   end
 
   def repeal_revocation() do
+    duty_type = "Repeal, Revocation"
+
     [
-      {" . . . . . . . ", "Repeal, Revocation"},
-      {"(?:revoked|repealed)[ [:punct:]—]", "Repeal, Revocation"},
-      {"(?:repeals|revocations)", "Repeal, Revocation"}
+      " . . . . . . . ",
+      "(?:revoked|repealed)[ [:punct:]—]",
+      "(?:repeals|revocations)"
     ]
+    |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end
 
   def transitional_arrangement() do
   end
 
   def amendment() do
+    duty_type = "Amendment"
+
     [
-      {"shall be inserted the words— ?\n?“[\\s\\S]*”", "Amendment"},
-      {"shall be inserted— ?\\n?“[\\s\\S]*”", "Amendment"},
-      {" (?:substituted?|inserte?d?)—? ?\\n?“[\\s\\S]*”", "Amendment"},
-      {"omit the words", "Amendment"},
-      {"for.*?substitute", "Amendment"},
-      {"shall be (?:inserted|substituted) the words", "Amendment"},
-      {"there is inserted", "Amendment"},
-      {"[Aa]mendments?", "Amendment"},
-      {"[Aa]mended as follows", "Amendment"},
-      {"omit the following", "Amendment"}
+      "shall be inserted the words— ?\n?“[\\s\\S]*”",
+      "shall be inserted— ?\\n?“[\\s\\S]*”",
+      " (?:substituted?|inserte?d?)—? ?\\n?“[\\s\\S]*”",
+      "omit the words",
+      "for.*?substitute",
+      "shall be (?:inserted|substituted) the words",
+      "there is inserted",
+      "[Aa]mendments?",
+      "[Aa]mended as follows",
+      "omit the following"
     ]
+    |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end
 
   def charge_fee() do
+    duty_type = "Charge, Fee"
+
     [
-      {" fees and charges ", "Charge, Fee"},
-      {" (fees?|charges?) .*(paid|payable) ", "Charge, Fee"},
-      {" by the (fee|charge) ", "Charge, Fee"},
-      {" failed to pay a (fee|charge) ", "Charge, Fee"}
+      " fees and charges ",
+      " (fees?|charges?).*(paid|payable) ",
+      " by the (fee|charge) ",
+      " failed to pay a (fee|charge) ",
+      " fee.*?may not exceed the sum of the costs",
+      " fee may include any costs",
+      "may charge.*?a fee ",
+      "invoice must include a statement of the work done"
     ]
+    |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end
 
   def offence() do

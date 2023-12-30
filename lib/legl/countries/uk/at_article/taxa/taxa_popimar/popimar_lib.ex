@@ -28,7 +28,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
   def organisation() do
     [
       "[Oo]rg.? chart",
-      "[Oo]rganisation chart"
+      "[Oo]rganisation chart",
+      "making of appointments?",
+      "(?:must|may|shall)[ ]?(?:jointly)?[ ]?appoint",
+      "person.*?appointed",
+      "appoint a person"
     ]
   end
 
@@ -38,7 +42,13 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Pp]rocedure",
       "[Ww]ork instruction",
       "[Mm]ethod statement",
-      "[Ii]nstruction"
+      "[Ii]nstruction",
+      "comply?i?e?s? with.*?(?:duties|requirements)",
+      "is responsible for",
+      "has control over",
+      "must ensure, insofar as they are matters within that person’s control",
+      "take such measures as it is reasonable for a person in his position to take",
+      "(?:supervised?|supervising)"
     ]
   end
 
@@ -48,9 +58,18 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
   def organisation_communication_consultation() do
     [
       "[Cc]omminiate?i?o?n?g?",
+      "[Cc]onsult",
       "[Cc]onsulti?n?g?",
       "[Cc]onsultation",
-      "send a copy of it to"
+      "(?:send a copy of it|be sent) to",
+      "must identify to",
+      "publish a report",
+      "must (?:immediately )?inform[[:blank:][:punct:]—]",
+      "report to",
+      "(?:by|to) provide?i?n?g?.*?information",
+      "made available to (?:the public)",
+      "supplied (?:in writing|with a copy)",
+      "aware of the contents of"
     ]
   end
 
@@ -59,19 +78,23 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
   """
   def organisation_collaboration_coordination_cooperation() do
     [
-      "[Cc]ollaborate?i?o?n?g?",
-      "[Cc]oordinate?i?o?n?g?",
-      "[Cc]ooperate?i?o?n?g?"
+      "[Cc]ollaborat",
+      "[Cc]oordinat",
+      "[Cc]ooperat"
     ]
   end
 
   def organisation_competence() do
     [
-      "[Cc]ompetent?c?e?y?",
+      "[Cc]ompetent?c?e?y?[ ](?!authority)",
       "[Tt]raining",
       "[Ii]nformation, instruction and training",
       "[Ii]nformation.*?provided to every person",
-      "provide.*?information"
+      "provide.*?information",
+      "person satisfies the criteria",
+      "skills, knowledge and experience",
+      "organisational capability",
+      "instructe?d?"
     ]
   end
 
@@ -83,7 +106,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
     [
       "[Cc]ost[- ]benefit",
       "[Nn]ett? cost",
-      "[Ff]ee[ \\.,:;”]",
+      "[Ff]ee[[:blank:][:punct:]”]",
       "[Cc]harge",
       "[Ff]inancial loss"
     ]
@@ -91,15 +114,16 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
 
   def records() do
     [
-      "[Rr]ecord",
-      "[Rr]egister",
+      "(?:[Rr]ecord|[Rr]eport (?!to)|[Rr]egister)",
       "[Ll]ogbook",
       "[Ii]ventory",
       "[Dd]atabase",
-      "([Ee]nforcement|[Pp]rohibition|[Ii]mprovement) notice",
+      "(?:[Ee]nforcement|[Pp]rohibition|[Ii]mprovement) notice",
       "[Dd]ocuments?",
-      "publish the report",
-      "labelled"
+      "(?:marke?d?i?n?g?|labelled)",
+      "must be kept",
+      "certificate",
+      "health and safety file"
     ]
   end
 
@@ -108,9 +132,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
   """
   def permit_authorisation_license() do
     [
-      "[ “][Pp]ermit[ \\.,:;”]",
+      "[ “][Pp]ermit[[:blank:][:punct:]”]",
       "[Aa]uthorisation",
-      "[Aa]uthorised",
+      "[Aa]uthorised (?:^representative)",
       "[Ll]i[sc]en[sc]ed?",
       "[Ll]i[sc]en[sc]ing"
     ]
@@ -130,37 +154,60 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Ss]trategic plan",
       "[Bb]usiness plan",
       "[Pp]lan of work",
+      "construction phase plan",
       "written plan",
       "measures? to be specified in the plan",
+      "(?:project|action) plan",
+      "project is planned",
       # Assessment
       "[Ii]mpact [Aa]ssessment",
       "[Rr]isk [Aa]ssessment",
       "assessment of any risks",
       "suitable and sufficient assessment",
-      "[Ii]n making the assessment"
+      "[Ii]n making the assessment",
+      "(?:reassess|reassessed|reassessment)",
+      "general principles of prevention",
+      "identify and eliminate"
     ]
   end
 
   def risk_control() do
     [
       "avoid the need",
-      "[Rr]isk [Cc]ontrol",
-      "[Rr]isk mitigation",
+      # STEPS
+      "suitable and sufficient steps",
       "steps as are reasonable in the circumstances must be taken",
+      "taken? all reasonable steps",
+      "takes immediate steps",
+      # RISK
+      "[Rr]isk [Cc]ontrol",
+      "control.*?risk",
+      "[Rr]isk mitigation",
       "use the best available techniques not entailing excessive cost",
-      "reduce the risk",
+      "eliminates.*?the risk",
+      "reduces? the risk",
+      # PROVIDES
+      "provided to.*?employees",
+      "provision and use of",
+      # MEASURES
+      "safety management system",
+      "corrective measures?",
+      "meets the requirements?",
+      "standards for the construction",
       "shall make full and proper use",
       "measures?.*?specified.*?plan",
-      "provided to.*?employees"
+      "take such measures"
     ]
   end
 
   def notification() do
     [
-      "given.*?notice",
+      "given?.*?notice",
+      "accident report",
       "[Nn]otify",
       "[Nn]otification",
-      "[Aa]pplication for"
+      "[Aa]pplication for",
+      "publish.*?a notice"
     ]
   end
 
@@ -170,7 +217,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Mm]aintaine?d?",
       "[Ee]xamination",
       "[Tt]esting",
-      "must be kept"
+      "[Ii]nspecti?o?n?e?d?"
     ]
   end
 
@@ -179,15 +226,17 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib do
       "[Cc]heck",
       "[Mm]onitor",
       "medical exam",
-      "at least once every.*?years"
+      "at least once every.*?years",
+      "kept available for inspection"
     ]
   end
 
   def review() do
     [
       "[Mm]anagement review",
-      "shall be reviewed",
-      "carry out a review"
+      "(?:[Rr]eviewed|is [Rr]evised)",
+      "(?:conduct|carry out|carrying out) (?:a|the) review",
+      "review the (?:assessment)"
     ]
   end
 end

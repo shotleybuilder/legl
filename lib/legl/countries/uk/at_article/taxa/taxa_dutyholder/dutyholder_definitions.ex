@@ -8,18 +8,6 @@ defmodule DutyholderDefinitions do
     government() ++ governed()
   end
 
-  def governed(),
-    do:
-      (business() ++
-         person() ++
-         public() ++
-         specialist() ++
-         cdm() ++
-         supply_chain() ++
-         servicer() ++
-         environmentalist())
-      |> process_library()
-
   def government() do
     ([
        "Gvt: Commissioners": "[Cc]ommissioners",
@@ -30,7 +18,8 @@ defmodule DutyholderDefinitions do
        "Gvt: Emergency Services": "[Ee]mergency [Ss]ervices?"
      ] ++
        authority() ++
-       secretary_of_state() ++ ministries() ++ agencies() ++ devolved_administrations())
+       secretary_of_state() ++
+       ministries() ++ agencies() ++ devolved_administrations() ++ forces())
     |> Enum.sort(:desc)
     |> process_library()
   end
@@ -45,7 +34,7 @@ defmodule DutyholderDefinitions do
       "Gvt: Authority: Waste":
         "(?:[Ww]aste collection|[Ww]aste disposal|[Dd]isposal) [Aa]uthority?i?e?s?",
       "Gvt: Authority": [
-        "(?:[Tt]he|[Aa]n|appropriate|allocating|[Cc]ompetent) authority",
+        "(?:[Tt]he|[Aa]n|appropriate|allocating|[Cc]ompetent|[Dd]esignated) authority",
         "[Rr]egulators?",
         "[Mm]onitoring [Aa]uthority?i?e?s?"
       ]
@@ -107,6 +96,11 @@ defmodule DutyholderDefinitions do
     ]
   end
 
+  defp forces(),
+    do: [
+      "HM Forces: Navy": "(?:His|Her) Majesty's Navy"
+    ]
+
   def blacklist() do
     [
       "local authority collected municipal waste",
@@ -115,6 +109,18 @@ defmodule DutyholderDefinitions do
     ]
   end
 
+  def governed(),
+    do:
+      (business() ++
+         person() ++
+         public() ++
+         specialist() ++
+         supply_chain() ++
+         servicer() ++
+         maritime() ++
+         environmentalist())
+      |> process_library()
+
   defp business() do
     [
       "Org: Investor": "[Ii]nvestors",
@@ -122,6 +128,7 @@ defmodule DutyholderDefinitions do
       "Org: Lessee": "[Ll]essee",
       "Org: Occupier": ["[Oo]ccupiers?", "[Pp]erson who is in occupation"],
       "Org: Employer": "[Ee]mployers?",
+      Operator: "[Oo]perators?",
       "Org: Company": [
         "[Cc]ompany?i?e?s?",
         "[Bb]usinesse?s?",
@@ -140,7 +147,7 @@ defmodule DutyholderDefinitions do
     [
       "Ind: Employee": "[Ee]mployees?",
       "Ind: Worker": "[Ww]orkers?",
-      "Ind: Self-employed Worker": "[Ss]elf-employed [Pp]ersons?",
+      "Ind: Self-employed Worker": "[Ss]elf-employed (?:[Pp]ersons?|diver)",
       "Ind: Responsible Person": "[Rr]esponsible [Pp]ersons?",
       "Ind: Competent Person": "[Cc]ompetent [Pp]ersons?",
       "Ind: Authorised Person": [
@@ -148,15 +155,16 @@ defmodule DutyholderDefinitions do
         "[Aa]uthorised [Bb]ody",
         "[Aa]uthorised Representative"
       ],
+      "Ind: Supervisor": "[Ss]upervisor",
       "Ind: Appointed Person": ["[Aa]ppointed [Pp]ersons?", "[Aa]ppointed body"],
       "Ind: Relevant Person": "[Rr]elevant [Pp]erson",
-      "Ind: Operator": ["[Oo]perators?", "[Pp]erson who operates the plant"],
-      "Ind: Person": ["[Pp]erson", "site manager", "[Ii]ndividual"],
+      Operator: "[Pp]erson who operates the plant",
+      "Ind: Person": ["[Pp]ersons?", "site manager", "[Ii]ndividual"],
       "Ind: Dutyholder": ["[Dd]uty [Hh]olders?", "[Dd]utyholder"],
       "Ind: Holder": "[Hh]olders?",
       "Ind: User": "[Uu]sers?",
       "Ind: Licensee": ["[Ll]icensee", "[Aa]pplicant"],
-      "SC: Dealer": "(?:[Ss]crap metal )?[Dd]ealer"
+      "Ind: Diver": "[Dd]iver"
     ]
   end
 
@@ -167,7 +175,7 @@ defmodule DutyholderDefinitions do
   defp specialist() do
     [
       "Spc: Advisor": "[Aa]dvis[oe]r",
-      "Spc: OH Advisor": ["[Nn]urse", "[Pp]hysician", "[Dd]octor"],
+      "Spc: OH Advisor": ["[Nn]urse", "[Pp]hysician", "[Dd]octor", "[Mm]edical examiner"],
       "Spc: Representative": "[Rr]epresentatives?",
       "Spc: Trade Union": "[Tt]rade [Uu]nions?",
       "Spc: Assessor": "[Aa]ssessors?",
@@ -176,35 +184,35 @@ defmodule DutyholderDefinitions do
     ]
   end
 
-  defp cdm() do
-    [
-      "CDM: Principal Designer": "[Pp]rincipal [Dd]esigner",
-      "CDM: Designer": "[Dd]esigner",
-      "CDM: Constructor": "[Cc]onstructor",
-      "CDM: Principal Contractor": "[Pp]rincipal [Cc]ontractor",
-      "CDM: Contractor": "[Cc]ontractor"
-    ]
-  end
-
   defp supply_chain() do
+    # T&L = transport and logistics
+    # C = construction
     [
-      "SC: Agent": "[Aa]gent?s",
+      "SC: Agent": "(?<![Bb]iological )[Aa]gent?s",
       "SC: Keeper": "person who.*?keeps*?",
       "SC: Manufacturer": "[Mm]anufacturer",
       "SC: Producer": ["[Pp]roducer", "person who.*?produces*?"],
+      "SC: C: Principal Designer": "[Pp]rincipal [Dd]esigner",
+      "SC: C: Designer": "[Dd]esigner",
+      "SC: C: Constructor": "[Cc]onstructor",
+      "SC: C: Principal Contractor": "[Pp]rincipal [Cc]ontractor",
+      "SC: C: Contractor": ["[Cc]ontractor", "[Dd]iving contractor"],
       "SC: Marketer": ["[Aa]dvertiser", "[Mm]arketer"],
       "SC: Supplier": "[Ss]upplier",
       "SC: Distributor": "[Dd]istributor",
       "SC: Seller": "[Ss]eller",
+      "SC: Dealer": "(?:[Ss]crap metal )?[Dd]ealer",
       "SC: Retailer": "[Rr]etailer",
+      "SC: Domestic Client": "[Dd]omestic [Cc]lient",
+      "SC: Client": "[Cc]lients?",
       "SC: Customer": "[Cc]ustomer",
       "SC: Consumer": "[Cc]onsumer",
       "SC: Storer": "[Ss]torer",
-      "SC: Consignor": "[Cc]onsignor",
-      "SC: Handler": "[Hh]andler",
-      "SC: Consignee": "[Cc]onsignee",
-      "SC: Carrier": ["[Tt]ransporter", "person who.*?carries", "[Cc]arriers?"],
-      "SC: Driver": "[Dd]river",
+      "SC: T&L: Consignor": "[Cc]onsignor",
+      "SC: T&L: Handler": "[Hh]andler",
+      "SC: T&L: Consignee": "[Cc]onsignee",
+      "SC: T&L: Carrier": ["[Tt]ransporter", "person who.*?carries", "[Cc]arriers?"],
+      "SC: T&L: Driver": "[Dd]river",
       "SC: Importer": ["[Ii]mporter", "person who.*?imports*?"],
       "SC: Exporter": ["[Ee]xporter", "person who.*?exports*?"]
     ]
@@ -217,6 +225,12 @@ defmodule DutyholderDefinitions do
       "Svc: Repairer": "[Rr]epairer"
     ]
   end
+
+  defp maritime(),
+    do: [
+      "Maritime: crew": "crew of a ship",
+      "Maritime: master": "master.*?of a ship"
+    ]
 
   defp environmentalist() do
     [
