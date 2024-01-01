@@ -179,7 +179,8 @@ defmodule UK do
   end
 
   @taxa [
-          {Taxa, :api_update_lat_taxa}
+          {Taxa, :api_update_lat_taxa},
+          {Taxa, :api_update_multi_lat_taxa}
         ]
         |> Enum.with_index()
         |> Enum.into(%{}, fn {k, v} -> {v, k} end)
@@ -187,7 +188,7 @@ defmodule UK do
   def taxa(opts) do
     case ExPrompt.choose(
            "Taxa Choices",
-           ~W/Update/
+           ~W/Update_Single_Law Update_Laws/
          ) do
       -1 ->
         :ok

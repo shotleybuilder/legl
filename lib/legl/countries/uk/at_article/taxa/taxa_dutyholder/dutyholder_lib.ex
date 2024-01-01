@@ -4,11 +4,11 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
 
   """
 
-  import DutyholderDefinitions
+  alias DutyholderDefinitions
 
-  @dutyholder_library dutyholder_library()
-  @government government()
-  @governed governed()
+  @dutyholder_library DutyholderDefinitions.dutyholder_library()
+  @government DutyholderDefinitions.government()
+  @governed DutyholderDefinitions.governed()
 
   @type actor :: atom()
   @type regex :: binary()
@@ -27,28 +27,10 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   @spec workflow(binary(), :actor) :: list()
   def workflow(text, :actor) do
     {text, []}
-    |> blacklister(blacklist())
+    |> blacklister()
     |> process(@dutyholder_library, true)
     |> elem(1)
     |> Enum.reverse()
-  end
-
-  @spec workflow(binary(), :"Duty Actor") :: list()
-  def workflow(text, :"Duty Actor") do
-    {text, []}
-    |> blacklister(blacklist())
-    |> process(@governed, true)
-    |> elem(1)
-    |> Enum.sort()
-  end
-
-  @spec workflow(binary(), :"Duty Actor Gvt") :: list()
-  def workflow(text, :"Duty Actor Gvt") do
-    {text, []}
-    |> blacklister(blacklist())
-    |> process(@government, true)
-    |> elem(1)
-    |> Enum.sort()
   end
 
   @spec workflow(binary(), list()) :: list()
@@ -59,8 +41,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     |> Enum.sort()
   end
 
-  defp blacklister({text, collector}, blacklist) do
-    Enum.reduce(blacklist, text, fn regex, acc ->
+  defp blacklister({text, collector}) do
+    Enum.reduce(DutyholderDefinitions.blacklist(), text, fn regex, acc ->
       Regex.replace(~r/#{regex}/m, acc, "")
     end)
     |> (&{&1, collector}).()
@@ -71,22 +53,31 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
     # library = process_library(library)
 
     Enum.reduce(library, collector, fn {actor, regex}, {text, actors} = acc ->
-      # if class == "Gvt: Authority", do: IO.puts("#{regex}")
+      regex_c =
+        case Regex.compile(regex, "m") do
+          {:ok, regex} ->
+            # IO.puts(~s/#{inspect(regex)}/)
+            regex
 
-      case Regex.match?(~r/#{regex}/, text) do
-        true ->
+          {:error, error} ->
+            IO.puts(~s/ERROR: Duty Actor Regex doesn't compile\n#{error}\n#{regex}/)
+        end
+
+      case Regex.run(regex_c, text) do
+        [match] ->
           actor = Atom.to_string(actor)
 
-          case rm? do
-            true ->
-              {Regex.replace(~r/#{regex}/m, text, ""), [actor | actors]}
+          text = if rm?, do: Regex.replace(regex_c, text, ""), else: text
 
-            false ->
-              {text, [actor | actors]}
-          end
+          {text, [actor | actors]}
 
-        false ->
+        nil ->
           acc
+
+        match ->
+          IO.puts(
+            "ERROR:\nText:\n#{text}\nRegex:\n#{regex}\nMATCH:\n#{inspect(match)}\n[#{__MODULE__}.process_dutyholder/3]"
+          )
       end
     end)
   end

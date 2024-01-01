@@ -45,15 +45,15 @@ defmodule Legl.Countries.Uk.AtArticle.Options do
   end
 
   @spec name(opts()) :: opts()
-  def name(%{name: n} = opts) when n in ["", nil] do
+  def name(%{Name: n} = opts) when n in ["", nil, []] do
     Map.put(
       opts,
-      :name,
+      :Name,
       ExPrompt.string(~s/Name ("")/)
     )
   end
 
-  def name(%{name: n} = opts) when is_binary(n), do: opts
+  def name(%{Name: n} = opts) when is_binary(n), do: opts
 
-  def name(opts), do: name(%{opts | name: ""})
+  def name(opts), do: name(%{opts | Name: ""})
 end

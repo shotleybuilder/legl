@@ -13,7 +13,7 @@ defmodule DutyholderDefinitions do
        "Gvt: Commissioners": "[Cc]ommissioners",
        "Gvt: Officer": ["[Aa]uthorised [Oo]fficer", "[Oo]fficer of a local authority"],
        "Gvt: Appropriate Person": "[Aa]ppropriate [Pp]ersons?",
-       "Gvt: Judiciary": ["court", "[Jj]ustice of the [Pp]eace"],
+       "Gvt: Judiciary": ["court", "[Jj]ustice of the [Pp]eace", "[Tt]ribunal"],
        "Gvt: Emergency Services: Police": ["[Cc]onstable", "[Cc]hief of [Pp]olice"],
        "Gvt: Emergency Services": "[Ee]mergency [Ss]ervices?"
      ] ++
@@ -139,7 +139,7 @@ defmodule DutyholderDefinitions do
         "[Pp]artnership",
         "[Uu]nincorporated body?i?e?s?"
       ],
-      Organisation: "[Oo]rganisations?"
+      Organisation: ["[Tt]hird party organisation", "[Oo]rganisations?"]
     ]
   end
 
@@ -155,7 +155,7 @@ defmodule DutyholderDefinitions do
         "[Aa]uthorised [Bb]ody",
         "[Aa]uthorised Representative"
       ],
-      "Ind: Supervisor": "[Ss]upervisor",
+      "Ind: Supervisor": ["[Ss]upervisor", "[Pp]erson in control"],
       "Ind: Appointed Person": ["[Aa]ppointed [Pp]ersons?", "[Aa]ppointed body"],
       "Ind: Relevant Person": "[Rr]elevant [Pp]erson",
       Operator: "[Pp]erson who operates the plant",
@@ -163,7 +163,8 @@ defmodule DutyholderDefinitions do
       "Ind: Dutyholder": ["[Dd]uty [Hh]olders?", "[Dd]utyholder"],
       "Ind: Holder": "[Hh]olders?",
       "Ind: User": "[Uu]sers?",
-      "Ind: Licensee": ["[Ll]icensee", "[Aa]pplicant"],
+      "Ind: Applicant": ["[Rr]elevant applicant", "[Aa]pplicant"],
+      "Ind: Licensee": "[Ll]icensee",
       "Ind: Diver": "[Dd]iver"
     ]
   end
@@ -174,13 +175,24 @@ defmodule DutyholderDefinitions do
 
   defp specialist() do
     [
-      "Spc: Advisor": "[Aa]dvis[oe]r",
-      "Spc: OH Advisor": ["[Nn]urse", "[Pp]hysician", "[Dd]octor", "[Mm]edical examiner"],
+      "Spc: OH Advisor": [
+        "[Nn]urse",
+        "[Pp]hysician",
+        "(?:[Rr]elevant)?[ ]?[Dd]octor",
+        "[Mm]edical examiner",
+        "[Ee]mployment medical advis[oe]r"
+      ],
+      "Spc: Employees' Representative": [
+        "[Ee]mployees' representative",
+        "[Ss]afety representatives?",
+        "[Tt]rade [Uu]nions? representatives?"
+      ],
       "Spc: Representative": "[Rr]epresentatives?",
       "Spc: Trade Union": "[Tt]rade [Uu]nions?",
       "Spc: Assessor": "[Aa]ssessors?",
-      "Spc: Inspector": "[Ii]nspectors?",
-      "Spc: Body": "[Aa]ppropriate [Bb]ody"
+      "Spc: Inspector": ["[Uu]ser inspectorate", "[Ii]nspectors?"],
+      "Spc: Body": ["[Aa]ppropriate [Bb]ody", "[Aa]pproved [Bb]ody"],
+      "Spc: Advisor": "[Aa]dvis[oe]r"
     ]
   end
 
@@ -193,10 +205,14 @@ defmodule DutyholderDefinitions do
       "SC: Manufacturer": "[Mm]anufacturer",
       "SC: Producer": ["[Pp]roducer", "person who.*?produces*?"],
       "SC: C: Principal Designer": "[Pp]rincipal [Dd]esigner",
-      "SC: C: Designer": "[Dd]esigner",
+      "SC: C: Designer": ["[Dd]esigner", "designs for another"],
       "SC: C: Constructor": "[Cc]onstructor",
       "SC: C: Principal Contractor": "[Pp]rincipal [Cc]ontractor",
-      "SC: C: Contractor": ["[Cc]ontractor", "[Dd]iving contractor"],
+      "SC: C: Contractor": [
+        "[Cc]ontractor",
+        "[Dd]iving contractor",
+        "[Cc]ompressed air contractor"
+      ],
       "SC: Marketer": ["[Aa]dvertiser", "[Mm]arketer"],
       "SC: Supplier": "[Ss]upplier",
       "SC: Distributor": "[Dd]istributor",
@@ -222,7 +238,7 @@ defmodule DutyholderDefinitions do
     [
       "Svc: Installer": "[Ii]nstaller",
       "Svc: Maintainer": "[Mm]aintainer",
-      "Svc: Repairer": "[Rr]epairer"
+      "Svc: Repairer": ["[Rr]epairer", "person who modifies or repairs", "person who repairs"]
     ]
   end
 

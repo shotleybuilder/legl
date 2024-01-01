@@ -2,10 +2,80 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
   @moduledoc """
   Functions to set the options for all taxa modules and functions
   """
-
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
   alias Legl.Countries.Uk.AtArticle.Options, as: LAO
 
-  @default_opts %{
+  @api_update_multi_lat_taxa %{
+    table_name: "UK",
+    lrt_fields: ["Name"],
+    opts_label: "LRT OPTIONS",
+    filesave?: false,
+    patch?: true
+  }
+  @doc """
+  Function to set the options for multi-law taxa
+
+  Gets the 'Name' of the laws from the 'UK' LRT
+  Makes a :lrt_params option to GET those records
+  Drops the generic
+  """
+  def api_update_multi_lat_taxa(opts) do
+    # Legal Register Table opts
+    opts =
+      opts
+      |> Enum.into(@api_update_multi_lat_taxa)
+      |> LAO.base_name()
+      |> LAO.table_id()
+      |> LRO.type_class()
+      |> LRO.type_code()
+      |> LRO.family()
+      |> LRO.today()
+
+    opts =
+      opts
+      |> Map.put(:lrt_table_name, opts.table_name)
+      |> Map.put(:lrt_table_id, opts.table_id)
+      |> Map.drop([:table_name, :table_id])
+
+    formula =
+      []
+      |> LRO.formula_type_class(opts)
+      |> LRO.formula_type_code(opts)
+      |> LRO.formula_family(opts)
+      |> LRO.formula_today(opts, "Last Modified Rollup (from Articles)")
+      |> (&[~s/{Count (Articles)}>0/ | &1]).()
+
+    opts = Map.put(opts, :lrt_formula, ~s/AND(#{Enum.join(formula, ",")})/)
+
+    opts =
+      Map.put(
+        opts,
+        :lrt_params,
+        {:params,
+         %{
+           base: opts.base_id,
+           table: opts.lrt_table_id,
+           options: %{
+             # view: opts.lrt_view,
+             fields: opts.lrt_fields,
+             formula: opts.lrt_formula
+           }
+         }}
+      )
+
+    opts = taxa_workflow(opts, 0)
+
+    label =
+      if Map.has_key?(opts, :opts_label) do
+        opts.opts_label
+      else
+        "OPTIONS"
+      end
+
+    IO.inspect(opts, label: label)
+  end
+
+  @set_workflow_opts %{
     base_name: nil,
     table_name: "Articles",
     fields: [
@@ -19,13 +89,14 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
       "Section||Regulation"
     ],
     view: "",
-    name: "",
+    Name: "",
     type_code: "",
     Year: nil,
     Number: "",
     filesave?: true,
     patch?: false,
     source: :web,
+    taxa_workflow: nil,
     part: "",
     chapter: "",
     section: "",
@@ -36,14 +107,14 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
   def set_workflow_opts(opts) do
     opts =
       opts
-      |> Enum.into(@default_opts)
+      |> Enum.into(@set_workflow_opts)
       |> LAO.base_name()
       |> LAO.table_id()
 
     # uses opt.name if exists or prompts if missing
     opts = if opts.source == :web, do: LAO.name(opts), else: opts
 
-    opts = Map.put(opts, :at_id, opts.name)
+    opts = Map.put(opts, :at_id, opts."Name")
 
     opts = taxa_workflow(opts)
 
@@ -65,11 +136,11 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
   end
 
   def patch(opts) do
-    Enum.into(opts, @default_opts)
+    Enum.into(opts, @set_workflow_opts)
   end
 
-  @duty_actor &Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor.process/1
-  @duty_type &Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.process/1
+  @duty_actor &Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor.api_duty_actor/2
+  @duty_type &Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.api_duty_type/2
   @popimar &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar.process/1
 
   @dutyholder_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.dutyholder_aggregate/1
@@ -102,7 +173,11 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
     ]
   ]
 
-  def taxa_workflow(opts) do
+  def taxa_workflow(%{taxa_workflow_selection: tws} = opts)
+      when is_integer(tws) and tws not in [nil, ""],
+      do: taxa_workflow(opts, tws)
+
+  def taxa_workflow(%{taxa_workflow: nil} = opts) do
     case ExPrompt.choose(
            "LAT Taxa Workflow",
            Enum.map(@workflow_choices, fn {k, _} -> k end)
@@ -111,16 +186,22 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
         :ok
 
       n ->
-        opts
-        |> Map.put(
-          :taxa_workflow,
-          Enum.map(@workflow_choices, fn {_k, v} -> v end)
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-        )
+        taxa_workflow(opts, n)
     end
   end
+
+  def taxa_workflow(opts), do: opts
+
+  def taxa_workflow(opts, n) when is_integer(n),
+    do:
+      opts
+      |> Map.put(
+        :taxa_workflow,
+        Enum.map(@workflow_choices, fn {_k, v} -> v end)
+        |> Enum.with_index()
+        |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+        |> Map.get(n)
+      )
 
   defp formula(opts) do
     record_type =
@@ -150,11 +231,11 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
             ~s/{Number}="#{opts."Number"}"/ | formula
           ]
 
-        opts.at_id == "" ->
+        opts."Name" == "" ->
           formula
 
         true ->
-          [~s/{UK}="#{opts.at_id}"/ | formula]
+          [~s/{UK}="#{opts."Name"}"/ | formula]
       end
 
     formula =

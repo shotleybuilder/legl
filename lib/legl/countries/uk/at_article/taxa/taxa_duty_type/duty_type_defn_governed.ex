@@ -1,5 +1,5 @@
 defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
-  @doc """
+  @moduledoc """
   Function to tag sub-sections that impose a duty on persons other than
   government, regulators and agencies The function is a repository of phrases
   used to assign these duties. The phrases are joined together to form a valid
@@ -50,31 +50,59 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
   @type duty_type :: String.t()
   @type remove? :: boolean()
 
+  defp determiners(), do: ~s/(?:[Aa]n?y?|[Tt]he|[Ee]ach|[Ee]very|[Ee]ach such|[Tt]hat|,)/
+
+  defp neg_lookbehind(),
+    do:
+      ~s/(?<! by | of |send it to |given |appointing | to expose | to whom | to pay | to permit )/
+
   @spec duty(binary()) :: list({{regex(), remove?()}, duty_type()}) | list({regex(), duty_type()})
   def duty(governed) do
     duty_type = "Duty"
 
-    exceptions =
-      ~s/be carried out by|be construed|not apply|be suitable|be consulted|be notified|be informed|be appointed|be retained|include|be made|consist/
+    modals = ~s/(?:shall|must|may[ ]only|may[ ]not)/
+
+    determiners = determiners()
+
+    # 'of' might create problems ...
+    neg_lookbehind = neg_lookbehind()
+
+    # and has to be added to parse e.g.
+    # "Every employer and every self-employed person shall"
+    neg_lookbehind_rm = String.trim_trailing(neg_lookbehind, ")") <> ~s/|and )/
+
+    # Qualifies and excludes the 'governed' based on text immediately after
+    # e.g. "person who is responsible for appointing a designer or contractor to carry out"
+    # The 'contractor' is excluded
+    mid_neg_lookahead = ~s/(?!is found to |is likely to |to a |to carry |to assess |to analyse )/
+
+    #  These have to be literals for the lookahead to work
+    eds =
+      ~s/be construed|be consulted|be notified|be informed|be appointed|be retained|be included|be extended|be treated|be necessary/
+
+    neg_lookahead =
+      ~s/(?!be carried out by|#{eds}|not apply|be suitable|include|be made|consist|have effect|apply)/
 
     [
       # WHERE pattern
-      {"Where.*?(?:an?y?|the|each|every)#{governed}.*?,[ ]he[ ](?:shall|must)", true},
+      {"Where.*?(?:an?y?|the|each|every)#{governed}.*?,[ ]he[ ]#{modals}", true},
 
-      # MUST & SHALL
+      # MUST & SHALL w/ REMOVAL
       # The subject and the modal verb are adjacent and are removed from further text processing
-      {"(?:[Aa]n?y?|[Tt]he|[Ee]ach|[Ee]very)#{governed}(?:shall|must)[[:blank:][:punct:]—](?!#{exceptions})",
+      {"#{neg_lookbehind_rm}#{determiners}#{governed}#{modals}[[:blank:][:punct:]—]#{neg_lookahead}",
        true},
 
-      # MUST
-      # ?! is a negative lookahead
-      "(?:[Aa]n?y?|[Tt]he|Each|[Ee]very|that|or)#{governed}.*?must[[:blank:][:punct:]—](?!#{exceptions})",
+      # SHALL - MUST - MAY ONLY - MAY NOT
 
-      # Pattern when there are dutyholder options and must starts on a new line
-      "(?:[Aa]n?y?|[Tt]he|Each|[Ee]very|that|or) person(?s:.)*?^must (?!be carried out by)",
-      "must be (?:carried out|reviewed|prepared).*?#{governed}",
+      "#{modals} be (?:carried out|reviewed|prepared).*?#{governed}",
 
-      # SHALL
+      # Pattern when there are dutyholder options and MODALS start on a new line
+      "(?:[Aa]n?y?|[Tt]he|Each|[Ee]very|that|or) person(?s:.)*?^#{modals} (?!be carried out by)",
+
+      # Pattern when the 'governed' start on a new line
+      "#{modals} be carried out by—$[\\s\\S]*?#{governed}",
+
+      #
       "[Nn]o#{governed}(?:at work )?(?:shall|is to)",
 
       # Where the subject of the 'shall' is either not a 'governed' or another preceding 'governed'
@@ -83,18 +111,20 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
       # e.g. "Personal protective equipment provided by an employer in accordance with this regulation shall be suitable for the purpose and shall—"
       # e.g. "the result of that review shall be notified to the employee and employer"
       # e.g. "Every employer who undertakes work which is liable to expose an employee to a substance hazardous to health shall provide that employee with suitable and sufficient information, instruction and training"
-      "(?<!by|cost of)[ ](?:[Aa]n?y?|[Tt]he|[Ee]ach|[Ee]very)#{governed}(?!is found to|to a).*?shall[[:blank:][:punct:]—][ ]?(?!#{exceptions})",
+      "#{neg_lookbehind}#{determiners}#{governed}#{mid_neg_lookahead}(?:[^,]*?|.*?he )#{modals}[[:blank:][:punct:]—][ ]?#{neg_lookahead}",
 
-      # regex101 (?:[Aa]n?y?|[Tt]he|[Ee]ach|[Ee]very) employee (?!is found to).*?shall[—]
+      # When the subject precedes and then gets referred to as 'he'
+      # e.g. competent person referred to in paragraph (3) is the user ... or owner ... shall not apply, but he shall
+      "#{governed}#{mid_neg_lookahead}[^—\\.]*?he[ ]shall",
+      #
       # e.g. "An employer who undertakes a fumigation to which this regulation applies shall ensure that"
       # e.g. "Every employer who undertakes work which is liable to expose an employee to a substance hazardous to health shall"
-      # "(?:An?y?|The|Each|Every)#{governed}(?!is found to|to a).*?shall[[:blank:][:punct:]—](?!#{exceptions})",
 
       "#{governed}(?:shall notify|shall furnish the authority)",
 
       # SUBJECT 'governed' comes AFTER the VERB 'shall'
       # e.g. "These Regulations shall apply to a self-employed person as they apply to an employer and an employee"
-      "shall apply to an?.*?#{governed} as they apply to",
+      "shall apply to a.*?#{governed}.*?as they apply to",
       "shall be the duty of any#{governed}",
       "shall be (?:selected by|reviewed by) the#{governed}",
       "shall also be imposed on a#{governed}",
@@ -102,6 +132,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
 
       # OTHER VERBS
       "[Nn]o#{governed}may",
+      "#{governed}may[ ](?:not|only)",
       "requiring a#{governed}.*?to",
       "#{governed}is.*?under a like duty",
       "#{governed}has taken all.*?steps",
@@ -122,6 +153,10 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
   def right(governed) do
     duty_type = "Right"
 
+    determiners = determiners()
+
+    neg_lookbehind = neg_lookbehind()
+
     [
       # WHERE pattern
       {"Where.*?(?:an?y?|the|each|every)#{governed}.*?,[ ]he[ ]may", true},
@@ -129,11 +164,15 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
       # SUBJECT after the VERB
       "requested by a#{governed}",
       # e.g. "the result of that review shall be notified to the employee and employer"
-      "shall (?:be notified to the|consult).*?#{governed}",
+      "(?:shall|must) (?:be notified to the|consult).*?#{governed}",
+      # e.g. may be presented to the CAC by a relevant applicant
+      "may be presented.*?by an?#{governed}",
 
       # MAY
+      # Does not include 'MAY NOT' and 'MAY ONLY' which are DUTIES
       # Uses a negative lookbehind (?<!element)
-      "#{governed}.*?(?<!which|who)[ ]may[[:blank:][:punct:]][ ]?(?!need|have|require|be[ ])",
+      {"#{governed}may[[:blank:][:punct:]][ ]?(?!need|have|require|be[ ]|not|only)", true},
+      "#{neg_lookbehind}#{determiners}#{governed}.*?(?<!which|who)[ ]may[[:blank:][:punct:]][ ]?(?!need|have|require|be[ ]|not|only)",
       "#{governed}.*?shall be entitled",
       "permission of that#{governed}",
       "#{governed}.*?is not required"

@@ -7,16 +7,14 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
 
     [
       "#{government}(?:must|shall)",
-      "#{government}.*?(?:must|shall)(?:co-operate)",
       "#{government}[^—\\.]*?(?:must|shall)",
       "must be (?:carried out|reviewed|sent|prepared).*?#{government}",
       "#{government}[^—\\.]*?has determined",
       "[Ii]t shall be the duty of a?n?[^—\\.]*?#{government}",
-      "#{government}[^—\\.]*?(?:must|shall)",
       "#{government} owes a duty to",
       "is to be.*?by a#{government}",
       "#{government}is to (?:perform|have regard)",
-      "#{government}may not bring to an end"
+      "#{government}may not"
     ]
     |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end
@@ -28,8 +26,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
     duty_type = "Discretionary"
 
     [
-      "#{government}may",
-      "#{government}[^—\\.]*?may",
+      "#{government}[^—\\.]*?may(?![ ]not)",
       "#{government}is not required"
     ]
     |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
@@ -37,16 +34,14 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
 
   @doc """
   Function to tag clauses providing government and agencies with powers
-  Uses the 'Dutyholder' field to pre-filter records for processing
   """
   def power_conferred(government) do
     [
-      {"#{government}.*?may.*?by regulation.*?(specify|substitute|prescribe|make)",
+      {"#{government}.*?may.*?by regulations?.*?(?:specify|substitute|prescribe|make)",
        "Power Conferred"},
       {"#{government} may.*?direct ", "Power Conferred"},
       {"#{government} may vary the terms", "Power Conferred"},
       {"#{government} may.*make.*(scheme|plans?|regulations?) ", "Power Conferred"},
-      {"#{government}[^—\\.]*?may[, ]", "Power Conferred"},
       {"#{government} considers necessary", "Power Conferred"},
       {" in the opinion of the #{government} ", "Power Conferred"},
       #   " [Rr]egulations.*?under (this )?(section|subsection)", "Power Conferred"},

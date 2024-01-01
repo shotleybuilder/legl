@@ -71,6 +71,42 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
   @path ~s[lib/legl/countries/uk/at_article/taxa/api_source.json]
   @results_path ~s[lib/legl/countries/uk/at_article/taxa/api_results.json]
 
+  def api_update_multi_lat_taxa(opts \\ []) do
+    opts = Options.api_update_multi_lat_taxa(opts)
+
+    {:ok, records} = AT.get_records_from_at(opts.lrt_params)
+
+    case Enum.map(records, fn %{"fields" => %{"Name" => name}} -> name end) do
+      [name] ->
+        opts = Map.put(opts, :Name, name)
+        api_update_lat_taxa(opts)
+
+      names when is_list(names) ->
+        IO.inspect(names)
+
+        Enum.each(names, fn name ->
+          IO.puts(~s/\n______________\nNAME: #{name}\n/)
+
+          api_update_lat_taxa(
+            Name: name,
+            base_id: opts.base_id,
+            filesave?: opts.filesave?,
+            base_name: opts.base_name,
+            patch?: opts.patch?,
+            taxa_workflow: opts.taxa_workflow
+          )
+        end)
+    end
+  end
+
+  @doc """
+  Function to process models (taxa) for Legal Article Table records
+
+  Workflow is driven by the user options.  Main workflow is 'Update'
+
+  Functions comprising the workflow are passed to update_lat_taxa to be run
+  """
+
   def api_update_lat_taxa(opts \\ []) do
     opts = Options.set_workflow_opts(opts)
     records = get(opts)
@@ -190,7 +226,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
       records
       |> Enum.reduce([], fn
         %{Record_Type: rt} = record, acc when rt == ["section"] or rt == ["article"] ->
-          case Regex.run(~r/(.*?)(?:_{2}|_A?\d+A?_|__{2}[A-Z]+|_A?\d+A?_[A-Z]+)$/, record."ID") do
+          case Regex.run(~r/(.*?)(?:_{2}|_A?\d+A?_|_{2}[A-Z]+|_A?\d+A?_[A-Z]+)$/, record."ID") do
             [_, id] ->
               [{id, record."Record_ID"} | acc]
 

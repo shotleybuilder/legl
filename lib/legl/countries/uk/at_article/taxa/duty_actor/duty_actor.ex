@@ -7,9 +7,12 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib
+  alias DutyholderDefinitions
 
   @at_id "UK_ukpga_1990_43_EPA"
+
+  @government DutyholderDefinitions.government()
+  @governed DutyholderDefinitions.governed()
 
   @default_opts %{
     base_name: "uk_e_environmental_protection",
@@ -24,54 +27,127 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
   @results_path ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/duty_actor_results.json]
 
   @type records :: list(%AtTaxa{})
+  @type opts :: map()
+  @type actor :: atom()
+  @type regex :: binary()
+  @type library() :: keyword({actor(), regex()})
 
-  @process_opts %{filesave?: true, path: @results_path}
+  @process_opts %{filesave?: true, results_path: @results_path}
 
-  def process() do
+  def process(opts \\ %{}) do
     json = @path |> Path.absname() |> File.read!()
     %{"records" => records} = Jason.decode!(json)
-    process(records)
+    api_duty_actor(records, opts)
   end
 
-  @spec process(records()) :: {:ok, records()}
-  def process(records) when is_list(records) do
-    opts = @process_opts
+  @spec api_duty_actor(records(), opts()) :: {:ok, records()}
+  def api_duty_actor(records, opts) when is_list(records) do
+    opts = Map.merge(opts, @process_opts)
 
-    records = process_records(records)
+    records = process_records(records, opts)
 
-    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, opts.path)
+    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, opts.results_path)
     IO.puts("Duty Actor & Duty Actor Gvt complete")
     {:ok, records}
   end
 
-  @spec process_records(records()) :: records()
-  defp process_records(records) when is_list(records) do
+  @spec process_records(records(), opts()) :: records()
+  defp process_records(records, opts) when is_list(records) do
     records
-    |> Enum.map(&process_record(&1, :"Duty Actor"))
-    |> Enum.map(&process_record(&1, :"Duty Actor Gvt"))
+    |> Enum.map(&blacklister(&1))
+    |> Enum.map(&process_record(&1, :"Duty Actor", opts))
+    |> Enum.map(&process_record(&1, :"Duty Actor Gvt", opts))
     |> Enum.reverse()
   end
 
-  defp process_record(%AtTaxa{Text: text} = record, field)
+  defp process_record(%AtTaxa{Text: text} = record, field, opts)
        when is_struct(record) and text not in ["", nil] do
-    record =
-      Map.put(
-        record,
-        field,
-        DutyholderLib.workflow(text, field)
-      )
-
-    # Use to QA duty actor Regex
-    """
-    if record."Duty Actor" in [nil, "", []] and record."Duty Actor Gvt" in [nil, "", []] and
-    record."Record_Type" in [["article"], ["sub-article"]],
-    do:
-    IO.puts(
-      ~s/Text: #{record."Text"}\nDuty Actor: #{record."Duty Actor"}\nDuty Actor Gvt: #{record."Duty Actor Gvt"}\n/
+    Map.put(
+      record,
+      field,
+      get_duty_actors_in_text(text, field, opts)
     )
-    """
+  end
 
-    record
+  defp process_record(record, _field, _), do: record
+
+  @spec get_duty_actors_in_text(binary(), :"Duty Actor", opts()) :: list()
+  def get_duty_actors_in_text(text, :"Duty Actor", opts) do
+    {text, []}
+    |> run_duty_actor_regex(@governed, true, opts)
+    |> elem(1)
+    |> Enum.sort()
+  end
+
+  @spec get_duty_actors_in_text(binary(), :"Duty Actor Gvt", opts()) :: list()
+  def get_duty_actors_in_text(text, :"Duty Actor Gvt", opts) do
+    {text, []}
+    |> run_duty_actor_regex(@government, true, opts)
+    |> elem(1)
+    |> Enum.sort()
+  end
+
+  defp blacklister(%AtTaxa{Text: text} = record) do
+    text =
+      Enum.reduce(DutyholderDefinitions.blacklist(), text, fn regex, acc ->
+        Regex.replace(~r/#{regex}/m, acc, "")
+      end)
+
+    Map.put(record, :Text, text)
+  end
+
+  @spec run_duty_actor_regex({binary(), []}, library(), boolean(), opts()) :: {binary(), list()}
+  defp run_duty_actor_regex(collector, library, rm?, opts) do
+    # library = process_library(library)
+
+    Enum.reduce(library, collector, fn {actor, regex}, {text, actors} = acc ->
+      regex_c =
+        case Regex.compile(regex, "m") do
+          {:ok, regex} ->
+            # IO.puts(~s/#{inspect(regex)}/)
+            regex
+
+          {:error, error} ->
+            IO.puts(~s/ERROR: Duty Actor Regex doesn't compile\n#{error}\n#{regex}/)
+        end
+
+      case Regex.run(regex_c, text) do
+        [match] ->
+          actor = Atom.to_string(actor)
+
+          text = if rm?, do: Regex.replace(regex_c, text, ""), else: text
+
+          IO.puts(~s/DUTY ACTOR: #{actor}/)
+          IO.puts(~s/MATCH: #{inspect(match)}/)
+          IO.puts(~s/REGEX: #{regex}\n/)
+
+          case File.open(
+                 ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/_results/#{opts."Name"}.txt],
+                 [:append]
+               ) do
+            {:ok, file} ->
+              IO.binwrite(
+                file,
+                ~s/\nDUTY ACTOR: #{actor}\nMATCH: #{match}\nREGEX: #{regex}\n/
+              )
+
+              File.close(file)
+
+            {:error, :enoent} ->
+              :ok
+          end
+
+          {text, [actor | actors]}
+
+        nil ->
+          acc
+
+        match ->
+          IO.puts(
+            "ERROR:\nText:\n#{text}\nRegex:\n#{regex}\nMATCH:\n#{inspect(match)}\n[#{__MODULE__}.process_dutyholder/3]"
+          )
+      end
+    end)
   end
 
   def workflow(opts \\ []) do

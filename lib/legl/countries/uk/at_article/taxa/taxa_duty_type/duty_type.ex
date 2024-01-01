@@ -12,6 +12,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   @type duty_types :: list()
   @type dutyholders :: list()
   @type dutyholders_gvt :: list()
+  @type opts :: map()
 
   @duty_type_taxa [
     # Why of the law
@@ -55,23 +56,22 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/at_duty_type_taxa/duty.json]
   @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/at_duty_type_taxa/records_results.json]
 
-  @process_opts %{filesave?: false, field: :"Duty Type"}
-
   @type records :: list(%AtTaxa{})
 
-  def process() do
+  def api_duty_type(opts) do
     json = @path |> Path.absname() |> File.read!()
     %{"records" => records} = Jason.decode!(json)
-    process(records)
+    api_duty_type(records, opts)
   end
 
-  @spec process(records()) :: {:ok, records()}
-  def process(records) do
-    opts = @process_opts
-
+  @doc """
+  Function to enumerate the Article Table records for Duty Type
+  """
+  @spec api_duty_type(records()) :: {:ok, records()}
+  def api_duty_type(records, opts) do
     records =
       records
-      |> Enum.map(&process_record(&1))
+      |> Enum.map(&process_record(&1, opts))
       |> Enum.reverse()
       |> revise_dutyholder()
 
@@ -80,30 +80,33 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     {:ok, records}
   end
 
-  @spec process_record(%AtTaxa{}) :: %AtTaxa{}
-  defp process_record(%AtTaxa{Record_Type: record_type} = record)
+  @spec process_record(%AtTaxa{}, opts()) :: %AtTaxa{}
+  defp process_record(%AtTaxa{Record_Type: record_type} = record, _)
        when record_type in [["part"], ["chapter"], ["heading"]] and is_map(record),
        do: record
 
-  defp process_record(%AtTaxa{Record_Type: ["section"], Text: text} = record) do
+  defp process_record(%AtTaxa{Record_Type: ["section"], Text: text} = record, opts) do
     case Regex.match?(~r/\n/, text) do
-      true -> classes(record, text)
+      true -> classes(record, text, opts)
       false -> record
     end
   end
 
-  defp process_record(%AtTaxa{Record_Type: record_type, Text: text} = record)
+  defp process_record(%AtTaxa{Record_Type: record_type, Text: text} = record, opts)
        when is_binary(text) and text not in ["", nil] and
               record_type in [["sub-section"], ["article"], ["sub-article"]] do
-    classes(record, text)
+    classes(record, text, opts)
   end
 
-  defp process_record(record), do: record
+  defp process_record(record, _), do: record
 
-  @spec classes(%AtTaxa{}, binary()) :: %AtTaxa{}
-  defp classes(record, text) do
-    {dutyholders, duty_types_gvd} = get_dutyholders_and_duty_types(record, text)
-    {dutyholders_gvt, duty_types_gvt} = get_dutyholders_gvt_and_duty_types(record, text)
+  @spec classes(%AtTaxa{}, binary(), opts()) :: %AtTaxa{}
+  defp classes(record, text, opts) do
+    {dutyholders, duty_types_gvd} = DutyTypeLib.duty_types_for_dutyholders(record, text, opts)
+
+    {dutyholders_gvt, duty_types_gvt} =
+      DutyTypeLib.duty_types_for_dutyholders_gvt(record, text, opts)
+
     duty_types_generic = DutyTypeLib.duty_types_generic(text)
 
     # IO.inspect(text)
@@ -149,22 +152,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     record
   end
 
-  defp get_dutyholders_and_duty_types(%{"Duty Actor": []}, _text), do: {[], []}
-
-  @spec get_dutyholders_and_duty_types(%AtTaxa{}, binary()) :: {dutyholders(), duty_types()}
-  defp get_dutyholders_and_duty_types(%{"Duty Actor": actors}, text) when is_list(actors) do
-    DutyTypeLib.duty_types_for_dutyholders(text, actors)
-  end
-
-  defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": []}, _text), do: {[], []}
-
-  @spec get_dutyholders_gvt_and_duty_types(%AtTaxa{}, binary()) ::
-          {dutyholders_gvt(), duty_types()}
-  defp get_dutyholders_gvt_and_duty_types(%{"Duty Actor Gvt": actors}, text)
-       when is_list(actors) do
-    DutyTypeLib.duty_types_for_dutyholders_gvt(text, actors)
-  end
-
   @doc """
   Function that revises the dutyholder tag based on the outcome of the duty type tag.
   Eg, amendment clauses to not have dutyholders
@@ -186,7 +173,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   def workflow(opts \\ []) do
     with(
       {:ok, records} <- get(opts),
-      {:ok, records} <- process(records),
+      {:ok, records} <- api_duty_type(records),
       {:ok, records} <- aggregate(records)
     ) do
       patch(records)
@@ -196,9 +183,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     end
   end
 
-  def workflow_() do
+  def workflow_(opts \\ []) do
     with(
-      {:ok, records} <- process(),
+      {:ok, records} <- api_duty_type(opts),
       {:ok, records} <- aggregate(records)
     ) do
       patch(records)

@@ -4,7 +4,7 @@ defmodule Legl.Services.Airtable.UkAirtable do
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
 
-  @type opts() :: %{
+  @type opts :: %{
           base_id: String.t(),
           table: String.t(),
           view: String.t(),
@@ -35,7 +35,21 @@ defmodule Legl.Services.Airtable.UkAirtable do
   @doc """
 
   """
-  @spec get_records_from_at(__MODULE__.opts()) :: {:ok, list()} | :ok
+  @spec get_records_from_at({:params, opts()}) :: {:ok, list()} | :ok
+  def get_records_from_at({:params, params}) do
+    with(
+      # IO.inspect(params),
+      {:ok, {_, recordset}} <- Records.get_records({[], []}, params)
+    ) do
+      IO.puts("\n#{Enum.count(recordset)} Records returned from Airtable")
+      {:ok, recordset}
+    else
+      {:error, error} ->
+        IO.inspect(error)
+    end
+  end
+
+  @spec get_records_from_at(opts()) :: {:ok, list()} | :ok
   def get_records_from_at(%{base_id: _} = opts) do
     with(
       params = %{

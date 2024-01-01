@@ -100,19 +100,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   end
 
   @spec family(map()) :: map()
-  def family(%{base_name: "UK EHS"} = opts) do
-    Map.put(
-      opts,
-      :family,
-      case ExPrompt.choose("Choose Family", Models.ehs_family()) do
-        index when index in 0..20 -> Enum.at(Models.ehs_family(), index)
-        -1 -> ""
-        _ -> ""
-      end
-    )
-  end
-
-  @spec family(map()) :: map()
   def family(%{base_name: "UK S"} = opts) do
     Map.put(
       opts,
@@ -136,6 +123,19 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
       end
     )
   end
+
+  @spec family(map()) :: map()
+  def family(opts),
+    do:
+      Map.put(
+        opts,
+        :family,
+        case ExPrompt.choose("Choose Family", Models.ehs_family()) do
+          index when index in 0..20 -> Enum.at(Models.ehs_family(), index)
+          -1 -> ""
+          _ -> ""
+        end
+      )
 
   def type_class(%{name: name} = opts) when name not in ["", nil], do: opts
 
@@ -189,25 +189,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
         0 -> :create
         1 -> :update
         2 -> :delta
-        -1 -> nil
-      end
-    )
-  end
-
-  @spec today(map()) :: map()
-  def today(opts) do
-    Map.put(
-      opts,
-      :today,
-      case ExPrompt.choose(
-             "amendment_checked ",
-             ["Today", "Blank", "Today & Blank", "Not Today", "Not Today & Blank"]
-           ) do
-        0 -> :today
-        1 -> :blank
-        2 -> :today_and_blank
-        3 -> :not_today
-        4 -> :not_today_and_blank
         -1 -> nil
       end
     )
@@ -330,6 +311,35 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     end
   end
 
+  @spec today(map()) :: map()
+  def today(opts) do
+    Map.put(
+      opts,
+      :today,
+      case ExPrompt.choose(
+             "Date Field: ",
+             [
+               "Today",
+               "Blank",
+               "Today & Blank",
+               "Not Today",
+               "Not Today & Blank",
+               ">1 week Old",
+               ">1 week Old & Blank"
+             ]
+           ) do
+        0 -> :today
+        1 -> :blank
+        2 -> :today_and_blank
+        3 -> :not_today
+        4 -> :not_today_and_blank
+        5 -> :older_than_one_week
+        6 -> :older_than_one_week_and_blank
+        -1 -> nil
+      end
+    )
+  end
+
   @spec formula_today(list(), binary()) :: list() | []
 
   def formula_today(%{today?: false} = _opts, _field), do: []
@@ -351,10 +361,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
       today == :not_today_and_blank ->
         [~s/OR({#{field}}=BLANK(), {#{field}}!=TODAY())/]
 
+      today == :older_than_one_week ->
+        [~s/OR({#{field}}!=BLANK(), {#{field}}<=DATEADD(TODAY(), -7, "day"))/]
+
+      today == :older_than_one_week_and_blank ->
+        [~s/OR({#{field}}=BLANK(), {#{field}}<=DATEADD(TODAY(), -7, "day"))/]
+
       true ->
         []
     end
   end
+
+  def formula_today(f, opts, field), do: f ++ formula_today(opts, field)
 
   @spec formula_type_code(formula(), opts()) :: list(formula()) | []
   def formula_type_code(f, %{type_code: type_code} = _opts)
