@@ -1,14 +1,14 @@
-defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
+defmodule Legl.Countries.Uk.Article.Taxa.Actor.ActorLib do
   @moduledoc """
   Functions to create a list of dutyholder tags for a piece of text
 
   """
 
-  alias DutyholderDefinitions
+  alias ActorDefinitions
 
-  @dutyholder_library DutyholderDefinitions.dutyholder_library()
-  @government DutyholderDefinitions.government()
-  @governed DutyholderDefinitions.governed()
+  @dutyholder_library ActorDefinitions.dutyholder_library()
+  @government ActorDefinitions.government()
+  @governed ActorDefinitions.governed()
 
   @type actor :: atom()
   @type regex :: binary()
@@ -42,7 +42,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   end
 
   defp blacklister({text, collector}) do
-    Enum.reduce(DutyholderDefinitions.blacklist(), text, fn regex, acc ->
+    Enum.reduce(ActorDefinitions.blacklist(), text, fn regex, acc ->
       Regex.replace(~r/#{regex}/m, acc, "")
     end)
     |> (&{&1, collector}).()
@@ -86,8 +86,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
   Function builds a custom library using a list of Duty Actors
   This library is used for Duty Type and Dutyholder tagging
   """
-  @spec custom_dutyholder_library(list(), keyword()) :: keyword({actor(), regex()})
-  def custom_dutyholder_library(actors, library) when is_list(actors) do
+  @spec custom_actor_library(list(), keyword()) :: keyword({actor(), regex()})
+  def custom_actor_library(actors, library) when is_list(actors) do
     library =
       cond do
         library == :government -> @government

@@ -91,6 +91,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
           # .csv strings
           duty_holder: String.t(),
+          rights_holder: String.t(),
           duty_holder_gvt: String.t(),
           duty_actor: String.t(),
           duty_actor_gvt: String.t(),
@@ -99,6 +100,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
           #
           Dutyholder: list(),
+          Rightsholder: list(),
           "Dutyholder Gvt": list(),
           "Duty Actor": list(),
           "Duty Actor Gvt": list(),
@@ -108,6 +110,8 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           # Descriptions ordered using model or article
           dutyholder_article: String.t(),
           article_dutyholder: String.t(),
+          rightsholder_article: String.t(),
+          article_rightsholder: String.t(),
           duty_actor_article: String.t(),
           article_duty_actor: String.t(),
           duty_type_article: String.t(),
@@ -197,6 +201,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     amended_by_change_log
 
     duty_holder
+    rights_holder
     duty_holder_gvt
     duty_actor
     duty_actor_gvt
@@ -204,11 +209,15 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     popimar_
 
     Dutyholder
+    Rightsholder
 
     POPIMAR
 
     dutyholder_article
     article_dutyholder
+
+    rightsholder_article
+    article_rightsholder
 
     dutyholder_gvt_article
     article_dutyholder_gvt

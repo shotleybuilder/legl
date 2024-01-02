@@ -2,7 +2,7 @@ defmodule Legl.Services.Airtable.UkAirtable do
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+  alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
   @type opts :: %{
           base_id: String.t(),
@@ -92,9 +92,9 @@ defmodule Legl.Services.Airtable.UkAirtable do
     Enum.map(records, &Kernel.struct(%LegalRegister{}, &1))
   end
 
-  @spec make_records_into_legal_article_taxa_structs(list()) :: list(AtTaxa.legal_register())
+  @spec make_records_into_legal_article_taxa_structs(list()) :: list(LATTaxa.legal_register())
   def make_records_into_legal_article_taxa_structs(records) do
-    Enum.map(records, &Kernel.struct(%AtTaxa{}, &1))
+    Enum.map(records, &Kernel.struct(%LATTaxa{}, &1))
   end
 
   def enumerate_at_records({file, records}, func) do

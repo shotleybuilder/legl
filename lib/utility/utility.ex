@@ -158,25 +158,29 @@ defmodule Legl.Utility do
     do: save_at_records_to_file(records, "lib/legl/data_files/txt/airtable.txt")
 
   def save_at_records_to_file(records, path) when is_list(records) do
-    {:ok, file} =
-      path
-      |> Path.absname()
-      |> File.open([:utf8, :write])
+    case File.open(path |> Path.absname(), [:utf8, :write]) do
+      {:ok, file} ->
+        IO.puts(file, inspect(records, limit: :infinity))
+        File.close(file)
+        :ok
 
-    IO.puts(file, inspect(records, limit: :infinity))
-    File.close(file)
-    :ok
+      {:error, :enoent} ->
+        IO.puts("ERROR: :enoent #{path}")
+        :ok
+    end
   end
 
   def save_at_records_to_file(records, path) when is_binary(records) do
-    {:ok, file} =
-      path
-      |> Path.absname()
-      |> File.open([:utf8, :write])
+    case File.open(path |> Path.absname(), [:utf8, :write]) do
+      {:ok, file} ->
+        IO.puts(file, records)
+        File.close(file)
+        :ok
 
-    IO.puts(file, records)
-    File.close(file)
-    :ok
+      {:error, :enoent} ->
+        IO.puts("ERROR: :enoent #{path}")
+        :ok
+    end
   end
 
   def append_records_to_file(records, path) when is_binary(records) do

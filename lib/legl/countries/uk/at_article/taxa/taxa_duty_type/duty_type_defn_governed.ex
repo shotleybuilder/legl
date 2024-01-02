@@ -151,7 +151,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
     ]
 
   def right(governed) do
-    duty_type = "Right"
+    # duty_type = "Right"
 
     determiners = determiners()
 
@@ -171,20 +171,14 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
       # MAY
       # Does not include 'MAY NOT' and 'MAY ONLY' which are DUTIES
       # Uses a negative lookbehind (?<!element)
-      {"#{governed}may[[:blank:][:punct:]][ ]?(?!need|have|require|be[ ]|not|only)", true},
+      {"#{governed}may[[:blank:][:punct:]][ ]?(?!exceed|need|have|require|be[ ]|not|only)", true},
       "#{neg_lookbehind}#{determiners}#{governed}.*?(?<!which|who)[ ]may[[:blank:][:punct:]][ ]?(?!need|have|require|be[ ]|not|only)",
       "#{governed}.*?shall be entitled",
       "permission of that#{governed}",
-      "#{governed}.*?is not required"
+      "#{governed}.*?is not required",
+      "#{governed}may.*?, but may not"
     ]
-    |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
-    |> (&Kernel.++(&1, right_like(governed))).()
-  end
 
-  defp right_like(governed),
-    do: [
-      {"#{governed}may.*?, but may not", ["Duty", "Right"]},
-      {"#{governed}.*?may appeal", ["Right", "Defence, Appeal"]},
-      {"[Ii]t is a defence for a #{governed}", "Defence, Appeal"}
-    ]
+    # |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
+  end
 end

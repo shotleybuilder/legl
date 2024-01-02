@@ -141,16 +141,19 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
     Enum.into(opts, @set_workflow_opts)
   end
 
-  @duty_actor &Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor.api_duty_actor/2
-  @duty_type &Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.api_duty_type/2
-  @popimar &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar.process/1
+  @duty_actor &Legl.Countries.Uk.Article.Taxa.TaxaDutyActor.DutyActor.api_duty_actor/2
+  @duty_type &Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType.api_duty_type/2
+  @popimar &Legl.Countries.Uk.Article.Taxa.TaxaPopimar.Popimar.process/1
 
-  @dutyholder_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.dutyholder_aggregate/1
-  @dutyholder_gvt_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.dutyholder_gvt_aggregate/1
-  @duty_actor_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_actor_aggregate/1
-  @duty_actor_gvt_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_actor_gvt_aggregate/1
-  @duty_type_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.duty_type_aggregate/1
-  @popimar_aggregate &Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa.popimar_aggregate/1
+  @dutyholder_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.dutyholder_aggregate/1
+  @dutyholder_gvt_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.dutyholder_gvt_aggregate/1
+
+  @rightsholder_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.rightsholder_aggregate/1
+
+  @duty_actor_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.duty_actor_aggregate/1
+  @duty_actor_gvt_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.duty_actor_gvt_aggregate/1
+  @duty_type_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.duty_type_aggregate/1
+  @popimar_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.popimar_aggregate/1
 
   @workflow_choices [
     Update: [
@@ -159,6 +162,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
       @popimar,
       @dutyholder_aggregate,
       @dutyholder_gvt_aggregate,
+      @rightsholder_aggregate,
       @duty_actor_aggregate,
       @duty_actor_gvt_aggregate,
       @duty_type_aggregate,

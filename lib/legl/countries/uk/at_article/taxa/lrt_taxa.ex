@@ -113,7 +113,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
 
   defmodule DutyActor do
     alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
     def duty_actor(records) do
       result =
@@ -130,7 +130,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       }
     end
 
-    @spec duty_actor_uniq(list(%AtTaxa{})) :: list()
+    @spec duty_actor_uniq(list(%LATTaxa{})) :: list()
     defp duty_actor_uniq(records) do
       Enum.map(records, fn %{"Duty Actor": value} ->
         value
@@ -140,7 +140,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.sort()
     end
 
-    @spec duty_actor_aggregate(list(%AtTaxa{})) :: list()
+    @spec duty_actor_aggregate(list(%LATTaxa{})) :: list()
     defp duty_actor_aggregate(records) do
       records
       |> duty_actor_uniq
@@ -181,7 +181,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> (&Map.put(%{}, :duty_actor, &1)).()
     end
 
-    @spec duty_actor_article(list(%AtTaxa{})) :: struct()
+    @spec duty_actor_article(list(%LATTaxa{})) :: struct()
     def duty_actor_article(records) do
       records
       |> Enum.map(&LRTT.sorter(&1, :"Duty Actor Aggregate"))
@@ -215,7 +215,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
 
   defmodule DutyActorGvt do
     alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
     def duty_actor_gvt(records) do
       result =
@@ -232,7 +232,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       }
     end
 
-    @spec duty_actor_gvt_uniq(list(%AtTaxa{})) :: list()
+    @spec duty_actor_gvt_uniq(list(%LATTaxa{})) :: list()
     defp duty_actor_gvt_uniq(records) do
       Enum.map(records, fn %{"Duty Actor Gvt": value} ->
         value
@@ -242,7 +242,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.sort()
     end
 
-    @spec duty_actor_gvt_aggregate(list(%AtTaxa{})) :: list()
+    @spec duty_actor_gvt_aggregate(list(%LATTaxa{})) :: list()
     defp duty_actor_gvt_aggregate(records) do
       records
       |> duty_actor_gvt_uniq
@@ -318,7 +318,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
 
   defmodule DutyHolder do
     alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
     def dutyholder(records) do
       result =
@@ -335,7 +335,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       }
     end
 
-    @spec dutyholder_uniq(list(%AtTaxa{})) :: list()
+    @spec dutyholder_uniq(list(%LATTaxa{})) :: list()
     defp dutyholder_uniq(records) do
       Enum.map(records, fn %{Dutyholder: value} ->
         value
@@ -345,7 +345,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.sort()
     end
 
-    @spec dutyholder_aggregate(list(%AtTaxa{})) :: list()
+    @spec dutyholder_aggregate(list(%LATTaxa{})) :: list()
     defp dutyholder_aggregate(records) do
       records
       |> dutyholder_uniq
@@ -419,9 +419,112 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     end
   end
 
+  defmodule Rightsholder do
+    alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
+    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
+
+    def rightsholder(records) do
+      result =
+        Enum.map(records, fn %{"Rightsholder Aggregate": value} ->
+          value
+        end)
+        |> List.flatten()
+        |> Enum.uniq()
+        |> Enum.sort()
+
+      %{
+        # duty_holder: Legl.Utility.quote_list(result) |> Enum.join(","),
+        Rightsholder: result
+      }
+    end
+
+    @spec rightsholder_uniq(list(%LATTaxa{})) :: list()
+    defp rightsholder_uniq(records) do
+      Enum.map(records, fn %{Rightsholder: value} ->
+        value
+      end)
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.sort()
+    end
+
+    @spec rightsholder_aggregate(list(%LATTaxa{})) :: list()
+    defp rightsholder_aggregate(records) do
+      records
+      |> rightsholder_uniq
+      |> Enum.reduce([], fn member, col ->
+        Enum.reduce(records, [], fn
+          %{
+            type_code: [tc],
+            Year: [y],
+            Number: [number],
+            Record_Type: [rt],
+            "Section||Regulation": s,
+            "Rightsholder Aggregate": values
+          } = _record,
+          acc
+          when rt in ["section", "article"] ->
+            rt = if rt != "section", do: "regulation", else: rt
+
+            case Enum.member?(values, member) do
+              true ->
+                url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
+                [url | acc]
+
+              false ->
+                acc
+            end
+
+          _record, acc ->
+            acc
+        end)
+        |> Enum.sort(NaturalOrder)
+        |> (&[{member, &1} | col]).()
+        |> Enum.reverse()
+      end)
+    end
+
+    def uniq_rightsholder_article(records) do
+      records
+      |> rightsholder_aggregate()
+      |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
+      |> Enum.join("\n\n")
+      |> (&Map.put(%{}, :rights_holder, &1)).()
+    end
+
+    def rightsholder_article(records) do
+      records
+      |> Enum.map(&LRTT.sorter(&1, :"Rightsholder Aggregate"))
+      |> Enum.group_by(& &1."Rightsholder Aggregate")
+      |> Enum.filter(fn {k, _} -> k != [] end)
+      |> Enum.map(fn {k, v} ->
+        {k, Enum.map(v, &LRTT.leg_gov_uk/1)}
+      end)
+      |> Enum.sort()
+      |> Enum.map(&LRTT.taxa_article/1)
+      |> Enum.join("\n\n")
+      |> (&Map.put(%{}, :rightsholder_article, &1)).()
+
+      # |> IO.inspect()
+    end
+
+    def article_rightsholder(records) do
+      records
+      |> Enum.filter(fn %{"Rightsholder Aggregate": daa} -> daa != [] end)
+      |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
+      |> Enum.group_by(& &1.url, & &1."Rightsholder Aggregate")
+      |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
+      |> Enum.map(&LRTT.article_taxa/1)
+      |> Enum.join("\n\n")
+      |> (&Map.put(%{}, :article_rightsholder, &1)).()
+
+      # |> IO.inspect()
+    end
+  end
+
   defmodule DutyHolderGvt do
     alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
     def dutyholder_gvt(records) do
       result =
@@ -438,7 +541,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       }
     end
 
-    @spec dutyholder_gvt_uniq(list(%AtTaxa{})) :: list()
+    @spec dutyholder_gvt_uniq(list(%LATTaxa{})) :: list()
     defp dutyholder_gvt_uniq(records) do
       Enum.map(records, fn %{"Dutyholder Gvt": value} ->
         value
@@ -448,7 +551,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.sort()
     end
 
-    @spec dutyholder_gvt_aggregate(list(%AtTaxa{})) :: list()
+    @spec dutyholder_gvt_aggregate(list(%LATTaxa{})) :: list()
     defp dutyholder_gvt_aggregate(records) do
       records
       |> dutyholder_gvt_uniq
@@ -524,7 +627,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
 
   defmodule DutyType do
     alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
     def duty_type(records) do
       result =
@@ -541,7 +644,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       }
     end
 
-    @spec duty_type_uniq(list(%AtTaxa{})) :: list()
+    @spec duty_type_uniq(list(%LATTaxa{})) :: list()
     defp duty_type_uniq(records) do
       Enum.map(records, fn %{"Duty Type": value} ->
         value
@@ -551,7 +654,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.sort()
     end
 
-    @spec duty_type_aggregate(list(%AtTaxa{})) :: list()
+    @spec duty_type_aggregate(list(%LATTaxa{})) :: list()
     defp duty_type_aggregate(records) do
       records
       |> duty_type_uniq
@@ -627,7 +730,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
 
   defmodule POPIMAR do
     alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
-    alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
     def popimar(records) do
       result =
@@ -644,7 +747,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       }
     end
 
-    @spec popimar_uniq(list(%AtTaxa{})) :: list()
+    @spec popimar_uniq(list(%LATTaxa{})) :: list()
     defp popimar_uniq(records) do
       Enum.map(records, fn %{POPIMAR: value} ->
         value
@@ -654,7 +757,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.sort()
     end
 
-    @spec popimar_aggregate(list(%AtTaxa{})) :: list()
+    @spec popimar_aggregate(list(%LATTaxa{})) :: list()
     defp popimar_aggregate(records) do
       records
       |> popimar_uniq

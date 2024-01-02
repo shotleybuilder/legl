@@ -13,7 +13,7 @@ defmodule UK do
   alias Legl.Countries.Uk.LeglRegister.CRUD.FindNewLaw
   alias Legl.Countries.Uk.LeglRegister.PublicationDate
   # ARTICLES
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa, as: Taxa
+  alias Legl.Countries.Uk.Article.Taxa.LATTaxa, as: Taxa
 
   @typedoc """
   A part of a piece of legislation.
@@ -211,11 +211,10 @@ defmodule UK do
   Function provides a shortcut to list all the members of the Dutyholders taxonomy
   """
   def dutyholders(),
-    do:
-      Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib.print_dutyholders_to_console()
+    do: Legl.Countries.Uk.Article.Taxa.Actor.ActorLib.print_dutyholders_to_console()
 
   def dutyTypes(),
-    do: Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType.print_duty_types_to_console()
+    do: Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType.print_duty_types_to_console()
 
   def enact(opts),
     do: Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run(opts)

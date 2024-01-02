@@ -1,6 +1,9 @@
-defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
+defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
   @moduledoc """
   Module to generate taxa classes for sub-sections / sub-articles High level
+
+  Legl.Countries.Uk.Article.Taxa.LATTaxa
+
   workflow -
     1. Loops across all records tagging Duty Actors.  These are roles present in
        the script and this is a 'broad brush' trawl.
@@ -53,6 +56,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
             Heading: nil,
             #
             Dutyholder: [],
+            Rightsholder: [],
             "Dutyholder Gvt": [],
             "Duty Actor": [],
             "Duty Actor Gvt": [],
@@ -60,6 +64,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
             POPIMAR: [],
             #
             "Dutyholder Aggregate": [],
+            "Rightsholder Aggregate": [],
             "Dutyholder Gvt Aggregate": [],
             "Duty Actor Aggregate": [],
             "Duty Actor Gvt Aggregate": [],
@@ -205,6 +210,9 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
 
   def dutyholder_aggregate(records),
     do: aggregate(records, {:Dutyholder, :"Dutyholder Aggregate"})
+
+  def rightsholder_aggregate(records),
+    do: aggregate(records, {:Rightsholder, :"Rightsholder Aggregate"})
 
   def dutyholder_gvt_aggregate(records),
     do: aggregate(records, {:"Dutyholder Gvt", :"Dutyholder Gvt Aggregate"})

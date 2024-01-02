@@ -166,7 +166,8 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn do
 
   def defence_appeal() do
     [
-      {" [Aa]ppeal ", "Defence, Appeal"}
+      {" [Aa]ppeal ", "Defence, Appeal"},
+      {"[Ii]t is a defence for a ", "Defence, Appeal"}
     ]
   end
 end

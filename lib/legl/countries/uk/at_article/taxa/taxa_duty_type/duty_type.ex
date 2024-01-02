@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
+defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
   @moduledoc """
   Functions to ETL airtable 'Article' table records and code the duty type field
 
@@ -6,7 +6,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   """
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+  alias Legl.Countries.Uk.Article.Taxa.LATTaxa
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib
 
   @type duty_types :: list()
@@ -56,7 +56,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
   @path ~s[lib/legl/countries/uk/at_article/at_taxa/at_duty_type_taxa/duty.json]
   @results_path ~s[lib/legl/countries/uk/at_article/at_taxa/at_duty_type_taxa/records_results.json]
 
-  @type records :: list(%AtTaxa{})
+  @type records :: list(%LATTaxa{})
 
   def api_duty_type(opts) do
     json = @path |> Path.absname() |> File.read!()
@@ -80,19 +80,19 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
     {:ok, records}
   end
 
-  @spec process_record(%AtTaxa{}, opts()) :: %AtTaxa{}
-  defp process_record(%AtTaxa{Record_Type: record_type} = record, _)
+  @spec process_record(%LATTaxa{}, opts()) :: %LATTaxa{}
+  defp process_record(%LATTaxa{Record_Type: record_type} = record, _)
        when record_type in [["part"], ["chapter"], ["heading"]] and is_map(record),
        do: record
 
-  defp process_record(%AtTaxa{Record_Type: ["section"], Text: text} = record, opts) do
+  defp process_record(%LATTaxa{Record_Type: ["section"], Text: text} = record, opts) do
     case Regex.match?(~r/\n/, text) do
       true -> classes(record, text, opts)
       false -> record
     end
   end
 
-  defp process_record(%AtTaxa{Record_Type: record_type, Text: text} = record, opts)
+  defp process_record(%LATTaxa{Record_Type: record_type, Text: text} = record, opts)
        when is_binary(text) and text not in ["", nil] and
               record_type in [["sub-section"], ["article"], ["sub-article"]] do
     classes(record, text, opts)
@@ -100,56 +100,74 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyType do
 
   defp process_record(record, _), do: record
 
-  @spec classes(%AtTaxa{}, binary(), opts()) :: %AtTaxa{}
+  @spec classes(%LATTaxa{}, binary(), opts()) :: %LATTaxa{}
   defp classes(record, text, opts) do
-    {dutyholders, duty_types_gvd} = DutyTypeLib.duty_types_for_dutyholders(record, text, opts)
-
-    {dutyholders_gvt, duty_types_gvt} =
-      DutyTypeLib.duty_types_for_dutyholders_gvt(record, text, opts)
-
-    duty_types_generic = DutyTypeLib.duty_types_generic(text)
-
-    # IO.inspect(text)
-    # IO.puts(~s/Dutyholders: #{Enum.join(dutyholders)}/)
-    # IO.puts(~s/Dutyholders gvt: #{Enum.join(dutyholders_gvt)}/)
-    # IO.puts(~s/Duty types: #{Enum.join(duty_types)}/)
-    # IO.puts(~s/Duty types gvt: #{Enum.join(duty_types_gvt)}/)
-    # IO.puts(~s/#{duty_types_gvd} #{duty_types_gvt} #{duty_types_generic}/)
-    duty_types = duty_types_gvd ++ duty_types_gvt ++ duty_types_generic
-
-    duty_types =
-      if duty_types == [],
-        do: ["Process, Rule, Constraint, Condition"],
-        else:
-          duty_types
-          |> Enum.filter(fn x -> x != nil end)
-          # |> Enum.reverse()
-          |> Enum.uniq()
-          |> Enum.sort()
-
-    record =
-      Map.merge(
-        record,
-        %{
-          Dutyholder: dutyholders,
-          "Dutyholder Gvt": dutyholders_gvt,
-          "Duty Type": duty_types
-        }
+    # Amendment articles are not processed further
+    amendment =
+      DutyTypeLib.process(
+        {text, []},
+        Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn.amendment()
       )
+      |> elem(1)
+      |> Enum.uniq()
 
-    #    if record."Duty Actor" not in [nil, "", []] and
-    #         record."Duty Type" == ["Process, Rule, Constraint, Condition"] and
-    #         record."Record_Type" in [["article"], ["sub-article"]],
-    #       do: IO.puts(~s/
-    #      Text: #{record."Text"}
-    #      Duty Actor: #{record."Duty Actor"}
-    #      Duty Actor Gvt: #{record."Duty Actor Gvt"}
-    #      Dutyholder: #{record."Dutyholder"}
-    #      Dutyholder Gvt: #{record."Dutyholder Gvt"}
-    #      Duty Type: #{record."Duty Type"}
-    #      /)
+    case amendment do
+      ["Amendment"] = dt ->
+        Map.put(record, :"Duty Type", dt)
 
-    record
+      [] ->
+        {dutyholders, duty_types_gvd} = DutyTypeLib.duty_types_for_dutyholders(record, text, opts)
+
+        {rightsholders, rights} = DutyTypeLib.find_rightsholders(record, text, opts)
+
+        {dutyholders_gvt, duty_types_gvt} =
+          DutyTypeLib.duty_types_for_dutyholders_gvt(record, text, opts)
+
+        duty_types_generic = DutyTypeLib.duty_types_generic(text)
+
+        # IO.inspect(text)
+        # IO.puts(~s/Dutyholders: #{Enum.join(dutyholders)}/)
+        # IO.puts(~s/Dutyholders gvt: #{Enum.join(dutyholders_gvt)}/)
+        # IO.puts(~s/Duty types: #{Enum.join(duty_types)}/)
+        # IO.puts(~s/Duty types gvt: #{Enum.join(duty_types_gvt)}/)
+        # IO.puts(~s/#{duty_types_gvd} #{duty_types_gvt} #{duty_types_generic}/)
+        duty_types = duty_types_gvd ++ duty_types_gvt ++ duty_types_generic ++ rights
+
+        duty_types =
+          if duty_types == [],
+            do: ["Process, Rule, Constraint, Condition"],
+            else:
+              duty_types
+              |> Enum.filter(fn x -> x != nil end)
+              # |> Enum.reverse()
+              |> Enum.uniq()
+              |> Enum.sort()
+
+        record =
+          Map.merge(
+            record,
+            %{
+              Dutyholder: dutyholders,
+              Rightsholder: rightsholders,
+              "Dutyholder Gvt": dutyholders_gvt,
+              "Duty Type": duty_types
+            }
+          )
+
+        #    if record."Duty Actor" not in [nil, "", []] and
+        #         record."Duty Type" == ["Process, Rule, Constraint, Condition"] and
+        #         record."Record_Type" in [["article"], ["sub-article"]],
+        #       do: IO.puts(~s/
+        #      Text: #{record."Text"}
+        #      Duty Actor: #{record."Duty Actor"}
+        #      Duty Actor Gvt: #{record."Duty Actor Gvt"}
+        #      Dutyholder: #{record."Dutyholder"}
+        #      Dutyholder Gvt: #{record."Dutyholder Gvt"}
+        #      Duty Type: #{record."Duty Type"}
+        #      /)
+
+        record
+    end
   end
 
   @doc """

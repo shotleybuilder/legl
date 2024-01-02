@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
+defmodule Legl.Countries.Uk.Article.Taxa.TaxaDutyActor.DutyActor do
   @moduledoc """
   Functions to ETL airtable 'Article' table records and code the duty type field
 
@@ -6,13 +6,13 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
   """
   alias Legl.Services.Airtable.AtBasesTables
   alias Legl.Services.Airtable.Records
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
-  alias DutyholderDefinitions
+  alias Legl.Countries.Uk.Article.Taxa.LATTaxa
+  alias ActorDefinitions
 
   @at_id "UK_ukpga_1990_43_EPA"
 
-  @government DutyholderDefinitions.government()
-  @governed DutyholderDefinitions.governed()
+  @government ActorDefinitions.government()
+  @governed ActorDefinitions.governed()
 
   @default_opts %{
     base_name: "uk_e_environmental_protection",
@@ -26,7 +26,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
   @path ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/duty_actor.json]
   @results_path ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/duty_actor_results.json]
 
-  @type records :: list(%AtTaxa{})
+  @type records :: list(%LATTaxa{})
   @type opts :: map()
   @type actor :: atom()
   @type regex :: binary()
@@ -60,7 +60,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
     |> Enum.reverse()
   end
 
-  defp process_record(%AtTaxa{Text: text} = record, field, opts)
+  defp process_record(%LATTaxa{Text: text} = record, field, opts)
        when is_struct(record) and text not in ["", nil] do
     Map.put(
       record,
@@ -87,9 +87,9 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyActor.DutyActor do
     |> Enum.sort()
   end
 
-  defp blacklister(%AtTaxa{Text: text} = record) do
+  defp blacklister(%LATTaxa{Text: text} = record) do
     text =
-      Enum.reduce(DutyholderDefinitions.blacklist(), text, fn regex, acc ->
+      Enum.reduce(ActorDefinitions.blacklist(), text, fn regex, acc ->
         Regex.replace(~r/#{regex}/m, acc, "")
       end)
 

@@ -1,4 +1,4 @@
-defmodule DutyholderDefinitions do
+defmodule ActorDefinitions do
   @moduledoc """
   Functions to build search Regex expressions
   """

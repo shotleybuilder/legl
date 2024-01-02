@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
+defmodule Legl.Countries.Uk.Article.Taxa.TaxaPopimar.Popimar do
   @moduledoc """
   Functions to ETL airtable 'Article' table records and code the duty type field
 
@@ -7,7 +7,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
   alias Legl.Services.Airtable.AtBasesTables
   # alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.Airtable.Records
-  alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa
+  alias Legl.Countries.Uk.Article.Taxa.LATTaxa
   alias Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.PopimarLib, as: Lib
 
   @popimar_taxa [
@@ -76,8 +76,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaPopimar.Popimar do
     {:ok, records}
   end
 
-  @spec process_record(%AtTaxa{}) :: list()
-  defp process_record(%AtTaxa{Text: text, Record_Type: rt, "Duty Type": dt})
+  @spec process_record(%LATTaxa{}) :: list()
+  defp process_record(%LATTaxa{Text: text, Record_Type: rt, "Duty Type": dt})
        when text not in ["", nil] do
     # IO.inspect(dt, label: "duty_types")
     case member?(dt) do
