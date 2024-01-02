@@ -27,6 +27,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
       "Record_Type",
       "Text",
       "Record_ID",
+      "Part",
+      "Chapter",
       "Heading",
       "Section||Regulation"
     ],
@@ -36,6 +38,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
   @spec set_taxa_options(opts()) :: opts()
   def set_taxa_options(opts \\ []) do
     # opts = Enum.into(opts, @default_opts)
-    opts = Keyword.merge(opts, @default_opts)
+    Keyword.merge(opts, @default_opts)
   end
 end

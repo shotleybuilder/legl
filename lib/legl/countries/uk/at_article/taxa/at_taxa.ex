@@ -35,6 +35,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
           Year: integer(),
           Number: String.t(),
           "Section||Regulation": String.t(),
+          Part: String.t(),
+          Chapter: String.t(),
           Heading: String.t()
         }
 
@@ -46,6 +48,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxa do
             Year: nil,
             Number: nil,
             "Section||Regulation": nil,
+            Part: nil,
+            Chapter: nil,
             Heading: nil,
             #
             Dutyholder: [],

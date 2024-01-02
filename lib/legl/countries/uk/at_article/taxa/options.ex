@@ -86,6 +86,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
       "type_code",
       "Year",
       "Number",
+      "Part",
+      "Chapter",
       "Section||Regulation"
     ],
     view: "",

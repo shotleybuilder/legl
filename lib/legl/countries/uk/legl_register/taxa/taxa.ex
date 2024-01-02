@@ -119,8 +119,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
 
     lat_opts =
       lat_opts
+      # Sets the fields returned from LAT
       |> LRTTO.set_taxa_options()
-      |> IO.inspect()
       |> LATTO.set_workflow_opts()
 
     # Lets not carry extra fields we don't need
