@@ -2,7 +2,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
   @moduledoc """
   Functions to set the options for the Taxa update
   """
-  alias Legl.Countries.Uk.Article.Taxa.Options
 
   @type opts :: map()
 
@@ -38,6 +37,5 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
   def set_taxa_options(opts \\ []) do
     # opts = Enum.into(opts, @default_opts)
     opts = Keyword.merge(opts, @default_opts)
-    Options.set_workflow_opts(opts)
   end
 end

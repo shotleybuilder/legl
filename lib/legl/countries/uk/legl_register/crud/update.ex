@@ -7,7 +7,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   alias Legl.Services.Airtable.UkAirtable, as: AT
 
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
-  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
   alias Legl.Countries.Uk.Metadata, as: MD
   alias Legl.Countries.Uk.LeglRegister.Extent
   alias Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy
@@ -22,9 +21,30 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   """
   @spec api_update_single_name(opts()) :: :ok
   def api_update_single_name(opts \\ [csv?: false, mute?: true]) do
-    opts = Options.api_update_single_name_options(opts)
+    opts =
+      opts
+      |> Enum.into(%{})
+      |> Legl.Countries.Uk.LeglRegister.Options.name()
+      |> Options.api_update_single_name_options()
 
     [%LegalRegister{} = record] = AT.get_legal_register_records(opts)
+
+    opts = Map.put(opts, :family, record."Family")
+
+    update(record, opts)
+  end
+
+  @spec api_update_single_view(opts()) :: :ok
+  def api_update_single_view(opts \\ [csv?: false, mute?: true]) do
+    opts =
+      opts
+      |> Enum.into(%{})
+      |> Legl.Countries.Uk.LeglRegister.Options.view()
+      |> Options.api_update_single_name_options()
+
+    [%LegalRegister{} = record] = AT.get_legal_register_records(opts)
+
+    opts = Map.put(opts, :family, record."Family")
 
     update(record, opts)
   end

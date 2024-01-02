@@ -45,6 +45,11 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
+  @doc """
+  Function to set options when GET single AT LRT record
+
+  :view or :name set in the calling function
+  """
   def api_update_single_name_options(opts) do
     IO.puts(
       ~s/_____\nSetting Options from [CRUD.Options.api_update_single_name_options]\n:update_workflow, :name, :view, :patch?, :formula, :fields/
@@ -54,11 +59,9 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.update_workflow()
     |> LRO.base_name()
     |> LRO.base_table_id()
-    |> LRO.name()
-    |> LRO.view()
     |> LRO.patch?()
     |> LRO.formula_name()
-    |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year])
+    |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year Family])
     |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end
 

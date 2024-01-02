@@ -64,7 +64,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtTaxaDutyholder.DutyholderLib do
         end
 
       case Regex.run(regex_c, text) do
-        [match] ->
+        [_match] ->
           actor = Atom.to_string(actor)
 
           text = if rm?, do: Regex.replace(regex_c, text, ""), else: text

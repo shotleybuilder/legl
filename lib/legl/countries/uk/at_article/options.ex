@@ -54,6 +54,6 @@ defmodule Legl.Countries.Uk.AtArticle.Options do
   end
 
   def name(%{Name: n} = opts) when is_binary(n), do: opts
-
+  def name(%{Name: false} = opts), do: opts
   def name(opts), do: name(%{opts | Name: ""})
 end
