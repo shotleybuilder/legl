@@ -167,7 +167,21 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn do
   def defence_appeal() do
     [
       {" [Aa]ppeal ", "Defence, Appeal"},
-      {"[Ii]t is a defence for a ", "Defence, Appeal"}
+      {"[Ii]t is a defence for a ", "Defence, Appeal"},
+      {"shall not be (?:guilty|liable)", "Defence, Appeal"},
+      {"it shall (?:also )?.*?be a defence", "Defence, Appeal"}
+    ]
+  end
+
+  @doc """
+  Function to tag clauses providing government and agencies with powers
+  """
+  def power_conferred() do
+    [
+      {" functions.*(?:exercis(?:ed|able)|conferred) ", "Power Conferred"},
+      {" exercising.*functions ", "Power Conferred"},
+      {"power to make regulations", "Power Conferred"},
+      {"[Tt]he power under (?:subsection)", "Power Conferred"}
     ]
   end
 end

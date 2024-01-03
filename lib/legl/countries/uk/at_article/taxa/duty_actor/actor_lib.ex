@@ -103,7 +103,10 @@ defmodule Legl.Countries.Uk.Article.Taxa.Actor.ActorLib do
           [{actor, Keyword.get(library, actor)} | acc]
 
         false ->
-          IO.puts(~s/ERROR: #{actor} not found in library\n#{inspect(library)}/)
+          IO.puts(
+            ~s|ERROR: #{actor} not found in library\n[#{__MODULE__}.custom_actor_library/2]|
+          )
+
           acc
       end
     end)

@@ -3,8 +3,6 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
   Powers vested in government and agencies that they must exercise
   """
   def responsibility(government) do
-    duty_type = "Responsibility"
-
     [
       "#{government}(?:must|shall)",
       "#{government}[^—\\.]*?(?:must|shall)",
@@ -16,20 +14,6 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
       "#{government}is to (?:perform|have regard)",
       "#{government}may not"
     ]
-    |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
-  end
-
-  @doc """
-  Powers vested in government and agencies that they can exercise with discretion
-  """
-  def discretionary(government) do
-    duty_type = "Discretionary"
-
-    [
-      "#{government}[^—\\.]*?may(?![ ]not)",
-      "#{government}is not required"
-    ]
-    |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end
 
   @doc """
@@ -37,20 +21,16 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
   """
   def power_conferred(government) do
     [
-      {"#{government}.*?may.*?by regulations?.*?(?:specify|substitute|prescribe|make)",
-       "Power Conferred"},
-      {"#{government} may.*?direct ", "Power Conferred"},
-      {"#{government} may vary the terms", "Power Conferred"},
-      {"#{government} may.*make.*(scheme|plans?|regulations?) ", "Power Conferred"},
-      {"#{government} considers necessary", "Power Conferred"},
-      {" in the opinion of the #{government} ", "Power Conferred"},
-      #   " [Rr]egulations.*?under (this )?(section|subsection)", "Power Conferred"},
-      {" functions.*(?:exercis(?:ed|able)|conferred) ", "Power Conferred"},
-      {" exercising.*functions ", "Power Conferred"},
-      {"#{government} shall be entitled", "Power Conferred"},
-      {"#{government} may by regulations?", "Power Conferred"},
-      {"power to make regulations", "Power Conferred"},
-      {"[Tt]he power under (?:subsection)", "Power Conferred"}
+      "#{government}.*?may.*?by regulations?.*?(?:specify|substitute|prescribe|make)",
+      "#{government} may.*?direct ",
+      "#{government} may vary the terms",
+      "#{government} may.*make.*(scheme|plans?|regulations?) ",
+      "#{government} considers necessary",
+      " in the opinion of the #{government} ",
+      "#{government} shall be entitled",
+      "#{government} may by regulations?",
+      "#{government}[^—\\.]*?may(?![ ]not)",
+      "#{government}is not required"
     ]
   end
 end

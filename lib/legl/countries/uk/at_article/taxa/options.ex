@@ -146,9 +146,10 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
   @popimar &Legl.Countries.Uk.Article.Taxa.TaxaPopimar.Popimar.process/1
 
   @dutyholder_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.dutyholder_aggregate/1
-  @dutyholder_gvt_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.dutyholder_gvt_aggregate/1
-
   @rightsholder_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.rightsholder_aggregate/1
+
+  @responsibility_holder_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.responsibility_holder_aggregate/1
+  @power_holder_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.power_holder_aggregate/1
 
   @duty_actor_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.duty_actor_aggregate/1
   @duty_actor_gvt_aggregate &Legl.Countries.Uk.Article.Taxa.LATTaxa.duty_actor_gvt_aggregate/1
@@ -161,19 +162,24 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
       @duty_type,
       @popimar,
       @dutyholder_aggregate,
-      @dutyholder_gvt_aggregate,
       @rightsholder_aggregate,
+      @responsibility_holder_aggregate,
+      @power_holder_aggregate,
       @duty_actor_aggregate,
       @duty_actor_gvt_aggregate,
       @duty_type_aggregate,
       @popimar_aggregate
     ],
     "Duty Actor": [@duty_actor],
-    "Duty Type & Dutyholder": [@duty_type],
-    POPIMAR: [@duty_type, @popimar, @popimar_aggregate],
+    "Duty Type & Role Holder": [@duty_actor, @duty_type],
+    POPIMAR: [@duty_actor, @duty_type, @popimar, @popimar_aggregate],
     Aggregates: [
       @dutyholder_aggregate,
+      @rightsholder_aggregate,
+      @responsibility_holder_aggregate,
+      @power_holder_aggregate,
       @duty_actor_aggregate,
+      @duty_actor_gvt_aggregate,
       @duty_type_aggregate,
       @popimar_aggregate
     ]

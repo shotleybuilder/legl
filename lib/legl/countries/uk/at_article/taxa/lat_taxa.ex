@@ -20,14 +20,18 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
           Text: String.t(),
           #
           Dutyholder: list(),
-          "Dutyholder Gvt": list(),
+          Rights_Holder: list(),
+          Responsibility_Holder: list(),
+          Power_Holder: list(),
           "Duty Actor": list(),
           "Duty Actor Gvt": list(),
           "Duty Type": list(),
           POPIMAR: list(),
           #
           "Dutyholder Aggregate": list(),
-          "Dutyholder Gvt Aggregate": list(),
+          Rights_Holder_Aggregate: list(),
+          Responsibility_Holder_Aggregate: list(),
+          Power_Holder_Aggregate: list(),
           "Duty Actor Aggregate": list(),
           "Duty Actor Gvt Aggregate": list(),
           "Duty Type Aggregate": list(),
@@ -56,18 +60,20 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
             Heading: nil,
             #
             Dutyholder: [],
-            Rightsholder: [],
-            "Dutyholder Gvt": [],
+            Rights_Holder: [],
+            Responsibility_Holder: [],
+            Power_Holder: [],
             "Duty Actor": [],
             "Duty Actor Gvt": [],
             "Duty Type": [],
             POPIMAR: [],
             #
-            "Dutyholder Aggregate": [],
-            "Rightsholder Aggregate": [],
-            "Dutyholder Gvt Aggregate": [],
             "Duty Actor Aggregate": [],
             "Duty Actor Gvt Aggregate": [],
+            "Dutyholder Aggregate": [],
+            Rights_Holder_Aggregate: [],
+            Responsibility_Holder_Aggregate: [],
+            Power_Holder_Aggregate: [],
             "Duty Type Aggregate": [],
             "POPIMAR Aggregate": []
 
@@ -160,7 +166,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
             :Number,
             :"Section||Regulation"
           ])
-          |> Map.filter(fn {_k, v} -> v not in [nil, "", []] end)
+          |> Map.filter(fn {_k, v} -> v not in [nil, ""] end)
 
         %{"id" => record."Record_ID", "fields" => Map.drop(record, [:Record_ID])}
       end)
@@ -212,10 +218,13 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
     do: aggregate(records, {:Dutyholder, :"Dutyholder Aggregate"})
 
   def rightsholder_aggregate(records),
-    do: aggregate(records, {:Rightsholder, :"Rightsholder Aggregate"})
+    do: aggregate(records, {:Rights_Holder, :Rights_Holder_Aggregate})
 
-  def dutyholder_gvt_aggregate(records),
-    do: aggregate(records, {:"Dutyholder Gvt", :"Dutyholder Gvt Aggregate"})
+  def responsibility_holder_aggregate(records),
+    do: aggregate(records, {:Responsibility_Holder, :Responsibility_Holder_Aggregate})
+
+  def power_holder_aggregate(records),
+    do: aggregate(records, {:Power_Holder, :Power_Holder_Aggregate})
 
   def duty_actor_aggregate(records),
     do: aggregate(records, {:"Duty Actor", :"Duty Actor Aggregate"})

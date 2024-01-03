@@ -11,78 +11,125 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   @type article_text :: binary()
   @type opts :: map()
 
-  @spec duty_types_for_dutyholders_gvt(%LATTaxa{}, binary(), opts()) ::
-          {dutyholders_gvt(), duty_types()} | {[], []}
-  def duty_types_for_dutyholders_gvt(%{"Duty Actor Gvt": []}, _text, _opts), do: {[], []}
-
-  def duty_types_for_dutyholders_gvt(%{"Duty Actor Gvt": actors}, text, opts)
-      when is_list(actors) do
-    government = ActorLib.custom_actor_library(actors, :government)
-
-    # |> IO.inspect(label: "GVT:")
-    text = blacklist(government, text)
-
-    responsibility = build_lib(government, &DutyTypeDefnGovernment.responsibility/1)
-    discretionary = build_lib(government, &DutyTypeDefnGovernment.discretionary/1)
-    power_conferred = build_lib(government, &DutyTypeDefnGovernment.power_conferred/1)
-
-    {_text, {dutyholders, duty_types}} =
-      {text, {[], []}}
-      |> process_dutyholder(responsibility, opts)
-      |> process_dutyholder(power_conferred, opts)
-      |> process_dutyholder(discretionary, opts)
-
-    dedupe({dutyholders, duty_types})
-  end
-
   @doc """
-  Function to set duty type for 'governed' dutyholders
+  Function find role holders
   """
 
-  @spec duty_types_for_dutyholders(%LATTaxa{}, article_text(), opts()) ::
+  @spec find_role_holders(atom(), %LATTaxa{}, article_text(), opts()) ::
           {dutyholders(), duty_types()} | {[], []}
-  def duty_types_for_dutyholders(%{"Duty Actor": []}, _text, _opts), do: {[], []}
+  def find_role_holders(_, %{"Duty Type": ["Amendment"]}, _text, _opts), do: {[], []}
+  def find_role_holders(_, %{"Duty Actor": [], "Duty Actor Gvt": []}, _text, _opts), do: {[], []}
 
-  def duty_types_for_dutyholders(%{"Duty Actor": actors}, text, opts) when is_list(actors) do
-    # A subset of the full 'governed' library of duty actors
-    governed = ActorLib.custom_actor_library(actors, :governed)
+  def find_role_holders(role, %{"Duty Actor": []}, _, _) when role in [:duty, :right],
+    do: {[], []}
 
-    # right = build_lib(governed, &DutyTypeDefnGoverned.right/1)
-    duty = build_lib(governed, &DutyTypeDefnGoverned.duty/1)
+  def find_role_holders(role, %{"Duty Actor Gvt": []}, _, _)
+      when role in [:responsibility, :power],
+      do: {[], []}
 
-    # |> IO.inspect()
-    text = blacklist(governed, text)
+  def find_role_holders(role, %{"Duty Actor": actors}, text, opts) when role in [:duty, :right],
+    do: find_role_holders(role, actors, text, opts)
 
-    {_text, {dutyholders, duty_types}} =
-      {text, {[], []}}
-      # |> process_dutyholder(right, opts)
-      |> process_dutyholder(duty, opts)
+  def find_role_holders(role, %{"Duty Actor Gvt": actors}, text, opts)
+      when role in [:responsibility, :power],
+      do: find_role_holders(role, actors, text, opts)
 
-    if Enum.any?(actors, fn actor -> actor == "Org: Employer" end) and dutyholders == [] do
-      # regex = Keyword.get(duty, :"Org: Employer")
-      # IO.puts("DUTY REGEX: #{inspect(regex)}\nDutyholders: #{inspect(dutyholders)}\n#{text}")
-      IO.puts(
-        ~s/\nNOTE: The "Org: Employer" Actor did not result in a DUTY for this article\n#{text}/
+  def find_role_holders(role, actors, text, opts)
+      when is_list(actors) and role in [:duty, :right, :responsibility, :power] do
+    #
+    actors_regex =
+      case role do
+        r when r in [:duty, :right] -> ActorLib.custom_actor_library(actors, :governed)
+        _ -> ActorLib.custom_actor_library(actors, :government)
+      end
+
+    regex =
+      case role do
+        :duty -> build_lib(actors_regex, &DutyTypeDefnGoverned.duty/1)
+        :responsibility -> build_lib(actors_regex, &DutyTypeDefnGovernment.responsibility/1)
+        :right -> build_lib(actors_regex, &DutyTypeDefnGoverned.right/1)
+        :power -> build_lib(actors_regex, &DutyTypeDefnGovernment.power_conferred/1)
+      end
+
+    text = blacklist(actors_regex, text)
+
+    opts =
+      Map.put(
+        opts,
+        :role_holder,
+        label: String.upcase(Atom.to_string(role))
       )
-    end
 
-    dedupe({dutyholders, duty_types})
+    case role_holder_run_regex({text, []}, regex, opts) do
+      [] ->
+        {[], []}
+
+      role_holders ->
+        {Enum.uniq(role_holders), role |> Atom.to_string() |> String.capitalize() |> List.wrap()}
+    end
   end
 
-  def find_rightsholders(%{"Duty Type": ["Amendment"]}, _text, _opts), do: {[], []}
-  def find_rightsholders(%{"Duty Actor": []}, _text, _opts), do: {[], []}
+  def role_holder_run_regex(collector, library, %{role_holder: [label: label]} = opts) do
+    Enum.reduce(library, collector, fn {actor, regexes}, acc ->
+      Enum.reduce(regexes, acc, fn regex, {text, role_holders} = acc2 ->
+        {regex, rm_matched_text?} =
+          case regex do
+            {regex, true} -> {regex, true}
+            _ -> {regex, false}
+          end
 
-  def find_rightsholders(%{"Duty Actor": actors}, text, opts) when is_list(actors) do
-    # A subset of the full 'governed' library of duty actors
-    governed = ActorLib.custom_actor_library(actors, :governed)
+        regex_c =
+          case Regex.compile(regex, "m") do
+            {:ok, regex} ->
+              # IO.puts(~s/#{inspect(regex)}/)
+              regex
 
-    right = build_lib(governed, &DutyTypeDefnGoverned.right/1)
+            {:error, error} ->
+              IO.puts(~s/ERROR: Regex doesn't compile\n#{error}\n#{regex}/)
+          end
 
-    text = blacklist(governed, text)
+        case Regex.run(regex_c, text) do
+          [match] ->
+            text =
+              case rm_matched_text? do
+                false -> text
+                true -> Regex.replace(regex_c, text, "")
+              end
 
-    {_text, {rightsholders, duty_types}} = process_rightsholder({text, {[], []}}, right, opts)
+            IO.puts(~s/#{label}: #{actor}/)
+            IO.puts(~s/MATCH: #{inspect(match)}/)
+            IO.puts(~s/REGEX: #{regex}\n/)
 
-    dedupe({rightsholders, duty_types})
+            case File.open(
+                   ~s[lib/legl/countries/uk/at_article/taxa/taxa_rightsholder/_results/#{opts."Name"}.txt],
+                   [:append]
+                 ) do
+              {:ok, file} ->
+                IO.binwrite(
+                  file,
+                  ~s/\n#{label}: #{actor}\nMATCH: #{match}\nREGEX: #{regex}\n/
+                )
+
+                File.close(file)
+
+              {:error, :enoent} ->
+                :ok
+            end
+
+            {text, [actor | role_holders]}
+
+          nil ->
+            # IO.puts(~s/"#{regex}" did not match "#{text}"/)
+            acc2
+
+          match ->
+            IO.puts(
+              "ERROR role_holder_run_regex/3:\nText:\n#{text}\nRegex:\n#{regex}\nMATCH:\n#{inspect(match)}"
+            )
+        end
+      end)
+    end)
+    |> elem(1)
   end
 
   @spec blacklist(list(), binary()) :: binary()
@@ -130,133 +177,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     # |> IO.inspect(label: "BUILD LIB: ")
   end
 
-  def process_dutyholder(collector, library, opts) do
-    Enum.reduce(library, collector, fn {actor, regexes}, acc ->
-      Enum.reduce(regexes, acc, fn {regex, duty_type}, {text, {dutyholders, duty_types}} = acc2 ->
-        {regex, rm_matched_text?} =
-          case regex do
-            {regex, true} -> {regex, true}
-            _ -> {regex, false}
-          end
-
-        regex_c =
-          case Regex.compile(regex, "m") do
-            {:ok, regex} ->
-              # IO.puts(~s/#{inspect(regex)}/)
-              regex
-
-            {:error, error} ->
-              IO.puts(~s/ERROR: Regex doesn't compile\n#{error}\n#{regex}/)
-          end
-
-        case Regex.run(regex_c, text) do
-          [match] ->
-            text =
-              case rm_matched_text? do
-                false -> text
-                true -> Regex.replace(regex_c, text, "")
-              end
-
-            IO.puts(~s/DUTYHOLDER: #{actor}/)
-            IO.puts(~s/MATCH: #{inspect(match)}/)
-            IO.puts(~s/REGEX: #{regex}\n/)
-
-            case File.open(
-                   ~s[lib/legl/countries/uk/at_article/taxa/taxa_dutyholder/_results/#{opts."Name"}.txt],
-                   [:append]
-                 ) do
-              {:ok, file} ->
-                IO.binwrite(
-                  file,
-                  ~s/\nDUTYHOLDER: #{actor}\nMATCH: #{match}\nREGEX: #{regex}\nDUTY TYPE: #{inspect(duty_type)}\n/
-                )
-
-                File.close(file)
-
-              {:error, :enoent} ->
-                :ok
-            end
-
-            case is_list(duty_type) do
-              true -> {text, {[actor | dutyholders], duty_type ++ duty_types}}
-              false -> {text, {[actor | dutyholders], [duty_type | duty_types]}}
-            end
-
-          nil ->
-            # IO.puts(~s/"#{regex}" did not match "#{text}"/)
-            acc2
-
-          match ->
-            IO.puts(
-              "ERROR process_dutyholder/3:\nText:\n#{text}\nRegex:\n#{regex}\nMATCH:\n#{inspect(match)}"
-            )
-        end
-      end)
-    end)
-  end
-
-  def process_rightsholder(collector, library, opts) do
-    Enum.reduce(library, collector, fn {actor, regexes}, acc ->
-      Enum.reduce(regexes, acc, fn regex, {text, {rightsholders, duty_types}} = acc2 ->
-        {regex, rm_matched_text?} =
-          case regex do
-            {regex, true} -> {regex, true}
-            _ -> {regex, false}
-          end
-
-        regex_c =
-          case Regex.compile(regex, "m") do
-            {:ok, regex} ->
-              # IO.puts(~s/#{inspect(regex)}/)
-              regex
-
-            {:error, error} ->
-              IO.puts(~s/ERROR: Regex doesn't compile\n#{error}\n#{regex}/)
-          end
-
-        case Regex.run(regex_c, text) do
-          [match] ->
-            text =
-              case rm_matched_text? do
-                false -> text
-                true -> Regex.replace(regex_c, text, "")
-              end
-
-            IO.puts(~s/RIGHTSHOLDER: #{actor}/)
-            IO.puts(~s/MATCH: #{inspect(match)}/)
-            IO.puts(~s/REGEX: #{regex}\n/)
-
-            case File.open(
-                   ~s[lib/legl/countries/uk/at_article/taxa/taxa_rightsholder/_results/#{opts."Name"}.txt],
-                   [:append]
-                 ) do
-              {:ok, file} ->
-                IO.binwrite(
-                  file,
-                  ~s/\nRIGHTSHOLDER: #{actor}\nMATCH: #{match}\nREGEX: #{regex}\n/
-                )
-
-                File.close(file)
-
-              {:error, :enoent} ->
-                :ok
-            end
-
-            {text, {[actor | rightsholders], ["Right" | duty_types]}}
-
-          nil ->
-            # IO.puts(~s/"#{regex}" did not match "#{text}"/)
-            acc2
-
-          match ->
-            IO.puts(
-              "ERROR process_rightsholder/3:\nText:\n#{text}\nRegex:\n#{regex}\nMATCH:\n#{inspect(match)}"
-            )
-        end
-      end)
-    end)
-  end
-
   @spec duty_types_generic(article_text()) :: list(duty_types()) | []
   def duty_types_generic(text) do
     {text, []}
@@ -279,6 +199,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     |> process(DutyTypeDefn.offence())
     |> process(DutyTypeDefn.enforcement_prosecution())
     |> process(DutyTypeDefn.defence_appeal())
+    |> process(DutyTypeDefn.power_conferred())
   end
 
   @spec process({article_text(), []}, list()) :: {article_text(), list()}

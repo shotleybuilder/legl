@@ -58,7 +58,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
 
   @spec duty(binary()) :: list({{regex(), remove?()}, duty_type()}) | list({regex(), duty_type()})
   def duty(governed) do
-    duty_type = "Duty"
+    # duty_type = "Duty"
 
     modals = ~s/(?:shall|must|may[ ]only|may[ ]not)/
 
@@ -137,18 +137,12 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
       "#{governed}is.*?under a like duty",
       "#{governed}has taken all.*?steps",
       "Where a duty is placed.*?on an?#{governed}",
-      "provided by an?#{governed}"
+      "provided by an?#{governed}",
+      "#{governed}.*?(?:shall be|is) liable (?!to)"
     ]
-    |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
-    |> (&Kernel.++(&1, duty_like(governed))).()
-  end
 
-  defp duty_like(governed),
-    do: [
-      {"#{governed}.*?(?:shall be|is) liable (?!to)", "Liability"},
-      {"#{governed}shall not be (?:guilty|liable)", "Defence, Appeal"},
-      {"#{governed}[\\s\\S]*?it shall (?:also )?.*?be a defence", "Defence, Appeal"}
-    ]
+    # |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
+  end
 
   def right(governed) do
     # duty_type = "Right"

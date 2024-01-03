@@ -73,7 +73,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
       records
       |> Enum.map(&process_record(&1, opts))
       |> Enum.reverse()
-      |> revise_dutyholder()
+
+    # |> revise_dutyholder()
 
     if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, @results_path)
     IO.puts("Duty Type complete")
@@ -116,22 +117,17 @@ defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
         Map.put(record, :"Duty Type", dt)
 
       [] ->
-        {dutyholders, duty_types_gvd} = DutyTypeLib.duty_types_for_dutyholders(record, text, opts)
+        {dutyholders, duties} = DutyTypeLib.find_role_holders(:duty, record, text, opts)
 
-        {rightsholders, rights} = DutyTypeLib.find_rightsholders(record, text, opts)
+        {rightsholders, rights} = DutyTypeLib.find_role_holders(:right, record, text, opts)
 
-        {dutyholders_gvt, duty_types_gvt} =
-          DutyTypeLib.duty_types_for_dutyholders_gvt(record, text, opts)
+        {resp_holders, resp} = DutyTypeLib.find_role_holders(:responsibility, record, text, opts)
+
+        {power_holders, power} = DutyTypeLib.find_role_holders(:power, record, text, opts)
 
         duty_types_generic = DutyTypeLib.duty_types_generic(text)
 
-        # IO.inspect(text)
-        # IO.puts(~s/Dutyholders: #{Enum.join(dutyholders)}/)
-        # IO.puts(~s/Dutyholders gvt: #{Enum.join(dutyholders_gvt)}/)
-        # IO.puts(~s/Duty types: #{Enum.join(duty_types)}/)
-        # IO.puts(~s/Duty types gvt: #{Enum.join(duty_types_gvt)}/)
-        # IO.puts(~s/#{duty_types_gvd} #{duty_types_gvt} #{duty_types_generic}/)
-        duty_types = duty_types_gvd ++ duty_types_gvt ++ duty_types_generic ++ rights
+        duty_types = duties ++ rights ++ resp ++ power ++ duty_types_generic
 
         duty_types =
           if duty_types == [],
@@ -139,35 +135,53 @@ defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
             else:
               duty_types
               |> Enum.filter(fn x -> x != nil end)
-              # |> Enum.reverse()
               |> Enum.uniq()
-              |> Enum.sort()
+              |> duty_type_sorter()
 
-        record =
-          Map.merge(
-            record,
-            %{
-              Dutyholder: dutyholders,
-              Rightsholder: rightsholders,
-              "Dutyholder Gvt": dutyholders_gvt,
-              "Duty Type": duty_types
-            }
-          )
-
-        #    if record."Duty Actor" not in [nil, "", []] and
-        #         record."Duty Type" == ["Process, Rule, Constraint, Condition"] and
-        #         record."Record_Type" in [["article"], ["sub-article"]],
-        #       do: IO.puts(~s/
-        #      Text: #{record."Text"}
-        #      Duty Actor: #{record."Duty Actor"}
-        #      Duty Actor Gvt: #{record."Duty Actor Gvt"}
-        #      Dutyholder: #{record."Dutyholder"}
-        #      Dutyholder Gvt: #{record."Dutyholder Gvt"}
-        #      Duty Type: #{record."Duty Type"}
-        #      /)
-
-        record
+        Map.merge(
+          record,
+          %{
+            Dutyholder: dutyholders,
+            Rights_Holder: rightsholders,
+            Responsibility_Holder: resp_holders,
+            Power_Holder: power_holders,
+            "Duty Type": duty_types
+          }
+        )
     end
+  end
+
+  defp duty_type_sorter(dt) do
+    proxy = %{
+      "Duty" => "1Duty",
+      "Right" => "2Right",
+      "Responsibility" => "3Responsibility",
+      "Power" => "4Power",
+      "Enactment, Citation, Commencement" => "5Enactment, Citation, Commencement",
+      "Purpose" => "6Purpose",
+      "Interpretation, Definition" => "7Interpretation, Definition",
+      "Application, Scope" => "8Application, Scope",
+      "Extent" => "9Extent",
+      "Exemption" => "10Exemption",
+      "Process, Rule, Constraint, Condition" => "11Process, Rule, Constraint, Condition",
+      "Power Conferred" => "12Power Conferred",
+      "Charge, Fee" => "13Charge, Fee",
+      "Offence" => "14Offence",
+      "Enforcement, Prosecution" => "15Enforcement, Prosecution",
+      "Defence, Appeal" => "16Defence, Appeal",
+      "Liability" => "17Liability",
+      "Repeal, Revocation" => "18Repeal, Revocation",
+      "Amendment" => "19Amendment",
+      "Transitional Arrangement" => "20Transitional Arrangement"
+    }
+
+    reverse_proxy = Enum.reduce(proxy, %{}, fn {k, v}, acc -> Map.put(acc, v, k) end)
+
+    dt
+    |> Enum.map(&Map.get(proxy, &1))
+    |> Enum.filter(&(&1 != nil))
+    |> Enum.sort(NaturalOrder)
+    |> Enum.map(&Map.get(reverse_proxy, &1))
   end
 
   @doc """
