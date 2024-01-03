@@ -5,6 +5,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
 
   alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
 
+  alias Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder
+
   @spec workflow(list()) :: %LR{}
   def workflow(records) do
     workflow(records, %LR{})
@@ -12,36 +14,35 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
 
   @spec workflow(list(), %LR{}) :: %LR{}
   def workflow(records, result) do
-    result = Kernel.struct(result, __MODULE__.DutyActor.duty_actor(records))
-    result = Kernel.struct(result, __MODULE__.DutyActor.duty_actor_article(records))
-    result = Kernel.struct(result, __MODULE__.DutyActor.article_duty_actor(records))
-    result = Kernel.struct(result, __MODULE__.DutyActor.uniq_duty_actor_article(records))
-
-    result = Kernel.struct(result, __MODULE__.DutyActorGvt.duty_actor_gvt(records))
-    result = Kernel.struct(result, __MODULE__.DutyActorGvt.duty_actor_gvt_article(records))
-    result = Kernel.struct(result, __MODULE__.DutyActorGvt.article_duty_actor_gvt(records))
-    result = Kernel.struct(result, __MODULE__.DutyActorGvt.uniq_duty_actor_gvt_article(records))
-
-    result = Kernel.struct(result, __MODULE__.DutyHolder.dutyholder(records))
-    result = Kernel.struct(result, __MODULE__.DutyHolder.dutyholder_article(records))
-    result = Kernel.struct(result, __MODULE__.DutyHolder.article_dutyholder(records))
-    result = Kernel.struct(result, __MODULE__.DutyHolder.uniq_dutyholder_article(records))
-
-    result = Kernel.struct(result, __MODULE__.DutyHolderGvt.dutyholder_gvt(records))
-    result = Kernel.struct(result, __MODULE__.DutyHolderGvt.dutyholder_gvt_article(records))
-    result = Kernel.struct(result, __MODULE__.DutyHolderGvt.article_dutyholder_gvt(records))
-    result = Kernel.struct(result, __MODULE__.DutyHolderGvt.uniq_dutyholder_gvt_article(records))
-
-    result = Kernel.struct(result, __MODULE__.DutyType.duty_type(records))
-    result = Kernel.struct(result, __MODULE__.DutyType.duty_type_article(records))
-    result = Kernel.struct(result, __MODULE__.DutyType.article_duty_type(records))
-    result = Kernel.struct(result, __MODULE__.DutyType.uniq_duty_type_article(records))
-
-    result = Kernel.struct(result, __MODULE__.POPIMAR.popimar(records))
-    result = Kernel.struct(result, __MODULE__.POPIMAR.popimar_article(records))
-    result = Kernel.struct(result, __MODULE__.POPIMAR.article_popimar(records))
-    result = Kernel.struct(result, __MODULE__.POPIMAR.uniq_popimar_article(records))
     result
+    |> Kernel.struct(__MODULE__.DutyActor.duty_actor(records))
+    |> Kernel.struct(__MODULE__.DutyActor.duty_actor_article(records))
+    |> Kernel.struct(__MODULE__.DutyActor.article_duty_actor(records))
+    |> Kernel.struct(__MODULE__.DutyActor.uniq_duty_actor_article(records))
+    |> Kernel.struct(__MODULE__.DutyActorGvt.duty_actor_gvt(records))
+    |> Kernel.struct(__MODULE__.DutyActorGvt.duty_actor_gvt_article(records))
+    |> Kernel.struct(__MODULE__.DutyActorGvt.article_duty_actor_gvt(records))
+    |> Kernel.struct(__MODULE__.DutyActorGvt.uniq_duty_actor_gvt_article(records))
+    |> Kernel.struct(__MODULE__.DutyHolder.dutyholder(records))
+    |> Kernel.struct(__MODULE__.DutyHolder.dutyholder_article(records))
+    |> Kernel.struct(__MODULE__.DutyHolder.article_dutyholder(records))
+    |> Kernel.struct(__MODULE__.DutyHolder.uniq_dutyholder_article(records))
+    |> Kernel.struct(RightsHolder.rightsholder(records))
+    |> Kernel.struct(RightsHolder.rightsholder_article(records))
+    |> Kernel.struct(RightsHolder.article_rightsholder(records))
+    |> Kernel.struct(RightsHolder.uniq_rightsholder_article(records))
+    |> Kernel.struct(__MODULE__.DutyHolderGvt.dutyholder_gvt(records))
+    |> Kernel.struct(__MODULE__.DutyHolderGvt.dutyholder_gvt_article(records))
+    |> Kernel.struct(__MODULE__.DutyHolderGvt.article_dutyholder_gvt(records))
+    |> Kernel.struct(__MODULE__.DutyHolderGvt.uniq_dutyholder_gvt_article(records))
+    |> Kernel.struct(__MODULE__.DutyType.duty_type(records))
+    |> Kernel.struct(__MODULE__.DutyType.duty_type_article(records))
+    |> Kernel.struct(__MODULE__.DutyType.article_duty_type(records))
+    |> Kernel.struct(__MODULE__.DutyType.uniq_duty_type_article(records))
+    |> Kernel.struct(__MODULE__.POPIMAR.popimar(records))
+    |> Kernel.struct(__MODULE__.POPIMAR.popimar_article(records))
+    |> Kernel.struct(__MODULE__.POPIMAR.article_popimar(records))
+    |> Kernel.struct(__MODULE__.POPIMAR.uniq_popimar_article(records))
   end
 
   def leg_gov_uk(%{type_code: [tc], Year: [y], Number: [number], Heading: h} = _record)
@@ -57,6 +58,16 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
         "Section||Regulation": s
       }) do
     ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/section/#{s}]
+  end
+
+  def leg_gov_uk(%{
+        type_code: [tc],
+        Year: [y],
+        Number: [number],
+        Record_Type: ["article"],
+        "Section||Regulation": s
+      }) do
+    ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/regulation/#{s}]
   end
 
   def leg_gov_uk(%{
@@ -414,109 +425,6 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       |> Enum.map(&LRTT.article_taxa/1)
       |> Enum.join("\n\n")
       |> (&Map.put(%{}, :article_dutyholder, &1)).()
-
-      # |> IO.inspect()
-    end
-  end
-
-  defmodule Rightsholder do
-    alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
-    alias Legl.Countries.Uk.Article.Taxa.LATTaxa
-
-    def rightsholder(records) do
-      result =
-        Enum.map(records, fn %{"Rightsholder Aggregate": value} ->
-          value
-        end)
-        |> List.flatten()
-        |> Enum.uniq()
-        |> Enum.sort()
-
-      %{
-        # duty_holder: Legl.Utility.quote_list(result) |> Enum.join(","),
-        Rightsholder: result
-      }
-    end
-
-    @spec rightsholder_uniq(list(%LATTaxa{})) :: list()
-    defp rightsholder_uniq(records) do
-      Enum.map(records, fn %{Rightsholder: value} ->
-        value
-      end)
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.sort()
-    end
-
-    @spec rightsholder_aggregate(list(%LATTaxa{})) :: list()
-    defp rightsholder_aggregate(records) do
-      records
-      |> rightsholder_uniq
-      |> Enum.reduce([], fn member, col ->
-        Enum.reduce(records, [], fn
-          %{
-            type_code: [tc],
-            Year: [y],
-            Number: [number],
-            Record_Type: [rt],
-            "Section||Regulation": s,
-            "Rightsholder Aggregate": values
-          } = _record,
-          acc
-          when rt in ["section", "article"] ->
-            rt = if rt != "section", do: "regulation", else: rt
-
-            case Enum.member?(values, member) do
-              true ->
-                url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
-                [url | acc]
-
-              false ->
-                acc
-            end
-
-          _record, acc ->
-            acc
-        end)
-        |> Enum.sort(NaturalOrder)
-        |> (&[{member, &1} | col]).()
-        |> Enum.reverse()
-      end)
-    end
-
-    def uniq_rightsholder_article(records) do
-      records
-      |> rightsholder_aggregate()
-      |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
-      |> Enum.join("\n\n")
-      |> (&Map.put(%{}, :rights_holder, &1)).()
-    end
-
-    def rightsholder_article(records) do
-      records
-      |> Enum.map(&LRTT.sorter(&1, :"Rightsholder Aggregate"))
-      |> Enum.group_by(& &1."Rightsholder Aggregate")
-      |> Enum.filter(fn {k, _} -> k != [] end)
-      |> Enum.map(fn {k, v} ->
-        {k, Enum.map(v, &LRTT.leg_gov_uk/1)}
-      end)
-      |> Enum.sort()
-      |> Enum.map(&LRTT.taxa_article/1)
-      |> Enum.join("\n\n")
-      |> (&Map.put(%{}, :rightsholder_article, &1)).()
-
-      # |> IO.inspect()
-    end
-
-    def article_rightsholder(records) do
-      records
-      |> Enum.filter(fn %{"Rightsholder Aggregate": daa} -> daa != [] end)
-      |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
-      |> Enum.group_by(& &1.url, & &1."Rightsholder Aggregate")
-      |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
-      |> Enum.map(&LRTT.article_taxa/1)
-      |> Enum.join("\n\n")
-      |> (&Map.put(%{}, :article_rightsholder, &1)).()
 
       # |> IO.inspect()
     end

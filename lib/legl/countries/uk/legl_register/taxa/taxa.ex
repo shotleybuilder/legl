@@ -130,9 +130,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
     lat_articles = AT.get_legal_article_taxa_records(lat_opts)
     # |> IO.inspect(label: "lat_articles")
 
-    lrt_record =
-      LRTTaxa.workflow(lat_articles, lrt_record)
-      |> IO.inspect(limit: :infinity, label: "Legal Register Table - record")
+    lrt_record = LRTTaxa.workflow(lat_articles, lrt_record)
+    # |> IO.inspect(limit: :infinity, label: "Legal Register Table - record")
 
     {:ok, lrt_record}
   end

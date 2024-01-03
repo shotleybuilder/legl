@@ -94,6 +94,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
 
   @models ~w[
     duty_holder
+    rights_holder
     duty_holder_gvt
     duty_actor
     duty_actor_gvt
@@ -101,11 +102,15 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     popimar_
 
     Dutyholder
+    Rightsholder
 
     POPIMAR
 
     dutyholder_article
     article_dutyholder
+
+    rightsholder_article
+    article_rightsholder
 
     dutyholder_gvt_article
     article_dutyholder_gvt
