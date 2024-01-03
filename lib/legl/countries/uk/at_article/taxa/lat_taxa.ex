@@ -37,6 +37,11 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
           "Duty Type Aggregate": list(),
           "POPIMAR Aggregate": list(),
           #
+          dutyholder_txt: String.t(),
+          rights_holder_txt: String.t(),
+          responsibility_holder_txt: String.t(),
+          power_holder_txt: String.t(),
+          #
           Record_ID: String.t(),
           type_code: String.t(),
           Year: integer(),
@@ -44,10 +49,11 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
           "Section||Regulation": String.t(),
           Part: String.t(),
           Chapter: String.t(),
-          Heading: String.t()
+          Heading: String.t(),
+          regexes: list()
         }
 
-  defstruct ID: "",
+  defstruct ID: nil,
             Record_Type: [],
             Text: "",
             Record_ID: nil,
@@ -75,7 +81,13 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
             Responsibility_Holder_Aggregate: [],
             Power_Holder_Aggregate: [],
             "Duty Type Aggregate": [],
-            "POPIMAR Aggregate": []
+            "POPIMAR Aggregate": [],
+            #
+            dutyholder_txt: "",
+            rights_holder_txt: "",
+            responsibility_holder_txt: "",
+            power_holder_txt: "",
+            regexes: []
 
   alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Countries.Uk.Article.Taxa.Options
@@ -166,7 +178,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
             :Number,
             :"Section||Regulation"
           ])
-          |> Map.filter(fn {_k, v} -> v not in [nil, ""] end)
+          |> Map.filter(fn {_k, v} -> v != nil end)
 
         %{"id" => record."Record_ID", "fields" => Map.drop(record, [:Record_ID])}
       end)

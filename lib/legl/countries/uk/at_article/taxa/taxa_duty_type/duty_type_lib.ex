@@ -15,28 +15,31 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   Function find role holders
   """
 
-  @spec find_role_holders(atom(), %LATTaxa{}, article_text(), opts()) ::
-          {dutyholders(), duty_types()} | {[], []}
-  def find_role_holders(_, %{"Duty Type": ["Amendment"]}, _text, _opts), do: {[], []}
-  def find_role_holders(_, %{"Duty Actor": [], "Duty Actor Gvt": []}, _text, _opts), do: {[], []}
+  @spec find_role_holders(atom(), %LATTaxa{}, article_text(), list(), opts()) ::
+          {dutyholders(), duty_types(), binary()} | {[], [], binary(), binary()}
+  def find_role_holders(_, %{"Duty Type": ["Amendment"]}, _, _, _), do: {[], [], "", []}
 
-  def find_role_holders(role, %{"Duty Actor": []}, _, _) when role in [:duty, :right],
-    do: {[], []}
+  def find_role_holders(_, %{"Duty Actor": [], "Duty Actor Gvt": []}, _text, regexes, _opts),
+    do: {[], [], "", regexes}
 
-  def find_role_holders(role, %{"Duty Actor Gvt": []}, _, _)
+  def find_role_holders(role, %{"Duty Actor": []}, _text, regexes, _opts)
+      when role in [:duty, :right],
+      do: {[], [], "", regexes}
+
+  def find_role_holders(role, %{"Duty Actor Gvt": []}, _text, regexes, _opts)
       when role in [:responsibility, :power],
-      do: {[], []}
+      do: {[], [], "", regexes}
 
-  def find_role_holders(role, %{"Duty Actor": actors}, text, opts) when role in [:duty, :right],
-    do: find_role_holders(role, actors, text, opts)
+  def find_role_holders(role, %{"Duty Actor": actors}, text, regexes, opts)
+      when role in [:duty, :right],
+      do: find_role_holders(role, actors, text, regexes, opts)
 
-  def find_role_holders(role, %{"Duty Actor Gvt": actors}, text, opts)
+  def find_role_holders(role, %{"Duty Actor Gvt": actors}, text, regexes, opts)
       when role in [:responsibility, :power],
-      do: find_role_holders(role, actors, text, opts)
+      do: find_role_holders(role, actors, text, regexes, opts)
 
-  def find_role_holders(role, actors, text, opts)
+  def find_role_holders(role, actors, text, regexes, opts)
       when is_list(actors) and role in [:duty, :right, :responsibility, :power] do
-    #
     actors_regex =
       case role do
         r when r in [:duty, :right] -> ActorLib.custom_actor_library(actors, :governed)
@@ -60,18 +63,23 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
         label: String.upcase(Atom.to_string(role))
       )
 
-    case role_holder_run_regex({text, []}, regex, opts) do
-      [] ->
-        {[], []}
+    case role_holder_run_regex({text, [], [], regexes}, regex, opts) do
+      {_, [], _, regexes} ->
+        {[], [], "", regexes}
 
-      role_holders ->
-        {Enum.uniq(role_holders), role |> Atom.to_string() |> String.capitalize() |> List.wrap()}
+      {_, role_holders, matches, regexes} ->
+        {
+          Enum.uniq(role_holders),
+          role |> Atom.to_string() |> String.capitalize() |> List.wrap(),
+          matches |> Enum.uniq() |> Enum.map(&String.trim(&1)) |> Enum.join("\n"),
+          regexes
+        }
     end
   end
 
-  def role_holder_run_regex(collector, library, %{role_holder: [label: label]} = opts) do
+  def role_holder_run_regex(collector, library, %{role_holder: [label: label]} = _opts) do
     Enum.reduce(library, collector, fn {actor, regexes}, acc ->
-      Enum.reduce(regexes, acc, fn regex, {text, role_holders} = acc2 ->
+      Enum.reduce(regexes, acc, fn regex, {text, role_holders, matches, reg_exs} = acc2 ->
         {regex, rm_matched_text?} =
           case regex do
             {regex, true} -> {regex, true}
@@ -96,30 +104,22 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
                 true -> Regex.replace(regex_c, text, "")
               end
 
+            match = if String.valid?(match), do: match, else: Legl.Utility.to_utf8(match)
+
+            """
             IO.puts(~s/#{label}: #{actor}/)
             IO.puts(~s/MATCH: #{inspect(match)}/)
             IO.puts(~s/REGEX: #{regex}\n/)
+            """
 
-            case File.open(
-                   ~s[lib/legl/countries/uk/at_article/taxa/taxa_rightsholder/_results/#{opts."Name"}.txt],
-                   [:append]
-                 ) do
-              {:ok, file} ->
-                IO.binwrite(
-                  file,
-                  ~s/\n#{label}: #{actor}\nMATCH: #{match}\nREGEX: #{regex}\n/
-                )
-
-                File.close(file)
-
-              {:error, :enoent} ->
-                :ok
-            end
-
-            {text, [actor | role_holders]}
+            {
+              text,
+              [actor | role_holders],
+              [match | matches],
+              [~s/#{label}: #{actor}\n#{regex}\n-> #{match}\n/ | reg_exs]
+            }
 
           nil ->
-            # IO.puts(~s/"#{regex}" did not match "#{text}"/)
             acc2
 
           match ->
@@ -129,7 +129,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
         end
       end)
     end)
-    |> elem(1)
   end
 
   @spec blacklist(list(), binary()) :: binary()

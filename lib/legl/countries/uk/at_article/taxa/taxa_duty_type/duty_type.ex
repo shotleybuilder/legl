@@ -117,13 +117,17 @@ defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
         Map.put(record, :"Duty Type", dt)
 
       [] ->
-        {dutyholders, duties} = DutyTypeLib.find_role_holders(:duty, record, text, opts)
+        {dutyholders, duties, duty_matches, regexes} =
+          DutyTypeLib.find_role_holders(:duty, record, text, [], opts)
 
-        {rightsholders, rights} = DutyTypeLib.find_role_holders(:right, record, text, opts)
+        {rightsholders, rights, right_matches, regexes} =
+          DutyTypeLib.find_role_holders(:right, record, text, regexes, opts)
 
-        {resp_holders, resp} = DutyTypeLib.find_role_holders(:responsibility, record, text, opts)
+        {resp_holders, resp, resp_matches, regexes} =
+          DutyTypeLib.find_role_holders(:responsibility, record, text, regexes, opts)
 
-        {power_holders, power} = DutyTypeLib.find_role_holders(:power, record, text, opts)
+        {power_holders, power, power_matches, regexes} =
+          DutyTypeLib.find_role_holders(:power, record, text, regexes, opts)
 
         duty_types_generic = DutyTypeLib.duty_types_generic(text)
 
@@ -138,16 +142,20 @@ defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
               |> Enum.uniq()
               |> duty_type_sorter()
 
-        Map.merge(
-          record,
-          %{
-            Dutyholder: dutyholders,
-            Rights_Holder: rightsholders,
-            Responsibility_Holder: resp_holders,
-            Power_Holder: power_holders,
-            "Duty Type": duty_types
-          }
-        )
+        Kernel.struct(record, %{
+          Dutyholder: dutyholders,
+          Rights_Holder: rightsholders,
+          Responsibility_Holder: resp_holders,
+          Power_Holder: power_holders,
+          "Duty Type": duty_types,
+          dutyholder_txt: duty_matches,
+          rights_holder_txt: right_matches,
+          responsibility_holder_txt: resp_matches,
+          power_holder_txt: power_matches,
+          regexes: regexes |> Enum.uniq() |> Enum.map(&String.trim(&1)) |> Enum.join("\n")
+        })
+
+        # |> IO.inspect()
     end
   end
 

@@ -407,4 +407,15 @@ defmodule Legl.Utility do
 
   def year_as_integer(year) when is_integer(year), do: year
   def year_as_integer(year) when is_binary(year), do: String.to_integer(year)
+
+  @spec to_utf8(binary()) :: String.t()
+  def to_utf8(binary), do: to_utf8(binary, "")
+
+  defp to_utf8(<<codepoint::utf8, rest::binary>>, acc) do
+    to_utf8(rest, <<acc::binary, codepoint::utf8>>)
+  end
+
+  defp to_utf8("", acc), do: acc
+
+  defp to_utf8(_, acc), do: acc
 end

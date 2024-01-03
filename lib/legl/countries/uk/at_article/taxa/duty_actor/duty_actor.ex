@@ -117,9 +117,11 @@ defmodule Legl.Countries.Uk.Article.Taxa.TaxaDutyActor.DutyActor do
 
           text = if rm?, do: Regex.replace(regex_c, text, ""), else: text
 
+          """
           IO.puts(~s/DUTY ACTOR: #{actor}/)
           IO.puts(~s/MATCH: #{inspect(match)}/)
           IO.puts(~s/REGEX: #{regex}\n/)
+
 
           case File.open(
                  ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/_results/#{opts."Name"}.txt],
@@ -136,6 +138,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.TaxaDutyActor.DutyActor do
             {:error, :enoent} ->
               :ok
           end
+          """
 
           {text, [actor | actors]}
 

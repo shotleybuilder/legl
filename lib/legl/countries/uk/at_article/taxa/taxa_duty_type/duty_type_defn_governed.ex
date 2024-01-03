@@ -54,11 +54,13 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
 
   defp neg_lookbehind(),
     do:
-      ~s/(?<! by | of |send it to |given |appointing | to expose | to whom | to pay | to permit )/
+      ~s/(?<! by | of |send it to |given |appointing | to expose | to whom | to pay | to permit |before which )/
 
   @spec duty(binary()) :: list({{regex(), remove?()}, duty_type()}) | list({regex(), duty_type()})
   def duty(governed) do
     # duty_type = "Duty"
+
+    emdash = <<226, 128, 148>>
 
     modals = ~s/(?:shall|must|may[ ]only|may[ ]not)/
 
@@ -89,7 +91,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
 
       # MUST & SHALL w/ REMOVAL
       # The subject and the modal verb are adjacent and are removed from further text processing
-      {"#{neg_lookbehind_rm}#{determiners}#{governed}#{modals}[[:blank:][:punct:]—]#{neg_lookahead}",
+      {"#{neg_lookbehind_rm}#{determiners}#{governed}#{modals}[[:blank:][:punct:]#{emdash}]#{neg_lookahead}",
        true},
 
       # SHALL - MUST - MAY ONLY - MAY NOT
@@ -111,11 +113,11 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
       # e.g. "Personal protective equipment provided by an employer in accordance with this regulation shall be suitable for the purpose and shall—"
       # e.g. "the result of that review shall be notified to the employee and employer"
       # e.g. "Every employer who undertakes work which is liable to expose an employee to a substance hazardous to health shall provide that employee with suitable and sufficient information, instruction and training"
-      "#{neg_lookbehind}#{determiners}#{governed}#{mid_neg_lookahead}(?:[^,]*?|.*?he )#{modals}[[:blank:][:punct:]—][ ]?#{neg_lookahead}",
+      "#{neg_lookbehind}#{determiners}#{governed}#{mid_neg_lookahead}(?:[^,]*?|.*?he )#{modals}[[:blank:][:punct:]#{"emdash"}][ ]?#{neg_lookahead}",
 
       # When the subject precedes and then gets referred to as 'he'
       # e.g. competent person referred to in paragraph (3) is the user ... or owner ... shall not apply, but he shall
-      "#{governed}#{mid_neg_lookahead}[^—\\.]*?he[ ]shall",
+      "#{governed}#{mid_neg_lookahead}[^#{emdash}\\.]*?he[ ]shall",
       #
       # e.g. "An employer who undertakes a fumigation to which this regulation applies shall ensure that"
       # e.g. "Every employer who undertakes work which is liable to expose an employee to a substance hazardous to health shall"
