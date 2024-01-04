@@ -2,11 +2,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
   @moduledoc """
   Module to generate the content for RightsHolder fields in the Legal Register Table
 
-  ## Field Names
-    Rightsholder
+  ## Field Names in the LRT
+    Rights Holder
     rights_holder
-    rightsholder_article
-    article_rightsholder
+    rights_holder_article
+    article_rights_holder
+
+  ## Field Names in the LAT
+    Rights_Holder
+    Rights_Holder_Aggregate
+    rights_holder_txt
   """
   alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
   alias Legl.Countries.Uk.Article.Taxa.LATTaxa
@@ -14,7 +19,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
   @spec rightsholder(list(%LATTaxa{})) :: map()
   def rightsholder(records) do
     result =
-      Enum.map(records, fn %{"Rightsholder Aggregate": value} ->
+      Enum.map(records, fn %{Rights_Holder_Aggregate: value} ->
         value
       end)
       |> List.flatten()
@@ -24,13 +29,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
 
     %{
       # duty_holder: Legl.Utility.quote_list(result) |> Enum.join(","),
-      Rightsholder: result
+      "Rights Holder": result
     }
   end
 
   @spec rightsholder_uniq(list(%LATTaxa{})) :: list()
   defp rightsholder_uniq(records) do
-    Enum.map(records, fn %{Rightsholder: value} ->
+    Enum.map(records, fn %{Rights_Holder: value} ->
       value
     end)
     |> List.flatten()
@@ -51,7 +56,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
           Number: [number],
           Record_Type: [rt],
           "Section||Regulation": s,
-          "Rightsholder Aggregate": values
+          Rights_Holder_Aggregate: values
         } = _record,
         acc
         when rt in ["section", "article"] ->
@@ -76,7 +81,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
     end)
   end
 
-  @spec rightsholder_aggregate(list(%LATTaxa{})) :: map()
+  @spec uniq_rightsholder_article(list(%LATTaxa{})) :: map()
   def uniq_rightsholder_article(records) do
     records
     |> rightsholder_aggregate()
@@ -89,8 +94,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
   @spec rightsholder_article(list(%LATTaxa{})) :: map()
   def rightsholder_article(records) do
     records
-    |> Enum.map(&LRTT.sorter(&1, :"Rightsholder Aggregate"))
-    |> Enum.group_by(& &1."Rightsholder Aggregate")
+    |> Enum.map(&LRTT.sorter(&1, :Rights_Holder_Aggregate))
+    |> Enum.group_by(& &1."Rights_Holder_Aggregate")
     |> Enum.filter(fn {k, _} -> k != [] end)
     |> Enum.map(fn {k, v} ->
       {k, Enum.map(v, &LRTT.leg_gov_uk/1)}
@@ -98,20 +103,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
     |> Enum.sort()
     |> Enum.map(&LRTT.taxa_article/1)
     |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :rightsholder_article, &1)).()
+    |> (&Map.put(%{}, :rights_holder_article, &1)).()
     |> IO.inspect(label: ~s[#{__MODULE__}.rightsholder_article/1: ])
   end
 
   @spec article_rightsholder(list(%LATTaxa{})) :: map()
   def article_rightsholder(records) do
     records
-    |> Enum.filter(fn %{"Rightsholder Aggregate": daa} -> daa != [] end)
+    |> Enum.filter(fn %{Rights_Holder_Aggregate: daa} -> daa != [] end)
     |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
-    |> Enum.group_by(& &1.url, & &1."Rightsholder Aggregate")
+    |> Enum.group_by(& &1.url, & &1."Rights_Holder_Aggregate")
     |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
     |> Enum.map(&LRTT.article_taxa/1)
     |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :article_rightsholder, &1)).()
+    |> (&Map.put(%{}, :article_rights_holder, &1)).()
     |> IO.inspect(label: ~s[#{__MODULE__}.article_rightsholder/1: ])
   end
 end

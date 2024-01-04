@@ -89,33 +89,51 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           md_change_log: String.t(),
           amended_by_change_log: String.t(),
 
-          # .csv strings
-          duty_holder: String.t(),
-          rights_holder: String.t(),
-          duty_holder_gvt: String.t(),
-          duty_actor: String.t(),
-          duty_actor_gvt: String.t(),
-          duty_type: String.t(),
-          popimar_: String.t(),
-
-          #
-          Dutyholder: list(),
-          Rightsholder: list(),
-          "Dutyholder Gvt": list(),
+          # Governed Roles
           "Duty Actor": list(),
-          "Duty Actor Gvt": list(),
-          "Duty Type": list(),
-          POPIMAR: list(),
-
-          # Descriptions ordered using model or article
-          dutyholder_article: String.t(),
-          article_dutyholder: String.t(),
-          rightsholder_article: String.t(),
-          article_rightsholder: String.t(),
+          duty_actor: String.t(),
           duty_actor_article: String.t(),
           article_duty_actor: String.t(),
+
+          # Government Roles
+          "Duty Actor Gvt": list(),
+          duty_actor_gvt: String.t(),
+          duty_actor_gvt_article: String.t(),
+          article_duty_actor_gvt: String.t(),
+
+          # Duties Holder
+          Dutyholder: list(),
+          duty_holder: String.t(),
+          dutyholder_article: String.t(),
+          article_dutyholder: String.t(),
+
+          # Rights Holder
+          "Rights Holder": list(),
+          rights_holder: String.t(),
+          rights_holder_article: String.t(),
+          article_rights_holder: String.t(),
+
+          # Responsibilities Holder
+          "Responsibility Holder": list(),
+          responsibility_holder: String.t(),
+          responsibility_article: String.t(),
+          article_responsibility: String.t(),
+
+          # Powers Holders
+          "Power Holder": list(),
+          power_holder: String.t(),
+          power_holder_article: String.t(),
+          article_power_holder: String.t(),
+
+          # Duty Type
+          "Duty Type": list(),
+          duty_type: String.t(),
           duty_type_article: String.t(),
           article_duty_type: String.t(),
+
+          # POPIMAR
+          POPIMAR: list(),
+          popimar_: String.t(),
           popimar_article: String.t(),
           article_popimar: String.t()
         }
@@ -200,45 +218,48 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     amending_change_log
     amended_by_change_log
 
-    duty_holder
-    rights_holder
-    duty_holder_gvt
     duty_actor
-    duty_actor_gvt
-    duty_type
-    popimar_
-
-    Dutyholder
-    Rightsholder
-
-    POPIMAR
-
-    dutyholder_article
-    article_dutyholder
-
-    rightsholder_article
-    article_rightsholder
-
-    dutyholder_gvt_article
-    article_dutyholder_gvt
-
     duty_actor_article
     article_duty_actor
 
+    duty_actor_gvt
     duty_actor_gvt_article
     article_duty_actor_gvt
 
+    Dutyholder
+    duty_holder
+    dutyholder_article
+    article_dutyholder
+
+    rights_holder
+    rights_holder_article
+    article_rights_holder
+
+    responsibility_holder
+    responsibility_article
+    article_responsibility
+
+    power_holder
+    power_holder_article
+    article_power_holder
+
+    duty_type
     duty_type_article
     article_duty_type
+
+    POPIMAR
+    popimar_
     popimar_article
     article_popimar
   ]a
 
   defstruct @struct ++
               [
-                :"Dutyholder Gvt",
                 :"Duty Actor",
                 :"Duty Actor Gvt",
+                :"Rights Holder",
+                :"Responsibility Holder",
+                :"Power Holder",
                 :"Duty Type"
               ]
 end

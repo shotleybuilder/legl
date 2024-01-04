@@ -8,20 +8,33 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Options do
   @default_opts [
     source: :web,
     fields: [
+      # Multi Select Fields
       "Dutyholder",
-      "Rightsholder",
-      "Dutyholder Gvt",
+      "Rights_Holder",
+      "Responsibility_Holder",
+      "Power_Holder",
       "Duty Actor",
       "Duty Actor Gvt",
       "Duty Type",
       "POPIMAR",
-      "Dutyholder Aggregate",
-      "Rightsholder Aggregate",
-      "Dutyholder Gvt Aggregate",
+
+      # Aggregates
       "Duty Actor Aggregate",
       "Duty Actor Gvt Aggregate",
+      "Dutyholder Aggregate",
+      "Rights_Holder_Aggregate",
+      "Responsibility_Holder_Aggregate",
+      "Power_Holder_Aggregate",
       "Duty Type Aggregate",
       "POPIMAR Aggregate",
+
+      # Text
+      "dutyholder_txt",
+      "rights_holder_txt",
+      "responsibility_holder_txt",
+      "power_holder_txt",
+
+      # Generic
       "type_code",
       "Number",
       "Year",
