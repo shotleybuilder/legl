@@ -90,16 +90,14 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           amended_by_change_log: String.t(),
 
           # Governed Roles
-          "Duty Actor": list(),
-          duty_actor: String.t(),
-          duty_actor_article: String.t(),
-          article_duty_actor: String.t(),
+          actor: list(),
+          actor_article: String.t(),
+          article_actor: String.t(),
 
           # Government Roles
-          "Duty Actor Gvt": list(),
-          duty_actor_gvt: String.t(),
-          duty_actor_gvt_article: String.t(),
-          article_duty_actor_gvt: String.t(),
+          actor_gvt: list(),
+          actor_gvt_article: String.t(),
+          article_actor_gvt: String.t(),
 
           # Duties Holder
           Dutyholder: list(),
@@ -218,13 +216,13 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     amending_change_log
     amended_by_change_log
 
-    duty_actor
-    duty_actor_article
-    article_duty_actor
+    actor
+    actor_article
+    article_actor
 
-    duty_actor_gvt
-    duty_actor_gvt_article
-    article_duty_actor_gvt
+    actor_gvt
+    actor_gvt_article
+    article_actor_gvt
 
     Dutyholder
     duty_holder
@@ -255,8 +253,6 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
   defstruct @struct ++
               [
-                :"Duty Actor",
-                :"Duty Actor Gvt",
                 :"Rights Holder",
                 :"Responsibility Holder",
                 :"Power Holder",

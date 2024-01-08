@@ -26,15 +26,13 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
   def workflow(records, result) do
     result
     # Governed Roles
-    |> Kernel.struct(Actor.duty_actor(records))
-    |> Kernel.struct(Actor.duty_actor_article(records))
-    |> Kernel.struct(Actor.article_duty_actor(records))
-    |> Kernel.struct(Actor.uniq_duty_actor_article(records))
+    |> Kernel.struct(Actor.actor(records))
+    |> Kernel.struct(Actor.actor_article(records))
+    |> Kernel.struct(Actor.article_actor(records))
     # Government Roles
-    |> Kernel.struct(GvtActor.duty_actor_gvt(records))
-    |> Kernel.struct(GvtActor.duty_actor_gvt_article(records))
-    |> Kernel.struct(GvtActor.article_duty_actor_gvt(records))
-    |> Kernel.struct(GvtActor.uniq_duty_actor_gvt_article(records))
+    |> Kernel.struct(GvtActor.actor_gvt(records))
+    |> Kernel.struct(GvtActor.actor_gvt_article(records))
+    |> Kernel.struct(GvtActor.article_actor_gvt(records))
     # Governed duties
     |> Kernel.struct(DutyHolder.dutyholder(records))
     |> Kernel.struct(DutyHolder.dutyholder_article(records))
@@ -46,10 +44,11 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     |> Kernel.struct(RightsHolder.article_rightsholder(records))
     |> Kernel.struct(RightsHolder.uniq_rightsholder_article(records))
     # Government responsibles
-    |> Kernel.struct(ResponsibilityHolder.responsibilityholder(records))
-    |> Kernel.struct(ResponsibilityHolder.responsibilityholder_article(records))
-    |> Kernel.struct(ResponsibilityHolder.article_responsibilityholder(records))
-    |> Kernel.struct(ResponsibilityHolder.uniq_responsibilityholder_article(records))
+    |> Kernel.struct(ResponsibilityHolder.responsibility_holder(records))
+    |> Kernel.struct(ResponsibilityHolder.responsibility_holder_article(records))
+    |> Kernel.struct(ResponsibilityHolder.responsibility_holder_article_clause(records))
+    |> Kernel.struct(ResponsibilityHolder.article_responsibility_holder(records))
+    |> Kernel.struct(ResponsibilityHolder.article_responsibility_holder_clause(records))
     # Government powers
     |> Kernel.struct(PowerHolder.powerholder(records))
     |> Kernel.struct(PowerHolder.powerholder_article(records))
@@ -67,7 +66,15 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     |> Kernel.struct(POPIMAR.uniq_popimar_article(records))
   end
 
-  def leg_gov_uk(%{type_code: [tc], Year: [y], Number: [number], Heading: h} = _record)
+  def leg_gov_uk(
+        %{
+          type_code: [tc],
+          Year: [y],
+          Number: [number],
+          Record_Type: ["heading"],
+          Heading: h
+        } = _record
+      )
       when h not in [nil, ""] do
     ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/crossheading/#{h}]
   end

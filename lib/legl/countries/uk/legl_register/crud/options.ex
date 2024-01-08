@@ -104,7 +104,6 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
 
     opts =
       opts
-      # |> (&Map.put(&1, :view, api_update_options_view(&1))).()
       |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year])
 
     # |> drop_fields()
@@ -118,10 +117,6 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
-
-  # VS_CODE_METADATA
-  defp api_update_options_view(%{base_name: "UK S"} = _opts), do: "viwxEzSun5nPWzGQB"
-  defp api_update_options_view(%{base_name: "UK EHS"} = _opts), do: "viwMy1UQEZO1x62cK"
 
   def api_update_metadata_fields_options(opts) do
     opts =

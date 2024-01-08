@@ -82,6 +82,32 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
     end
   end
 
+  def api_create_newly_published_laws(opts) do
+    opts = Options.from_file_set_up(opts)
+
+    {_, path} = opts.source
+
+    records = Legl.Utility.read_json_records(path)
+
+    Enum.map(records, fn record ->
+      with(
+        # Year field
+        {:ok, record} <- Year.set_year(record),
+        # Publication Date field
+        {:ok, record} <-
+          PublicationDate.set_publication_date_link(
+            record,
+            opts
+          ),
+        # All the other fields
+        {:ok, record} = New.update_empty_law_fields(record, opts)
+      ) do
+        record
+      end
+    end)
+    |> New.save(opts)
+  end
+
   defp save_exc(records, opts) do
     case ExPrompt.get("Enter ID number for any excluded laws to process and save: ") do
       "" ->
@@ -253,7 +279,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
 
   defp convert_exc_to_list(records) when is_list(records), do: records
 
-  defp filter_w_metadata(records, opts) when is_list(records) do
+  defp filter_w_metadata(records, _opts) when is_list(records) do
     with {:ok, {inc, exc}} <- Filters.terms_filter(records),
          :ok = Legl.Utility.save_structs_as_json(inc, @inc_path),
          :ok =
@@ -285,31 +311,5 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
       record, acc ->
         {[record | elem(acc, 0)], elem(acc, 1)}
     end)
-  end
-
-  def api_create_newly_published_laws(opts) do
-    opts = Options.from_file_set_up(opts)
-
-    {_, path} = opts.source
-
-    records = Legl.Utility.read_json_records(path)
-
-    Enum.map(records, fn record ->
-      with(
-        # Year field
-        {:ok, record} <- Year.set_year(record),
-        # Publication Date field
-        {:ok, record} <-
-          PublicationDate.set_publication_date_link(
-            record,
-            opts
-          ),
-        # All the other fields
-        {:ok, record} = New.update_empty_law_fields(record, opts)
-      ) do
-        record
-      end
-    end)
-    |> New.save(opts)
   end
 end

@@ -82,7 +82,6 @@ defmodule Legl.Countries.Uk.Metadata do
   alias Legl.Countries.Uk.LeglRegister.Metadata.Options
 
   @source_path ~s[lib/legl/countries/uk/legl_register/metadata/metadata_source.json]
-  @raw_results_path ~s[lib/legl/countries/uk/legl_register/metadata/metadata_raw_results.json]
   @results_path ~s[lib/legl/countries/uk/legl_register/metadata/metadata_results.json]
 
   @doc """
@@ -509,48 +508,6 @@ defmodule Legl.Countries.Uk.Metadata.Delta do
       ~s/#{acc}#{k}#{v}📌/
     end)
     |> String.trim_trailing("📌")
-  end
-
-  @letter_widths %{
-    :a => 4,
-    :b => 4,
-    :c => 4,
-    :d => 4,
-    :e => 4,
-    :f => 3,
-    :g => 4,
-    :h => 4,
-    :i => 3,
-    :j => 2,
-    :k => 2,
-    :l => 1,
-    :m => 6,
-    :n => 4,
-    :o => 4,
-    :p => 4,
-    :q => 4,
-    :r => 3,
-    :s => 4,
-    :t => 3,
-    :u => 4,
-    :v => 3,
-    :w => 6,
-    :x => 4,
-    :y => 4,
-    :z => 4,
-    :_ => 3
-  }
-
-  defp string_width(value) do
-    value = ~s/#{value}/
-
-    value
-    |> String.split("", trim: true)
-    |> Enum.reduce(0, fn letter, acc ->
-      acc + Map.get(@letter_widths, String.to_atom(letter))
-    end)
-
-    # |> (&Kernel.+(&1, String.length(value))).()
   end
 end
 

@@ -93,13 +93,13 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
   ]a
 
   @models ~w[
-    duty_actor
-    duty_actor_article
-    article_duty_actor
+    actor
+    actor_article
+    article_actor
 
-    duty_actor_gvt
-    duty_actor_gvt_article
-    article_duty_actor_gvt
+    actor_gvt
+    actor_gvt_article
+    article_actor_gvt
 
     Dutyholder
     duty_holder

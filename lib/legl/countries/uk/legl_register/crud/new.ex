@@ -13,7 +13,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   alias Legl.Countries.Uk.LeglRegister.New.New.Airtable
   alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
   alias Legl.Countries.Uk.LeglRegister.New.Filters
-  alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
+  # alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
   alias Legl.Countries.Uk.Metadata, as: MD
   alias Legl.Countries.Uk.Metadata
   alias Legl.Countries.Uk.LeglRegister.Extent
@@ -64,7 +64,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       |> Options.month()
       |> Options.day_groups()
       |> Options.formula()
-      |> PDT.get()
+
+    # |> PDT.get()
 
     with(
       {:ok, records} <- LegGovUk.getNewLaws(opts.days, opts),
@@ -112,7 +113,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       |> Options.month()
       |> Options.day_groups()
       |> Options.formula()
-      |> PDT.get()
+
+    # |> PDT.get()
 
     # Get the records from gov.uk
     # Save as .json to @source
@@ -140,16 +142,17 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         |> populate_newly_published_law(opts),
 
       # IO.inspect(exc),
-      :ok = save({w_si_code, wo_si_code, exc}, opts),
+      :ok = save({w_si_code, wo_si_code, exc}, opts)
 
       # Check off in the Publication Date table to keep a tab of what's been done
-      :ok <- PDT.field_checked?(opts)
+      # :ok <- PDT.field_checked?(opts)
     ) do
       :ok
     else
-      {:no_data, opts} ->
+      {:no_data, _opts} ->
         IO.puts("Terms filter didn't find any laws. QA records in 'exc.json'\n")
-        PDT.field_checked?(opts)
+
+      # PDT.field_checked?(opts)
 
       {:error, msg} ->
         IO.puts("ERROR: #{msg}")

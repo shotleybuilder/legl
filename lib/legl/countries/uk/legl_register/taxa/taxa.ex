@@ -130,6 +130,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
     lat_articles = AT.get_legal_article_taxa_records(lat_opts)
     # |> IO.inspect(label: "lat_articles")
 
+    if lrt_opts.filesave? == true,
+      do:
+        Legl.Utility.save_structs_as_json(
+          lat_articles,
+          "test/legl/countries/uk/legl_register/taxa_lat_source.json"
+        )
+
     lrt_record = LRTTaxa.workflow(lat_articles, lrt_record)
     # |> IO.inspect(limit: :infinity, label: "Legal Register Table - record")
 

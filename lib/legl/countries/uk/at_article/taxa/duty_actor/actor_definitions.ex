@@ -90,9 +90,8 @@ defmodule ActorDefinitions do
     [
       "Gvt: Ministry: Ministry of Defence": "Ministry of Defence",
       "Gvt: Ministry: Department of the Environment": "Department of the Environment",
-      "Gvt: Ministry:": "[Tt]he Department",
       "Gvt: Ministry: Treasury": "[Tt]reasury",
-      "Gvt: Ministry:": "[Mm]inistry"
+      "Gvt: Ministry:": ["[Mm]inistry", "[Tt]he Department"]
     ]
   end
 

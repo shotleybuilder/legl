@@ -230,20 +230,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         end
     end
   end
-
-  defp filter(records, opts) do
-    case Legl.Countries.Uk.LeglRegister.Helpers.Create.filter_delta(
-           records,
-           opts
-         ) do
-      {:ok, records} ->
-        records
-
-      {:error, msg} ->
-        IO.puts("ERROR: #{msg}\n")
-        records
-    end
-  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do

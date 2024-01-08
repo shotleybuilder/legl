@@ -3,10 +3,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
   Module to generate the content for responsibility holder fields in the Legal Register Table
 
   ## Field Names in the LRT
-    Responsibility Holder - multi-select field
-    responsibility_holder - long-text
-    responsibility_article - long-text
-    article_responsibility - long-text
+    responsibility_holder - multi-select field
+    responsibility_holder_article - long-text
+    responsibility_holder_article_clause - long-text
+    article_responsibility_holder - long-text
+    article_responsibility_holder_clause - long text
 
   ## Field Names in the LAT
     Responsibility_Holder
@@ -16,23 +17,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
   alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
   alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
-  def responsibilityholder(records) do
-    result =
-      Enum.map(records, fn %{Responsibility_Holder_Aggregate: value} ->
-        value
-      end)
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.sort()
-
-    %{
-      # duty_holder_gvt: Legl.Utility.quote_list(result) |> Enum.join(","),
-      "Responsibility Holder": result
-    }
+  def responsibility_holder(records) do
+    %{responsibility_holder: responsibility_holder_uniq(records)}
   end
 
-  @spec responsibilityholder_uniq(list(%LATTaxa{})) :: list()
-  defp responsibilityholder_uniq(records) do
+  @spec responsibility_holder_uniq(list(%LATTaxa{})) :: list()
+  defp responsibility_holder_uniq(records) do
     Enum.map(records, fn %{Responsibility_Holder: value} ->
       value
     end)
@@ -41,10 +31,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
     |> Enum.sort()
   end
 
-  @spec responsibilityholder_aggregate(list(%LATTaxa{})) :: list()
-  defp responsibilityholder_aggregate(records) do
+  @spec responsibility_holder_aggregate(list(%LATTaxa{})) :: list()
+  defp responsibility_holder_aggregate(records, clause? \\ false) do
     records
-    |> responsibilityholder_uniq
+    |> responsibility_holder_uniq
     |> Enum.reduce([], fn member, col ->
       Enum.reduce(records, [], fn
         %{
@@ -54,7 +44,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
           Record_Type: [rt],
           "Section||Regulation": s,
           Responsibility_Holder_Aggregate: values
-        } = _record,
+        } = record,
         acc
         when rt in ["section", "article"] ->
           rt = if rt != "section", do: "regulation", else: rt
@@ -62,7 +52,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
           case Enum.member?(values, member) do
             true ->
               url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
-              [url | acc]
+
+              IO.puts(
+                ~s/text: #{record.responsibility_holder_txt_aggregate}\nurl: #{url}\nclause?: #{clause?}/
+              )
+
+              case clause? do
+                true ->
+                  [{url, record.responsibility_holder_txt_aggregate} | acc]
+
+                false ->
+                  [url | acc]
+              end
 
             false ->
               acc
@@ -73,44 +74,99 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
       end)
       |> Enum.sort(NaturalOrder)
       |> (&[{member, &1} | col]).()
-      |> Enum.reverse()
     end)
+    |> Enum.reverse()
   end
 
-  def uniq_responsibilityholder_article(records) do
+  @spec responsibility_holder_article(list(%LATTaxa{})) :: map()
+  def responsibility_holder_article(records) do
     records
-    |> responsibilityholder_aggregate()
+    |> responsibility_holder_aggregate()
     |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
     |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :duty_holder_gvt, &1)).()
+    |> (&Map.put(%{}, :responsibility_holder_article, &1)).()
   end
 
-  def responsibilityholder_article(records) do
+  @spec responsibility_holder_article_clause(list(%LATTaxa{})) :: map()
+  def responsibility_holder_article_clause(records) do
     records
-    |> Enum.map(&LRTT.sorter(&1, :Responsibility_Holder_Aggregate))
-    |> Enum.group_by(& &1."Responsibility_Holder_Aggregate")
-    |> Enum.filter(fn {k, _} -> k != [] end)
-    |> Enum.map(fn {k, v} ->
-      {k, Enum.map(v, &LRTT.leg_gov_uk/1)}
-    end)
-    |> Enum.sort()
-    |> Enum.map(&LRTT.taxa_article/1)
+    |> create_responsibility_holder_txt_aggregate_field()
+    |> responsibility_holder_aggregate(true)
+    |> Enum.map(&clause_text_field(&1))
     |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :responsibility_article, &1)).()
-
-    # |> IO.inspect()
+    |> (&Map.put(%{}, :responsibility_holder_article_clause, &1)).()
   end
 
-  def article_responsibilityholder(records) do
+  @spec create_responsibility_holder_txt_aggregate_field(list(%LATTaxa{})) :: list(%LATTaxa{})
+  defp create_responsibility_holder_txt_aggregate_field(records) do
+    records
+    |> Legl.Countries.Uk.Article.Taxa.LATTaxa.aggregate_keys()
+    |> Legl.Countries.Uk.Article.Taxa.LATTaxa.aggregates(:responsibility_holder_txt, records)
+    |> Legl.Countries.Uk.Article.Taxa.LATTaxa.aggregate_result(
+      :responsibility_holder_txt_aggregate,
+      records
+    )
+  end
+
+  @spec clause_text_field(tuple()) :: binary()
+  defp clause_text_field({k, v}) do
+    content =
+      Enum.map(v, fn {url, clauses} ->
+        ~s/#{url}\n    #{Enum.join(clauses, "\n")}/
+      end)
+      |> Enum.join("\n")
+
+    ~s/[#{k}]\n#{content}/
+  end
+
+  @spec article_responsibility_holder(list(%LATTaxa{})) :: map()
+  def article_responsibility_holder(records) do
     records
     |> Enum.filter(fn %{Responsibility_Holder_Aggregate: daa} -> daa != [] end)
     |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
-    |> Enum.group_by(& &1.url, & &1."Responsibility_Holder_Aggregate")
-    |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
-    |> Enum.map(&LRTT.article_taxa/1)
+    |> Enum.map(&mod_id(&1))
+    |> Enum.group_by(& &1."ID", &{&1.url, &1."Responsibility_Holder_Aggregate"})
+    |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
+    |> Enum.map(&article_responsibility_holder_field(&1))
     |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :article_responsibility, &1)).()
+    |> (&Map.put(%{}, :article_responsibility_holder, &1)).()
+  end
 
-    # |> IO.inspect()
+  @spec mod_id(%LATTaxa{}) :: %LATTaxa{}
+  defp mod_id(%{ID: id} = record) do
+    id = Regex.replace(~r/_*[A-Z]*$/, id, "")
+    Map.put(record, :ID, id)
+  end
+
+  @spec article_responsibility_holder_field(tuple()) :: binary()
+  defp article_responsibility_holder_field({_, [{url, terms}]} = _record) do
+    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
+  end
+
+  @spec article_responsibility_holder_clause(list(%LATTaxa{})) :: map()
+  def article_responsibility_holder_clause(records) do
+    records
+    |> create_responsibility_holder_txt_aggregate_field()
+    |> Enum.filter(fn %{Responsibility_Holder_Aggregate: daa} -> daa != [] end)
+    |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
+    |> Enum.map(&mod_id(&1))
+    |> Enum.group_by(
+      & &1."ID",
+      &{&1.url, &1."Responsibility_Holder_Aggregate", &1.responsibility_holder_txt_aggregate}
+    )
+    |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
+    |> IO.inspect()
+    |> Enum.map(&article_responsibility_holder_clause_field(&1))
+    |> Enum.join("\n\n")
+    |> (&Map.put(%{}, :article_responsibility_holder_clause, &1)).()
+  end
+
+  @spec article_responsibility_holder_clause_field(tuple()) :: binary()
+  defp article_responsibility_holder_clause_field({_, [{url, actors_gvt, clauses}]}) do
+    content =
+      Enum.zip(actors_gvt, clauses)
+      |> Enum.map(fn {actor, clause} -> ~s/#{actor} -> #{clause}/ end)
+
+    ~s/#{url}\n#{Enum.join(content, "\n")}/
   end
 end

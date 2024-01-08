@@ -254,64 +254,80 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
   source from :"Duty Actor", :Dutyholder, :"Duty Type", :POPIMAR
   """
   @spec aggregate(struct(), {taxa(), taxa()}) :: {:ok, map()}
-  def aggregate(records, {source, aggregate}) do
-    keys =
-      records
-      |> Enum.reduce([], fn
-        %{Record_Type: rt} = record, acc when rt == ["section"] or rt == ["article"] ->
-          case Regex.run(~r/(.*?)(?:_{2}|_A?\d+A?_|_{2}[A-Z]+|_A?\d+A?_[A-Z]+)$/, record."ID") do
-            [_, id] ->
-              [{id, record."Record_ID"} | acc]
+  def aggregate(records, {source_field, aggregate_field}) do
+    keys = aggregate_keys(records)
 
-            _ ->
-              IO.puts(~s/ERROR: Regex failed to parse this Record ID: #{record."ID"}/)
-              acc
-          end
+    aggregates = aggregates(keys, source_field, records)
 
-        %{Record_Type: rt} = record, acc when rt == ["part"] ->
-          [_, id] = Regex.run(~r/(.*?)(?:_{5}|_{5}[A-Z]+)$/, record."ID")
-          [{id, record."Record_ID"} | acc]
-
-        %{Record_Type: rt} = record, acc when rt == ["chapter"] ->
-          [_, id] = Regex.run(~r/(.*?)(?:_{4}|_{4}[A-Z]+)$/, record."ID")
-          [{id, record."Record_ID"} | acc]
-
-        %{Record_Type: rt} = record, acc when rt == ["heading"] ->
-          [_, id] = Regex.run(~r/(.*?)(?:_{3}|_{3}[A-Z]+)$/, record."ID")
-          [{id, record."Record_ID"} | acc]
-
-        _record, acc ->
-          acc
-      end)
-
-    aggregates =
-      keys
-      |> Enum.map(fn {key, record_id} ->
-        agg =
-          Enum.reduce(records, [], fn record, acc ->
-            case String.contains?(record."ID", key) do
-              true ->
-                acc ++ Map.get(record, source)
-
-              false ->
-                acc
-            end
-          end)
-          |> Enum.uniq()
-
-        {record_id, agg}
-      end)
-
-    result =
-      records
-      |> Enum.map(fn %{Record_ID: record_id} = record ->
-        case Enum.find(aggregates, fn {id, _agg} -> record_id == id end) do
-          nil -> record
-          {_id, agg} -> Map.put(record, aggregate, agg)
-        end
-      end)
+    result = aggregate_result(aggregates, aggregate_field, records)
 
     {:ok, result}
+  end
+
+  @spec aggregate_keys(struct()) :: list()
+  def aggregate_keys(records) do
+    records
+    |> Enum.reduce([], fn
+      %{Record_Type: rt} = record, acc when rt == ["section"] or rt == ["article"] ->
+        case Regex.run(~r/(.*?)(?:_{2}|_A?\d+A?_|_{3}[A-Z]+|_A?\d+A?_[A-Z]+)$/, record."ID") do
+          [_, id] ->
+            [{id, record."Record_ID"} | acc]
+
+          _ ->
+            IO.puts(~s/ERROR: Regex failed to parse this Record ID: #{record."ID"}/)
+            acc
+        end
+
+      %{Record_Type: rt} = record, acc when rt == ["part"] ->
+        [_, id] = Regex.run(~r/(.*?)(?:_{5}|_{5}[A-Z]+)$/, record."ID")
+        [{id, record."Record_ID"} | acc]
+
+      %{Record_Type: rt} = record, acc when rt == ["chapter"] ->
+        [_, id] = Regex.run(~r/(.*?)(?:_{4}|_{4}[A-Z]+)$/, record."ID")
+        [{id, record."Record_ID"} | acc]
+
+      %{Record_Type: rt} = record, acc when rt == ["heading"] ->
+        [_, id] = Regex.run(~r/(.*?)(?:_{3}|_{3}[A-Z]+)$/, record."ID")
+        [{id, record."Record_ID"} | acc]
+
+      _record, acc ->
+        acc
+    end)
+  end
+
+  @spec aggregates(list(), atom(), struct()) :: list()
+  def aggregates(keys, source_field, records) do
+    keys
+    |> Enum.map(fn {key, record_id} ->
+      agg =
+        Enum.reduce(records, [], fn record, acc ->
+          case String.contains?(record."ID", key) do
+            true ->
+              case Map.get(record, source_field) do
+                v when is_list(v) -> acc ++ v
+                "" -> acc
+                v when is_binary(v) -> [v | acc]
+              end
+
+            false ->
+              acc
+          end
+        end)
+        |> Enum.uniq()
+
+      {record_id, agg}
+    end)
+  end
+
+  @spec aggregate_result(list(), atom(), struct()) :: list()
+  def aggregate_result(aggregates, aggregate_field, records) do
+    records
+    |> Enum.map(fn %{Record_ID: record_id} = record ->
+      case Enum.find(aggregates, fn {id, _agg} -> record_id == id end) do
+        nil -> record
+        {_id, agg} -> Map.put(record, aggregate_field, agg)
+      end
+    end)
   end
 
   def patch(results, opts) do
