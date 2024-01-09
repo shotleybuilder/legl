@@ -3,10 +3,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.DutyHolder do
   Module to generate the content for duty holder fields in the Legal Register Table
 
   ## Field Names in the LRT
-    Dutyholder - multi-select field
-    duty_holder - long-text
-    dutyholder_article - long-text
-    article_dutyholder - long-text
+    duty_holder - multi-select field
+    duty_holder_article - long-text
+    duty_holder_article_clause - long-text
+    article_duty_holder - long-text
+    article_duty_holder_clause - long-text
 
   ## Field Names in the LAT
     Dutyholder

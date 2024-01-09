@@ -3,10 +3,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
   Module to generate the content for power holder fields in the Legal Register Table
 
   ## Field Names in the LRT
-    Power Holder - multi-select field
-    power_holder - long-text
+    power_holder - multi-select field
     power_holder_article - long-text
+    power_holder_article_clause - long-text
     article_power_holder - long-text
+    article_power_holder_clause - long-text
 
   ## Field Names in the LAT
     Power_Holder

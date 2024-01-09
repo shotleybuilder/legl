@@ -101,39 +101,35 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     actor_gvt_article
     article_actor_gvt
 
-    Dutyholder
     duty_holder
     dutyholder_article
     article_dutyholder
 
     rights_holder
     rights_holder_article
+    rights_holder_article_clause
     article_rights_holder
+    article_rights_holder_clause
 
     responsibility_holder
-    responsibility_article
-    article_responsibility
+    responsibility_holder_article
+    responsibility_holder_article_clause
+    article_responsibility_holder
+    article_responsibility_holder_clause
 
     power_holder
     power_holder_article
+    power_holder_article_clause
     article_power_holder
+    article_power_holder_clause
 
     duty_type
     duty_type_article
     article_duty_type
 
     POPIMAR
-    popimar_
     popimar_article
     article_popimar
-
-    Duty\u00a0Actor
-    Duty\u00a0Actor\u00a0Gvt
-    Rights\u00a0Holder
-    Responsibility\u00a0Holder
-    Power\u00a0Holder
-    Duty\u00a0Type"
-
 
   ]a
 

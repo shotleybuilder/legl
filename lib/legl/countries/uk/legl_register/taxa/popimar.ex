@@ -4,7 +4,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Popimar do
 
   ## Field Names in the LRT
     POPIMAR - multi-select field
-    popimar_ - long-text
     popimar_article - long-text
     article_popimar - long-text
 

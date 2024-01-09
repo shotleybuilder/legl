@@ -100,38 +100,40 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           article_actor_gvt: String.t(),
 
           # Duties Holder
-          Dutyholder: list(),
-          duty_holder: String.t(),
-          dutyholder_article: String.t(),
-          article_dutyholder: String.t(),
+          duty_holder: list(),
+          duty_holder_article: String.t(),
+          duty_holder_article_clause: String.t(),
+          article_duty_holder: String.t(),
+          article_duty_holder_clause: String.t(),
 
           # Rights Holder
-          "Rights Holder": list(),
-          rights_holder: String.t(),
+          rights_holder: list(),
           rights_holder_article: String.t(),
+          rights_holder_article_clause: String.t(),
           article_rights_holder: String.t(),
+          article_rights_holder_clause: String.t(),
 
           # Responsibilities Holder
-          "Responsibility Holder": list(),
-          responsibility_holder: String.t(),
-          responsibility_article: String.t(),
-          article_responsibility: String.t(),
+          responsibility_holder: list(),
+          responsibility_holder_article: String.t(),
+          responsibility_holder_article_clause: String.t(),
+          article_responsibility_holder: String.t(),
+          article_responsibility_holder_clause: String.t(),
 
           # Powers Holders
-          "Power Holder": list(),
-          power_holder: String.t(),
+          power_holder: list(),
           power_holder_article: String.t(),
+          power_holder_article_clause: String.t(),
           article_power_holder: String.t(),
+          article_power_holder_clause: String.t(),
 
           # Duty Type
-          "Duty Type": list(),
-          duty_type: String.t(),
+          duty_type: list(),
           duty_type_article: String.t(),
           article_duty_type: String.t(),
 
           # POPIMAR
           POPIMAR: list(),
-          popimar_: String.t(),
           popimar_article: String.t(),
           article_popimar: String.t()
         }
@@ -224,38 +226,38 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     actor_gvt_article
     article_actor_gvt
 
-    Dutyholder
     duty_holder
-    dutyholder_article
-    article_dutyholder
+    duty_holder_article
+    duty_holder_article_clause
+    article_duty_holder
+    article_duty_holder_clause
 
     rights_holder
     rights_holder_article
+    rights_holder_article_clause
     article_rights_holder
+    article_rights_holder_clause
 
     responsibility_holder
-    responsibility_article
-    article_responsibility
+    responsibility_holder_article
+    responsibility_holder_article_clause
+    article_responsibility_holder
+    article_responsibility_holder_clause
 
     power_holder
     power_holder_article
+    power_holder_article_clause
     article_power_holder
+    article_power_holder_clause
 
     duty_type
     duty_type_article
     article_duty_type
 
     POPIMAR
-    popimar_
     popimar_article
     article_popimar
   ]a
 
-  defstruct @struct ++
-              [
-                :"Rights Holder",
-                :"Responsibility Holder",
-                :"Power Holder",
-                :"Duty Type"
-              ]
+  defstruct @struct
 end

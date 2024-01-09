@@ -3,8 +3,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.DutyType do
   Module to generate the content for duty type fields in the Legal Register Table
 
   ## Field Names in the LRT
-    Duty Type - multi-select field
-    duty_type - long-text
+    duty_type - multi-select field
     duty_type_article - long-text
     article_duty_type - long-text
 
