@@ -1,54 +1,84 @@
 defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
   @moduledoc """
-  Module to generate the content for RightsHolder fields in the Legal Register Table
+  Module to generate the content for Rights Holder fields in the Legal Register Table
 
   ## Field Names in the LRT
-    Rights Holder
     rights_holder
     rights_holder_article
+    rights_holder_article_clause
     article_rights_holder
+    article_rights_holder_clause
+
+
 
   ## Field Names in the LAT
     Rights_Holder
     Rights_Holder_Aggregate
     rights_holder_txt
+
+  ## LAT "Fields" in Memory
+    rights_holder_txt_aggregate
   """
   alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
   alias Legl.Countries.Uk.Article.Taxa.LATTaxa
 
-  @spec rightsholder(list(%LATTaxa{})) :: map()
-  def rightsholder(records) do
-    result =
-      Enum.map(records, fn %{Rights_Holder_Aggregate: value} ->
-        value
-      end)
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.sort()
-      |> IO.inspect(label: ~s[#{__MODULE__}.rightsholder/1: ])
-
-    %{
-      # duty_holder: Legl.Utility.quote_list(result) |> Enum.join(","),
-      "Rights Holder": result
-    }
+  @spec rights_holder(list(%LATTaxa{})) :: map()
+  def rights_holder(records) do
+    Map.put(
+      %{},
+      :rights_holder,
+      rights_holder_uniq(records)
+    )
   end
 
-  @spec rightsholder_uniq(list(%LATTaxa{})) :: list()
-  defp rightsholder_uniq(records) do
+  @spec rights_holder_uniq(list(%LATTaxa{})) :: list()
+  defp rights_holder_uniq(records) do
     Enum.map(records, fn %{Rights_Holder: value} ->
       value
     end)
     |> List.flatten()
     |> Enum.uniq()
     |> Enum.sort()
-    |> IO.inspect(label: ~s[#{__MODULE__}.rightsholder_uniq/1: ])
+    |> IO.inspect(label: ~s[#{__MODULE__}.rights_holder_uniq/1: ])
   end
 
-  @spec rightsholder_aggregate(list(%LATTaxa{})) :: list()
-  defp rightsholder_aggregate(records) do
+  @spec rights_holder_article(list(%LATTaxa{})) :: map()
+  def rights_holder_article(records) do
     records
-    |> rightsholder_uniq
-    |> Enum.reduce([], fn member, col ->
+    |> rights_holder_aggregate()
+    |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
+    |> Enum.join("\n\n")
+    |> (&Map.put(%{}, :rights_holder_article, &1)).()
+
+    # |> IO.inspect(label: ~s[#{__MODULE__}.rights_holder_article/1: ])
+  end
+
+  @spec rights_holder_article_clause(list(%LATTaxa{})) :: map()
+  def rights_holder_article_clause(records) do
+    records
+    |> create_rights_holder_txt_aggregate_field()
+    |> rights_holder_aggregate(true)
+    |> Enum.map(&clause_text_field(&1))
+    |> Enum.join("\n\n")
+    |> (&Map.put(%{}, :rights_holder_article_clause, &1)).()
+  end
+
+  @spec create_rights_holder_txt_aggregate_field(list(%LATTaxa{})) :: list(%LATTaxa{})
+  def create_rights_holder_txt_aggregate_field(records) do
+    records
+    |> Legl.Countries.Uk.Article.Taxa.LATTaxa.aggregate_keys()
+    |> Legl.Countries.Uk.Article.Taxa.LATTaxa.aggregates(:rights_holder_txt, records)
+    |> Legl.Countries.Uk.Article.Taxa.LATTaxa.aggregate_result(
+      :rights_holder_txt_aggregate,
+      records
+    )
+  end
+
+  @spec rights_holder_aggregate(list(%LATTaxa{})) :: list()
+  defp rights_holder_aggregate(records, clause? \\ false) do
+    records
+    |> rights_holder_uniq
+    |> Enum.reduce([], fn member, collector ->
       Enum.reduce(records, [], fn
         %{
           type_code: [tc],
@@ -56,16 +86,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
           Number: [number],
           Record_Type: [rt],
           "Section||Regulation": s,
-          Rights_Holder_Aggregate: values
-        } = _record,
+          Rights_Holder_Aggregate: rights_holder_aggregate
+        } = record,
         acc
         when rt in ["section", "article"] ->
           rt = if rt != "section", do: "regulation", else: rt
 
-          case Enum.member?(values, member) do
+          case Enum.member?(rights_holder_aggregate, member) do
             true ->
               url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
-              [url | acc]
+
+              case clause? do
+                true ->
+                  [{url, record.rights_holder_txt_aggregate} | acc]
+
+                false ->
+                  [url | acc]
+              end
 
             false ->
               acc
@@ -74,49 +111,84 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
         _record, acc ->
           acc
       end)
-      |> Enum.sort(NaturalOrder)
-      |> (&[{member, &1} | col]).()
-      |> Enum.reverse()
-      |> IO.inspect(label: ~s[#{__MODULE__}.rightsholder_aggregate/1: ])
+      |> natural_order_sort()
+      |> (&[{member, &1} | collector]).()
     end)
+    |> Enum.reverse()
   end
 
-  @spec uniq_rightsholder_article(list(%LATTaxa{})) :: map()
-  def uniq_rightsholder_article(records) do
-    records
-    |> rightsholder_aggregate()
-    |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
-    |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :rights_holder, &1)).()
-    |> IO.inspect(label: ~s[#{__MODULE__}.uniq_rightsholder_article/1: ])
+  defp natural_order_sort([]), do: []
+
+  defp natural_order_sort(values) do
+    case hd(values) do
+      v when is_tuple(v) ->
+        Enum.sort_by(values, &elem(&1, 0), NaturalOrder)
+
+      v when is_binary(v) ->
+        Enum.sort(NaturalOrder)
+    end
   end
 
-  @spec rightsholder_article(list(%LATTaxa{})) :: map()
-  def rightsholder_article(records) do
-    records
-    |> Enum.map(&LRTT.sorter(&1, :Rights_Holder_Aggregate))
-    |> Enum.group_by(& &1."Rights_Holder_Aggregate")
-    |> Enum.filter(fn {k, _} -> k != [] end)
-    |> Enum.map(fn {k, v} ->
-      {k, Enum.map(v, &LRTT.leg_gov_uk/1)}
-    end)
-    |> Enum.sort()
-    |> Enum.map(&LRTT.taxa_article/1)
-    |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :rights_holder_article, &1)).()
-    |> IO.inspect(label: ~s[#{__MODULE__}.rightsholder_article/1: ])
+  @spec clause_text_field(tuple()) :: binary()
+  defp clause_text_field({k, v}) do
+    content =
+      Enum.map(v, fn {url, clauses} ->
+        ~s/#{url}\n    #{Enum.join(clauses, "\n")}/
+      end)
+      |> Enum.join("\n")
+
+    ~s/[#{k}]\n#{content}/
   end
 
-  @spec article_rightsholder(list(%LATTaxa{})) :: map()
-  def article_rightsholder(records) do
+  @spec article_rights_holder(list(%LATTaxa{})) :: map()
+  def article_rights_holder(records) do
     records
     |> Enum.filter(fn %{Rights_Holder_Aggregate: daa} -> daa != [] end)
     |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
-    |> Enum.group_by(& &1.url, & &1."Rights_Holder_Aggregate")
+    |> Enum.map(&mod_id(&1))
+    |> Enum.group_by(& &1."ID", &{&1.url, &1."Rights_Holder_Aggregate"})
     |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
-    |> Enum.map(&LRTT.article_taxa/1)
+    |> Enum.map(&article_rights_holder_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_rights_holder, &1)).()
-    |> IO.inspect(label: ~s[#{__MODULE__}.article_rightsholder/1: ])
+
+    # |> IO.inspect(label: ~s[#{__MODULE__}.article_rights_holder/1: ])
+  end
+
+  @spec mod_id(%LATTaxa{}) :: %LATTaxa{}
+  defp mod_id(%{ID: id} = record) do
+    id = Regex.replace(~r/_*[A-Z]*$/, id, "")
+    Map.put(record, :ID, id)
+  end
+
+  @spec article_rights_holder_field(tuple()) :: binary()
+  defp article_rights_holder_field({_, [{url, terms}]} = _record) do
+    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
+  end
+
+  @spec article_rights_holder_clause(list(%LATTaxa{})) :: map()
+  def article_rights_holder_clause(records) do
+    records
+    |> create_rights_holder_txt_aggregate_field()
+    |> Enum.filter(fn %{Rights_Holder_Aggregate: daa} -> daa != [] end)
+    |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
+    |> Enum.map(&mod_id(&1))
+    |> Enum.group_by(
+      & &1."ID",
+      &{&1.url, &1."Rights_Holder_Aggregate", &1.rights_holder_txt_aggregate}
+    )
+    |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
+    |> Enum.map(&article_rights_holder_clause_field(&1))
+    |> Enum.join("\n\n")
+    |> (&Map.put(%{}, :article_rights_holder_clause, &1)).()
+  end
+
+  @spec article_rights_holder_clause_field(tuple()) :: binary()
+  defp article_rights_holder_clause_field({_, [{url, actors_gvt, clauses}]}) do
+    content =
+      Enum.zip(actors_gvt, clauses)
+      |> Enum.map(fn {actor, clause} -> ~s/#{actor} -> #{clause}/ end)
+
+    ~s/#{url}\n#{Enum.join(content, "\n")}/
   end
 end

@@ -34,15 +34,17 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     |> Kernel.struct(GvtActor.actor_gvt_article(records))
     |> Kernel.struct(GvtActor.article_actor_gvt(records))
     # Governed duties
-    |> Kernel.struct(DutyHolder.dutyholder(records))
-    |> Kernel.struct(DutyHolder.dutyholder_article(records))
-    |> Kernel.struct(DutyHolder.article_dutyholder(records))
-    |> Kernel.struct(DutyHolder.uniq_dutyholder_article(records))
+    |> Kernel.struct(DutyHolder.duty_holder(records))
+    |> Kernel.struct(DutyHolder.duty_holder_article(records))
+    |> Kernel.struct(DutyHolder.duty_holder_article_clause(records))
+    |> Kernel.struct(DutyHolder.article_duty_holder(records))
+    |> Kernel.struct(DutyHolder.article_duty_holder_clause(records))
     # Governed rights
-    |> Kernel.struct(RightsHolder.rightsholder(records))
-    |> Kernel.struct(RightsHolder.rightsholder_article(records))
-    |> Kernel.struct(RightsHolder.article_rightsholder(records))
-    |> Kernel.struct(RightsHolder.uniq_rightsholder_article(records))
+    |> Kernel.struct(RightsHolder.rights_holder(records))
+    |> Kernel.struct(RightsHolder.rights_holder_article(records))
+    |> Kernel.struct(RightsHolder.rights_holder_article_clause(records))
+    |> Kernel.struct(RightsHolder.article_rights_holder(records))
+    |> Kernel.struct(RightsHolder.article_rights_holder_clause(records))
     # Government responsibles
     |> Kernel.struct(ResponsibilityHolder.responsibility_holder(records))
     |> Kernel.struct(ResponsibilityHolder.responsibility_holder_article(records))
@@ -52,17 +54,17 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     # Government powers
     |> Kernel.struct(PowerHolder.power_holder(records))
     |> Kernel.struct(PowerHolder.power_holder_article(records))
+    |> Kernel.struct(PowerHolder.power_holder_article_clause(records))
     |> Kernel.struct(PowerHolder.article_power_holder(records))
+    |> Kernel.struct(PowerHolder.article_power_holder_clause(records))
     # Duty Types
     |> Kernel.struct(DutyType.duty_type(records))
     |> Kernel.struct(DutyType.duty_type_article(records))
     |> Kernel.struct(DutyType.article_duty_type(records))
-    |> Kernel.struct(DutyType.uniq_duty_type_article(records))
     # POPIMAR
     |> Kernel.struct(POPIMAR.popimar(records))
     |> Kernel.struct(POPIMAR.popimar_article(records))
     |> Kernel.struct(POPIMAR.article_popimar(records))
-    |> Kernel.struct(POPIMAR.uniq_popimar_article(records))
   end
 
   def leg_gov_uk(

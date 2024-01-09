@@ -35,12 +35,12 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
   alias Legl.Countries.Uk.LeglRegister.Taxa.Popimar
 
-  @lrt [
-    Kernel.struct(
-      %Legl.Countries.Uk.LeglRegister.LegalRegister{},
-      %{Title_EN: "K_CMCHA_ukpga_2007_19", Year: 2000, Number: 100, type_code: "ukpga"}
-    )
-  ]
+  # @lrt [
+  #  Kernel.struct(
+  #    %Legl.Countries.Uk.LeglRegister.LegalRegister{},
+  #    %{Title_EN: "K_CMCHA_ukpga_2007_19", Year: 2000, Number: 100, type_code: "ukpga"}
+  #  )
+  # ]
   @lat Legl.Utility.read_json_records("test/legl/countries/uk/legl_register/taxa_lat_source.json")
 
   describe "Government Roles" do
@@ -296,6 +296,254 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
   describe "Duty Holder" do
     test "duty_holder" do
       result = DutyHolder.duty_holder(@lat)
+
+      IO.inspect(result, label: "DUTY_HOLDER")
+
+      assert is_map(result)
+
+      assert %{duty_holder: ["Organisation"]} = result
+    end
+
+    test "duty_holder_article/1" do
+      result = DutyHolder.duty_holder_article(@lat)
+
+      IO.inspect(result, label: "DUTY_HOLDER_ARTICLE")
+
+      "[Organisation]\nhttps://legislation.gov.uk/ukpga/2007/19/section/1" =
+        result.duty_holder_article
+    end
+
+    test "create_duty_holder_txt_aggregate_field/1" do
+      result = DutyHolder.create_duty_holder_txt_aggregate_field(@lat)
+
+      Enum.each(result, fn
+        %{duty_holder_txt_aggregate: value} = result ->
+          case value do
+            [] -> IO.puts(~s/CREATE_DUTY_HOLDER_TXT_AGGREGATE_FIELD - EMPTY LIST/)
+            _ -> IO.puts(~s/CREATE_DUTY_HOLDER_TXT_AGGREGATE_FIELD: #{value}\n#{inspect(result)}/)
+          end
+
+        _ ->
+          IO.puts(~s/CREATE_DUTY_HOLDER_TXT_AGGREGATE_FIELD - NO VALUE/)
+      end)
+    end
+
+    test "duty_holder_article_clause/1" do
+      result = DutyHolder.duty_holder_article_clause(@lat)
+
+      IO.inspect(result, label: "DUTY_HOLDER_ARTICLE_CLAUSE")
+
+      assert """
+             [Organisation]
+             https://legislation.gov.uk/ukpga/2007/19/section/1
+                 organisation that is guilty of corporate manslaughter or corporate homicide is liable
+             """
+             |> String.trim_trailing("\n") == result.duty_holder_article_clause
+    end
+
+    test "article_duty_holder/1" do
+      result = DutyHolder.article_duty_holder(@lat)
+      IO.inspect(result, label: "ARTICLE_DUTY_HOLDER")
+
+      assert is_map(result)
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/1
+             Organisation
+
+             https://legislation.gov.uk/ukpga/2007/19/section/1
+             Organisation
+             """
+             |> String.trim_trailing("\n") == result.article_duty_holder
+    end
+
+    test "article_duty_holder_clause/1" do
+      result = DutyHolder.article_duty_holder_clause(@lat)
+
+      IO.inspect(result, label: "ARTICLE_DUTY_HOLDER_CLAUSE")
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/1
+             Organisation -> organisation that is guilty of corporate manslaughter or corporate homicide is liable
+
+             https://legislation.gov.uk/ukpga/2007/19/section/1
+             Organisation -> organisation that is guilty of corporate manslaughter or corporate homicide is liable
+             """
+             |> String.trim_trailing("\n") == result.article_duty_holder_clause
+    end
+  end
+
+  describe "Rights Holder" do
+    test "rights_holder/1" do
+      result = RightsHolder.rights_holder(@lat)
+
+      IO.inspect(result, label: "RIGHTS_HOLDER")
+
+      assert is_map(result)
+
+      assert %{rights_holder: ["Organisation"]} = result
+    end
+
+    test "rights_holder_article/1" do
+      result = RightsHolder.rights_holder_article(@lat)
+
+      IO.inspect(result, label: "RIGHTS_HOLDER_ARTICLE")
+
+      "[Organisation]\nhttps://legislation.gov.uk/ukpga/2007/19/section/19" =
+        result.rights_holder_article
+    end
+
+    test "rights_holder_article_clause/1" do
+      result = RightsHolder.rights_holder_article_clause(@lat)
+
+      IO.inspect(result, label: "RIGHTS_HOLDER_ARTICLE_CLAUSE")
+
+      assert """
+             [Organisation]
+             https://legislation.gov.uk/ukpga/2007/19/section/19
+                 An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
+             """
+             |> String.trim_trailing("\n") == result.rights_holder_article_clause
+    end
+
+    test "article_rights_holder/1" do
+      result = RightsHolder.article_rights_holder(@lat)
+      IO.inspect(result, label: "ARTICLE_RIGHTS_HOLDER")
+
+      assert is_map(result)
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/15
+             Organisation
+
+             https://legislation.gov.uk/ukpga/2007/19/section/19
+             Organisation
+             """
+             |> String.trim_trailing("\n") == result.article_rights_holder
+    end
+
+    test "article_rights_holder_clause/1" do
+      result = RightsHolder.article_rights_holder_clause(@lat)
+
+      IO.inspect(result, label: "ARTICLE_RIGHTS_HOLDER_CLAUSE")
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/15
+             Organisation -> An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
+
+             https://legislation.gov.uk/ukpga/2007/19/section/19
+             Organisation -> An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
+             """
+             |> String.trim_trailing("\n") == result.article_rights_holder_clause
+    end
+  end
+
+  describe "Duty Type" do
+    test "duty_type/1" do
+      result = DutyType.duty_type(@lat)
+
+      IO.inspect(result, label: "DUTY_TYPE")
+
+      assert is_map(result)
+
+      assert %{
+               duty_type: [
+                 "Duty",
+                 "Right",
+                 "Responsibility",
+                 "Power",
+                 "Enactment, Citation, Commencement",
+                 "Interpretation, Definition",
+                 "Application, Scope",
+                 "Extent",
+                 "Process, Rule, Constraint, Condition",
+                 "Power Conferred",
+                 "Offence",
+                 "Enforcement, Prosecution",
+                 "Repeal, Revocation",
+                 "Amendment"
+               ]
+             } = result
+    end
+
+    test "duty_type_article/1" do
+      result = DutyType.duty_type_article(@lat)
+
+      IO.inspect(result, label: "DUTY_TYPE_ARTICLE")
+
+      assert is_map(result)
+
+      assert """
+             [Duty]
+             https://legislation.gov.uk/ukpga/2007/19/section/1
+
+             [Right]
+             https://legislation.gov.uk/ukpga/2007/19/section/19
+             """ <> _ = result.duty_type_article
+    end
+
+    test "article_duty_type/1" do
+      result = DutyType.article_duty_type(@lat)
+      IO.puts("ARTICLE_DUTY_TYPE\n#{result.article_duty_type}")
+
+      assert is_map(result)
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/1
+             Application, Scope; Duty; Enforcement, Prosecution; Interpretation, Definition; Offence
+             """ <> _ = result.article_duty_type
+    end
+  end
+
+  describe "POPIMAR" do
+    test "popimar/1" do
+      result = Popimar.popimar(@lat)
+      IO.inspect(result, label: "POPIMAR")
+      assert is_map(result)
+
+      assert [
+               "Policy",
+               "Organisation - Control",
+               "Organisation - Communication & Consultation",
+               "Organisation - Competence",
+               "Organisation - Costs",
+               "Notification",
+               "Aspects and Hazards",
+               "Risk Control",
+               "Maintenance, Examination and Testing"
+             ] == result.popimar
+    end
+
+    test "popimar_article/1" do
+      result = Popimar.popimar_article(@lat)
+      IO.inspect(result, label: "POPIMAR_ARTICLE")
+      assert is_map(result)
+
+      assert """
+             [Policy]
+             https://legislation.gov.uk/ukpga/2007/19/section/2
+             https://legislation.gov.uk/ukpga/2007/19/section/3
+             https://legislation.gov.uk/ukpga/2007/19/section/5
+             https://legislation.gov.uk/ukpga/2007/19/section/8
+             https://legislation.gov.uk/ukpga/2007/19/section/13
+             """ <> _ = result.popimar_article
+    end
+
+    test "article_popimar/1" do
+      result = Popimar.article_popimar(@lat)
+      IO.inspect(result, label: "ARTICLE_POPIMAR")
+      assert is_map(result)
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/1
+             Risk Control
+
+             https://legislation.gov.uk/ukpga/2007/19/section/1
+             Risk Control
+
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/2
+             Aspects and Hazards; Maintenance, Examination and Testing; Organisation - Competence; Policy; Risk Control
+             """ <> _ = result.article_popimar
     end
   end
 end

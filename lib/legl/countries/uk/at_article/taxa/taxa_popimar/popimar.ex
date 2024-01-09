@@ -317,4 +317,36 @@ FIND("Responsibility",{Duty Type})>0,FIND("Discretionary",{Duty Type})>0))\
       |> (&String.replace(&1, ", ", "_")).()
       |> (&String.replace(&1, " ", "_")).()
       |> (&String.to_atom/1).()
+
+  def popimar_sorter(dt) do
+    proxy = %{
+      "Policy" => "1Policy",
+      "Organisation" => "2Organisation",
+      "Organisation - Control" => "3Organisation - Control",
+      "Organisation - Communication & Consultation" =>
+        "4Organisation - Communication & Consultation",
+      "Organisation - Collaboration, Coordination, Cooperation" =>
+        "5Organisation - Collaboration, Coordination, Cooperation",
+      "Organisation - Competence" => "6Organisation - Competence",
+      "Organisation - Costs" => "7Organisation - Costs",
+      "Records" => "8Records",
+      "Permit, Authorisation, License" => "9Permit, Authorisation, License",
+      "Notification" => "10Notification",
+      "Planning & Risk / Impact Assessment" => "11Planning & Risk / Impact Assessment",
+      "Aspects and Hazards" => "12Aspects and Hazards",
+      "Risk Control" => "13Risk Control",
+      "Maintenance, Examination and Testing" => "14Maintenance, Examination and Testing",
+      "Checking, Monitoring" => "15Checking, Monitoring",
+      "Review" => "16Review",
+      "Audit" => "17Audit"
+    }
+
+    reverse_proxy = Enum.reduce(proxy, %{}, fn {k, v}, acc -> Map.put(acc, v, k) end)
+
+    dt
+    |> Enum.map(&Map.get(proxy, &1))
+    |> Enum.filter(&(&1 != nil))
+    |> Enum.sort(NaturalOrder)
+    |> Enum.map(&Map.get(reverse_proxy, &1))
+  end
 end

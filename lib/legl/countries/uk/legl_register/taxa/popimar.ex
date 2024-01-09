@@ -14,20 +14,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Popimar do
   """
   alias Legl.Countries.Uk.Article.Taxa.LRTTaxa, as: LRTT
   alias Legl.Countries.Uk.Article.Taxa.LATTaxa
+  alias Legl.Countries.Uk.Article.Taxa.TaxaPopimar.Popimar
 
   def popimar(records) do
-    result =
-      Enum.map(records, fn %{"POPIMAR Aggregate": value} ->
-        value
-      end)
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.sort()
-
-    %{
-      # popimar_: Legl.Utility.quote_list(result) |> Enum.join(","),
-      POPIMAR: result
-    }
+    Map.put(
+      %{},
+      :popimar,
+      popimar_uniq(records)
+    )
   end
 
   @spec popimar_uniq(list(%LATTaxa{})) :: list()
@@ -37,7 +31,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Popimar do
     end)
     |> List.flatten()
     |> Enum.uniq()
-    |> Enum.sort()
+    |> Popimar.popimar_sorter()
   end
 
   @spec popimar_aggregate(list(%LATTaxa{})) :: list()
@@ -72,44 +66,40 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Popimar do
       end)
       |> Enum.sort(NaturalOrder)
       |> (&[{member, &1} | col]).()
-      |> Enum.reverse()
     end)
-  end
-
-  def uniq_popimar_article(records) do
-    records
-    |> popimar_aggregate()
-    |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
-    |> Enum.join("\n\n")
-    |> (&Map.put(%{}, :popimar_, &1)).()
+    |> Enum.reverse()
   end
 
   def popimar_article(records) do
     records
-    |> Enum.map(&LRTT.sorter(&1, :"Duty Actor Aggregate"))
-    |> Enum.group_by(& &1."POPIMAR Aggregate")
-    |> Enum.filter(fn {k, _} -> k != [] end)
-    |> Enum.map(fn {k, v} ->
-      {k, Enum.map(v, &LRTT.leg_gov_uk/1)}
-    end)
-    |> Enum.sort()
-    |> Enum.map(&LRTT.taxa_article/1)
+    |> popimar_aggregate()
+    |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :popimar_article, &1)).()
-
-    # |> IO.inspect()
   end
 
   def article_popimar(records) do
     records
     |> Enum.filter(fn %{"POPIMAR Aggregate": daa} -> daa != [] end)
     |> Enum.map(fn record -> Map.put(record, :url, LRTT.leg_gov_uk(record)) end)
-    |> Enum.group_by(& &1.url, & &1."POPIMAR Aggregate")
+    |> Enum.map(&mod_id(&1))
+    |> Enum.group_by(& &1."ID", &{&1.url, &1."POPIMAR Aggregate"})
     |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
-    |> Enum.map(&LRTT.article_taxa/1)
+    |> Enum.map(&article_popimar_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_popimar, &1)).()
 
     # |> IO.inspect()
+  end
+
+  @spec mod_id(%LATTaxa{}) :: %LATTaxa{}
+  defp mod_id(%{ID: id} = record) do
+    id = Regex.replace(~r/_*[A-Z]*$/, id, "")
+    Map.put(record, :ID, id)
+  end
+
+  @spec article_popimar_field(tuple()) :: binary()
+  defp article_popimar_field({_, [{url, terms}]} = _record) do
+    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
   end
 end

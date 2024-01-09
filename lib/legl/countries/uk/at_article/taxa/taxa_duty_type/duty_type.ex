@@ -159,7 +159,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
     end
   end
 
-  defp duty_type_sorter(dt) do
+  def duty_type_sorter(dt) do
     proxy = %{
       "Duty" => "1Duty",
       "Right" => "2Right",
