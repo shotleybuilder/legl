@@ -170,10 +170,13 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "responsibility_holder_article/1" do
       result = ResponsibilityHolder.responsibility_holder_article(@lat)
 
-      assert "[Gvt: Judiciary]\nhttps://legislation.gov.uk/ukpga/2007/19/section/10" =
-               result.responsibility_holder_article
+      assert """
+             [Gvt: Judiciary]
+             https://legislation.gov.uk/ukpga/2007/19/section/10
+             """
+             |> String.trim_trailing("\n") == result.responsibility_holder_article
 
-      IO.puts(result.responsibility_holder_article)
+      # IO.puts(result.responsibility_holder_article)
     end
 
     test "responsibility_holder_article_clause/1" do
@@ -181,7 +184,8 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
       # IO.inspect(result, label: "RESP_HOLDER_ARTICLE_CLAUSE")
       # heredoc
       assert """
-             [Gvt: Judiciary]\nhttps://legislation.gov.uk/ukpga/2007/19/section/10
+             [Gvt: Judiciary]
+             https://legislation.gov.uk/ukpga/2007/19/section/10
                  court must
              """
              |> String.trim_trailing("\n") == result.responsibility_holder_article_clause
@@ -189,7 +193,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
     test "article_responsibility_holder/1" do
       result = ResponsibilityHolder.article_responsibility_holder(@lat)
-      IO.inspect(result, label: "ARTICLE_RESP_HOLDER")
+      # IO.inspect(result, label: "ARTICLE_RESP_HOLDER")
 
       assert """
              https://legislation.gov.uk/ukpga/2007/19/crossheading/9
@@ -204,7 +208,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "article_responsibility_holder_clause/1" do
       result = ResponsibilityHolder.article_responsibility_holder_clause(@lat)
 
-      IO.inspect(result, label: "ARTICLE_RESP_HOLDER_CLAUSE")
+      # IO.inspect(result, label: "ARTICLE_RESP_HOLDER_CLAUSE")
 
       assert """
              https://legislation.gov.uk/ukpga/2007/19/crossheading/9
@@ -214,6 +218,84 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
              Gvt: Judiciary -> court must
              """
              |> String.trim_trailing("\n") == result.article_responsibility_holder_clause
+    end
+  end
+
+  describe "Power Holder" do
+    test "power_holder/1" do
+      result = PowerHolder.power_holder(@lat)
+      # IO.inspect(result, label: "POWER_HOLDER")
+
+      assert result ==
+               %{power_holder: ["Gvt: Judiciary", "Gvt: Minister", "Gvt: Ministry:"]}
+    end
+
+    test "power_holder_article/1" do
+      result = PowerHolder.power_holder_article(@lat)
+
+      IO.inspect(result, label: "POWER_HOLDER_ARTICLE")
+
+      assert is_map(result)
+
+      assert """
+             [Gvt: Minister]
+             https://legislation.gov.uk/ukpga/2007/19/section/16
+             https://legislation.gov.uk/ukpga/2007/19/section/21
+             """ <> _ = result.power_holder_article
+    end
+
+    test "power_holder_article_clause" do
+      result = PowerHolder.power_holder_article_clause(@lat)
+
+      IO.inspect(result, label: "POWER_HOLDER_ARTICLE_CLAUSE")
+
+      assert is_map(result)
+
+      assert """
+             [Gvt: Judiciary]
+             https://legislation.gov.uk/ukpga/2007/19/section/9
+                 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+             https://legislation.gov.uk/ukpga/2007/19/section/10
+                 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+             """ <> _ = result.power_holder_article_clause
+    end
+
+    test "article_power_holder/1" do
+      result = PowerHolder.article_power_holder(@lat)
+
+      IO.inspect(result, label: "ARTICLE_POWER_HOLDER")
+
+      assert is_map(result)
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/9
+             Gvt: Judiciary
+
+             https://legislation.gov.uk/ukpga/2007/19/section/9
+             Gvt: Judiciary
+             """ <> _ = result.article_power_holder
+    end
+
+    test "article_power_holder_clause/1" do
+      result = PowerHolder.article_power_holder_clause(@lat)
+
+      IO.inspect(result, lable: "ARTICLE_POWER_HOLDER_CLAUSE")
+
+      assert is_map(result)
+
+      assert """
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/9
+             Gvt: Judiciary -> court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+
+             https://legislation.gov.uk/ukpga/2007/19/section/9
+             Gvt: Judiciary -> court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+             """ <> _ = result.article_power_holder_clause
+    end
+  end
+
+  describe "Duty Holder" do
+    test "duty_holder" do
+      result = DutyHolder.duty_holder(@lat)
     end
   end
 end

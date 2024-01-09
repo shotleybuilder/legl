@@ -53,10 +53,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
             true ->
               url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
 
-              IO.puts(
-                ~s/text: #{record.responsibility_holder_txt_aggregate}\nurl: #{url}\nclause?: #{clause?}/
-              )
-
               case clause? do
                 true ->
                   [{url, record.responsibility_holder_txt_aggregate} | acc]
@@ -72,10 +68,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
         _record, acc ->
           acc
       end)
-      |> Enum.sort(NaturalOrder)
+      |> natural_order_sort()
       |> (&[{member, &1} | col]).()
     end)
     |> Enum.reverse()
+  end
+
+  defp natural_order_sort(values) do
+    case hd(values) do
+      v when is_tuple(v) ->
+        Enum.sort_by(values, &elem(&1, 0), NaturalOrder)
+
+      v when is_binary(v) ->
+        Enum.sort(NaturalOrder)
+    end
   end
 
   @spec responsibility_holder_article(list(%LATTaxa{})) :: map()
@@ -155,7 +161,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
       &{&1.url, &1."Responsibility_Holder_Aggregate", &1.responsibility_holder_txt_aggregate}
     )
     |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
-    |> IO.inspect()
     |> Enum.map(&article_responsibility_holder_clause_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_responsibility_holder_clause, &1)).()

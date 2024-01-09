@@ -50,10 +50,9 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     |> Kernel.struct(ResponsibilityHolder.article_responsibility_holder(records))
     |> Kernel.struct(ResponsibilityHolder.article_responsibility_holder_clause(records))
     # Government powers
-    |> Kernel.struct(PowerHolder.powerholder(records))
-    |> Kernel.struct(PowerHolder.powerholder_article(records))
-    |> Kernel.struct(PowerHolder.article_powerholder(records))
-    |> Kernel.struct(PowerHolder.uniq_powerholder_article(records))
+    |> Kernel.struct(PowerHolder.power_holder(records))
+    |> Kernel.struct(PowerHolder.power_holder_article(records))
+    |> Kernel.struct(PowerHolder.article_power_holder(records))
     # Duty Types
     |> Kernel.struct(DutyType.duty_type(records))
     |> Kernel.struct(DutyType.duty_type_article(records))
