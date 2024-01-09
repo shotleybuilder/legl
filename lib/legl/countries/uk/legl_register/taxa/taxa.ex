@@ -102,11 +102,22 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
 
   Call to the function within the LRO.update_workflow() option
   """
-  def set_taxa(lrt_record, lrt_opts) do
+  def set_taxa(%{Family: family} = lrt_record, lrt_opts) when family not in [nil, ""],
+    do: set_taxa(lrt_record, lrt_opts, family)
+
+  def set_taxa(lrt_record, %{family: family} = lrt_opts) when family not in [nil, ""],
+    do: set_taxa(lrt_record, lrt_opts, family)
+
+  def set_taxa(lrt_record, _) do
+    IO.puts(~s{ERROR: Family Not Set\n[#{__MODULE__}.set_taxa/2]})
+    {:ok, lrt_record}
+  end
+
+  def set_taxa(lrt_record, lrt_opts, family) when is_binary(family) do
     lat_opts = [
       # Mutes user select prompt
-      base_name: lrt_opts.family <> ~s/ - UK/,
-      base_id: Map.get(AtBases.base_map(), lrt_opts.family <> ~s/ - UK/),
+      base_name: family <> ~s/ - UK/,
+      base_id: Map.get(AtBases.base_map(), family <> ~s/ - UK/),
       # Uses these 3 for GET request
       type_code: lrt_record.type_code,
       Year: lrt_record."Year",
@@ -141,5 +152,76 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
     # |> IO.inspect(limit: :infinity, label: "Legal Register Table - record")
 
     {:ok, lrt_record}
+  end
+
+  @doc """
+  Function to set the content of LRT taxa fields
+
+  Namely:
+    article_actor_gvt
+    article_actor
+    article_responsibility_holder
+    article_power_holder
+    article_duty_holder
+    article_rights_holder
+    article_duty_type
+    article_popimar
+  """
+
+  def article_xxx_field({_, [{url, terms}]} = _record) do
+    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
+  end
+
+  def article_xxx_field({_, []}), do: ""
+
+  def article_xxx_field({_, articles}) when is_list(articles) do
+    articles
+    |> Enum.uniq()
+    |> Enum.map(fn {url, terms} -> ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/ end)
+    |> Enum.join("\n")
+  end
+
+  @doc """
+  Function to set the content of LRT taxa fields
+
+  Namely:
+    article_responsibility_holder_clause
+    article_power_holder_clause
+    article_duty_holder_clause
+    article_rights_holder_clause
+    article_popimar_clause *not yet implemented
+  """
+  @spec article_xxx_clause_field(tuple()) :: binary()
+  def article_xxx_clause_field({_, []}), do: ""
+
+  def article_xxx_clause_field({_, articles}) do
+    articles
+    |> Enum.uniq()
+    |> Enum.map(&article_xxx_clause_field(&1))
+    |> Enum.join("\n")
+  end
+
+  def article_xxx_clause_field({url, taxa, clauses}) do
+    content =
+      Enum.zip(taxa, clauses)
+      |> Enum.map(fn {taxon, clause} -> ~s/#{taxon} -> #{clause}/ end)
+
+    ~s/#{url}\n#{Enum.join(content, "\n")}/
+  end
+
+  @doc """
+  Function to sort xxx_aggregate
+
+  """
+  def natural_order_sort([]), do: []
+
+  def natural_order_sort(values) do
+    case hd(values) do
+      v when is_tuple(v) ->
+        Enum.sort_by(values, &elem(&1, 0), NaturalOrder)
+
+      v when is_binary(v) ->
+        Enum.sort(values, NaturalOrder)
+    end
   end
 end

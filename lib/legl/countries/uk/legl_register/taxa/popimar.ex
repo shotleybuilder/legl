@@ -3,7 +3,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Popimar do
   Module to generate the content for POPIMAR fields in the Legal Register Table
 
   ## Field Names in the LRT
-    POPIMAR - multi-select field
+    popimar - multi-select field
     popimar_article - long-text
     article_popimar - long-text
 
@@ -84,7 +84,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Popimar do
     |> Enum.map(&mod_id(&1))
     |> Enum.group_by(& &1."ID", &{&1.url, &1."POPIMAR Aggregate"})
     |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
-    |> Enum.map(&article_popimar_field(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.article_xxx_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_popimar, &1)).()
 
@@ -95,10 +95,5 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.Popimar do
   defp mod_id(%{ID: id} = record) do
     id = Regex.replace(~r/_*[A-Z]*$/, id, "")
     Map.put(record, :ID, id)
-  end
-
-  @spec article_popimar_field(tuple()) :: binary()
-  defp article_popimar_field({_, [{url, terms}]} = _record) do
-    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
   end
 end

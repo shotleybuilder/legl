@@ -8,6 +8,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     table_name: "Publication Date",
     type_code: [""],
     name: nil,
+    formula: "",
     year: 2023,
     month: nil,
     day: nil,
@@ -20,9 +21,9 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     # Global mute msg
     json?: false,
     mute?: true,
-    paste?: false,
     patch?: false,
-    post?: false
+    post?: false,
+    filesave?: false
   }
 
   def default_opts, do: @default_opts
@@ -61,6 +62,20 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.base_table_id()
     |> LRO.patch?()
     |> LRO.formula_name()
+    |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year Family])
+    |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
+  end
+
+  def api_update_single_view_options(opts) do
+    IO.puts(
+      ~s/_____\nSetting Options from [CRUD.Options.api_update_single_view_options]\n:update_workflow, :name, :view, :patch?, :formula, :fields/
+    )
+
+    Enum.into(opts, @default_opts)
+    |> LRO.update_workflow()
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> LRO.patch?()
     |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year Family])
     |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end

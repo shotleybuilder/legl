@@ -127,7 +127,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     duty_type_article
     article_duty_type
 
-    POPIMAR
+    popimar
     popimar_article
     article_popimar
 

@@ -143,7 +143,7 @@ defmodule UK do
             apply(module, function, args)
 
           {module, function} when is_atom(module) and is_atom(function) ->
-            apply(module, function, [])
+            apply(module, function, [opts])
 
           {function, args} when is_atom(function) and is_list(args) ->
             args = [List.first(args) ++ opts]

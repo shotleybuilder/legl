@@ -68,20 +68,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
         _record, acc ->
           acc
       end)
-      |> natural_order_sort()
+      |> Legl.Countries.Uk.LeglRegister.Taxa.natural_order_sort()
       |> (&[{member, &1} | col]).()
     end)
     |> Enum.reverse()
-  end
-
-  defp natural_order_sort(values) do
-    case hd(values) do
-      v when is_tuple(v) ->
-        Enum.sort_by(values, &elem(&1, 0), NaturalOrder)
-
-      v when is_binary(v) ->
-        Enum.sort(NaturalOrder)
-    end
   end
 
   @spec responsibility_holder_article(list(%LATTaxa{})) :: map()
@@ -133,7 +123,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
     |> Enum.map(&mod_id(&1))
     |> Enum.group_by(& &1."ID", &{&1.url, &1."Responsibility_Holder_Aggregate"})
     |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
-    |> Enum.map(&article_responsibility_holder_field(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.article_xxx_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_responsibility_holder, &1)).()
   end
@@ -142,11 +132,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
   defp mod_id(%{ID: id} = record) do
     id = Regex.replace(~r/_*[A-Z]*$/, id, "")
     Map.put(record, :ID, id)
-  end
-
-  @spec article_responsibility_holder_field(tuple()) :: binary()
-  defp article_responsibility_holder_field({_, [{url, terms}]} = _record) do
-    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
   end
 
   @spec article_responsibility_holder_clause(list(%LATTaxa{})) :: map()
@@ -161,17 +146,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
       &{&1.url, &1."Responsibility_Holder_Aggregate", &1.responsibility_holder_txt_aggregate}
     )
     |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
-    |> Enum.map(&article_responsibility_holder_clause_field(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.article_xxx_clause_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_responsibility_holder_clause, &1)).()
-  end
-
-  @spec article_responsibility_holder_clause_field(tuple()) :: binary()
-  defp article_responsibility_holder_clause_field({_, [{url, actors_gvt, clauses}]}) do
-    content =
-      Enum.zip(actors_gvt, clauses)
-      |> Enum.map(fn {actor, clause} -> ~s/#{actor} -> #{clause}/ end)
-
-    ~s/#{url}\n#{Enum.join(content, "\n")}/
   end
 end

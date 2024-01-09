@@ -271,7 +271,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
           |> Map.get(n)
           |> Legl.Countries.Uk.LeglRegister.DropFields.drop_fields()
         )
-        |> Map.put(
+        # Map.put_new allows default view to be overridden with params
+        |> Map.put_new(
           :view,
           @view
           |> Enum.with_index()

@@ -83,7 +83,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.GovernmentRoles do
     |> Enum.map(&mod_id(&1))
     |> Enum.group_by(& &1."ID", &{&1.url, &1."Duty Actor Gvt Aggregate"})
     |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
-    |> Enum.map(&build(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.article_xxx_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_actor_gvt, &1)).()
   end
@@ -91,9 +91,5 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.GovernmentRoles do
   defp mod_id(%{ID: id} = record) do
     id = Regex.replace(~r/_*[A-Z]*$/, id, "")
     Map.put(record, :ID, id)
-  end
-
-  defp build({_, [{url, terms}]} = _record) do
-    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
   end
 end

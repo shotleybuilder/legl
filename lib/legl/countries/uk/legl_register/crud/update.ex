@@ -40,13 +40,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
       opts
       |> Enum.into(%{})
       |> Legl.Countries.Uk.LeglRegister.Options.view()
-      |> Options.api_update_single_name_options()
+      |> Options.api_update_single_view_options()
 
-    [%LegalRegister{} = record] = AT.get_legal_register_records(opts)
+    records = AT.get_legal_register_records(opts)
 
-    opts = Map.put(opts, :family, record."Family")
+    # opts = Map.put(opts, :family, record."Family")
 
-    update(record, opts)
+    update(records, opts)
   end
 
   def api_update(opts \\ [])

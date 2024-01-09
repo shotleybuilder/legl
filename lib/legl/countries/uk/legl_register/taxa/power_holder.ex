@@ -38,48 +38,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
     # |> IO.inspect(label: ~s[#{__MODULE__}.power_holder_uniq/1: ])
   end
 
-  @spec powerholder_aggregate(list(%LATTaxa{})) :: list()
-  defp powerholder_aggregate(records) do
-    records
-    |> power_holder_uniq
-    |> Enum.reduce([], fn member, col ->
-      Enum.reduce(records, [], fn
-        %{
-          type_code: [tc],
-          Year: [y],
-          Number: [number],
-          Record_Type: [rt],
-          "Section||Regulation": s,
-          Power_Holder_Aggregate: values
-        } = _record,
-        acc
-        when rt in ["section", "article"] ->
-          rt = if rt != "section", do: "regulation", else: rt
-
-          case Enum.member?(values, member) do
-            true ->
-              url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
-              [url | acc]
-
-            false ->
-              acc
-          end
-
-        _record, acc ->
-          acc
-      end)
-      |> Enum.sort(NaturalOrder)
-      |> (&[{member, &1} | col]).()
-      |> Enum.reverse()
-
-      # |> IO.inspect(label: ~s[#{__MODULE__}.powerholder_aggregate/1: ])
-    end)
-  end
-
   @spec power_holder_article(list(%LATTaxa{})) :: map()
   def power_holder_article(records) do
     records
-    |> powerholder_aggregate()
+    |> power_holder_aggregate()
     |> Enum.map(fn {k, v} -> ~s/[#{k}]\n#{Enum.join(v, "\n")}/ end)
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :power_holder_article, &1)).()
@@ -145,20 +107,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
         _record, acc ->
           acc
       end)
-      |> natural_order_sort()
+      |> Legl.Countries.Uk.LeglRegister.Taxa.natural_order_sort()
       |> (&[{member, &1} | col]).()
     end)
     |> Enum.reverse()
-  end
-
-  defp natural_order_sort(values) do
-    case hd(values) do
-      v when is_tuple(v) ->
-        Enum.sort_by(values, &elem(&1, 0), NaturalOrder)
-
-      v when is_binary(v) ->
-        Enum.sort(NaturalOrder)
-    end
   end
 
   @spec clause_text_field(tuple()) :: binary()
@@ -180,7 +132,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
     |> Enum.map(&mod_id(&1))
     |> Enum.group_by(& &1."ID", &{&1.url, &1."Power_Holder_Aggregate"})
     |> Enum.sort_by(&elem(&1, 0), {:asc, NaturalOrder})
-    |> Enum.map(&article_power_holder_field(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.article_xxx_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_power_holder, &1)).()
 
@@ -191,11 +143,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
   defp mod_id(%{ID: id} = record) do
     id = Regex.replace(~r/_*[A-Z]*$/, id, "")
     Map.put(record, :ID, id)
-  end
-
-  @spec article_power_holder_field(tuple()) :: binary()
-  defp article_power_holder_field({_, [{url, terms}]} = _record) do
-    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
   end
 
   @spec article_power_holder_clause(list(%LATTaxa{})) :: map()
@@ -210,17 +157,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
       &{&1.url, &1."Power_Holder_Aggregate", &1.power_holder_txt_aggregate}
     )
     |> Enum.sort_by(&elem(&1, 0), NaturalOrder)
-    |> Enum.map(&article_power_holder_clause_field(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.article_xxx_clause_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :article_power_holder_clause, &1)).()
-  end
-
-  @spec article_power_holder_clause_field(tuple()) :: binary()
-  defp article_power_holder_clause_field({_, [{url, actors_gvt, clauses}]}) do
-    content =
-      Enum.zip(actors_gvt, clauses)
-      |> Enum.map(fn {actor, clause} -> ~s/#{actor} -> #{clause}/ end)
-
-    ~s/#{url}\n#{Enum.join(content, "\n")}/
   end
 end

@@ -17,6 +17,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
 
   mix test test/legl/countries/uk/legl_register/taxa_test.exs
+
   """
 
   use ExUnit.Case
@@ -79,7 +80,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
       assert "https://legislation.gov.uk/ukpga/2007/19/crossheading/2" <> _ =
                result.article_actor_gvt
 
-      IO.puts(result.article_actor_gvt)
+      # IO.puts(result.article_actor_gvt)
     end
   end
 
@@ -111,7 +112,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
              https://legislation.gov.uk/ukpga/2007/19/section/25
              """ <> _ = result.actor_article
 
-      IO.puts(result.actor_article)
+      # IO.puts(result.actor_article)
     end
 
     test "article_actor/1" do
@@ -122,7 +123,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
              Ind: Person; Org: Employer; Org: Partnership; Organisation; Spc: Trade Union
              """ <> _ = result.article_actor
 
-      IO.puts(result.article_actor)
+      #      IO.puts(result.article_actor)
     end
   end
 
@@ -154,7 +155,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
           @lat
         )
 
-      IO.inspect(result, label: "AGGREGATE RESULT")
+      # IO.inspect(result, label: "AGGREGATE RESULT")
 
       assert is_list(result)
     end
@@ -233,21 +234,21 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "power_holder_article/1" do
       result = PowerHolder.power_holder_article(@lat)
 
-      IO.inspect(result, label: "POWER_HOLDER_ARTICLE")
+      # IO.inspect(result, label: "POWER_HOLDER_ARTICLE")
 
       assert is_map(result)
 
       assert """
-             [Gvt: Minister]
-             https://legislation.gov.uk/ukpga/2007/19/section/16
-             https://legislation.gov.uk/ukpga/2007/19/section/21
+             [Gvt: Judiciary]
+             https://legislation.gov.uk/ukpga/2007/19/section/9
+             https://legislation.gov.uk/ukpga/2007/19/section/10
              """ <> _ = result.power_holder_article
     end
 
-    test "power_holder_article_clause" do
+    test "power_holder_article_clause/1" do
       result = PowerHolder.power_holder_article_clause(@lat)
 
-      IO.inspect(result, label: "POWER_HOLDER_ARTICLE_CLAUSE")
+      # IO.inspect(result, label: "POWER_HOLDER_ARTICLE_CLAUSE")
 
       assert is_map(result)
 
@@ -263,7 +264,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "article_power_holder/1" do
       result = PowerHolder.article_power_holder(@lat)
 
-      IO.inspect(result, label: "ARTICLE_POWER_HOLDER")
+      # IO.inspect(result, label: "ARTICLE_POWER_HOLDER")
 
       assert is_map(result)
 
@@ -279,7 +280,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "article_power_holder_clause/1" do
       result = PowerHolder.article_power_holder_clause(@lat)
 
-      IO.inspect(result, lable: "ARTICLE_POWER_HOLDER_CLAUSE")
+      # IO.inspect(result, lable: "ARTICLE_POWER_HOLDER_CLAUSE")
 
       assert is_map(result)
 
@@ -297,7 +298,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "duty_holder" do
       result = DutyHolder.duty_holder(@lat)
 
-      IO.inspect(result, label: "DUTY_HOLDER")
+      # IO.inspect(result, label: "DUTY_HOLDER")
 
       assert is_map(result)
 
@@ -307,31 +308,16 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "duty_holder_article/1" do
       result = DutyHolder.duty_holder_article(@lat)
 
-      IO.inspect(result, label: "DUTY_HOLDER_ARTICLE")
+      # IO.inspect(result, label: "DUTY_HOLDER_ARTICLE")
 
       "[Organisation]\nhttps://legislation.gov.uk/ukpga/2007/19/section/1" =
         result.duty_holder_article
     end
 
-    test "create_duty_holder_txt_aggregate_field/1" do
-      result = DutyHolder.create_duty_holder_txt_aggregate_field(@lat)
-
-      Enum.each(result, fn
-        %{duty_holder_txt_aggregate: value} = result ->
-          case value do
-            [] -> IO.puts(~s/CREATE_DUTY_HOLDER_TXT_AGGREGATE_FIELD - EMPTY LIST/)
-            _ -> IO.puts(~s/CREATE_DUTY_HOLDER_TXT_AGGREGATE_FIELD: #{value}\n#{inspect(result)}/)
-          end
-
-        _ ->
-          IO.puts(~s/CREATE_DUTY_HOLDER_TXT_AGGREGATE_FIELD - NO VALUE/)
-      end)
-    end
-
     test "duty_holder_article_clause/1" do
       result = DutyHolder.duty_holder_article_clause(@lat)
 
-      IO.inspect(result, label: "DUTY_HOLDER_ARTICLE_CLAUSE")
+      # IO.inspect(result, label: "DUTY_HOLDER_ARTICLE_CLAUSE")
 
       assert """
              [Organisation]
@@ -343,7 +329,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
     test "article_duty_holder/1" do
       result = DutyHolder.article_duty_holder(@lat)
-      IO.inspect(result, label: "ARTICLE_DUTY_HOLDER")
+      # IO.inspect(result, label: "ARTICLE_DUTY_HOLDER")
 
       assert is_map(result)
 
@@ -360,7 +346,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "article_duty_holder_clause/1" do
       result = DutyHolder.article_duty_holder_clause(@lat)
 
-      IO.inspect(result, label: "ARTICLE_DUTY_HOLDER_CLAUSE")
+      # IO.inspect(result, label: "ARTICLE_DUTY_HOLDER_CLAUSE")
 
       assert """
              https://legislation.gov.uk/ukpga/2007/19/crossheading/1
@@ -377,7 +363,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "rights_holder/1" do
       result = RightsHolder.rights_holder(@lat)
 
-      IO.inspect(result, label: "RIGHTS_HOLDER")
+      # IO.inspect(result, label: "RIGHTS_HOLDER")
 
       assert is_map(result)
 
@@ -387,7 +373,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "rights_holder_article/1" do
       result = RightsHolder.rights_holder_article(@lat)
 
-      IO.inspect(result, label: "RIGHTS_HOLDER_ARTICLE")
+      # IO.inspect(result, label: "RIGHTS_HOLDER_ARTICLE")
 
       "[Organisation]\nhttps://legislation.gov.uk/ukpga/2007/19/section/19" =
         result.rights_holder_article
@@ -396,7 +382,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "rights_holder_article_clause/1" do
       result = RightsHolder.rights_holder_article_clause(@lat)
 
-      IO.inspect(result, label: "RIGHTS_HOLDER_ARTICLE_CLAUSE")
+      # IO.inspect(result, label: "RIGHTS_HOLDER_ARTICLE_CLAUSE")
 
       assert """
              [Organisation]
@@ -408,7 +394,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
     test "article_rights_holder/1" do
       result = RightsHolder.article_rights_holder(@lat)
-      IO.inspect(result, label: "ARTICLE_RIGHTS_HOLDER")
+      # IO.inspect(result, label: "ARTICLE_RIGHTS_HOLDER")
 
       assert is_map(result)
 
@@ -425,7 +411,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "article_rights_holder_clause/1" do
       result = RightsHolder.article_rights_holder_clause(@lat)
 
-      IO.inspect(result, label: "ARTICLE_RIGHTS_HOLDER_CLAUSE")
+      # IO.inspect(result, label: "ARTICLE_RIGHTS_HOLDER_CLAUSE")
 
       assert """
              https://legislation.gov.uk/ukpga/2007/19/crossheading/15
@@ -442,7 +428,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "duty_type/1" do
       result = DutyType.duty_type(@lat)
 
-      IO.inspect(result, label: "DUTY_TYPE")
+      # IO.inspect(result, label: "DUTY_TYPE")
 
       assert is_map(result)
 
@@ -469,7 +455,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
     test "duty_type_article/1" do
       result = DutyType.duty_type_article(@lat)
 
-      IO.inspect(result, label: "DUTY_TYPE_ARTICLE")
+      # IO.inspect(result, label: "DUTY_TYPE_ARTICLE")
 
       assert is_map(result)
 
@@ -484,7 +470,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
     test "article_duty_type/1" do
       result = DutyType.article_duty_type(@lat)
-      IO.puts("ARTICLE_DUTY_TYPE\n#{result.article_duty_type}")
+      # IO.puts("ARTICLE_DUTY_TYPE\n#{result.article_duty_type}")
 
       assert is_map(result)
 
@@ -498,7 +484,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
   describe "POPIMAR" do
     test "popimar/1" do
       result = Popimar.popimar(@lat)
-      IO.inspect(result, label: "POPIMAR")
+      # IO.inspect(result, label: "POPIMAR")
       assert is_map(result)
 
       assert [
@@ -516,7 +502,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
     test "popimar_article/1" do
       result = Popimar.popimar_article(@lat)
-      IO.inspect(result, label: "POPIMAR_ARTICLE")
+      # IO.inspect(result, label: "POPIMAR_ARTICLE")
       assert is_map(result)
 
       assert """
@@ -531,7 +517,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
     test "article_popimar/1" do
       result = Popimar.article_popimar(@lat)
-      IO.inspect(result, label: "ARTICLE_POPIMAR")
+      # IO.inspect(result, label: "ARTICLE_POPIMAR")
       assert is_map(result)
 
       assert """

@@ -133,7 +133,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           article_duty_type: String.t(),
 
           # POPIMAR
-          POPIMAR: list(),
+          popimar: list(),
           popimar_article: String.t(),
           article_popimar: String.t()
         }
@@ -254,7 +254,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     duty_type_article
     article_duty_type
 
-    POPIMAR
+    popimar
     popimar_article
     article_popimar
   ]a

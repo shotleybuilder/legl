@@ -269,7 +269,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
     records
     |> Enum.reduce([], fn
       %{Record_Type: rt} = record, acc when rt == ["section"] or rt == ["article"] ->
-        case Regex.run(~r/(.*?)(?:_{2}|_A?\d+A?_|_{3}[A-Z]+|_A?\d+A?_[A-Z]+)$/, record."ID") do
+        case Regex.run(~r/^([A-Z]+?_[A-Z]+?_[a-z]+?_\d{4}_.*?_.*?_.*?_.*?_.*?)(?:_)/, record."ID") do
           [_, id] ->
             [{id, record."Record_ID"} | acc]
 
