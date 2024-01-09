@@ -115,7 +115,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
             {
               text,
               [actor | role_holders],
-              [match | matches],
+              [~s/#{label}\n👤#{actor}\n📌#{match}\n/ | matches],
               [~s/#{label}: #{actor}\n#{regex}\n-> #{match}\n/ | reg_exs]
             }
 

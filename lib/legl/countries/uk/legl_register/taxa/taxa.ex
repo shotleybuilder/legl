@@ -157,6 +157,26 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
   @doc """
   Function to set the content of LRT taxa fields
 
+  Namely
+    responsibility_holder_article_clause
+    power_holder_article_clause
+  """
+
+  @spec xxx_article_clause_field(tuple()) :: binary()
+  def xxx_article_clause_field({k, v}) do
+    content =
+      Enum.map(v, fn {url, clauses} ->
+        clauses = Enum.map(clauses, &String.replace(&1, "\n ", "\n"))
+        ~s/#{url}\n#{Enum.join(clauses, "\n")}/
+      end)
+      |> Enum.join("\n")
+
+    ~s/[#{k}]\n#{content}/
+  end
+
+  @doc """
+  Function to set the content of LRT taxa fields
+
   Namely:
     article_actor_gvt
     article_actor
@@ -168,17 +188,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
     article_popimar
   """
 
-  def article_xxx_field({_, [{url, terms}]} = _record) do
-    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
-  end
-
   def article_xxx_field({_, []}), do: ""
 
   def article_xxx_field({_, articles}) when is_list(articles) do
     articles
     |> Enum.uniq()
-    |> Enum.map(fn {url, terms} -> ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/ end)
+    |> Enum.map(&article_xxx_field_string(&1))
     |> Enum.join("\n")
+  end
+
+  def article_xxx_field_string({url, terms}) do
+    ~s/#{url}\n#{terms |> Enum.sort() |> Enum.join("; ")}/
   end
 
   @doc """
@@ -201,12 +221,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
     |> Enum.join("\n")
   end
 
-  def article_xxx_clause_field({url, taxa, clauses}) do
+  def article_xxx_clause_field({url, _taxa, clauses}) do
     content =
-      Enum.zip(taxa, clauses)
-      |> Enum.map(fn {taxon, clause} -> ~s/#{taxon} -> #{clause}/ end)
+      Enum.map(clauses, fn clause -> String.replace(clause, "\n ", "\n") end)
+      |> Enum.join("\n")
 
-    ~s/#{url}\n#{Enum.join(content, "\n")}/
+    ~s/#{url}\n#{content}/
   end
 
   @doc """

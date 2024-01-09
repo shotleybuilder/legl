@@ -187,7 +187,9 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
       assert """
              [Gvt: Judiciary]
              https://legislation.gov.uk/ukpga/2007/19/section/10
-                 court must
+             RESPONSIBILITY
+             👤Gvt: Judiciary
+             📌 court must
              """
              |> String.trim_trailing("\n") == result.responsibility_holder_article_clause
     end
@@ -213,10 +215,14 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
       assert """
              https://legislation.gov.uk/ukpga/2007/19/crossheading/9
-             Gvt: Judiciary -> court must
+             RESPONSIBILITY
+             👤Gvt: Judiciary
+             📌 court must
 
              https://legislation.gov.uk/ukpga/2007/19/section/10
-             Gvt: Judiciary -> court must
+             RESPONSIBILITY
+             👤Gvt: Judiciary
+             📌 court must
              """
              |> String.trim_trailing("\n") == result.article_responsibility_holder_clause
     end
@@ -255,9 +261,13 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
       assert """
              [Gvt: Judiciary]
              https://legislation.gov.uk/ukpga/2007/19/section/9
-                 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+             POWER
+             👤Gvt: Judiciary
+             📌 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
              https://legislation.gov.uk/ukpga/2007/19/section/10
-                 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+             POWER
+             👤Gvt: Judiciary
+             📌 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
              """ <> _ = result.power_holder_article_clause
     end
 
@@ -286,10 +296,14 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
       assert """
              https://legislation.gov.uk/ukpga/2007/19/crossheading/9
-             Gvt: Judiciary -> court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+             POWER
+             👤Gvt: Judiciary
+             📌 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
 
              https://legislation.gov.uk/ukpga/2007/19/section/9
-             Gvt: Judiciary -> court before which an organisation is convicted of corporate manslaughter or corporate homicide may
+             POWER
+             👤Gvt: Judiciary
+             📌 court before which an organisation is convicted of corporate manslaughter or corporate homicide may
              """ <> _ = result.article_power_holder_clause
     end
   end
@@ -322,7 +336,9 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
       assert """
              [Organisation]
              https://legislation.gov.uk/ukpga/2007/19/section/1
-                 organisation that is guilty of corporate manslaughter or corporate homicide is liable
+             DUTY
+             👤Organisation
+             📌 organisation that is guilty of corporate manslaughter or corporate homicide is liable
              """
              |> String.trim_trailing("\n") == result.duty_holder_article_clause
     end
@@ -349,11 +365,14 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
       # IO.inspect(result, label: "ARTICLE_DUTY_HOLDER_CLAUSE")
 
       assert """
-             https://legislation.gov.uk/ukpga/2007/19/crossheading/1
-             Organisation -> organisation that is guilty of corporate manslaughter or corporate homicide is liable
+             https://legislation.gov.uk/ukpga/2007/19/crossheading/1\nDUTY
+             👤Organisation
+             📌 organisation that is guilty of corporate manslaughter or corporate homicide is liable
 
              https://legislation.gov.uk/ukpga/2007/19/section/1
-             Organisation -> organisation that is guilty of corporate manslaughter or corporate homicide is liable
+             DUTY
+             👤Organisation
+             📌 organisation that is guilty of corporate manslaughter or corporate homicide is liable
              """
              |> String.trim_trailing("\n") == result.article_duty_holder_clause
     end
@@ -386,8 +405,9 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
       assert """
              [Organisation]
-             https://legislation.gov.uk/ukpga/2007/19/section/19
-                 An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
+             https://legislation.gov.uk/ukpga/2007/19/section/19\nRIGHT
+             👤Organisation
+             📌An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
              """
              |> String.trim_trailing("\n") == result.rights_holder_article_clause
     end
@@ -415,10 +435,14 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
       assert """
              https://legislation.gov.uk/ukpga/2007/19/crossheading/15
-             Organisation -> An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
+             RIGHT
+             👤Organisation
+             📌An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
 
              https://legislation.gov.uk/ukpga/2007/19/section/19
-             Organisation -> An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
+             RIGHT
+             👤Organisation
+             📌An organisation that has been convicted of corporate manslaughter or corporate homicide arising out of a particular set of circumstances may,
              """
              |> String.trim_trailing("\n") == result.article_rights_holder_clause
     end

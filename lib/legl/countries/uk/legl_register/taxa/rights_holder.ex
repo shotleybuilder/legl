@@ -59,7 +59,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
     records
     |> create_rights_holder_txt_aggregate_field()
     |> rights_holder_aggregate(true)
-    |> Enum.map(&clause_text_field(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.xxx_article_clause_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :rights_holder_article_clause, &1)).()
   end
@@ -116,17 +116,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.RightsHolder do
       |> (&[{member, &1} | collector]).()
     end)
     |> Enum.reverse()
-  end
-
-  @spec clause_text_field(tuple()) :: binary()
-  defp clause_text_field({k, v}) do
-    content =
-      Enum.map(v, fn {url, clauses} ->
-        ~s/#{url}\n    #{Enum.join(clauses, "\n")}/
-      end)
-      |> Enum.join("\n")
-
-    ~s/[#{k}]\n#{content}/
   end
 
   @spec article_rights_holder(list(%LATTaxa{})) :: map()

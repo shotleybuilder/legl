@@ -88,7 +88,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
     records
     |> create_responsibility_holder_txt_aggregate_field()
     |> responsibility_holder_aggregate(true)
-    |> Enum.map(&clause_text_field(&1))
+    |> Enum.map(&Legl.Countries.Uk.LeglRegister.Taxa.xxx_article_clause_field(&1))
     |> Enum.join("\n\n")
     |> (&Map.put(%{}, :responsibility_holder_article_clause, &1)).()
   end
@@ -102,17 +102,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.ResponsibilityHolder do
       :responsibility_holder_txt_aggregate,
       records
     )
-  end
-
-  @spec clause_text_field(tuple()) :: binary()
-  defp clause_text_field({k, v}) do
-    content =
-      Enum.map(v, fn {url, clauses} ->
-        ~s/#{url}\n    #{Enum.join(clauses, "\n")}/
-      end)
-      |> Enum.join("\n")
-
-    ~s/[#{k}]\n#{content}/
   end
 
   @spec article_responsibility_holder(list(%LATTaxa{})) :: map()
