@@ -24,6 +24,8 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
   @moduletag :uk
 
+  alias Legl.Countries.Uk.LeglRegister.Taxa
+
   alias Legl.Countries.Uk.LeglRegister.Taxa.GovernmentRoles
   alias Legl.Countries.Uk.LeglRegister.Taxa.GovernedRoles
 
@@ -35,6 +37,33 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
   alias Legl.Countries.Uk.LeglRegister.Taxa.DutyType
 
   alias Legl.Countries.Uk.LeglRegister.Taxa.Popimar
+
+  describe "xxx_article_clause_field/1" do
+    @text {"Gvt: Agency: Office of Rail and Road",
+           [
+             {"https://legislation.gov.uk/ukpga/1974/37/section/18",
+              [
+                "POWER\n 👤Gvt: Agency: Health and Safety Executive\n 📌 the Executive] may",
+                "POWER\n 👤Gvt: Minister\n 📌 Secretary of State may\nPOWER\n 👤Gvt: Authority: Local\n 📌 local authorities responsible for the enforcement of the relevant statutory provisions to such extent as may\nPOWER\n 👤Gvt: Agency: Office for Nuclear Regulation\n 📌 Office for Nuclear Regulation responsible for the enforcement of the relevant statutory provisions to such extent as may",
+                "POWER\n 👤Gvt: Authority\n 📌 the authority by the preceding paragraph and any other functions conferred on the authority by any of the relevant statutory provisions in accordance with such guidance as [F87 the Executive] may\nPOWER\n 👤Gvt: Agency: Office of Rail and Road\n 📌 Office of Rail and Road],]to perform the duty imposed on the authority by the preceding paragraph and any other functions conferred on the authority by any of the relevant statutory provisions in accordance with such guidance as [F87 the Executive] may\nPOWER\n 👤Gvt: Agency: Health and Safety Executive\n 📌 the Executive] may",
+                "POWER\n 👤Gvt: Authority: Enforcement\n 📌 enforcing authority where that authority is the Executive) in any provision of this Part which relates to that function shall, so far as may\nPOWER\n 👤Gvt: Agency: Office for Nuclear Regulation\n 📌 Office for Nuclear Regulation () ] (or to an enforcing authority where that authority is the Executive) in any provision of this Part which relates to that function shall, so far as may\nPOWER\n 👤Gvt: Agency: Health and Safety Executive\n 📌 the Executive [F92 or the Office for Nuclear Regulation () ] (or to an enforcing authority where that authority is the Executive) in any provision of this Part which relates to that function shall, so far as may"
+              ]}
+           ]}
+
+    test "office of rail and road" do
+      result = Taxa.xxx_article_clause_field(@text)
+      IO.inspect(result, label: "XXX_ARTICLE_CLAUSE_FIELD")
+
+      assert """
+             [Gvt: Agency: Office of Rail and Road]
+             https://legislation.gov.uk/ukpga/1974/37/section/18
+             POWER
+             👤Gvt: Agency: Office of Rail and Road
+             📌 Office of Rail and Road],]to perform the duty imposed on the authority by the preceding paragraph and any other functions conferred on the authority by any of the relevant statutory provisions in accordance with such guidance as [F87 the Executive] may
+             """
+             |> String.trim_trailing("\n") == result
+    end
+  end
 
   # @lrt [
   #  Kernel.struct(

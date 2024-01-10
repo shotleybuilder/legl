@@ -160,13 +160,46 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
   Namely
     responsibility_holder_article_clause
     power_holder_article_clause
+    duty_holder_article_clause
+    rights_holder_article_clause
   """
 
   @spec xxx_article_clause_field(tuple()) :: binary()
-  def xxx_article_clause_field({k, v}) do
+  def xxx_article_clause_field({k, v} = article) do
     content =
       Enum.map(v, fn {url, clauses} ->
-        clauses = Enum.map(clauses, &String.replace(&1, "\n ", "\n"))
+        clauses =
+          Enum.reduce(
+            clauses,
+            [],
+            fn clause, acc ->
+              # clean up the string
+              clause =
+                clause
+                |> (&Regex.replace(~r/\n[ ]/m, &1, "\n")).()
+                |> (&Kernel.<>(&1, "[end]")).()
+
+              # find a match with the responsible
+              case Regex.scan(
+                     ~r/(RESPONSIBILITY|DUTY|RIGHT|POWER)\n👤#{k}\n[\s\S]*?(?=RESPONSIBILITY|DUTY|RIGHT|POWER|\[end\])/,
+                     clause
+                   ) do
+                [] ->
+                  acc
+
+                match ->
+                  match
+                  |> Enum.map(fn [m, _] -> m end)
+                  |> Enum.filter(fn v -> v != "" end)
+                  |> Enum.map(&String.trim_trailing(&1, "\n"))
+                  |> Enum.join("\n")
+                  # rm empty lines
+                  |> (&Regex.replace(~r/(\r?\n)(?:\r?\n)+/m, &1, "\\g{1}")).()
+                  |> (&[&1 | acc]).()
+              end
+            end
+          )
+
         ~s/#{url}\n#{Enum.join(clauses, "\n")}/
       end)
       |> Enum.join("\n")

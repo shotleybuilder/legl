@@ -29,10 +29,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   terms and SI Codes, and save to separate files
   """
   @spec api_read_new_laws_and_categorise(opts()) :: :ok
-  def api_read_new_laws_and_categorise(opts \\ [source: {:default, @newlaws}]) do
+  def api_read_new_laws_and_categorise(opts) do
     opts =
       opts
       |> Enum.into(Options.default_opts())
+      |> Map.put(:source, {:default, @newlaws})
+      |> IO.inspect(label: "OPTIONS")
       |> LRO.base_name()
       |> LRO.base_table_id()
 

@@ -61,9 +61,11 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     opts =
       Enum.into(opts, Options.default_opts())
       |> Options.legal_register_base_id_table_id()
+      |> LRO.year()
       |> Options.month()
       |> Options.day_groups()
       |> Options.formula()
+      |> IO.inspect(label: "OPTIONS")
 
     # |> PDT.get()
 
