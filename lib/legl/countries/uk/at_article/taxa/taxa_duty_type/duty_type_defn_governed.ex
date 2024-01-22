@@ -50,19 +50,52 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
   @type duty_type :: String.t()
   @type remove? :: boolean()
 
-  defp determiners(), do: ~s/(?:[Aa]n?y?|[Tt]he|[Ee]ach|[Ee]very|[Ee]ach such|[Tt]hat|,)/
+  defp determiners(), do: ~s/(?:[Aa]n?y?|[Tt]he|[Ee]ach|[Ee]very|[Ee]ach such|[Tt]hat|[Nn]ew|,)/
+
+  defp modals, do: ~s/(?:shall|must|may[ ]only|may[ ]not)/
 
   defp neg_lookbehind(),
     do:
       ~s/(?<! by | of |send it to |given |appointing | to expose | to whom | to pay | to permit |before which )/
 
+  defp mid_neg_lookahead,
+    do: ~s/(?!is found to |is likely to |to a |to carry |to assess |to analyse|to perform )/
+
+  defp eds,
+    do:
+      ~s/be entitled|be carried out by|be construed|be consulted|be notified|be informed|be appointed|be retained|be included|be extended|be treated|be necessary|be subjected|be suitable|be made/
+
+  defp neg_lookahead, do: ~s/(?!#{eds()}|not apply|consist|have effect|apply)/
+
+  defp emdash, do: <<226, 128, 148>>
+
+  def duty_pattern(governed),
+    do:
+      "#{neg_lookbehind()}#{determiners()}#{governed}#{mid_neg_lookahead()}.*?#{modals()}[[:blank:][:punct:]#{emdash()}][ ]?#{neg_lookahead()}"
+
+  # e.g. "Generators and distributors shall take"
+  def no_determiner_pattern(governed),
+    do:
+      "#{governed}#{mid_neg_lookahead()}.*?#{modals()}[[:blank:][:punct:]#{emdash()}][ ]?#{neg_lookahead()}"
+
+  def responsible_for_pattern(governed),
+    do:
+      "#{governed}#{mid_neg_lookahead()}.*?(?:remains|is) (?:responsible|financially liable) for"
+
   @spec duty(binary()) :: list({{regex(), remove?()}, duty_type()}) | list({regex(), duty_type()})
+  def duty("[[:blank:][:punct:]“][Hh]e[[:blank:][:punct:]”]" = governed) do
+    modals = modals()
+    # There is no determiner for 'he'
+    # A 'wash-up' after all other alts
+    [{"#{governed}#{modals}", true}]
+  end
+
   def duty(governed) do
     # duty_type = "Duty"
 
-    emdash = <<226, 128, 148>>
+    emdash = emdash()
 
-    modals = ~s/(?:shall|must|may[ ]only|may[ ]not)/
+    modals = modals()
 
     determiners = determiners()
 
@@ -76,14 +109,10 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
     # Qualifies and excludes the 'governed' based on text immediately after
     # e.g. "person who is responsible for appointing a designer or contractor to carry out"
     # The 'contractor' is excluded
-    mid_neg_lookahead = ~s/(?!is found to |is likely to |to a |to carry |to assess |to analyse )/
+    mid_neg_lookahead = mid_neg_lookahead()
 
     #  These have to be literals for the lookahead to work
-    eds =
-      ~s/be construed|be consulted|be notified|be informed|be appointed|be retained|be included|be extended|be treated|be necessary/
-
-    neg_lookahead =
-      ~s/(?!be carried out by|#{eds}|not apply|be suitable|include|be made|consist|have effect|apply)/
+    neg_lookahead = neg_lookahead()
 
     [
       # WHERE pattern
@@ -98,37 +127,28 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
 
       "#{modals} be (?:carried out|reviewed|prepared).*?#{governed}",
 
-      # Pattern when there are dutyholder options and MODALS start on a new line
-      "(?:[Aa]n?y?|[Tt]he|Each|[Ee]very|that|or) person(?s:.)*?^#{modals} (?!be carried out by)",
-
       # Pattern when the 'governed' start on a new line
-      "#{modals} be carried out by—$[\\s\\S]*?#{governed}",
+      "#{modals} be (?:affixed|carried out) by—$[\\s\\S]*?#{governed}",
 
+      # Pattern when there are dutyholder options and MODALS start on a new line
+      # s modifier: single line. Dot matches newline characters
+      "#{determiners}#{governed}(?s:.)*?^#{modals} (?!be carried out by)",
       #
       "[Nn]o#{governed}(?:at work )?(?:shall|is to)",
-
-      # Where the subject of the 'shall' is either not a 'governed' or another preceding 'governed'
-      # e.g. "the employer of that employee shall—"
-      # e.g. "Where, as a result of health surveillance, an employee is found to have an identifiable disease or adverse health effect which is considered by a relevant doctor or other occupational health professional to be the result of exposure to a substance hazardous to health the employer of that employee shall—"
-      # e.g. "Personal protective equipment provided by an employer in accordance with this regulation shall be suitable for the purpose and shall—"
-      # e.g. "the result of that review shall be notified to the employee and employer"
-      # e.g. "Every employer who undertakes work which is liable to expose an employee to a substance hazardous to health shall provide that employee with suitable and sufficient information, instruction and training"
-      "#{neg_lookbehind}#{determiners}#{governed}#{mid_neg_lookahead}(?:[^,]*?|.*?he )#{modals}[[:blank:][:punct:]#{"emdash"}][ ]?#{neg_lookahead}",
+      #
+      duty_pattern(governed),
+      no_determiner_pattern(governed),
 
       # When the subject precedes and then gets referred to as 'he'
       # e.g. competent person referred to in paragraph (3) is the user ... or owner ... shall not apply, but he shall
       "#{governed}#{mid_neg_lookahead}[^#{emdash}\\.]*?he[ ]shall",
-      #
-      # e.g. "An employer who undertakes a fumigation to which this regulation applies shall ensure that"
-      # e.g. "Every employer who undertakes work which is liable to expose an employee to a substance hazardous to health shall"
-
-      "#{governed}(?:shall notify|shall furnish the authority)",
 
       # SUBJECT 'governed' comes AFTER the VERB 'shall'
       # e.g. "These Regulations shall apply to a self-employed person as they apply to an employer and an employee"
       "shall apply to a.*?#{governed}.*?as they apply to",
-      "shall be the duty of any#{governed}",
-      "shall be (?:selected by|reviewed by) the#{governed}",
+      "shall be the duty of #{determiners}#{governed}",
+      "shall be the duty of the.*?and of #{determiners}#{governed}",
+      "shall be (?:selected by|reviewed by|given.*?by) the#{governed}",
       "shall also be imposed on a#{governed}",
       # "[Aa]pplication.*?shall be made to ?(?:the )?",
 
@@ -140,19 +160,22 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
       "#{governed}has taken all.*?steps",
       "Where a duty is placed.*?on an?#{governed}",
       "provided by an?#{governed}",
+      responsible_for_pattern(governed),
       "#{governed}.*?(?:shall be|is) liable (?!to)"
     ]
 
     # |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end
 
+  def rights_pattern(governed),
+    do:
+      "#{neg_lookbehind()}#{determiners()}#{governed}.*?(?<!which|who)[ ]may[[:blank:][:punct:]][ ]?(?!need|have|require|be[ ]|not|only)"
+
+  def rights_new_line_pattern(governed),
+    # s modifier: single line. Dot matches newline characters
+    do: "may be made—(?s:.)*\\([a-z]\\) by #{determiners()}#{governed}"
+
   def right(governed) do
-    # duty_type = "Right"
-
-    determiners = determiners()
-
-    neg_lookbehind = neg_lookbehind()
-
     [
       # WHERE pattern
       {"Where.*?(?:an?y?|the|each|every)#{governed}.*?,[ ]he[ ]may", true},
@@ -162,19 +185,20 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGoverned do
       # e.g. "the result of that review shall be notified to the employee and employer"
       "(?:shall|must) (?:be notified to the|consult).*?#{governed}",
       # e.g. may be presented to the CAC by a relevant applicant
-      "may be presented.*?by an?#{governed}",
+      "may be (?:varied|terminated|presented).*?by #{determiners()}#{governed}",
 
       # MAY
       # Does not include 'MAY NOT' and 'MAY ONLY' which are DUTIES
       # Uses a negative lookbehind (?<!element)
       {"#{governed}may[[:blank:][:punct:]][ ]?(?!exceed|need|have|require|be[ ]|not|only)", true},
-      "#{neg_lookbehind}#{determiners}#{governed}.*?(?<!which|who)[ ]may[[:blank:][:punct:]][ ]?(?!need|have|require|be[ ]|not|only)",
+      rights_pattern(governed),
       "#{governed}.*?shall be entitled",
-      "permission of that#{governed}",
       "#{governed}.*?is not required",
-      "#{governed}may.*?, but may not"
+      "#{governed}may.*?, but may not",
+      #
+      "permission of that#{governed}",
+      "may be made by #{determiners()}.*?#{governed}",
+      rights_new_line_pattern(governed)
     ]
-
-    # |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end
 end

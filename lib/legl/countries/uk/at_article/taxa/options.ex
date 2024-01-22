@@ -21,58 +21,55 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
   """
   def api_update_multi_lat_taxa(opts) do
     # Legal Register Table opts
-    opts =
+    with(
+      opts = Enum.into(opts, @api_update_multi_lat_taxa),
+      opts = LAO.base_name(opts),
+      {:ok, opts} <- LAO.table_id(opts),
+      opts = LRO.type_class(opts),
+      opts = LRO.type_code(opts),
+      opts = LRO.family(opts),
+      opts = LRO.today(opts),
+      opts = Map.put(opts, :lrt_table_name, opts.table_name),
+      opts = Map.put(opts, :lrt_table_id, opts.table_id),
+      opts = Map.drop(opts, [:table_name, :table_id]),
+      formula =
+        []
+        |> LRO.formula_type_class(opts)
+        |> LRO.formula_type_code(opts)
+        |> LRO.formula_family(opts)
+        |> LRO.formula_today(opts, "Last Modified Rollup (from Articles)")
+        |> (&[~s/{Count (Articles)}>0/ | &1]).(),
+      opts = Map.put(opts, :lrt_formula, ~s/AND(#{Enum.join(formula, ",")})/),
+      opts =
+        Map.put(
+          opts,
+          :lrt_params,
+          {:params,
+           %{
+             base: opts.base_id,
+             table: opts.lrt_table_id,
+             options: %{
+               # view: opts.lrt_view,
+               fields: opts.lrt_fields,
+               formula: opts.lrt_formula
+             }
+           }}
+        ),
+      opts = taxa_workflow(opts, 0)
+    ) do
+      label =
+        if Map.has_key?(opts, :opts_label) do
+          opts.opts_label
+        else
+          "OPTIONS"
+        end
+
+      IO.inspect(opts, label: label)
       opts
-      |> Enum.into(@api_update_multi_lat_taxa)
-      |> LAO.base_name()
-      |> LAO.table_id()
-      |> LRO.type_class()
-      |> LRO.type_code()
-      |> LRO.family()
-      |> LRO.today()
-
-    opts =
-      opts
-      |> Map.put(:lrt_table_name, opts.table_name)
-      |> Map.put(:lrt_table_id, opts.table_id)
-      |> Map.drop([:table_name, :table_id])
-
-    formula =
-      []
-      |> LRO.formula_type_class(opts)
-      |> LRO.formula_type_code(opts)
-      |> LRO.formula_family(opts)
-      |> LRO.formula_today(opts, "Last Modified Rollup (from Articles)")
-      |> (&[~s/{Count (Articles)}>0/ | &1]).()
-
-    opts = Map.put(opts, :lrt_formula, ~s/AND(#{Enum.join(formula, ",")})/)
-
-    opts =
-      Map.put(
-        opts,
-        :lrt_params,
-        {:params,
-         %{
-           base: opts.base_id,
-           table: opts.lrt_table_id,
-           options: %{
-             # view: opts.lrt_view,
-             fields: opts.lrt_fields,
-             formula: opts.lrt_formula
-           }
-         }}
-      )
-
-    opts = taxa_workflow(opts, 0)
-
-    label =
-      if Map.has_key?(opts, :opts_label) do
-        opts.opts_label
-      else
-        "OPTIONS"
-      end
-
-    IO.inspect(opts, label: label)
+    else
+      {:error, msg} ->
+        IO.puts(~s/ERROR: #{msg}/)
+    end
   end
 
   @set_workflow_opts %{
@@ -107,34 +104,42 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
   }
 
   def set_workflow_opts(opts) do
-    opts =
+    with opts = Enum.into(opts, @set_workflow_opts),
+         opts <- LAO.base_name(opts),
+         {:ok, opts} <- LAO.table_id(opts),
+         opts = if(opts.source == :web, do: LAO.name(opts), else: opts),
+         # uses opt.name if exists or prompts if missing
+         opts = Map.put(opts, :at_id, opts."Name"),
+         opts = taxa_workflow(opts),
+         opts =
+           Map.put(
+             opts,
+             :formula,
+             formula(opts)
+           ) do
+      label =
+        if Map.has_key?(opts, :opts_label) do
+          opts.opts_label
+        else
+          "OPTIONS"
+        end
+
+      IO.puts(~s/#{label}
+                type_code: #{opts.type_code}
+                Year: #{opts."Year"}
+                Number: #{opts."Number"}
+                base_name: #{opts.base_name}
+                base_id: #{opts.base_id}
+                table_name: #{opts.table_name}
+                table_id: #{opts.table_id}
+                patch?: #{opts.patch?}
+                /)
+
       opts
-      |> Enum.into(@set_workflow_opts)
-      |> LAO.base_name()
-      |> LAO.table_id()
-
-    # uses opt.name if exists or prompts if missing
-    opts = if opts.source == :web, do: LAO.name(opts), else: opts
-
-    opts = Map.put(opts, :at_id, opts."Name")
-
-    opts = taxa_workflow(opts)
-
-    opts =
-      Map.put(
-        opts,
-        :formula,
-        formula(opts)
-      )
-
-    label =
-      if Map.has_key?(opts, :opts_label) do
-        opts.opts_label
-      else
-        "OPTIONS"
-      end
-
-    IO.inspect(opts, label: label)
+    else
+      {:error, msg} ->
+        IO.puts(~s/ERROR: #{msg}/)
+    end
   end
 
   def patch(opts) do

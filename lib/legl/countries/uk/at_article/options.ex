@@ -8,7 +8,9 @@ defmodule Legl.Countries.Uk.AtArticle.Options do
   @type opts :: map()
 
   @spec base_name(map()) :: map()
-  def base_name(%{base_name: bn} = opts) when bn not in ["", nil], do: opts
+  def base_name(%{base_name: bn, base_id: id} = opts)
+      when bn not in ["", nil] and id not in ["", nil],
+      do: opts
 
   def base_name(opts) do
     {base_name, base_id} =
@@ -20,7 +22,10 @@ defmodule Legl.Countries.Uk.AtArticle.Options do
           :ok
 
         n ->
-          Map.get(Legl.Services.Airtable.AtBases.bases(), n)
+          Keyword.get(
+            Legl.Services.Airtable.AtBases.bases(),
+            n |> Integer.to_string() |> String.to_atom()
+          )
       end
 
     Map.merge(
@@ -31,11 +36,18 @@ defmodule Legl.Countries.Uk.AtArticle.Options do
 
   @spec table_id(opts()) :: opts()
   def table_id(opts) do
-    Map.put(
-      opts,
-      :table_id,
-      Legl.Services.Airtable.AtTables.get_table_id(opts.base_id, opts.table_name) |> elem(1)
-    )
+    case Legl.Services.Airtable.AtTables.get_table_id(opts.base_id, opts.table_name) do
+      {:error, msg} ->
+        {:error, msg}
+
+      {:ok, table_id} ->
+        {:ok,
+         Map.put(
+           opts,
+           :table_id,
+           table_id
+         )}
+    end
   end
 
   @spec base_table_id(map()) :: map()

@@ -113,7 +113,7 @@ defmodule Legl.Services.Airtable.AtTables do
         "publication_date" => "tblQtdYg4MGIk3tzb"
       },
 
-      # uk ohs
+      # 💙 OH&S - 🇬🇧 ️UK - Occupational / Personal Health and Safety
       "appiwDnCNQaZOSaVR" => %{
         "uk" => "tblHUEuFxo8L0cssV",
         "articles" => "tblBdY62xWCqemsKQ"
@@ -123,6 +123,36 @@ defmodule Legl.Services.Airtable.AtTables do
       "app0bGzy4uDbKrCF5" => %{
         "uk" => "tbl7wFWCayh2Tq7Y7",
         "articles" => "tbljS1iYOA5CaVUu4"
+      },
+
+      # 💙 Dangerous & Explosive Substances - 🇬🇧 ️UK
+      "appqDhGjs1G7oVHrW" => %{
+        "uk" => "tblc7FkLhGXW7Ha93",
+        "articles" => "tblJkCpJc78yOpZgV"
+      },
+
+      # 💙 Mine & Quarry Safety  - 🇬🇧 ️UK
+      "appuoNQFKM2SUI3lK" => %{
+        "uk" => "tblnHWhLiTOIO6wD5",
+        "articles" => "tblN58z5uSujkclaJ"
+      },
+
+      # 💙 Offshore Safety  - 🇬🇧 ️UK
+      "appDoxScBrdBhxnOb" => %{
+        "uk" => "tbltf8DOoJmwrlTlr",
+        "articles" => "tblW5SBClxF2H1FDa"
+      },
+
+      # 💙 Gas & Electrical Safety - 🇬🇧 ️UK
+      "appJu2qnECHmo9cln" => %{
+        "uk" => "tblUEi0M3y54rmUgY",
+        "articles" => "tbl2bn9NoI9NODuam"
+      },
+
+      # 💙 Product Safety & Consumer Protection - 🇬🇧 ️UK
+      "appnTQBGljRQgVUhU" => %{
+        "uk" => "tbl2jvncA7Vp1ukXq",
+        "articles" => "tblGAbk65pjhGpc6T"
       }
     }
   end

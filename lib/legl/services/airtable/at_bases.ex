@@ -75,29 +75,9 @@ defmodule Legl.Services.Airtable.AtBases do
     }
   end
 
-  # Key should be the FAMILY name <> " - UK"
-  @bases [
-    {"💙💚️ LRT - Environment, Health & Safety - UK", "appRhQoz94zyVh2LR"},
-    {"💙 OH&S: Occupational / Personal Safety - UK", "appiwDnCNQaZOSaVR"},
-    {"💙 Fire Safety - UK", "app0bGzy4uDbKrCF5"},
-    {"💙 Product Safety & Consumer Protection - UK", ""},
-    {"💙 Gas & Electrical Safety - UK", ""},
-    {"💙 Offshore Safety - UK", ""},
-    {"💙 Mine & Quarry Safety - UK", ""},
-    {"💙 Dangerous & Explosive Substances - UK", ""},
-    {"💚️ Climate Change - UK", "appGv6qmDJK2Kdr3U"},
-    {"💚️ Energy - UK", "app4L95N2NbK7x4M0"},
-    {"💚️ Environmental Protection - UK Environmental Protection", "appPFUz8wfo9RU7gN"},
-    {"💚️ Finance - UK", "appokFoa6ERUUAIkF"},
-    {"💚️ M&R - UK - Marine & Riverine", "appLXqkeiiqrOXwWw"},
-    {"💚️ Planning - UK", "appJ3UVvRHEGIpNi4"},
-    {"💚️ Pollution - UK", "appj4oaimWQfwtUri"},
-    {"💚️ Radiological - UK", "appozWdOMaGdp77eL"},
-    {"💚️ Town & Country Planning - UK", ""},
-    {"️💚️ Waste - UK", "appfXbCYZmxSFQ6uY"},
-    {"💚️ Water - UK", "appCZkMT3VlCLtBjy"},
-    {"💚️ Wildlife & Countryside - UK", "appXXwjSS8KgDySB6"}
-  ]
+  @hs_bases Legl.Countries.Uk.LeglRegister.Models.hs_bases()
+  @e_bases Legl.Countries.Uk.LeglRegister.Models.e_bases()
+  @bases @hs_bases ++ @e_bases
 
   def base_map do
     Enum.reduce(@bases, %{}, fn {k, v}, acc -> Map.put(acc, k, v) end)
@@ -106,6 +86,6 @@ defmodule Legl.Services.Airtable.AtBases do
   def bases do
     @bases
     |> Enum.with_index()
-    |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+    |> Enum.into([], fn {k, v} -> {Integer.to_string(v) |> String.to_atom(), k} end)
   end
 end

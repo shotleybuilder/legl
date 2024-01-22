@@ -54,7 +54,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
         :power -> build_lib(actors_regex, &DutyTypeDefnGovernment.power_conferred/1)
       end
 
-    text = blacklist(actors_regex, text)
+    text = blacklist(text)
 
     opts =
       Map.put(
@@ -131,37 +131,28 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     end)
   end
 
-  @spec blacklist(list(), binary()) :: binary()
-  def blacklist(govern, text) when is_list(govern) do
-    Enum.reduce(govern, text, fn
-      # {_k, {_, regex}}, acc -> blacklist(acc, regex)
-      {_k, regex}, acc -> blacklist(acc, regex)
-    end)
-  end
-
-  @spec blacklist(binary(), binary()) :: binary()
-  def blacklist(text, gvn_regex) do
-    blacklist_regex = blacklist_regex(gvn_regex)
+  @spec blacklist(binary()) :: binary()
+  def blacklist(text) do
+    blacklist_regex = blacklist_regex()
 
     Enum.reduce(blacklist_regex, text, fn regex, acc ->
-      Regex.replace(~r/#{regex}/, acc, "")
+      Regex.replace(~r/#{regex}/, acc, " ")
     end)
   end
 
-  @spec blacklist_regex(binary()) :: list(binary())
-  defp blacklist_regex(regex) do
+  @spec blacklist_regex() :: list(binary())
+  defp blacklist_regex() do
     modals = ~s/(?:shall|must|may[ ]only|may[ ]not)/
 
     [
-      "area of the authority",
-      "#{regex}may (?:be)",
+      "[ ]area of the authority",
       # Other subjects directly adjacent to the modal verb
-      "said report (?:shall|must)|shall[ ]not[ ]apply",
-      "may[ ]be[ ](?:approved|reduced|reasonably foreseeably|required)",
-      "may[ ]reasonably[ ]require",
-      "as[ ]the[ ]case[ ]may[ ]be",
-      "as may reasonably foreseeably",
-      "and[ ]#{modals}"
+      "[ ]said report (?:shall|must)|shall[ ]not[ ]apply",
+      "[ ]may[ ]be[ ](?:approved|reduced|reasonably foreseeably|required)",
+      "[ ]may[ ]reasonably[ ]require",
+      "[ ]as[ ]the[ ]case[ ]may[ ]be",
+      "[ ]as may reasonably foreseeably",
+      "[ ]and[ ]#{modals}"
     ]
   end
 
@@ -193,7 +184,7 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     |> process(DutyTypeDefn.application_scope())
     |> process(DutyTypeDefn.exemption())
     |> process(DutyTypeDefn.repeal_revocation())
-    # |> process("Transitional Arrangement", transitional_arrangement())
+    |> process(DutyTypeDefn.transitional_arrangement())
     |> process(DutyTypeDefn.charge_fee())
     |> process(DutyTypeDefn.offence())
     |> process(DutyTypeDefn.enforcement_prosecution())

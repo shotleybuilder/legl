@@ -4,15 +4,22 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
   """
   def responsibility(government) do
     [
-      "#{government}(?:must|shall)",
-      "#{government}[^—\\.]*?(?:must|shall)",
-      "must be (?:carried out|reviewed|sent|prepared).*?#{government}",
+      "#{government}(?:must|shall)(?! have the power)",
+      "#{government}[^—\\.]*?(?:must|shall)(?! have the power)",
+      # a ... within the middle of the sentence
+      "#{government}[^—\\.]*?[\\.\\.\\.].*?(?:must|shall)",
+      "must be (?:carried out|reviewed|sent|prepared|specified by).*?#{government}",
       "#{government}[^—\\.]*?has determined",
       "[Ii]t shall be the duty of a?n?[^—\\.]*?#{government}",
       "#{government} owes a duty to",
       "is to be.*?by a#{government}",
       "#{government}is to (?:perform|have regard)",
-      "#{government}may not"
+      "#{government}may not",
+      "#{government}is (?:liable|responsible for)",
+      "[Ii]t is the duty of the#{government}",
+      # Pattern when there are dutyholder options and MODALS start on a new line
+      # s modifier: single line. Dot matches newline characters
+      "#{government}.*?#{emdash()}(?s:.)*?^.*?(?:must|shall)"
     ]
   end
 
@@ -26,11 +33,20 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment d
       "#{government} may vary the terms",
       "#{government} may.*make.*(scheme|plans?|regulations?) ",
       "#{government} considers necessary",
-      " in the opinion of the #{government} ",
-      "#{government} shall be entitled",
+      "#{government}.*?shall (?:have the power|be entitled)",
       "#{government} may by regulations?",
-      "#{government}[^—\\.]*?may(?![ ]not)",
-      "#{government}is not required"
+      "#{government}[^—\\.]*?may(?![ ]not|[ ]be)",
+      # a ... within the middle of the sentence
+      "#{government}[^—\\.]*?[\\.\\.\\.].*?may(?![ ]not)",
+      "#{government}is not required",
+      "may be (?:varied|terminated) by the#{government}",
+      "may be excluded.*?by directions of the #{government}",
+      " in the opinion of the #{government} ",
+      # Pattern when there are dutyholder options and MODALS start on a new line
+      # s modifier: single line. Dot matches newline characters
+      "#{government}.*?#{emdash()}(?s:.)*?^.*?may(?![ ]not|[ ]be)"
     ]
   end
+
+  defp emdash, do: <<226, 128, 148>>
 end

@@ -10,11 +10,29 @@ defmodule ActorDefinitions do
 
   def government() do
     ([
+       Crown: "Crown",
+       "EU: Commission": "[Cc]ommission",
        "Gvt: Commissioners": "[Cc]ommissioners",
-       "Gvt: Officer": ["[Aa]uthorised [Oo]fficer", "[Oo]fficer of a local authority"],
+       "Gvt: Officer": [
+         "[Aa]uthorised [Oo]fficer",
+         "[Oo]fficer of a local authority",
+         "[Oo]fficer"
+       ],
        "Gvt: Appropriate Person": "[Aa]ppropriate [Pp]ersons?",
-       "Gvt: Judiciary": ["court", "[Jj]ustice of the [Pp]eace", "[Tt]ribunal"],
-       "Gvt: Emergency Services: Police": ["[Cc]onstable", "[Cc]hief of [Pp]olice"],
+       "Gvt: Judiciary": [
+         "court",
+         "[Jj]ustice of the [Pp]eace",
+         "[Tt]ribunal",
+         "[Ss]heriff",
+         "[Mm]agistrate",
+         "prosecutor",
+         "Lord Advocate"
+       ],
+       "Gvt: Emergency Services: Police": [
+         "[Cc]onstable",
+         "[Cc]hief(?: officer | )of [Pp]olice",
+         "police force"
+       ],
        "Gvt: Emergency Services": "[Ee]mergency [Ss]ervices?"
      ] ++
        authority() ++
@@ -28,16 +46,34 @@ defmodule ActorDefinitions do
     do: [
       "Gvt: Authority: Enforcement":
         "(?:[Rr]egulati?on?r?y?|[Ee]nforce?(?:ment|ing)) [Aa]uthority?i?e?s?",
-      "Gvt: Authority: Local": "[Ll]ocal [Aa]uthority?i?e?s?",
+      "Gvt: Authority: Local": [
+        "[Ll]ocal [Aa]uthority?i?e?s?",
+        "council of a county",
+        "(?:county|district)(?: borough | )council",
+        "London Borough Council",
+        "council constituted"
+      ],
+      "Gvt: Authority: Energy": [
+        "Northern Ireland Authority for Energy Regulation",
+        "network emergency co-ordinator",
+        "Phoenix Natural Gas Limited",
+        "British Gas p\\.l\\.c\\."
+      ],
+      "Gvt: Authority: Harbour": ["[Hh]arbour [Aa]uthority?i?e?s?", "harbour master"],
+      "Gvt: Authority: Licensing": "[Ll]icen[cs]ing [Aa]uthority?i?e?s?",
+      "Gvt: Authority: Market": "(?:market surveillance|weights and measures) authority?i?e?s?",
       "Gvt: Authority: Public": "[Pp]ublic [Aa]uthority?i?e?s?",
       "Gvt: Authority: Traffic": "[Tt]raffic [Aa]uthority?i?e?s?",
       "Gvt: Authority: Waste":
         "(?:[Ww]aste collection|[Ww]aste disposal|[Dd]isposal) [Aa]uthority?i?e?s?",
       "Gvt: Authority": [
-        "(?:[Tt]he|[Aa]n|appropriate|allocating|[Cc]ompetent|[Dd]esignated) authority",
+        "(?:[Tt]he|[Aa]n|appropriate|allocating|[Cc]ompetent|[Dd]esignated) authority?i?e?s?",
         "[Rr]egulators?",
-        "[Mm]onitoring [Aa]uthority?i?e?s?"
-      ]
+        "[Mm]onitoring [Aa]uthority?i?e?s?",
+        "officer authorised by the relevant authority",
+        "that authority"
+      ],
+      "Gvt: Official": "Official"
     ]
 
   defp devolved_administrations() do
@@ -56,6 +92,10 @@ defmodule ActorDefinitions do
   defp agencies() do
     [
       "Gvt: Agency: Environment Agency": "Environment Agency",
+      "Gvt: Agency: Health and Safety Executive for Northern Ireland": [
+        "Health and Safety Executive for Northern Ireland",
+        "HSENI"
+      ],
       "Gvt: Agency: Health and Safety Executive": [
         "Health and Safety Executive",
         "[Tt]he Executive"
@@ -65,12 +105,13 @@ defmodule ActorDefinitions do
         "Office for Environmental Protection",
         "OEP"
       ],
-      "Gvt: Agency: Office for Nuclear Regulation": "Office for Nuclear Regulations?",
+      "Gvt: Agency: Office for Nuclear Regulation": ["Office for Nuclear Regulations?", "ONR"],
       "Gvt: Agency: Office of Rail and Road": "Office of Rail and Road?",
       "Gvt: Agency: Scottish Environment Protection Agency": [
         "Scottish Environment Protection Agency",
         "SEPA"
       ],
+      "Gvt: Agency: OFCOM": ["Office of Communications?", "OFCOM"],
       "Gvt: Agency:": "[Aa]gency"
     ]
   end
@@ -79,6 +120,7 @@ defmodule ActorDefinitions do
     [
       "Gvt: Minister: Secretary of State for Defence": "Secretary of State for Defence",
       "Gvt: Minister: Secretary of State for Transport": "Secretary of State for Transport",
+      "Gvt: Minister: Attorney General": "Attorney General",
       "Gvt: Minister": [
         "Secretary of State",
         "[Mm]inisters?"
@@ -90,14 +132,22 @@ defmodule ActorDefinitions do
     [
       "Gvt: Ministry: Ministry of Defence": "Ministry of Defence",
       "Gvt: Ministry: Department of the Environment": "Department of the Environment",
+      "Gvt: Ministry: Department of Enterprise, Trade and Investment":
+        "Department of Enterprise, Trade and Investment",
       "Gvt: Ministry: Treasury": "[Tt]reasury",
+      "Gvt: Ministry: HMRC": [
+        "customs officer",
+        "Her Majesty['’]s Commissioners for Revenue and Customs",
+        "Her Majesty’s Revenue and Customs"
+      ],
       "Gvt: Ministry:": ["[Mm]inistry", "[Tt]he Department"]
     ]
   end
 
   defp forces(),
     do: [
-      "HM Forces: Navy": "(?:His|Her) Majesty's Navy"
+      "HM Forces: Navy": "(?:His|Her) Majesty['’]s Navy",
+      "HM Forces": ["(?:His|Her) Majesty['’]s forces", "armed forces"]
     ]
 
   def blacklist() do
@@ -117,17 +167,28 @@ defmodule ActorDefinitions do
          supply_chain() ++
          servicer() ++
          maritime() ++
-         environmentalist())
+         environmentalist() ++
+         he())
       |> process_library()
 
   defp business() do
     [
-      "Org: Investor": "[Ii]nvestors",
-      "Org: Owner": "[Oo]wner",
+      "Org: Investor": "[Ii]nvestors?",
+      "Org: Owner": [
+        "[Oo]wners?",
+        "mine owner",
+        "owner of a non-production installation",
+        "installation owner"
+      ],
+      "Org: Landlord": "[Ll]andlord",
       "Org: Lessee": "[Ll]essee",
       "Org: Occupier": ["[Oo]ccupiers?", "[Pp]erson who is in occupation"],
       "Org: Employer": "[Ee]mployers?",
-      Operator: "[Oo]perators?",
+      Operator: [
+        "[Oo]perators?",
+        "(?:berth|mine|well|economic|meter)[[:blank:]-]operator",
+        "operator of a production installation"
+      ],
       "Org: Company": [
         "[Cc]ompany?i?e?s?",
         "[Bb]usinesse?s?",
@@ -135,41 +196,47 @@ defmodule ActorDefinitions do
         "[Bb]ody?i?e?s? corporate"
       ],
       "Org: Partnership": [
-        "[Pp]artnership",
+        "[Pp]artnerships?",
         "[Uu]nincorporated body?i?e?s?"
       ],
-      Organisation: ["[Tt]hird party organisation", "[Oo]rganisations?"]
+      Organisation: ["[Tt]hird party", "[Oo]rganisations?"]
     ]
   end
 
   defp person() do
     [
       "Ind: Employee": "[Ee]mployees?",
-      "Ind: Worker": "[Ww]orkers?",
+      "Ind: Worker": ["[Ww]orkers?", "[Ww]orkmen", "(?:members of the )?[Ww]orkforce"],
       "Ind: Self-employed Worker": "[Ss]elf-employed (?:[Pp]ersons?|diver)",
       "Ind: Responsible Person": "[Rr]esponsible [Pp]ersons?",
-      "Ind: Competent Person": "[Cc]ompetent [Pp]ersons?",
+      "Ind: Competent Person": ["[Cc]ompetent [Pp]ersons?", "person who is competent"],
       "Ind: Authorised Person": [
         "[Aa]uthorised [Pp]erson",
         "[Aa]uthorised [Bb]ody",
-        "[Aa]uthorised Representative"
+        "[Aa]uthorised Representative",
+        "[Pp]erson (?:so|duly) authorised"
       ],
-      "Ind: Supervisor": ["[Ss]upervisor", "[Pp]erson in control"],
+      "Ind: Suitable Person": "suitable person",
+      "Ind: Supervisor": ["[Ss]upervisor", "[Pp]erson in control", "individual in charge"],
+      "Ind: Manager": ["managers?", "mine manager", "manager of a mine", "installation manager"],
       "Ind: Appointed Person": ["[Aa]ppointed [Pp]ersons?", "[Aa]ppointed body"],
       "Ind: Relevant Person": "[Rr]elevant [Pp]erson",
       Operator: "[Pp]erson who operates the plant",
-      "Ind: Person": ["[Pp]ersons?", "site manager", "[Ii]ndividual"],
-      "Ind: Dutyholder": ["[Dd]uty [Hh]olders?", "[Dd]utyholder"],
+      "Ind: Young Person": ["young person", "childr?e?n?"],
+      "Ind: Person": ["[Pp]ersons?", "[Ii]ndividual"],
+      "Ind: Duty Holder": ["[Dd]uty [Hh]olders?", "[Dd]utyholder"],
+      "Ind: Licence Holder": "[Ll]icen[sc]e [Hh]olders?",
       "Ind: Holder": "[Hh]olders?",
       "Ind: User": "[Uu]sers?",
       "Ind: Applicant": ["[Rr]elevant applicant", "[Aa]pplicant"],
-      "Ind: Licensee": "[Ll]icensee",
-      "Ind: Diver": "[Dd]iver"
+      "Ind: Licensee": ["[Ll]icensee", "offshore licensee"],
+      "Ind: Diver": "[Dd]iver",
+      "Ind: Chair": "[Cc]hairman"
     ]
   end
 
   defp public() do
-    [Public: ["[Pp]ublic", "[Ee]veryone", "[Cc]itizens?"]]
+    [Public: ["[Pp]ublic", "[Ee]veryone", "[Cc]itizens?"], "Public: Parents": "[Pp]arents?"]
   end
 
   defp specialist() do
@@ -186,12 +253,22 @@ defmodule ActorDefinitions do
         "[Ss]afety representatives?",
         "[Tt]rade [Uu]nions? representatives?"
       ],
-      "Spc: Representative": "[Rr]epresentatives?",
+      # neg lookahead (?!)
+      "Spc: Representative": "(?:[Aa]uthorised)? [Rr]epresentatives? (?!sample)",
       "Spc: Trade Union": "[Tt]rade [Uu]nions?",
       "Spc: Assessor": "[Aa]ssessors?",
-      "Spc: Inspector": ["[Uu]ser inspectorate", "[Ii]nspectors?"],
-      "Spc: Body": ["[Aa]ppropriate [Bb]ody", "[Aa]pproved [Bb]ody"],
-      "Spc: Advisor": "[Aa]dvis[oe]r"
+      "Spc: Surveyor": "[Ss]urveyor",
+      "Spc: Inspector": [
+        "[Uu]ser inspectorate",
+        "[Ii]nspectors?",
+        "[Vv]erifier",
+        "[Ww]ell examiner"
+      ],
+      "Spc: Body":
+        "(?:[Aa]ppropriate|[Aa]pproved|[Ss]ampling|(?:UK )?[Nn]otified|[Cc]onformity assessment) (?:] )?[Bb]ody",
+      "Spc: Advisor": "[Aa]dvis[oe]r",
+      "Spc: Engineer": ["[Ee]ngineer"],
+      "Spc: Technician": ["[Tt]echnician", "geotechnical specialist"]
     ]
   end
 
@@ -199,7 +276,7 @@ defmodule ActorDefinitions do
     # T&L = transport and logistics
     # C = construction
     [
-      "SC: Agent": "(?<![Bb]iological )[Aa]gent?s",
+      "SC: Agent": "(?<![Bb]iological )[Aa]gents?",
       "SC: Keeper": "person who.*?keeps*?",
       "SC: Manufacturer": "[Mm]anufacturer",
       "SC: Producer": ["[Pp]roducer", "person who.*?produces*?"],
@@ -208,13 +285,14 @@ defmodule ActorDefinitions do
       "SC: C: Constructor": "[Cc]onstructor",
       "SC: C: Principal Contractor": "[Pp]rincipal [Cc]ontractor",
       "SC: C: Contractor": [
-        "[Cc]ontractor",
+        "[Cc]ontractors?",
         "[Dd]iving contractor",
         "[Cc]ompressed air contractor"
       ],
       "SC: Marketer": ["[Aa]dvertiser", "[Mm]arketer"],
-      "SC: Supplier": "[Ss]upplier",
-      "SC: Distributor": "[Dd]istributor",
+      "SC: Supplier": ["[Ss]upplier", "[Pp]erson who supplies"],
+      "SC: Generator": "[Gg]enerators?",
+      "SC: Distributor": "[Dd]istributors?",
       "SC: Seller": "[Ss]eller",
       "SC: Dealer": "(?:[Ss]crap metal )?[Dd]ealer",
       "SC: Retailer": "[Rr]etailer",
@@ -224,9 +302,13 @@ defmodule ActorDefinitions do
       "SC: Consumer": "[Cc]onsumer",
       "SC: Storer": "[Ss]torer",
       "SC: T&L: Consignor": "[Cc]onsignor",
-      "SC: T&L: Handler": "[Hh]andler",
+      "SC: T&L: Handler": ["[Hh]andler", "person who.*?(?:loads|unloads)"],
       "SC: T&L: Consignee": "[Cc]onsignee",
-      "SC: T&L: Carrier": ["[Tt]ransporter", "person who.*?carries", "[Cc]arriers?"],
+      "SC: T&L: Carrier": [
+        "[Tt]ransporter",
+        "person who.*?(?:carries|transports)",
+        "[Cc]arriers?"
+      ],
       "SC: T&L: Driver": "[Dd]river",
       "SC: Importer": ["[Ii]mporter", "person who.*?imports*?"],
       "SC: Exporter": ["[Ee]xporter", "person who.*?exports*?"]
@@ -244,7 +326,7 @@ defmodule ActorDefinitions do
   defp maritime(),
     do: [
       "Maritime: crew": "crew of a ship",
-      "Maritime: master": "master.*?of a ship"
+      "Maritime: master": ["master.*?of a ship", "master.*?of (?:the|an?y?) vessel"]
     ]
 
   defp environmentalist() do
@@ -255,6 +337,10 @@ defmodule ActorDefinitions do
       "Env: Disposer": "[Dd]isposer",
       "Env: Polluter": "[Pp]olluter"
     ]
+  end
+
+  defp he() do
+    [": He": "[Hh]e"]
   end
 
   @doc """

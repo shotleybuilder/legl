@@ -117,7 +117,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
     lat_opts = [
       # Mutes user select prompt
       base_name: family <> ~s/ - UK/,
-      base_id: Map.get(AtBases.base_map(), family <> ~s/ - UK/),
+      base_id: Map.get(AtBases.base_map(), family),
       # Uses these 3 for GET request
       type_code: lrt_record.type_code,
       Year: lrt_record."Year",

@@ -89,7 +89,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType do
   defp process_record(%LATTaxa{Record_Type: ["section"], Text: text} = record, opts) do
     case Regex.match?(~r/\n/, text) do
       true -> classes(record, text, opts)
-      false -> record
+      false -> Kernel.struct(record, %{"Duty Type": DutyTypeLib.duty_types_generic(text)})
     end
   end
 

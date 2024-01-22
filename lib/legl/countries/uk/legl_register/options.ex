@@ -123,6 +123,14 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
+  def family(%{base_name: bn} = opts) when bn not in ["", [], "UK EHS"],
+    do:
+      Map.put(
+        opts,
+        :family,
+        opts.base_name
+      )
+
   @spec family(map()) :: map()
   def family(opts),
     do:
