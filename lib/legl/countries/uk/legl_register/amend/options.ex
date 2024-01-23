@@ -39,7 +39,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
     name: "",
     type_class: "",
     sClass: "",
-    family: "",
+    # family: "",
     percent?: false,
     filesave?: false,
     # include/exclude AT records holding today's date
@@ -73,10 +73,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
   def new_amending_law_finder(opts) do
     opts =
       Enum.into(opts, @default_opts)
-      |> LRO.base_name()
+      |> (&Map.put(&1, :base_name, "UK EHS")).()
       |> LRO.base_table_id()
       |> (&Map.put(&1, :view, new_amending_law_finder_view(&1))).()
-      |> LRO.family()
+      # |> LRO.family()
       |> Map.put(:fields, [
         "Amending (from UK) - binary",
         "Amending",
@@ -103,10 +103,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
   def new_amended_by_law_finder(opts) do
     opts =
       Enum.into(opts, @default_opts)
-      |> LRO.base_name()
+      |> (&Map.put(&1, :base_name, "UK EHS")).()
       |> LRO.base_table_id()
       |> (&Map.put(&1, :view, new_amended_law_finder_view(&1))).()
-      |> LRO.family()
+      # |> LRO.family()
       |> Map.put(:fields, [
         "Amended_by (from UK) - binary",
         "Amended_by",
@@ -118,7 +118,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Options do
       []
       |> LRO.formula_family(opts)
       |> (&[
-            ~s/OR({% Affected By (calc)}=0.00,{% Affected By (calc)}<1, {% Revoked By (calc)}=0.00,{% Revoked By (calc)}<1)/
+            ~s/OR({% Amended By (calc)}=0.00,{% Amended By (calc)}<1, {% Revoked By (calc)}=0.00,{% Revoked By (calc)}<1)/
             | &1
           ]).()
 

@@ -268,7 +268,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     "Update (w/o Enact)":
       {[@year, @name, @md, @tags, @type_law, @type_class, @extent, @affect], :update},
     "Delta (w/o Extent & Enact)": {[@md, @affect], :delta},
-    Metadata: {[@year, @name, @md, @type_law, @type_class], :metadata},
+    Metadata: {[@md, @year, @name, @type_law, @type_class], :metadata},
     Extent: {[@name, @extent], :extent},
     Enact: {[@enact], :enact},
     Affect: {[@affect], :affect},
@@ -325,32 +325,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   end
 
   @spec create_workflow(opts()) :: opts()
-  def create_workflow(opts) do
-    case ExPrompt.choose(
-           "Create Workflow",
-           Enum.map(@workflow_choices, fn {k, _} -> k end)
-         ) do
-      -1 ->
-        :ok
-
-      n ->
-        opts
-        |> Map.put(
-          :create_workflow,
-          Enum.map(@workflow_choices, fn {_k, v} -> v end)
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-        )
-        |> Map.put(
-          :drop_fields,
-          @drop_fields_params
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-          |> Legl.Countries.Uk.LeglRegister.DropFields.drop_fields()
-        )
-    end
+  def create_workflow(%{workflow: workflow} = opts) when workflow not in ["", nil] do
+    {create_workflow, drop_field} = Keyword.get(@workflow_choices, workflow)
+    drop_fields = Legl.Countries.Uk.LeglRegister.DropFields.drop_fields(drop_field)
+    opts = Map.merge(opts, %{create_workflow: create_workflow, drop_fields: drop_fields})
   end
 
   @spec today(map()) :: map()

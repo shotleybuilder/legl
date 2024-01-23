@@ -210,6 +210,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
       {_extents}, acc -> acc
       {provisions, "(E+W)"}, acc -> [{provisions, "E+W"} | acc]
       {provisions, "EW"}, acc -> [{provisions, "E+W"} | acc]
+      {provisions, "EWS"}, acc -> [{provisions, "E+W+S"} | acc]
       {provisions, extent}, acc -> [{provisions, extent} | acc]
     end)
   end
@@ -278,6 +279,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
         "W" -> [Legl.wales_flag_emoji() | acc]
         "S" -> [Legl.scotland_flag_emoji() | acc]
         "NI" -> [Legl.northern_ireland_flag_emoji() | acc]
+        _ -> acc
       end
     end)
     |> Enum.reverse()
@@ -311,6 +313,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
           "W" -> ["Wales" | acc]
           "S" -> ["Scotland" | acc]
           "NI" -> ["Northern Ireland" | acc]
+          _ -> acc
         end
       end)
       |> Enum.uniq()

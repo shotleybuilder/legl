@@ -241,13 +241,14 @@ defmodule Legl.Utility do
 
   @spec split_name(String.t()) :: tuple()
   def split_name(name) do
-    case Regex.run(~r/_([a-z]*?)_(\d{4})_(.*?)_/, name) do
+    # UK_TLA_type-code_year_number
+    case Regex.run(~r/([a-z]*?)_(\d{4})_(.*)$/, name) do
       [_, type, year, number] ->
         {type, year, number}
 
       _ ->
-        # UK_ukpga_1960_Eliz2/8-9/34_RSA
-        case Regex.run(~r/_([a-z]*?)_(\d{4})_(.*?)_/, name) do
+        # UK_RSA_ukpga_1960_Eliz2/8-9/34
+        case Regex.run(~r/([a-z]*?)_(\d{4})_(.*)$/, name) do
           [_, type, year, number] ->
             {type, year, number}
 

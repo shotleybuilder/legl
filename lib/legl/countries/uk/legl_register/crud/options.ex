@@ -89,6 +89,8 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.base_table_id()
     |> source()
     |> drop_fields()
+    |> LRO.workflow()
+    |> LRO.create_workflow()
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 

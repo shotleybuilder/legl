@@ -282,13 +282,20 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
     ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @energy ~w[
+      oil
+      gas
+      electric
       wind\u00a0farm
       solar\u00a0farm
       solar\u00a0park
       heat\u00a0network
-      energy\u00a0performance
+      heat\u00a0incentive
+      energy
       renewable
       non-fossil\u00a0fuel
+      hydrocarbon
+      petroleum
+      utilities
     ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @finance ~w[
@@ -445,8 +452,8 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @gas_electric_safety ~w[
-    gas
-    electric
+    gas\u00a0safety
+    electricity\u00a0safety
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @hr_employment ~w[

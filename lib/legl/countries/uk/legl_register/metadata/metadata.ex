@@ -241,13 +241,13 @@ defmodule Legl.Countries.Uk.Metadata do
       |> Map.put(:md_checked, ~s/#{Date.utc_today()}/)
 
     {:ok, Kernel.struct(record, metadata)}
-    # rescue
-    # e ->
-    #  IO.puts(
-    #   ~s/\nERROR: #{record."Title_EN"} #{record.type_code} #{record."Number"} #{record."Year"}\n#{inspect(e)}\n#{__MODULE__}.get_latest_metadata\n/
-    # )
+  rescue
+    e ->
+      IO.puts(
+        ~s/\nERROR: #{record."Title_EN"} #{record.type_code} #{record."Number"} #{record."Year"}\n#{inspect(e)}\n#{__MODULE__}.get_latest_metadata\n/
+      )
 
-    # {:ok, record}
+      {:ok, record}
   end
 
   def get_latest_metadata(record, _) when is_map(record) do

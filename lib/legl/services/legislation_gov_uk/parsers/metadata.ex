@@ -559,7 +559,11 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
 
         date = Regex.replace(~r/[[:punct:]]/m, date, "")
 
+        # separate May2004 -> May 2004
         date = Regex.replace(~r/([a-z])(\d{4})$/, date, "\\g{1} \\g{2}")
+
+        # separate 1stApril -> 1st April
+        date = Regex.replace(~r/(st|nd|rd|th)([A-Z])/, date, "\\g{1} \\g{2}")
 
         [day, month, year] = date |> rm_time |> String.split()
 
@@ -573,7 +577,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
 
   defp rm_time(date) when is_binary(date) do
     # rm time from 'at 4.30 p.m. on 10th September 2020'
-    IO.puts(date)
+    # IO.puts(date)
 
     Regex.replace(~r/.*?on[ ]/, date, "")
     |> (&Regex.replace(~r/at.*/, &1, "")).()

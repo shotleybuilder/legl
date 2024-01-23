@@ -116,9 +116,9 @@ defmodule UK do
     "DELTA Repeal|Revoke - patch": {RR, :run, [workflow: :delta]},
     "***NEW LAWS FROM AT AMENDS & REVOKES WORKFLOW***": nil,
     "DIFF Amended by - amending laws that aren't in the Base 'EARM Amended by & Revoked by'":
-      {FindNewLaw, :amending},
+      {FindNewLaw, :amending, [[filesave?: true]]},
     "DIFF Amending - amended by laws that aren't in the Base VIEW: '% DIFF Amending' 'EARM Amending & Revoking'":
-      {FindNewLaw, :new_amended_law}
+      {FindNewLaw, :new_amended_law, [[filesave?: true]]}
   ]
 
   def api(opts \\ []) do

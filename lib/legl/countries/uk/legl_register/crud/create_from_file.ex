@@ -59,7 +59,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
     opts =
       opts
       |> Options.from_file_set_up()
-      |> LRO.create_workflow()
 
     {_, path} = opts.source
     records = Legl.Utility.read_json_records(path)
