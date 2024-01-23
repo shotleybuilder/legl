@@ -105,6 +105,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
         Delta.compare(results)
         # |> IO.inspect()
         |> Legl.Utility.maps_from_structs()
+        |> Enum.map(&Map.put(&1, :amendments_checked, ~s/#{Date.utc_today()}/))
         |> Legl.Utility.map_filter_out_empty_members()
         |> Patch.patch(opts)
     end
@@ -132,7 +133,17 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend do
   @spec workflow(list(LegalRegister), map()) :: list(LegalRegister)
   def workflow(records, opts) when is_list(records) do
     results = amendment_bfs({[], records}, opts, 0)
-    Enum.map(results, fn {nrecord, _records} -> nrecord end)
+
+    records =
+      case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
+        false ->
+          Enum.map(results, fn {nrecord, _records} -> nrecord end)
+
+        true ->
+          Delta.compare(results)
+      end
+
+    records |> Enum.map(&Map.put(&1, :amendments_checked, ~s/#{Date.utc_today()}/))
   end
 
   def workflow(record, opts) when is_map(record) do

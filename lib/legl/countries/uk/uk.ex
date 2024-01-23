@@ -60,7 +60,7 @@ defmodule UK do
     "MENU: Taxa": {:taxa},
     "LRT: UPDATE Single Law using 'Name'": {Update, :api_update_single_name},
     "LRT: UPDATE using an AT View": {Update, :api_update_single_view},
-    "LRT: UPDATE": {Update, :api_update, [[csv?: false, workflow: :update]]},
+    "LRT: UPDATE": {Update, :api_update, [[csv?: false]]},
     "POST or PATCH Single Law using :type_code, :number, :year":
       {CreateFromInput, :api_create_update_single_record, [[patch?: true, csv?: false]]},
     "***NEW PUBLISHED LAWS WORKFLOW***": nil,

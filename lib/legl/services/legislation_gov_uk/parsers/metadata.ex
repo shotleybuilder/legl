@@ -573,8 +573,11 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
 
   defp rm_time(date) when is_binary(date) do
     # rm time from 'at 4.30 p.m. on 10th September 2020'
-    # IO.puts(date)
+    IO.puts(date)
+
     Regex.replace(~r/.*?on[ ]/, date, "")
+    |> (&Regex.replace(~r/at.*/, &1, "")).()
+    |> (&Regex.replace(~r/.*?pm[ ]/, &1, "")).()
   end
 
   defp add_zero(s) when is_integer(s), do: add_zero(Integer.to_string(s))

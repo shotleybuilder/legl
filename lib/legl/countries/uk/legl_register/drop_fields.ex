@@ -137,7 +137,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     case update_workflow do
       :new -> @models ++ @default
       :update -> @enact ++ @models ++ @default
-      :changes -> @extent ++ @enact ++ @models ++ @default
+      :delta -> @extent ++ @enact ++ @models ++ @default
       :metadata -> @extent ++ @enact ++ @affect ++ @models ++ @default
       :extent -> @metadata ++ @enact ++ @affect ++ @models ++ @default
       :enact -> @metadata ++ @extent ++ @affect ++ @models ++ @default

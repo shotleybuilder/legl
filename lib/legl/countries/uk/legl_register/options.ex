@@ -131,7 +131,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
         opts.base_name
       )
 
-  @spec family(map()) :: map()
+  def family(%{view: view} = opts) when view in ["", nil], do: family(opts)
+  def family(%{view: _} = opts), do: opts
+
   def family(opts),
     do:
       Map.put(
@@ -182,25 +184,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
-  # workflow options are [:create, :update]
-  # :update triggers the update workflow and populates the change log
-  @spec workflow(opts()) :: opts()
-  def workflow(%{workflow: workflow} = opts) when workflow not in ["", nil], do: opts
-
-  @spec workflow(opts()) :: opts()
-  def workflow(opts) do
-    Map.put(
-      opts,
-      :workflow,
-      case ExPrompt.choose("Workflow ", ["Create", "Update", "Delta Update"]) do
-        0 -> :create
-        1 -> :update
-        2 -> :delta
-        -1 -> nil
-      end
-    )
-  end
-
   @spec patch?(opts()) :: opts()
   def patch?(%{patch?: p} = opts) when is_boolean(p), do: opts
 
@@ -212,13 +195,49 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
+  @workflow [
+    :"New (w/Enact)",
+    :"New (w/Enact w/oMD)",
+    :"Update (w/Enact)",
+    :"Update (w/o Enact)",
+    :"Delta (w/o Extent & Enact)",
+    :Metadata,
+    :Extent,
+    :Enact,
+    :Affect,
+    :Taxa
+  ]
+
+  # workflow options are [:create, :update]
+  # :update triggers the update workflow and populates the change log
+  @spec workflow(opts()) :: opts()
+  def workflow(%{workflow: workflow} = opts) when workflow not in ["", nil], do: opts
+
+  @spec workflow(opts()) :: opts()
+  def workflow(opts) do
+    case ExPrompt.choose("Workflow ", @workflow) do
+      -1 ->
+        nil
+
+      n ->
+        opts
+        |> Map.put(
+          :workflow,
+          @workflow
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+        )
+    end
+  end
+
   @doc """
   Function to assemble the update functions into a list
 
   """
   @year &Legl.Countries.Uk.LeglRegister.Year.set_year/1
   @name &Legl.Countries.Uk.LeglRegister.IdField.lrt_acronym/1
-  @md &Legl.Countries.Uk.Metadata.get_latest_metadata/1
+  @md &Legl.Countries.Uk.Metadata.get_latest_metadata/2
   @tags &Legl.Countries.Uk.LeglRegister.Tags.set_tags/1
   @type_law &Legl.Countries.Uk.LeglRegister.TypeClass.set_type/1
   @type_class &Legl.Countries.Uk.LeglRegister.TypeClass.set_type_class/1
@@ -227,66 +246,81 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   @affect &Legl.Countries.Uk.LeglRegister.Amend.workflow/2
   @taxa &Legl.Countries.Uk.LeglRegister.Taxa.set_taxa/2
 
+  # map of tuples {the workflow, dropped fields}
+
   @workflow_choices [
-    "New (w/Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @enact, @affect],
-    "New (w/Enact w/oMD)": [@year, @name, @tags, @type_law, @type_class, @extent, @enact, @affect],
-    "Update (w/o Enact)": [@year, @name, @md, @tags, @type_law, @type_class, @extent, @affect],
-    "Changes (w/o Extent & Enact)": [@year, @name, @md, @affect],
-    Metadata: [@year, @name, @md, @type_law, @type_class],
-    Extent: [@name, @extent],
-    Enact: [@enact],
-    Affect: [@affect],
-    Taxa: [@taxa]
+    "New (w/Enact)":
+      {[@year, @name, @md, @tags, @type_law, @type_class, @extent, @enact, @affect], :new},
+    "New (w/Enact w/oMD)":
+      {[@year, @name, @tags, @type_law, @type_class, @extent, @enact, @affect], :new},
+    "Update (w/Enact)":
+      {[
+         @md,
+         @year,
+         @name,
+         @tags,
+         @type_law,
+         @type_class,
+         @extent,
+         @enact,
+         @affect
+       ], :update},
+    "Update (w/o Enact)":
+      {[@year, @name, @md, @tags, @type_law, @type_class, @extent, @affect], :update},
+    "Delta (w/o Extent & Enact)": {[@md, @affect], :delta},
+    Metadata: {[@year, @name, @md, @type_law, @type_class], :metadata},
+    Extent: {[@name, @extent], :extent},
+    Enact: {[@enact], :enact},
+    Affect: {[@affect], :affect},
+    Taxa: {[@taxa], :taxa}
   ]
 
-  @drop_fields_params [:new, :new, :update, :changes, :metadata, :extent, :enact, :affect, :taxa]
+  @drop_fields_params [
+    :new,
+    :new,
+    :update,
+    :update,
+    :changes,
+    :metadata,
+    :extent,
+    :enact,
+    :affect,
+    :taxa
+  ]
 
-  @view ~w[
-    viwMy1UQEZO1x62cK
-    viwMy1UQEZO1x62cK
-    viwMy1UQEZO1x62cK
-    viwMy1UQEZO1x62cK
-    viwt9PuFLhUpyFEv1
-    viw1XkiLMnNB2xc6A
-    viwMy1UQEZO1x62cK
-    viwMy1UQEZO1x62cK
-    viwMy1UQEZO1x62cK
+  @view [
+    VS_CODE_UPDATE: "viwMy1UQEZO1x62cK",
+    VS_CODE_METADATA: "viwt9PuFLhUpyFEv1",
+    VS_CODE_EXTENT: "viw1XkiLMnNB2xc6A"
   ]
 
   @spec update_workflow(opts()) :: opts()
-  def update_workflow(opts) do
+  def update_workflow(%{workflow: workflow} = opts) when workflow not in ["", nil] do
+    {update_workflow, drop_field} = Keyword.get(@workflow_choices, workflow)
+    drop_fields = Legl.Countries.Uk.LeglRegister.DropFields.drop_fields(drop_field)
+    opts = Map.merge(opts, %{update_workflow: update_workflow, drop_fields: drop_fields})
+
+    # Map.put_new allows default view to be overridden with params
+    Map.put_new(
+      opts,
+      :view,
+      update_view()
+    )
+  end
+
+  defp update_view() do
     case ExPrompt.choose(
-           "Update Workflow",
-           Enum.map(@workflow_choices, fn {k, _} -> k end)
+           "Update View (default is nil)",
+           Enum.map(@view, fn {k, _} -> k end)
          ) do
       -1 ->
-        :ok
+        ""
 
       n ->
-        opts
-        |> Map.put(
-          :update_workflow,
-          Enum.map(@workflow_choices, fn {_k, v} -> v end)
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-        )
-        |> Map.put(
-          :drop_fields,
-          @drop_fields_params
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-          |> Legl.Countries.Uk.LeglRegister.DropFields.drop_fields()
-        )
-        # Map.put_new allows default view to be overridden with params
-        |> Map.put_new(
-          :view,
-          @view
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-        )
+        Enum.map(@view, fn {_k, v} -> v end)
+        |> Enum.with_index()
+        |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+        |> Map.get(n)
     end
   end
 

@@ -19,11 +19,12 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     # Trigger .csv saving?
     csv?: false,
     # Global mute msg
-    json?: false,
+
     mute?: true,
     patch?: false,
     post?: false,
-    filesave?: false
+    filesave?: false,
+    json?: false
   }
 
   def default_opts, do: @default_opts
@@ -57,12 +58,13 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     )
 
     Enum.into(opts, @default_opts)
+    |> LRO.workflow()
     |> LRO.update_workflow()
     |> LRO.base_name()
     |> LRO.base_table_id()
     |> LRO.patch?()
     |> LRO.formula_name()
-    |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year Family])
+    |> fields()
     |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end
 
@@ -72,11 +74,12 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     )
 
     Enum.into(opts, @default_opts)
+    |> LRO.workflow()
     |> LRO.update_workflow()
     |> LRO.base_name()
     |> LRO.base_table_id()
     |> LRO.patch?()
-    |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year Family])
+    |> fields()
     |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end
 
@@ -101,12 +104,13 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     opts = Enum.into(opts, @default_opts)
 
     IO.puts(
-      ~s/_____\nSetting Options from __LegalRegister.Options__\n:update_workflow, :drop_fields, :view, :type_class, :type_code, :family, :patch?/
+      ~s/______\nSettng Options from __CRUD.Options__\n:workflow, :update_workflow, :drop_fields, :view, :type_class, :type_code, :family, :patch?, :formula, :fields/
     )
 
     opts =
       opts
       # sets :update_workflow, :drop_fields, :view
+      |> LRO.workflow()
       |> LRO.update_workflow()
       |> LRO.base_name()
       |> LRO.base_table_id()
@@ -114,14 +118,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> LRO.type_code()
       |> LRO.family()
       |> LRO.patch?()
-
-    IO.puts(~s/______\nSettng Options from __CRUD.Options__\n:formula, :fields/)
-
-    opts =
-      opts
-      |> Map.put(:fields, ~w[record_id Title_EN type_code type_class Number Year])
-
-    # |> drop_fields()
+      |> fields()
 
     formula =
       []
@@ -250,6 +247,50 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       AtBasesTables.get_base_table_id(opts.base_name, opts.table_name)
 
     Map.merge(opts, %{base_id: base_id, table_id: table_id, pub_table_id: pub_table_id})
+  end
+
+  @fields ~w[
+    record_id Title_EN type_code type_class Number Year Family
+  ]
+
+  # Fields to compare against for Delta
+  @md_fields ~w[
+    md_description
+    md_subjects
+    md_modified
+    md_total_paras
+    md_body_paras
+    md_schedule_paras
+    md_attachment_paras
+    md_images
+
+  ]
+
+  @amend_fields ~w[
+    Amended_by
+    🔺_stats_affects_count
+    🔺_stats_self_affects_count
+    🔺_stats_affected_laws_count
+    Amending
+    🔻_stats_affected_by_count
+    🔻_stats_self_affected_by_count
+    🔻_stats_affected_by_laws_count
+    Revoked_by
+    🔻_stats_revoked_by_laws_count
+    md_change_log
+    amending_change_log
+    amended_by_change_log
+    Live?_change_log
+  ]
+
+  defp fields(opts) do
+    fields =
+      case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
+        true -> @fields ++ @md_fields ++ @amend_fields
+        false -> @fields
+      end
+
+    Map.put(opts, :fields, fields)
   end
 
   @source [

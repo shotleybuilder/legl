@@ -33,6 +33,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
           # Metadata fields
           md_total_paras: integer(),
+          md_body_paras: integer(),
           md_images: integer(),
           md_dct_valid_date: String.t(),
           md_restrict_start_date: String.t(),
@@ -44,6 +45,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           md_modified: String.t(),
           md_subjects: list(),
           md_schedule_paras: integer(),
+          md_checked: String.t(),
 
           # EcARM
           Function: list(),
@@ -166,6 +168,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     si_code
 
     md_total_paras
+    md_body_paras
     md_images
     md_dct_valid_date
     md_restrict_start_date
@@ -177,6 +180,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     md_modified
     md_subjects
     md_schedule_paras
+    md_checked
 
     Function
     Amended_by
@@ -213,10 +217,10 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
     publication_date
 
-    Live?_change_log
     md_change_log
     amending_change_log
     amended_by_change_log
+    Live?_change_log
 
     actor
     actor_article

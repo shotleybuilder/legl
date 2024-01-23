@@ -209,33 +209,48 @@ defmodule Legl.Countries.Uk.Metadata do
 
   Returns the metadata map
   """
-  @spec get_latest_metadata(struct()) :: struct()
-  def get_latest_metadata(%LegalRegister{} = record) when is_struct(record) do
+  @spec get_latest_metadata(struct(), map()) :: {:ok, struct()}
+  @spec get_latest_metadata(map(), map()) :: {:ok, map()}
+  @spec get_latest_metadata(binary()) :: {:ok, map()}
+  def get_latest_metadata(record, opts \\ %{workflow: :update})
+
+  def get_latest_metadata(%LegalRegister{} = record, opts)
+      when is_struct(record) do
     IO.write(" METADATA")
     url = Url.introduction_path(record)
     {:ok, metadata} = get_latest_metadata(url)
+
+    md_change_log =
+      case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
+        true ->
+          Delta.compare_fields(record, metadata)
+
+        false ->
+          ""
+      end
 
     record =
       if record."Title_EN" == "",
         do: Map.put(record, :Title_EN, metadata."Title_EN"),
         else: record
 
-    metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
+    metadata =
+      metadata
+      |> Map.put(:md_change_log, md_change_log)
+      |> Map.drop([:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
+      |> Map.put(:md_checked, ~s/#{Date.utc_today()}/)
 
-    {:ok,
-     record
-     |> Kernel.struct(metadata)
-     |> Map.put(:md_checked, ~s/#{Date.utc_today()}/)}
-  rescue
-    e ->
-      IO.puts(
-        ~s/\nERROR: #{record."Title_EN"}\n#{record.type_code} #{record."Number"} #{record."Year"} #{inspect(e)}\n #{__MODULE__}.get_latest_metadata\n\n/
-      )
+    {:ok, Kernel.struct(record, metadata)}
+    # rescue
+    # e ->
+    #  IO.puts(
+    #   ~s/\nERROR: #{record."Title_EN"} #{record.type_code} #{record."Number"} #{record."Year"}\n#{inspect(e)}\n#{__MODULE__}.get_latest_metadata\n/
+    # )
 
-      {:ok, record}
+    # {:ok, record}
   end
 
-  def get_latest_metadata(record) when is_map(record) do
+  def get_latest_metadata(record, _) when is_map(record) do
     IO.write(" METADATA -> map")
     url = Url.introduction_path(record)
     {:ok, metadata} = get_latest_metadata(url)
@@ -245,8 +260,7 @@ defmodule Legl.Countries.Uk.Metadata do
     _ -> {:error}
   end
 
-  @spec get_latest_metadata(binary()) :: {:ok, map()}
-  def get_latest_metadata(path) when is_binary(path) do
+  def get_latest_metadata(path, _) when is_binary(path) do
     with({:ok, :xml, metadata} <- Record.metadata(path)) do
       # save the data returned from leg.gov.uk w/o transformation
       # json = Map.put(%{}, "records", metadata) |> Jason.encode!()
@@ -433,48 +447,48 @@ defmodule Legl.Countries.Uk.Metadata.Delta do
     md_schedule_paras
     md_attachment_paras
     md_images
-  ] |> Enum.map(&String.to_atom(&1))
+  ]a
 
   def compare_fields(current_fields, latest_fields) do
-    Enum.reduce(@compare_fields, [], fn field, acc ->
-      current = Map.get(current_fields, field)
-      latest = Map.get(latest_fields, field)
+    IO.write(" DELTA_MD")
 
-      cond do
-        field == "md_description" ->
-          if String.jaro_distance(current, latest) > 0.8,
-            do: acc,
-            else:
-              Keyword.put(
-                acc,
-                field,
-                ~s/#{Enum.join(current, ", ")} -> #{Enum.join(latest, ", ")}/
-              )
+    this_log =
+      Enum.reduce(@compare_fields, [], fn field, acc ->
+        current = Map.get(current_fields, field)
+        latest = Map.get(latest_fields, field)
 
-        true ->
-          case changed?(current, latest) do
-            false ->
-              acc
+        cond do
+          field == "md_description" ->
+            if String.jaro_distance(current, latest) > 0.8,
+              do: acc,
+              else:
+                Keyword.put(
+                  acc,
+                  field,
+                  ~s/#{Enum.join(current, ", ")} -> #{Enum.join(latest, ", ")}/
+                )
 
-            value ->
-              Keyword.put(acc, field, value)
-          end
-      end
-    end)
-    |> md_change_log()
-    |> (&Kernel.<>(current_fields.md_change_log, &1)).()
-    |> String.trim_leading("📌")
-  end
+          true ->
+            case changed?(current, latest) do
+              false ->
+                acc
 
-  defp changed?(current, latest) when current in [nil, "", []] and latest not in [nil, "", []] do
-    case current != latest do
-      false ->
-        false
+              value ->
+                Keyword.put(acc, field, value)
+            end
+        end
+      end)
+      |> md_change_log()
 
-      true ->
-        ~s/New value/
+    case Map.get(current_fields, :md_change_log) do
+      nil -> this_log
+      "" -> this_log
+      value -> ~s/#{value}\n#{this_log}/
     end
   end
+
+  defp changed?(current, latest) when current in [nil, "", []] and latest not in [nil, "", []],
+    do: false
 
   defp changed?(_, latest) when latest in [nil, "", []], do: false
 
@@ -495,19 +509,19 @@ defmodule Legl.Countries.Uk.Metadata.Delta do
   defp md_change_log([]), do: ""
 
   defp md_change_log(changes) do
-    IO.inspect(changes)
+    # IO.inspect(changes)
     # Returns the metadata changes as a formated multi-line string
     date = Date.utc_today()
     date = ~s(#{date.day}/#{date.month}/#{date.year})
 
-    Enum.reduce(changes, ~s/📌#{date}📌/, fn {k, v}, acc ->
+    Enum.reduce(changes, ~s/#{date}\n/, fn {k, v}, acc ->
       # width = 80 - string_width(k)
       width = Map.get(@field_paddings, k)
       k = ~s/#{k}#{Enum.map(1..width, fn _ -> "." end) |> Enum.join()}/
       # k = String.pad_trailing(~s/#{k}/, width, ".")
-      ~s/#{acc}#{k}#{v}📌/
+      ~s/#{acc}#{k}#{v}\n/
     end)
-    |> String.trim_trailing("📌")
+    |> String.trim_trailing("\n")
   end
 end
 
