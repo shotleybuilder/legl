@@ -215,7 +215,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     :Taxa
   ]
 
-  # workflow options are [:create, :update]
   # :update triggers the update workflow and populates the change log
   @spec workflow(opts()) :: opts()
   def workflow(%{workflow: workflow} = opts) when workflow not in ["", nil], do: opts
@@ -295,40 +294,47 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     :taxa
   ]
 
+  @spec update_workflow(opts()) :: opts()
+  def update_workflow(%{workflow: workflow} = opts) when workflow not in ["", nil] do
+    {update_workflow, drop_field} = Keyword.get(@workflow_choices, workflow)
+    drop_fields = Legl.Countries.Uk.LeglRegister.DropFields.drop_fields(drop_field)
+
+    Map.merge(
+      opts,
+      %{
+        update_workflow: update_workflow,
+        drop_fields: drop_fields
+      }
+    )
+  end
+
   @view [
     VS_CODE_UPDATE: "viwMy1UQEZO1x62cK",
     VS_CODE_METADATA: "viwt9PuFLhUpyFEv1",
     VS_CODE_EXTENT: "viw1XkiLMnNB2xc6A"
   ]
 
-  @spec update_workflow(opts()) :: opts()
-  def update_workflow(%{workflow: workflow} = opts) when workflow not in ["", nil] do
-    {update_workflow, drop_field} = Keyword.get(@workflow_choices, workflow)
-    drop_fields = Legl.Countries.Uk.LeglRegister.DropFields.drop_fields(drop_field)
-    opts = Map.merge(opts, %{update_workflow: update_workflow, drop_fields: drop_fields})
+  defp update_view(opts) do
+    view =
+      case ExPrompt.choose(
+             "Update View (default is nil)",
+             Enum.map(@view, fn {k, _} -> k end)
+           ) do
+        -1 ->
+          ""
 
-    # Map.put_new allows default view to be overridden with params
+        n ->
+          Enum.map(@view, fn {_k, v} -> v end)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
+      end
+
     Map.put_new(
       opts,
       :view,
-      update_view()
+      view
     )
-  end
-
-  defp update_view() do
-    case ExPrompt.choose(
-           "Update View (default is nil)",
-           Enum.map(@view, fn {k, _} -> k end)
-         ) do
-      -1 ->
-        ""
-
-      n ->
-        Enum.map(@view, fn {_k, v} -> v end)
-        |> Enum.with_index()
-        |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-        |> Map.get(n)
-    end
   end
 
   @spec create_workflow(opts()) :: opts()

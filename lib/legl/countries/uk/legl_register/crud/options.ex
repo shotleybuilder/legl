@@ -220,8 +220,9 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> LRO.type_class()
       |> LRO.type_code()
       |> LRO.name()
-      |> view_amend()
-      |> LRO.view()
+      |> LRO.workflow()
+      |> LRO.update_workflow()
+      # |> LRO.view()
       |> Map.put(:fields, ~w[record_id Title_EN type_code Number Year])
       |> drop_fields()
 
@@ -233,7 +234,6 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       |> LRO.formula_name(opts)
       |> LRO.formula_empty_amend(opts)
       |> Enum.filter(&(&1 != ""))
-      |> IO.inspect()
 
     Map.put(opts, :formula, ~s/AND(#{Enum.join(formula, ",")})/)
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
@@ -431,22 +431,6 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
       api_patch_path: @api_patch_path,
       api_post_path: @api_post_path
     })
-  end
-
-  def view_amend(%{base_name: "UK S"} = opts) do
-    Map.put(
-      opts,
-      :view,
-      "viwqpWasbaF5SWp0W"
-    )
-  end
-
-  def view_amend(%{base_name: "UK EHS"} = opts) do
-    Map.put(
-      opts,
-      :view,
-      "viwm2Y9monasmyRGo"
-    )
   end
 
   def view_live(%{base_name: "UK S"} = opts) do

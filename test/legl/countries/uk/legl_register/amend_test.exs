@@ -59,6 +59,14 @@ defmodule Legl.Countries.Uk.LeglRegister.AmendTest do
       assert is_tuple(result)
       IO.inspect(result)
     end
+
+    test "count_self_amendments" do
+      opts = [name: "UK_uksi_2020_754", workflow: :Affect, patch?: false, view: ""]
+      opts = Legl.Countries.Uk.LeglRegister.CRUD.Options.api_update_amend_fields_options(opts)
+      record = Legl.Services.Airtable.UkAirtable.get_legal_register_records(opts)
+      record = Legl.Countries.Uk.LeglRegister.Amend.workflow(record, opts)
+      IO.inspect(record)
+    end
   end
 
   describe "Legl.Countries.Uk.LeglRegister.Amend.Patch " do

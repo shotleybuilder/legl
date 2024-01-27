@@ -29,6 +29,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
     Number
     Year
     path
+    pathA
     target
     affect
     applied?
@@ -37,19 +38,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
     affecting_count
   ]a
 
+  @doc """
+  Functions to process the laws affected (amended or repealed/revoked) by this law
+
+  This law is AMENDING & REPEALING/REVOKING other laws
+  """
   @spec get_laws_amended_by_this_law(map()) :: {LegalRegister, LegalRegister}
   def get_laws_amended_by_this_law(record) do
     # call to legislation.gov.uk to get the laws that have amended this
-    records = get_affecting(record)
-    records = parse_laws_affected(records)
-
+    affected_laws = get_affecting(record)
+    affected_laws = parse_laws_affected(affected_laws)
     # Function to separate affected laws into two groups - revoked affected
     {revocations, affectations} =
-      Enum.split_with(records, fn %{affect: affect} ->
+      Enum.split_with(affected_laws, fn %{affect: affect} ->
         Regex.match?(~r/(repeal|revoke)/, affect)
       end)
 
-    # Process the revoked laws
+    # Process the repealed/revoked laws
     {:ok, stats, revoked} = Stats.amendment_stats(revocations)
 
     record =
@@ -59,6 +64,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
         "🔺_stats_revoking_count_per_law": stats.counts,
         "🔺_stats_revoking_count_per_law_detailed": stats.counts_detailed
       )
+
+    IO.inspect(affectations, label: "AFFECTATIONS")
 
     # Process the affected laws
     {:ok, stats, affected} = Stats.amendment_stats(affectations)
@@ -229,5 +236,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
           &1
         )).()
     |> (&Kernel.struct(__MODULE__, &1)).()
+    |> IO.inspect()
   end
 end

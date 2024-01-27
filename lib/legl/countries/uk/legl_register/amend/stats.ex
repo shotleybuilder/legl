@@ -72,6 +72,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Stats do
 
   @spec count_self_amendments(list()) :: integer()
   defp count_self_amendments(records) do
+    # path is the amended law (child)
+    # pathA is the amending law (parent)
     Enum.reduce(records, 0, fn
       %{path: path, pathA: pathA}, acc ->
         if path == pathA do
