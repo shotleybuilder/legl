@@ -27,11 +27,55 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
       |> Legl.Countries.Uk.LeglRegister.Options.name()
       |> Options.api_update_single_name_options()
 
-    [%LegalRegister{} = record] = AT.get_legal_register_records(opts)
+    with([record] <- AT.get_legal_register_records(opts)) do
+      opts = Map.put(opts, :family, record."Family")
 
-    opts = Map.put(opts, :family, record."Family")
+      update(record, opts)
+    else
+      record ->
+        IO.puts(
+          ~s/ERROR: Airtable returned more than one record\n#{Enum.each(record, &IO.puts(&1."Title_EN"))}/
+        )
 
-    update(record, opts)
+        :ok
+    end
+  end
+
+  @doc """
+  Function UPDATES records from a list of 'Names'
+  """
+  @spec api_update_list_of_names(opts()) :: :ok
+  def api_update_list_of_names(opts \\ [csv?: false, mute?: true]) do
+    opts =
+      opts
+      |> Enum.into(%{})
+      |> Options.api_update_list_of_names_options()
+
+    names =
+      ExPrompt.string(~s/Names (as csv)/)
+      |> String.split(",")
+
+    for name <- names do
+      opts =
+        opts
+        |> (&Map.put(&1, :name, name)).()
+        |> Legl.Countries.Uk.LeglRegister.Options.formula_name()
+
+      IO.puts("Formula: #{opts.formula}")
+
+      with([record] <- AT.get_legal_register_records(opts)) do
+        opts = Map.put(opts, :family, record."Family")
+
+        update(record, opts)
+      else
+        record ->
+          IO.puts(
+            ~s/ERROR: Airtable returned zero or more than one record\n#{Enum.each(record, &IO.puts(&1."Title_EN"))}/
+          )
+
+          :ok
+      end
+    end
   end
 
   @spec api_update_single_view(opts()) :: :ok

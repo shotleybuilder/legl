@@ -20,7 +20,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeCode do
             o: ["ukcm", "ukla", "asc", "ukmo", "apgb", "aep"]
 
   def type_codes() do
-    ~w[ukpga uksi asp ssi asc uksi nia apni nisi nisr nisro anaw mwa wsi ukla]
+    ~w[ukpga uksi asp ssi asc uksi nia apni nisi nisr nisro anaw mwa wsi ukla eur eudr eudn]
   end
 
   def type_code(type_code) when is_atom(type_code) do

@@ -39,13 +39,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
 
   @spec type_code(map()) :: map()
   def type_code(opts) do
+    count = Enum.count(TypeCode.type_codes())
+
     Map.put(
       opts,
       :type_code,
       case ExPrompt.choose("type_code? ", TypeCode.type_codes()) do
-        index when index in 0..14 -> Enum.at(TypeCode.type_codes(), index)
-        -1 -> ""
-        _ -> ""
+        index when index in 0..count ->
+          Enum.at(TypeCode.type_codes(), index)
+
+        -1 ->
+          ""
+
+        _ ->
+          ""
       end
     )
   end
@@ -250,7 +257,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
 
   @workflow_choices [
     "New (w/Enact)":
-      {[@year, @name, @md, @tags, @type_law, @type_class, @extent, @enact, @affect], :new},
+      {[@md, @year, @name, @tags, @type_law, @type_class, @extent, @enact, @affect], :new},
     "New (w/Enact w/oMD)":
       {[@year, @name, @tags, @type_law, @type_class, @extent, @enact, @affect], :new},
     "Update (w/Enact)":
@@ -266,7 +273,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
          @affect
        ], :update},
     "Update (w/o Enact)":
-      {[@year, @name, @md, @tags, @type_law, @type_class, @extent, @affect], :update},
+      {[@md, @year, @name, @tags, @type_law, @type_class, @extent, @affect], :update},
     "Delta (w/o Extent & Enact)": {[@md, @affect], :delta},
     Metadata: {[@md, @year, @name, @type_law, @type_class], :metadata},
     Extent: {[@name, @extent], :extent},

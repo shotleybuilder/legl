@@ -6,14 +6,22 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
   @revoke &Legl.Services.LegislationGovUk.Parsers.ParserRevoke.sax_event_handler/2
 
   def metadata(url) do
-    case Legl.Services.LegislationGovUk.Client.run!(@endpoint <> url) do
+    response = Legl.Services.LegislationGovUk.Client.run!(@endpoint <> url)
+    # IO.inspect(response)
+
+    case response do
       {:ok, %{:content_type => :xml, :body => body}} ->
         {:ok, :xml, body.metadata}
 
       {:ok, %{:content_type => :html}} ->
         {:ok, :html}
 
+      {:redirect, url} ->
+        IO.puts(~s/\n...redirecting to #{url}/)
+        metadata(url)
+
       {:error, code, error} ->
+        IO.puts(~s/:error #{code} #{inspect(error)}/)
         # Some older legislation doesn't have .../made/data.xml api
         case code do
           # temporary redirect

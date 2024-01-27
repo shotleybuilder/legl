@@ -39,7 +39,8 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
              "Scheme",
              "Measure",
              "Confirmation Statement",
-             "Byelaws"
+             "Byelaws",
+             "EU"
            ],
       do: {:ok, record}
 
@@ -87,6 +88,9 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
       Regex.match?(~r/Byelaws$|Bye-?laws \(Northern Ireland\)$/, title) ->
         "Byelaws"
 
+      Regex.match?(~r/Regulation \(EU\)|Council Directive/, title) ->
+        "EU"
+
       true ->
         nil
     end
@@ -96,7 +100,7 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeClass do
   Function to set the value of the type field in the Legal Register
   """
   @spec set_type(LR.legal_register()) :: {:ok, LR.legal_register()}
-  def set_type(%_{type_code: type_code} = record) do
+  def set_type(%{type_code: type_code} = record) do
     IO.write(" TYPE")
 
     {:ok,

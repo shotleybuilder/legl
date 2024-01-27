@@ -22,11 +22,8 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
     id(title, type_code, Integer.to_string(year), number)
   end
 
-  def id(title, type, year, number) do
-    title
-    |> lrt_acronym()
-    |> (&Kernel.<>(&1, "_#{type}_#{year}_#{number}")).()
-    |> (&Kernel.<>("UK_", &1)).()
+  def id(_title, type, year, number) do
+    ~s/UK_#{type}_#{year}_#{number}/
   end
 
   def lrt_acronym(%LR{} = record) when is_struct(record) do

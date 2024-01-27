@@ -39,8 +39,19 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.base_name()
     |> LRO.base_table_id()
     |> LRO.type_code()
-    |> LRO.number()
     |> LRO.year()
+    |> LRO.number()
+    |> LRO.workflow()
+    |> LRO.patch?()
+    |> drop_fields()
+    |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
+  end
+
+  def api_create_update_list_of_records_options(opts) do
+    Enum.into(opts, @default_opts)
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> (&Map.put(&1, :names, ExPrompt.string(~s/Names (as csv)/) |> String.split(","))).()
     |> LRO.workflow()
     |> LRO.patch?()
     |> drop_fields()
@@ -64,6 +75,21 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.base_table_id()
     |> LRO.patch?()
     |> LRO.formula_name()
+    |> fields()
+    |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
+  end
+
+  def api_update_list_of_names_options(opts) do
+    IO.puts(
+      ~s/_____\nSetting Options from [CRUD.Options.api_update_list_of_names_options]\n:update_workflow, :view, :patch?, :fields/
+    )
+
+    Enum.into(opts, @default_opts)
+    |> LRO.workflow()
+    |> LRO.update_workflow()
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+    |> LRO.patch?()
     |> fields()
     |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end

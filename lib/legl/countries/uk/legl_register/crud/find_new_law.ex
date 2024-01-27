@@ -196,7 +196,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.FindNewLaw do
         )
       )
       |> List.flatten()
-      |> Enum.filter(&(&1.type_code not in ["eudn", "eur", "nisr"]))
+      # |> Enum.filter(&(&1.type_code not in ["eudn", "eur", "nisr"]))
       |> Enum.uniq()
       |> Enum.sort_by(& &1."Year", :desc)
       |> IO.inspect()

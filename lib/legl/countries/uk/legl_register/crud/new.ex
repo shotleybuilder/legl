@@ -335,10 +335,11 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   Enacted_by, Amended_by, Revoked_by are overwritten if they exist.
   """
   @spec update_empty_law_fields(%LegalRegister{}, map()) :: {:ok, %LegalRegister{}} | {:error}
-  def update_empty_law_fields(record, opts)
-      when is_map(record) do
+  def update_empty_law_fields(%LegalRegister{} = record, opts)
+      when is_struct(record) do
     with(
-      {:ok, record} <- MD.get_latest_metadata(record),
+      {:ok, %_{Title_EN: title_EN} = record} <- MD.get_latest_metadata(record),
+      true = if(title_EN != nil, do: true, else: "Title_EN not set"),
       {:ok, record} <- TypeClass.set_type_class(record),
       {:ok, record} <- TypeClass.set_type(record),
       {:ok, record} <- Tags.set_tags(record),
