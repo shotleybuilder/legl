@@ -61,7 +61,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
         |> (&Map.put(&1, :name, name)).()
         |> Legl.Countries.Uk.LeglRegister.Options.formula_name()
 
-      IO.puts("Formula: #{opts.formula}")
+      # IO.puts("Formula: #{opts.formula}")
 
       with([record] <- AT.get_legal_register_records(opts)) do
         opts = Map.put(opts, :family, record."Family")

@@ -23,6 +23,10 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
   end
 
   def id(_title, type, year, number) do
+    id(type, year, number)
+  end
+
+  def id(type, year, number) do
     ~s/UK_#{type}_#{year}_#{number}/
   end
 

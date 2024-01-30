@@ -65,8 +65,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
         "🔺_stats_revoking_count_per_law_detailed": stats.counts_detailed
       )
 
-    IO.inspect(affectations, label: "AFFECTATIONS")
-
     # Process the affected laws
     {:ok, stats, affected} = Stats.amendment_stats(affectations)
 
@@ -236,6 +234,5 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Amending do
           &1
         )).()
     |> (&Kernel.struct(__MODULE__, &1)).()
-    |> IO.inspect()
   end
 end

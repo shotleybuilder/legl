@@ -8,9 +8,11 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
                 introductory_text: "",
                 urls: []
               },
-              footnote_section: false,
+              section: nil,
               footnote: nil,
-              footnotes: %{}
+              footnotes: %{},
+              commentary: nil,
+              commentaries: %{}
   end
 
   def sax_event_handler(:startDocument, _state), do: %EnactingTextState{}
@@ -54,30 +56,77 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
     end
   end
 
+  def sax_event_handler(
+        {:startElement, _, 'CommentaryRef', _, [{:attribute, _id, [], [], ref}] = _attr},
+        state
+      ) do
+    commentaries = Map.put_new(state.commentaries, "#{ref}", [])
+    state = %{state | commentaries: commentaries}
+
+    case state.enacting_text || state.introductory_text do
+      true ->
+        %{state | element_acc: "#{state.element_acc} [start_ref]#{ref}[end_ref]"}
+
+      _ ->
+        state
+    end
+  end
+
   def sax_event_handler({:endElement, _, 'FootnoteRef', _}, state), do: state
 
   def sax_event_handler({:startElement, _, 'Footnotes', _, _}, state) do
-    %{state | footnote_section: true}
+    %{state | section: :fn}
   end
 
   def sax_event_handler({:endElement, _, 'Footnotes', _}, state) do
-    %{state | footnote_section: false}
+    %{state | section: nil}
   end
 
   def sax_event_handler(
-        {:startElement, _, 'Footnote', _, [{:attribute, _id, [], [], id}] = _attr},
+        {:startElement, _, 'Footnote', _, attr},
         state
       ) do
+    id =
+      Enum.reduce(attr, "", fn
+        {:attribute, 'Type', [], [], _}, acc -> acc
+        {:attribute, 'id', [], [], id}, acc -> acc <> to_string(id)
+        _, acc -> acc
+      end)
+
     %{state | footnote: id}
   end
 
+  # COMMENTARIES
+
+  def sax_event_handler({:startElement, _, 'Commentaries', _, _}, state),
+    do: %{state | section: :cmt}
+
+  def sax_event_handler({:endElement, _, 'Commentaries', _}, state),
+    do: %{state | section: nil}
+
+  def sax_event_handler(
+        {:startElement, _, 'Commentary', _, attr},
+        state
+      ) do
+    id =
+      Enum.reduce(attr, "", fn
+        {:attribute, 'Type', [], [], _}, acc -> acc
+        {:attribute, 'id', [], [], id}, acc -> acc <> to_string(id)
+        _, acc -> acc
+      end)
+
+    %{state | commentary: id}
+  end
+
+  # CITATIONS
+
   def sax_event_handler({:startElement, _, 'Citation', _, attr}, state) do
-    case state.footnote_section do
-      true ->
+    case state.section do
+      :fn ->
         uri =
           Enum.reduce(attr, nil, fn x, acc ->
             case x do
-              {:attribute, 'URI', [], [], uri} -> uri
+              {:attribute, 'URI', [], [], uri} -> to_string(uri)
               _ -> acc
             end
           end)
@@ -86,13 +135,29 @@ defmodule Legl.Services.LegislationGovUk.Parsers.EnactingText do
         footnotes = Map.put(state.footnotes, "#{state.footnote}", footnote)
         %{state | footnotes: footnotes}
 
+      :cmt ->
+        uri =
+          Enum.reduce(attr, nil, fn x, acc ->
+            case x do
+              {:attribute, 'URI', [], [], uri} -> to_string(uri)
+              _ -> acc
+            end
+          end)
+
+        # Push the uri into the list in the commentaries map
+        commentary = Map.get(state.commentaries, "#{state.commentary}") ++ [uri]
+        # Put the list into the commentaries map
+        commentaries = Map.put(state.commentaries, "#{state.commentary}", commentary)
+        %{state | commentaries: commentaries}
+
       _ ->
         state
     end
   end
 
   def sax_event_handler(:endDocument, state) do
-    acc = %{state.acc | urls: state.footnotes}
+    urls = Map.merge(state.footnotes, state.commentaries)
+    acc = %{state.acc | urls: urls}
     Map.merge(state, %{acc: acc, element_acc: ""})
   end
 

@@ -13,6 +13,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     text
     path
     urls
+    Enacting
   ]a
 
   @drop_if_null ~w[
@@ -32,6 +33,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
   @metadata ~w[
     md_description
     md_total_paras
+    md_body_paras
     md_images
     md_dct_valid_date
     md_attachment_paras
@@ -45,6 +47,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     md_schedule_paras
     si_code
     md_change_log
+    md_checked
   ]a
 
   # Extent fields should be dropped when null
@@ -104,6 +107,10 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     duty_holder
     dutyholder_article
     article_dutyholder
+    article_duty_holder
+    article_duty_holder_clause
+    duty_holder_article
+    duty_holder_article_clause
 
     rights_holder
     rights_holder_article
@@ -139,6 +146,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
       :update -> @enact ++ @models ++ @default
       :delta -> @extent ++ @enact ++ @models ++ @default
       :metadata -> @extent ++ @enact ++ @affect ++ @models ++ @default
+      :"metadata+enact" -> @extent ++ @affect ++ @models ++ @default
       :extent -> @metadata ++ @enact ++ @affect ++ @models ++ @default
       :enact -> @metadata ++ @extent ++ @affect ++ @models ++ @default
       :affect -> @metadata ++ @extent ++ @enact ++ @models ++ @default

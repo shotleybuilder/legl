@@ -76,6 +76,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.patch?()
     |> LRO.formula_name()
     |> fields()
+    |> LRO.view()
     |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end
 
@@ -90,6 +91,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.base_name()
     |> LRO.base_table_id()
     |> LRO.patch?()
+    |> LRO.view()
     |> fields()
     |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
   end

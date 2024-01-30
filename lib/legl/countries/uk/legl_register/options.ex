@@ -209,6 +209,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     :"Update (w/o Enact)",
     :"Delta (w/o Extent & Enact)",
     :Metadata,
+    :"Metadata+Enact",
     :Extent,
     :Enact,
     :Affect,
@@ -276,22 +277,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     "Delta (w/o Extent & Enact)": {[@md, @affect], :delta},
     Metadata: {[@md, @year, @name, @type_law, @type_class], :metadata},
     Extent: {[@name, @extent], :extent},
+    "Metadata+Enact": {[@md, @enact], :"metadata+enact"},
     Enact: {[@enact], :enact},
     Affect: {[@affect], :affect},
     Taxa: {[@taxa], :taxa}
-  ]
-
-  @drop_fields_params [
-    :new,
-    :new,
-    :update,
-    :update,
-    :changes,
-    :metadata,
-    :extent,
-    :enact,
-    :affect,
-    :taxa
   ]
 
   @spec update_workflow(opts()) :: opts()
@@ -308,40 +297,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
-  @view [
-    VS_CODE_UPDATE: "viwMy1UQEZO1x62cK",
-    VS_CODE_METADATA: "viwt9PuFLhUpyFEv1",
-    VS_CODE_EXTENT: "viw1XkiLMnNB2xc6A"
-  ]
-
-  defp update_view(opts) do
-    view =
-      case ExPrompt.choose(
-             "Update View (default is nil)",
-             Enum.map(@view, fn {k, _} -> k end)
-           ) do
-        -1 ->
-          ""
-
-        n ->
-          Enum.map(@view, fn {_k, v} -> v end)
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-      end
-
-    Map.put_new(
-      opts,
-      :view,
-      view
-    )
-  end
-
   @spec create_workflow(opts()) :: opts()
   def create_workflow(%{workflow: workflow} = opts) when workflow not in ["", nil] do
     {create_workflow, drop_field} = Keyword.get(@workflow_choices, workflow)
     drop_fields = Legl.Countries.Uk.LeglRegister.DropFields.drop_fields(drop_field)
-    opts = Map.merge(opts, %{create_workflow: create_workflow, drop_fields: drop_fields})
+    Map.merge(opts, %{create_workflow: create_workflow, drop_fields: drop_fields})
   end
 
   @spec today(map()) :: map()

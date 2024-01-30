@@ -65,6 +65,15 @@ defmodule Legl.Countries.Uk.LeglRegister.AmendTest do
       opts = Legl.Countries.Uk.LeglRegister.CRUD.Options.api_update_amend_fields_options(opts)
       record = Legl.Services.Airtable.UkAirtable.get_legal_register_records(opts)
       record = Legl.Countries.Uk.LeglRegister.Amend.workflow(record, opts)
+
+      assert [
+               %{
+                 "🔺_stats_affects_count": 14,
+                 "🔺_stats_self_affects_count": 8,
+                 "🔺_stats_affected_laws_count": 2
+               }
+             ] = record
+
       IO.inspect(record)
     end
   end

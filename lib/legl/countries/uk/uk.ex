@@ -59,7 +59,7 @@ defmodule UK do
     "MENU: Update": {:update},
     "MENU: Taxa": {:taxa},
     "LRT: UPDATE Single Law using 'Name'": {Update, :api_update_single_name},
-    "LRT: Law's using a List of 'Names'": {Update, :api_update_list_of_names},
+    "LRT: UPDATE Law's using a List of 'Names'": {Update, :api_update_list_of_names},
     "LRT: UPDATE using an AT View": {Update, :api_update_single_view},
     "LRT: UPDATE": {Update, :api_update, [[csv?: false]]},
     "POST or PATCH Single Law using :type_code, :number, :year":

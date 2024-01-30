@@ -366,8 +366,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord do
     # |> IO.inspect(label: "Record Cleaned for Patch")
 
     with({:ok, json} <- Jason.encode(record)) do
-      # IO.inspect(record, label: "#{__MODULE__}")
-
       Legl.Services.Airtable.AtPatch.patch_records(json, headers, params)
     else
       {:error, %Jason.EncodeError{message: error}} ->
