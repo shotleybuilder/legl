@@ -2,7 +2,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   @moduledoc """
   Functions to update field sets in the Legal Register Table
   """
-  alias Legl.Countries.Uk.LeglRegister.LegalRegister
 
   alias Legl.Services.Airtable.UkAirtable, as: AT
 
@@ -111,26 +110,32 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   end
 
   defp update(record, opts) do
-    record =
-      Enum.reduce(opts.update_workflow, record, fn f, acc ->
-        {:ok, record} =
+    {record, opts} =
+      Enum.reduce(opts.update_workflow, {record, opts}, fn f, acc ->
+        result =
           case :erlang.fun_info(f)[:arity] do
-            1 -> f.(acc)
-            2 -> f.(acc, opts)
+            1 -> f.(elem(acc, 0))
+            2 -> f.(elem(acc, 0), elem(acc, 1))
           end
 
-        record
+        case result do
+          {:ok, record, opts} -> {record, opts}
+          {:ok, record} -> {record, opts}
+        end
       end)
 
-    patch? = if opts.patch?, do: true, else: ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
+    patch(record, opts)
+    {:ok, record}
+  end
 
-    case patch? do
-      true ->
-        Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+  defp patch(record, %{patch?: true} = opts),
+    do: Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
 
-      false ->
-        :ok
-    end
+  defp patch(_, %{patch?: false}), do: :ok
+
+  defp patch(record, %{patch?: patch} = opts) when patch in [nil, ""] do
+    patch? = ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
+    patch(record, Map.put(opts, :patch?, patch?))
   end
 
   @doc """

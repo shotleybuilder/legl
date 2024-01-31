@@ -24,7 +24,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.TaxaDutyActor.DutyActor do
   }
 
   @path ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/duty_actor.json]
-  @results_path ~s[lib/legl/countries/uk/at_article/taxa/duty_actor/duty_actor_results.json]
+  @results_path ~s[lib/legl/countries/uk/legl_article/taxa/duty_actor/duty_actor_results.json]
 
   @type records :: list(%LATTaxa{})
   @type opts :: map()

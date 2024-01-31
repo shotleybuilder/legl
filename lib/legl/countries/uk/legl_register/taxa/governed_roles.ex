@@ -38,17 +38,24 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.GovernedRoles do
     |> Enum.reduce([], fn member, col ->
       Enum.reduce(records, [], fn
         %{
-          type_code: [tc],
-          Year: [y],
-          Number: [number],
-          Record_Type: ["section"],
+          type_code: type_code,
+          Year: year,
+          Number: number,
+          Record_Type: [rt],
           "Section||Regulation": s,
           "Duty Actor Aggregate": values
         } = _record,
-        acc ->
+        acc
+        when rt in ["section", "article"] ->
+          rt = if rt != "section", do: "regulation", else: rt
+
+          [tc | _] = if is_list(type_code), do: type_code, else: [type_code]
+          [y | _] = if is_list(year), do: year, else: [year]
+          [n | _] = if is_list(number), do: number, else: [number]
+
           case Enum.member?(values, member) do
             true ->
-              url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/section/#{s}]
+              url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{n}/#{rt}/#{s}]
               [url | acc]
 
             false ->

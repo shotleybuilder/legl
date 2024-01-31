@@ -38,6 +38,42 @@ defmodule Legl.Countries.Uk.LeglRegister.TaxaTest do
 
   alias Legl.Countries.Uk.LeglRegister.Taxa.Popimar
 
+  describe "lrt/1" do
+    test "choose taxa" do
+      response = UK.lat(selection: 1, taxa_selection: 3)
+      assert response == %{selection: 1, taxa_selection: 3}
+    end
+  end
+
+  describe "set_taxa_leg_gov_uk/1" do
+    test "!=made" do
+      response =
+        UK.lrt(
+          name: "UK_uksi_1992_2793",
+          # "LRT: UPDATE Single Law using 'Name'"
+          selection: 0,
+          # :Taxa_from_leg_gov_uk
+          lrt_workflow_selection: 11,
+          filesave?: true,
+          print_opts?: true
+        )
+
+      IO.inspect(response, pretty: true)
+    end
+  end
+
+  describe "Legl.Countries.Uk.Article.Taxa.LATTaxa" do
+    test "api_update_lat_taxa_from_text/2" do
+      path = ~s[lib/legl/data_files/json/at_schema.json] |> Path.absname()
+      records = Legl.Utility.read_json_records(path)
+      records = Enum.map(records, fn record -> Kernel.struct(%UK.Regulation{}, record) end)
+      opts = Legl.Countries.Uk.Article.Taxa.Options.taxa_workflow(%{taxa_workflow_selection: 0})
+      opts = Map.merge(opts, %{filesave?: false, Name: "UK_uksi_1992_2793"})
+      result = Legl.Countries.Uk.Article.Taxa.LATTaxa.api_update_lat_taxa_from_text(records, opts)
+      assert {:ok, _} = result
+    end
+  end
+
   describe "xxx_article_clause_field/1" do
     @text {"Gvt: Agency: Office of Rail and Road",
            [

@@ -2,26 +2,72 @@ defmodule Legl.Airtable.Schema do
   @moduledoc """
 
   """
+  alias Types.AirtableSchema
 
-  @default_schema_opts %{
+  def schema(type) do
+    case type do
+      :act ->
+        %AirtableSchema{
+          country: :UK,
+          fields: UK.Act.fields(),
+          number_fields: UK.Act.number_fields(),
+          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^([A-Z]?\\d*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
+          section: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
+          paragraph: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
+          amendment: ~s/^([A-Z])(\\d+)(.*)/,
+          modification: ~s/^(C)(\\d+)(.*)/,
+          annex_name: "schedule",
+          annex: ~s/(\\d*[A-Z]*)[ ]?(.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
+        }
+
+      :regulation ->
+        %AirtableSchema{
+          country: :UK,
+          fields: UK.Regulation.fields(),
+          number_fields: UK.Regulation.number_fields(),
+          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]?\\[::region::\\](.*)/,
+          chapter_name: "chapter",
+          chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
+          heading: ~s/^([A-Z]?[\\d\.]*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
+          heading_name: "heading",
+          article: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?([A-Z]?\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          article_name: "article",
+          sub_article: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
+          sub_article_name: "sub-article",
+          para: ~s/^(\\d+)[ ](.*)/,
+          para_name: "sub-article",
+          signed_name: "signed",
+          annex: ~s/(\\d*[A-Z]*)[ ]?(.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/,
+          annex_name: "schedule",
+          footnote_name: "footnote",
+          amendment: ~s/^([A-Z])(\\d+)(.*)/,
+          paragraph: ~s/^([A-Z]?[\\.\\d]+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
+          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)(?:\\[::region::\\])?/
+        }
+    end
+  end
+
+  @opts %{
     records: Types.Component.components_as_list(),
     dedupe: true
   }
 
-  # alias __MODULE__
+  def schema(binary, _schema, opts) do
+    schema(binary, opts)
+  end
 
-  @spec schema(
-          binary,
-          atom | %{:title_name => any, optional(any) => any},
-          keyword
-        ) :: binary
   @doc """
   Creates a tab-delimited binary suitable for copying into Airtable.
   """
-  def schema(binary, regex, opts \\ []) do
-    opts = Enum.into(opts, @default_schema_opts)
+  @spec schema(binary, keyword) :: binary
+  def schema(binary, opts) do
+    opts = Enum.into(opts, @opts)
 
-    with records <- records(binary, regex, opts),
+    with records <- records(binary, schema(opts.type), opts),
          dupes <- dupes(records, "Duplicates"),
          # Dedupe the records if there are duplicate IDs
          records <- dedupe(records, dupes, opts),
@@ -29,8 +75,19 @@ defmodule Legl.Airtable.Schema do
          dupes(records, "\nDuplicates after Codification") do
       Enum.count(records) |> (&IO.puts("\nnumber of records = #{&1}")).()
 
-      records
+      filesave(records, opts)
+      {:ok, records}
     end
+  end
+
+  defp filesave(records, %{filesave?: true, path_at_schema_txt: path}),
+    do: Legl.Utility.save_structs_as_json(records, path)
+
+  defp filesave(_, %{filesave?: false}), do: :ok
+
+  defp filesave(records, opts) do
+    save? = ExPrompt.confirm("Save Airtable Schema Article?")
+    filesave(records, Map.put(opts, :filesave?, save?))
   end
 
   def component_for_regex(name) when is_atom(name) do
@@ -94,7 +151,7 @@ defmodule Legl.Airtable.Schema do
     end)
     # Add id of law directory table record into each article record
     |> Enum.reduce([], fn record, acc ->
-      record = Map.put(record, :name, opts.name) |> add_id_to_record(opts)
+      record = Map.put(record, :name, opts."Name") |> add_id_to_record(opts)
       [record | acc]
     end)
   end

@@ -72,9 +72,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.DutyHolder do
     |> Enum.reduce([], fn member, collector ->
       Enum.reduce(records, [], fn
         %{
-          type_code: [tc],
-          Year: [y],
-          Number: [number],
+          type_code: type_code,
+          Year: year,
+          Number: number,
           Record_Type: [rt],
           "Section||Regulation": s,
           "Dutyholder Aggregate": duty_holder_aggregate
@@ -83,9 +83,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.DutyHolder do
         when rt in ["section", "article"] ->
           rt = if rt != "section", do: "regulation", else: rt
 
+          [tc | _] = if is_list(type_code), do: type_code, else: [type_code]
+          [y | _] = if is_list(year), do: year, else: [year]
+          [n | _] = if is_list(number), do: number, else: [number]
+
           case Enum.member?(duty_holder_aggregate, member) do
             true ->
-              url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
+              url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{n}/#{rt}/#{s}]
 
               case clause? do
                 true ->

@@ -179,4 +179,10 @@ defmodule Legl.Services.LegislationGovUk.Url do
         ~s[/changes/#{affect}/#{type_code}/#{year}/#{number}/data.xml?results-count=#{results_count}&&sort=#{affect}-year-number]
     end
   end
+
+  def article_url(name) when is_binary(name) do
+    [_, type_code, year, number] = String.split(name, "_")
+    path = ~s[/#{type_code}/#{year}/#{number}/]
+    "https://www.legislation.gov.uk#{path}data.xht?view=snippet&wrap=false"
+  end
 end

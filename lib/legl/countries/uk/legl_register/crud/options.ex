@@ -21,7 +21,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     # Global mute msg
 
     mute?: true,
-    patch?: false,
+    patch?: nil,
     post?: false,
     filesave?: false,
     json?: false
@@ -33,6 +33,26 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
 
   @api_patch_path ~s[lib/legl/countries/uk/legl_register/new/api_patch_results.json]
   @api_post_path ~s[lib/legl/countries/uk/legl_register/new/api_post_results.json]
+
+  def print_options(%{print_opts?: true} = opts) do
+    IO.puts("OPTIONS:
+      SOURCE___
+      Base Name: #{opts.base_name}
+      Table ID: #{opts.table_id}
+      Formula: #{opts.formula}
+      Fields: #{inspect(opts.fields)}
+      View: #{opts.view}
+      WORKFLOW___
+      workflow: #{opts.workflow}
+      update_workflow: #{inspect(opts.update_workflow)}
+      post?: #{opts.post?}
+      patch?: #{opts.patch?}
+      filesave?: #{opts.filesave?}
+      ")
+    opts
+  end
+
+  def print_options(opts), do: opts
 
   def api_create_update_single_record_options(opts) do
     Enum.into(opts, @default_opts)
@@ -64,20 +84,22 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   :view or :name set in the calling function
   """
   def api_update_single_name_options(opts) do
-    IO.puts(
-      ~s/_____\nSetting Options from [CRUD.Options.api_update_single_name_options]\n:update_workflow, :name, :view, :patch?, :formula, :fields/
-    )
+    IO.puts(~s/_____\nSetting Options from [CRUD.Options.api_update_single_name_options]
+      Name: #{opts.name}/)
 
-    Enum.into(opts, @default_opts)
-    |> LRO.workflow()
-    |> LRO.update_workflow()
-    |> LRO.base_name()
-    |> LRO.base_table_id()
-    |> LRO.patch?()
-    |> LRO.formula_name()
-    |> fields()
-    |> LRO.view()
-    |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
+    opts =
+      Enum.into(opts, @default_opts)
+      |> LRO.workflow()
+      |> LRO.update_workflow()
+      |> LRO.base_name()
+      |> LRO.base_table_id()
+      |> LRO.formula_name()
+      |> fields()
+      |> Map.put(:view, "")
+
+    opts = Map.put(opts, :fields, Map.get(opts, :fields) ++ ["Name"])
+
+    print_options(opts)
   end
 
   def api_update_list_of_names_options(opts) do

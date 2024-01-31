@@ -77,9 +77,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
     |> Enum.reduce([], fn member, col ->
       Enum.reduce(records, [], fn
         %{
-          type_code: [tc],
-          Year: [y],
-          Number: [number],
+          type_code: type_code,
+          Year: year,
+          Number: number,
           Record_Type: [rt],
           "Section||Regulation": s,
           Power_Holder_Aggregate: values
@@ -88,9 +88,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa.PowerHolder do
         when rt in ["section", "article"] ->
           rt = if rt != "section", do: "regulation", else: rt
 
+          [tc | _] = if is_list(type_code), do: type_code, else: [type_code]
+          [y | _] = if is_list(year), do: year, else: [year]
+          [n | _] = if is_list(number), do: number, else: [number]
+
           case Enum.member?(values, member) do
             true ->
-              url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/#{rt}/#{s}]
+              url = ~s[https://legislation.gov.uk/#{tc}/#{y}/#{n}/#{rt}/#{s}]
 
               case clause? do
                 true ->

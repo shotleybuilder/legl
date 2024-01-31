@@ -3,7 +3,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
   Functions to set the options for all taxa modules and functions
   """
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
-  alias Legl.Countries.Uk.AtArticle.Options, as: LAO
+  alias Legl.Countries.Uk.Article.Options, as: LAO
 
   @api_update_multi_lat_taxa %{
     table_name: "UK",
@@ -142,6 +142,13 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
     end
   end
 
+  @doc """
+  Function to set options when parsing taxa from text returned from leg.gov.uk
+  """
+  def api_update_lat_taxa_from_text_opts(opts) do
+    taxa_workflow(opts)
+  end
+
   def patch(opts) do
     Enum.into(opts, @set_workflow_opts)
   end
@@ -207,8 +214,6 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
     end
   end
 
-  def taxa_workflow(opts), do: opts
-
   def taxa_workflow(opts, n) when is_integer(n),
     do:
       opts
@@ -219,6 +224,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
         |> Enum.into(%{}, fn {k, v} -> {v, k} end)
         |> Map.get(n)
       )
+
+  def taxa_workflow(opts), do: opts
 
   defp formula(opts) do
     record_type =

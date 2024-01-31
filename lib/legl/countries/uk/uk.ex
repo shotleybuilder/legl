@@ -3,7 +3,6 @@ defmodule UK do
   Parsing text copied from the plain view at [legislation.gov.uk](https://legislation.gov.uk)
   """
 
-  alias Types.AirtableSchema
   alias Legl.Countries.Uk.LeglRegister.New.New
   alias Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput
   alias Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile
@@ -55,9 +54,7 @@ defmodule UK do
   def country(), do: @country_regex
   def geo(), do: @geo_regex
 
-  @api [
-    "MENU: Update": {:update},
-    "MENU: Taxa": {:taxa},
+  @lrt [
     "LRT: UPDATE Single Law using 'Name'": {Update, :api_update_single_name},
     "LRT: UPDATE Law's using a List of 'Names'": {Update, :api_update_list_of_names},
     "LRT: UPDATE using an AT View": {Update, :api_update_single_view},
@@ -121,292 +118,113 @@ defmodule UK do
     "DIFF Amended by - amending laws that aren't in the Base 'EARM Amended by & Revoked by'":
       {FindNewLaw, :amending, [[filesave?: true]]},
     "DIFF Amending - amended by laws that aren't in the Base VIEW: '% DIFF Amending' 'EARM Amending & Revoking'":
-      {FindNewLaw, :new_amended_law, [[filesave?: true]]}
+      {FindNewLaw, :new_amended_law, [[filesave?: true]]},
+    "***HELPER FUNCTIONS***": nil,
+    "Print Dutyholder to Terminal":
+      {Legl.Countries.Uk.Article.Taxa.Actor.ActorLib, :print_dutyholders_to_console},
+    "Print Duty Type to the Terminal":
+      {Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType, :print_duty_types_to_console}
   ]
+  @spec lrt(list()) :: any()
+  def lrt(opts \\ []) do
+    IO.puts(~s/LRT Menu from [#{__MODULE__}].lrt/)
 
-  def api(opts \\ []) do
-    IO.puts(~s/Menu from [#{__MODULE__}].api/)
-
-    case ExPrompt.choose("spongl API", Enum.map(@api, fn {k, _} -> k end)) do
-      -1 ->
-        :ok
-
-      n ->
-        run =
-          Enum.map(@api, fn {_k, v} -> v end)
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
-          |> Map.get(n)
-
-        # |> IO.inspect()
-
-        case run do
-          {module, function, args} when is_atom(function) ->
-            args = [List.first(args) ++ opts]
-            apply(module, function, args)
-
-          {module, function} when is_atom(module) and is_atom(function) ->
-            apply(module, function, [opts])
-
-          {function, args} when is_atom(function) and is_list(args) ->
-            args = [List.first(args) ++ opts]
-            apply(__MODULE__, function, args)
-
-          {function} ->
-            apply(__MODULE__, function, [opts])
-        end
+    case Keyword.has_key?(opts, :selection) do
+      true -> api(@lrt, Keyword.get(opts, :selection), opts)
+      _ -> api(@lrt, opts)
     end
   end
 
-  @update [
-            {Update, :api_update_metadata_fields, [[]]},
-            {Update, :api_update_extent_fields, [[]]},
-            {Update, :api_update_enact_fields, [patch?: true, csv?: false]},
-            {Update, :api_update_amend_fields, [patch?: true, csv?: false, mute?: true]},
-            {Update, :api_update_repeal_revoke_fields, [patch?: true, csv?: false, mute?: true]}
-          ]
-          |> Enum.with_index()
-          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+  # LEGAL ARTICLES TABLE
 
-  def update do
-    case ExPrompt.choose(
-           "Update Choices",
-           ~W/Metadata Extent Enact Amend Re[peal|voke]/
-         ) do
-      -1 ->
-        :ok
+  @lat [
+    Parse: {Legl.Countries.Uk.LeglArticle.Article, :api_article},
+    "MENU: Taxa": {:taxa}
+  ]
+  @doc """
+  Function to select workflows for Legal Articles Tables
 
-      n ->
-        {module, function, args} = Map.get(@update, n)
-        apply(module, function, args)
+  """
+  @spec taxa(list()) :: any()
+  def lat(opts \\ []) do
+    IO.puts(~s/\nLAT Menu from [#{__MODULE__}].lat/)
+    opts = Enum.into(opts, %{})
+
+    case opts do
+      %{lat_selection: n} -> api(@lat, n, opts)
+      _ -> api(@lat, opts)
     end
   end
 
   @taxa [
-          {Taxa, :api_update_lat_taxa},
-          {Taxa, :api_update_multi_lat_taxa}
-        ]
-        |> Enum.with_index()
-        |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+    Update_Single_Law: {Taxa, :api_update_lat_taxa},
+    Update_Laws: {Taxa, :api_update_multi_lat_taxa},
+    Update_Law_from_Gov: {Taxa, :api_update_lat_taxa_from_gov},
+    Test: {:test}
+  ]
 
-  def taxa(opts) do
-    case ExPrompt.choose(
-           "Taxa Choices",
-           ~W/Update_Single_Law Update_Laws/
-         ) do
+  @doc """
+  Function to select the LRT Taxa workflow
+
+  Sending the option opts param :taxa_selection selects programmatically
+  """
+  @spec taxa(list()) :: any()
+  def taxa(opts \\ []) do
+    IO.puts(~s/\nTAXA Menu from [#{__MODULE__}].taxa/)
+    opts = Enum.into(opts, %{})
+
+    case opts do
+      %{taxa_selection: n} -> api(@taxa, n, opts)
+      _ -> api(@taxa, opts)
+    end
+  end
+
+  def test(opts), do: opts
+
+  # PRIVATE FUNCTIONS
+
+  defp api(menu, n, opts) when is_integer(n) do
+    selection =
+      Enum.map(menu, fn {_k, v} -> v end)
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+      |> Map.get(n)
+
+    run_function(selection, opts)
+  end
+
+  @spec api(list(), map()) :: any()
+  defp api(menu, opts) do
+    case ExPrompt.choose("Spongl API", Enum.map(menu, fn {k, _} -> k end)) do
       -1 ->
         :ok
 
       n ->
-        case Map.get(@taxa, n) do
-          {module, function, args} ->
-            args = [List.first(args) ++ opts]
-            IO.inspect(args, label: "args")
-            apply(module, function, [args])
+        selection =
+          Enum.map(menu, fn {_k, v} -> v end)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+          |> Map.get(n)
 
-          {module, function} ->
-            apply(module, function, [opts])
-        end
+        run_function(selection, opts)
     end
   end
 
-  @doc """
-  Function provides a shortcut to list all the members of the Dutyholders taxonomy
-  """
-  def dutyholders(),
-    do: Legl.Countries.Uk.Article.Taxa.Actor.ActorLib.print_dutyholders_to_console()
+  defp run_function(selection, opts) do
+    case selection do
+      {module, function, args} when is_atom(function) ->
+        args = [List.first(args) ++ opts]
+        apply(module, function, args)
 
-  def dutyTypes(),
-    do: Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType.print_duty_types_to_console()
+      {module, function} when is_atom(module) and is_atom(function) ->
+        apply(module, function, [opts])
 
-  def enact(opts),
-    do: Legl.Countries.Uk.LeglRegister.Enact.EnactedBy.run(opts)
+      {function, args} when is_atom(function) and is_list(args) ->
+        args = [List.first(args) ++ opts]
+        apply(__MODULE__, function, args)
 
-  def amend_single_record(opts \\ []),
-    do: Legl.Countries.Uk.LeglRegister.Amend.single_record(opts)
-
-  def amend(opts \\ []),
-    do: Legl.Countries.Uk.LeglRegister.Amend.run(opts)
-
-  def repeal_revoke_single_record(opts \\ []),
-    do: RR.single_record(opts)
-
-  def repeal_revoke(opts \\ []),
-    do: RR.run(opts)
-
-  def metadata(opts \\ []),
-    do: Legl.Countries.Uk.Metadata.run(opts)
-
-  def extent(opts),
-    do: Legl.Countries.Uk.LeglRegister.Extent.run(opts)
-
-  def legl_content(opts) do
-    Legl.Countries.Uk.AtArticle.Original.Original.run(opts)
-    parse(opts)
-    airtable(opts)
-  end
-
-  # @impl true
-  def schema(type) do
-    case type do
-      :act ->
-        %AirtableSchema{
-          country: :UK,
-          fields: UK.Act.fields(),
-          number_fields: UK.Act.number_fields(),
-          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
-          chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
-          heading: ~s/^([A-Z]?\\d*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
-          section: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
-          sub_section: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
-          paragraph: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
-          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
-          amendment: ~s/^([A-Z])(\\d+)(.*)/,
-          modification: ~s/^(C)(\\d+)(.*)/,
-          annex_name: "schedule",
-          annex: ~s/(\\d*[A-Z]*)[ ]?(.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/
-        }
-
-      :regulation ->
-        %AirtableSchema{
-          country: :UK,
-          fields: UK.Regulation.fields(),
-          number_fields: UK.Regulation.number_fields(),
-          part: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]?\\[::region::\\](.*)/,
-          chapter_name: "chapter",
-          chapter: ~s/^(\\d+[A-Z]*|[A-Z])[ ](.*)[ ]\\[::region::\\](.*)/,
-          heading: ~s/^([A-Z]?[\\d\.]*[A-Z]*)[ ]?(.*)[ ]\\[::region::\\](.*)/,
-          heading_name: "heading",
-          article: ~s/^([A-Z]?\\d+[a-zA-Z]*\\d?)-?([A-Z]?\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
-          article_name: "article",
-          sub_article: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)/,
-          sub_article_name: "sub-article",
-          para: ~s/^(\\d+)[ ](.*)/,
-          para_name: "sub-article",
-          signed_name: "signed",
-          annex: ~s/(\\d*[A-Z]*)[ ]?(.*?(SCHEDULES?|Schedules?).*)[ ]\\[::region::\\](.*)/,
-          annex_name: "schedule",
-          footnote_name: "footnote",
-          amendment: ~s/^([A-Z])(\\d+)(.*)/,
-          paragraph: ~s/^([A-Z]?[\\.\\d]+[a-zA-Z]*\\d?)-?(\\d+)?[ ](.*)[ ]\\[::region::\\](.*)/,
-          sub_paragraph: ~s/^([A-Z]?\\d+[A-Z]*)[ ](.*)(?:\\[::region::\\])?/
-        }
-    end
-  end
-
-  @parse_default_opts %{
-    type: :regulation,
-    html?: true,
-    clean?: true,
-    annotation: true,
-    parse: true,
-    # provision_before_schedule
-    pbs?: false,
-    opts?: false,
-
-    # parse Acts with Ordinal schedules eg First Schedule
-    numericalise_schedules: false,
-
-    # Sections with rare acronyms as text rather than amendment suffix
-    split_acronymed_sections: false,
-
-    # switch for Acts with period after number
-    "s_.": false,
-
-    # parse Acts with numbered headings
-    numbered_headings: false,
-
-    # overarching switch for the QA functions
-    qa: true,
-    # finer control of QA functions
-    qa_sched_s_limit?: true,
-    qa_sched_s?: true,
-    qa_sched_paras?: true,
-    qa_sched_paras_limit?: true,
-    qa_si?: true,
-    qa_si_limit?: true,
-    qa_sii?: true,
-    qa_sii_limit?: true,
-    qa_list_efs: true,
-    qa_list_bracketed_efs: false,
-    qa_list_clean_efs: false,
-    list_headings: false,
-    qa_sections: true,
-    list_section_efs: false,
-
-    # PARSER QA
-    # List Clause Numbers
-    qa_lcn_part: true,
-    qa_lcn_chapter: true,
-    qa_lcn_annex: true,
-    qa_lcn_section: true,
-    qa_lcn_sub_section: false,
-    qa_lcn_paragraph: true
-  }
-
-  @doc """
-  Creates an annotated text file that can be quality checked by a human.
-  """
-  @original ~s[lib/legl/data_files/txt/original.txt] |> Path.absname()
-  @clean ~s[lib/legl/data_files/txt/clean.txt] |> Path.absname()
-  @annotated ~s[lib/legl/data_files/txt/annotated.txt] |> Path.absname()
-  @parsed ~s[lib/legl/data_files/txt/parsed.txt] |> Path.absname()
-  def parse(opts \\ []) do
-    opts = Enum.into(opts, @parse_default_opts)
-
-    if opts.opts?, do: IO.inspect(opts, label: "\nOptions: ")
-
-    binary =
-      case opts.clean? do
-        true ->
-          IO.puts("***********CLEAN***********")
-
-          text =
-            File.read!(@original)
-            |> Legl.Countries.Uk.UkClean.clean_original(opts)
-
-          File.open(@clean, [:write, :utf8])
-          |> elem(1)
-          |> IO.write(text)
-
-          text
-
-        _ ->
-          File.read!(@clean)
-      end
-
-    binary |> (&IO.puts("\nLAW: #{String.slice(&1, 0, 300)}...")).()
-
-    binary =
-      if opts.html? do
-        binary
-      else
-        case opts.annotation do
-          true ->
-            IO.puts("\n***********ANNOTATION***********\n")
-            Legl.Countries.Uk.AirtableArticle.UkAnnotations.annotations(binary, opts)
-
-          _ ->
-            File.read!(@annotated)
-        end
-      end
-
-    if opts.type == :act and opts.annotation, do: File.write(@annotated, binary)
-
-    case opts.parse do
-      true ->
-        IO.write("\n***********PARSER***********\n")
-
-        binary = UK.Parser.parser(binary, opts)
-
-        IO.puts("...complete")
-
-        File.open(@parsed, [:write, :utf8])
-        |> elem(1)
-        |> IO.write(binary)
-
-      _ ->
-        :ok
+      {function} ->
+        apply(__MODULE__, function, [opts])
     end
   end
 
@@ -423,6 +241,8 @@ defmodule UK do
     separate_ef_codes_from_numerics: false,
     separate_ef_codes_from_non_numerics: false
   }
+
+  def airtable_default_opts, do: @airtable_default_opts
 
   @doc """
 
@@ -481,7 +301,7 @@ defmodule UK do
         :regulation -> UK.Regulation.fields()
       end
 
-    schema = schema(opts.type)
+    schema = Legl.Airtable.Schema.schema(opts.type)
 
     opts_at = Keyword.merge(Map.to_list(opts), fields: fields, schema: schema)
 

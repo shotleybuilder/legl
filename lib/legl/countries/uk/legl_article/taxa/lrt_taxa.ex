@@ -67,57 +67,58 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
     |> Kernel.struct(POPIMAR.article_popimar(records))
   end
 
+  @spec leg_gov_uk(map()) :: binary()
   def leg_gov_uk(
         %{
-          type_code: [tc],
-          Year: [y],
-          Number: [number],
-          Record_Type: ["heading"],
-          Heading: h
-        } = _record
-      )
-      when h not in [nil, ""] do
-    ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/crossheading/#{h}]
+          type_code: [type_code],
+          Year: [year],
+          Number: [number]
+        } = record
+      ) do
+    leg_gov_uk(type_code, year, number, record)
   end
 
-  def leg_gov_uk(%{
-        type_code: [tc],
-        Year: [y],
-        Number: [number],
-        Record_Type: ["section"],
-        "Section||Regulation": s
-      }) do
-    ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/section/#{s}]
+  @spec leg_gov_uk(map()) :: binary()
+  def leg_gov_uk(
+        %{
+          type_code: type_code,
+          Year: year,
+          Number: number
+        } = record
+      ) do
+    leg_gov_uk(type_code, year, number, record)
   end
 
-  def leg_gov_uk(%{
-        type_code: [tc],
-        Year: [y],
-        Number: [number],
-        Record_Type: ["article"],
-        "Section||Regulation": s
-      }) do
-    ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/regulation/#{s}]
-  end
+  @spec leg_gov_uk(binary(), binary(), binary(), map()) :: binary()
+  defp leg_gov_uk(type_code, year, number, %{
+         Record_Type: [record_type],
+         Part: p,
+         Chapter: c,
+         Heading: h,
+         "Section||Regulation": s,
+         Text: text
+       }) do
+    case record_type do
+      "part" ->
+        ~s[https://legislation.gov.uk/#{type_code}/#{year}/#{number}/part/#{p}]
 
-  def leg_gov_uk(%{
-        type_code: [tc],
-        Year: [y],
-        Number: [number],
-        Record_Type: ["part"],
-        Part: p
-      }) do
-    ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/part/#{p}]
-  end
+      "chapter" ->
+        ~s[https://legislation.gov.uk/#{type_code}/#{year}/#{number}/chapter/#{c}]
 
-  def leg_gov_uk(%{
-        type_code: [tc],
-        Year: [y],
-        Number: [number],
-        Record_Type: ["chapter"],
-        Part: c
-      }) do
-    ~s[https://legislation.gov.uk/#{tc}/#{y}/#{number}/chapter/#{c}]
+      "heading" ->
+        url_encoded_heading = encode(text)
+
+        ~s[https://legislation.gov.uk/#{type_code}/#{year}/#{number}/crossheading/#{url_encoded_heading}]
+
+      "article" ->
+        ~s[https://legislation.gov.uk/#{type_code}/#{year}/#{number}/regulation/#{s}]
+
+      "section" ->
+        ~s[https://legislation.gov.uk/#{type_code}/#{year}/#{number}/section/#{s}]
+
+      _ ->
+        ""
+    end
   end
 
   @spec article_taxa(tuple()) :: binary()
@@ -150,5 +151,17 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
       end
 
     Map.put(record, field, value)
+  end
+
+  def encode(heading) do
+    heading
+    |> String.trim()
+    |> (&Regex.replace(~r/(\\[?[Ff]\\d+[ ])/, &1, "")).()
+    |> String.replace(" ", "-")
+    |> String.replace(",", "")
+    |> String.replace(".", "")
+    |> String.replace(":", "")
+    |> String.replace("]", "")
+    |> String.downcase()
   end
 end

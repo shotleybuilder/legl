@@ -155,6 +155,50 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
   end
 
   @doc """
+  Function to set the Taxa in the Legal Register Table from records returned
+  from legislation.gov.uk
+
+
+  """
+  def set_taxa_leg_gov_uk(%{Name: name, type_code: type_code} = lrt_record, opts) do
+    lrt_record = Legl.Countries.Uk.LeglRegister.Helpers.clean_record(lrt_record, opts)
+
+    type =
+      case UK.Act.act?(type_code) do
+        true -> :act
+        false -> :regulation
+      end
+
+    {:ok, leg_gov_uk_articles} =
+      UK.lat(
+        Name: name,
+        # Parse: {Legl.Countries.Uk.LeglArticle.Article, :api_article}
+        lat_selection: 0,
+        # "Original -> Clean -> Parse -> Airtable"
+        article_workflow_selection: 4,
+        html?: true,
+        type: type,
+        pbs?: false,
+        country: :uk,
+        # Update: [...]
+        taxa_workflow_selection: 0,
+        filesave?: true,
+        print_opts?: true
+      )
+
+    if opts.filesave? == true,
+      do:
+        Legl.Utility.save_structs_as_json(
+          leg_gov_uk_articles,
+          "test/legl/countries/uk/legl_register/taxa_lat_source.json"
+        )
+
+    lrt_record = LRTTaxa.workflow(leg_gov_uk_articles, lrt_record)
+
+    {:ok, lrt_record}
+  end
+
+  @doc """
   Function to set the content of LRT taxa fields
 
   Namely
@@ -165,7 +209,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
   """
 
   @spec xxx_article_clause_field(tuple()) :: binary()
-  def xxx_article_clause_field({k, v} = article) do
+  def xxx_article_clause_field({k, v} = _article) do
     content =
       Enum.map(v, fn {url, clauses} ->
         clauses =

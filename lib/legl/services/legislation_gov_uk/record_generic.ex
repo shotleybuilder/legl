@@ -113,6 +113,34 @@ defmodule Legl.Services.LegislationGovUk.RecordGeneric do
     end
   end
 
+  @doc """
+  Receives url for legislation.gov.uk
+
+  Returns article text response or error
+
+  URL has this pattern
+    https://www.legislation.gov.uk/type_code/year/number/data.xht?view=snippet&wrap=false
+
+  A 307 redirect should result in trying
+    https://www.legislation.gov.uk/type_code/year/number/made/data.xht?view=snippet&wrap=false
+
+  """
+  @spec article(binary()) ::
+          {:ok, :xml, map()} | {:ok, :html} | {:error, integer(), binary()}
+  def article(url) do
+    case HTTPoison.get!(url, [], recv_timeout: 20000) do
+      %HTTPoison.Response{status_code: 200, body: body, headers: _headers} ->
+        {:ok, body, String.contains?(url, "made")}
+
+      %HTTPoison.Response{status_code: 307} ->
+        if String.contains?(url, "made") != true,
+          do: article(String.replace(url, "data.xht", "made/data.xht"))
+
+      response ->
+        response
+    end
+  end
+
   def leg_gov_uk_html(path, client, parser) do
     with(
       url = @endpoint <> path,

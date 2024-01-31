@@ -59,4 +59,9 @@ defmodule UK.Act do
 
   def fields(), do: @fields
   def number_fields(), do: @number_fields
+
+  def act?(type_code) when type_code in ["ukpga", "asp", "asc", "anaw", "nia", "apni", "ukla"],
+    do: true
+
+  def act?(_), do: false
 end

@@ -7,7 +7,28 @@ defmodule Legl.Countries.Uk.UkClean do
   alias Legl.Countries.Uk.AirtableArticle.UkArticleQa, as: QA
   alias Legl.Countries.Uk.AtArticle.Clean.UkBespoke
 
-  def clean_original(binary, %{type: :act, html?: true} = opts) do
+  def api_clean(opts) do
+    # Working with files when no binary passed
+    IO.puts("***********CLEAN***********")
+
+    text =
+      File.read!(opts.path_orig_txt)
+      |> clean_original(opts)
+
+    File.open(opts.path_clean_txt, [:write, :utf8])
+    |> elem(1)
+    |> IO.write(text)
+
+    {:ok, text}
+  end
+
+  def api_clean(binary, opts) do
+    {:ok, clean_original(binary, opts)}
+  end
+
+  # PRIVATE FUNCTIONS
+
+  defp clean_original(binary, %{type: :act, html?: true} = opts) do
     binary
     |> post_process()
     |> rm_carriage_return()
@@ -19,7 +40,7 @@ defmodule Legl.Countries.Uk.UkClean do
     |> closing_quotes()
   end
 
-  def clean_original(binary, %{type: :act} = opts) do
+  defp clean_original(binary, %{type: :act} = opts) do
     binary
     |> rm_between_marks()
     |> UkBespoke.bespoker(opts.name)
@@ -44,11 +65,11 @@ defmodule Legl.Countries.Uk.UkClean do
     |> period_para()
   end
 
-  def clean_original(binary, opts) do
+  defp clean_original(binary, opts) do
     binary
     |> post_process()
     |> rm_carriage_return()
-    |> UkBespoke.bespoker(opts.name)
+    |> UkBespoke.bespoker(opts."Name")
     |> Legl.Parser.rm_empty_lines()
     |> set_sub_clauses()
     |> collapse_amendment_text_between_quotes()

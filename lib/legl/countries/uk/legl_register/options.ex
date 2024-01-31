@@ -213,12 +213,24 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     :Extent,
     :Enact,
     :Affect,
-    :Taxa
+    :Taxa_from_LAT,
+    :Taxa_from_leg_gov_uk
   ]
 
   # :update triggers the update workflow and populates the change log
   @spec workflow(opts()) :: opts()
   def workflow(%{workflow: workflow} = opts) when workflow not in ["", nil], do: opts
+
+  def workflow(%{lrt_workflow_selection: n} = opts) do
+    Map.put(
+      opts,
+      :workflow,
+      @workflow
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+      |> Map.get(n)
+    )
+  end
 
   @spec workflow(opts()) :: opts()
   def workflow(opts) do
@@ -251,7 +263,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   @extent &Legl.Countries.Uk.LeglRegister.Extent.set_extent/1
   @enact &Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws/2
   @affect &Legl.Countries.Uk.LeglRegister.Amend.workflow/2
-  @taxa &Legl.Countries.Uk.LeglRegister.Taxa.set_taxa/2
+  @taxa_lat &Legl.Countries.Uk.LeglRegister.Taxa.set_taxa/2
+  @taxa_leg_gov_uk &Legl.Countries.Uk.LeglRegister.Taxa.set_taxa_leg_gov_uk/2
 
   # map of tuples {the workflow, dropped fields}
 
@@ -280,7 +293,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     "Metadata+Enact": {[@md, @enact], :"metadata+enact"},
     Enact: {[@enact], :enact},
     Affect: {[@affect], :affect},
-    Taxa: {[@taxa], :taxa}
+    Taxa_from_LAT: {[@taxa_lat], :taxa},
+    Taxa_from_leg_gov_uk: {[@taxa_leg_gov_uk], :taxa}
   ]
 
   @spec update_workflow(opts()) :: opts()

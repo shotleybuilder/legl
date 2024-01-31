@@ -37,6 +37,25 @@ defmodule UK.Parser do
 
   @cols Legl.Utility.cols()
 
+  def api_parse(opts) do
+    # Assume rading from file
+    IO.puts("PARSER__\n")
+
+    text =
+      File.read!(opts.path_clean_txt)
+      |> parser(opts)
+
+    File.open(opts.path_parsed_txt, [:write, :utf8])
+    |> elem(1)
+    |> IO.write(text)
+
+    {:ok, text}
+  end
+
+  def api_parse(binary, opts) when is_binary(binary) do
+    {:ok, parser(binary, opts)}
+  end
+
   def parser(binary, %{type: :act, html?: true} = opts) do
     binary
     |> get_title()

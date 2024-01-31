@@ -3,6 +3,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
   @type legal_register :: %__MODULE__{
           Acronym: String.t(),
+          Name: String.t(),
 
           # id fields
           record_id: String.t(),
@@ -142,6 +143,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
   @struct ~w[
     Acronym
+    Name
 
     record_id
     Title_EN

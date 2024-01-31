@@ -95,8 +95,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
   @type taxa :: atom()
   @type opts :: map()
 
-  @path ~s[lib/legl/countries/uk/at_article/taxa/api_source.json]
-  @results_path ~s[lib/legl/countries/uk/at_article/taxa/api_results.json]
+  @path ~s[lib/legl/countries/uk/legl_article/taxa/api_source.json]
+  @results_path ~s[lib/legl/countries/uk/legl_article/taxa/api_results.json]
 
   def api_update_multi_lat_taxa(opts \\ []) do
     opts = Options.api_update_multi_lat_taxa(opts)
@@ -127,6 +127,63 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
   end
 
   @doc """
+  Function to process models (taxa) for parsed .html from leg.gov.uk
+
+  Receives either a %UK.Act{} or %UK.Regulation{} struct and returns
+  %Legl.Countries.Uk.Article.Taxa.LATTaxa{}
+  """
+  @spec api_update_lat_taxa_from_text(list(%UK.Act{}) | list(%UK.Regulation{}), map()) ::
+          list(%__MODULE__{})
+  def api_update_lat_taxa_from_text(records, opts) do
+    opts = Options.api_update_lat_taxa_from_text_opts(opts)
+
+    records =
+      Enum.reduce(records, [], fn
+        %UK.Regulation{
+          id: id,
+          name: name,
+          flow: "main",
+          type: type,
+          part: part,
+          chapter: chapter,
+          heading: heading,
+          section: section,
+          # sub_section: sub_section,
+          text: text
+        } = _record,
+        acc ->
+          [_, type_code, year, number] = String.split(name, "_")
+
+          [
+            %__MODULE__{
+              ID: id,
+              Record_Type: [type],
+              Text: Regex.replace(~r/📌/m, text, "\n"),
+              "Section||Regulation": section,
+              Part: part,
+              Chapter: chapter,
+              Heading: heading,
+              type_code: type_code,
+              Year: year,
+              Number: number,
+              # We have to set a proxy for the LAT record_id.  Remember this is
+              # made up!
+              Record_ID:
+                ~s/rec#{:crypto.strong_rand_bytes(14) |> Base.url_encode64() |> binary_part(0, 14)}/
+            }
+            | acc
+          ]
+
+        _, acc ->
+          acc
+      end)
+
+    :ok = filesave(records, @path, opts)
+
+    {:ok, update_lat_taxa(records, opts)}
+  end
+
+  @doc """
   Function to process models (taxa) for Legal Article Table records
 
   Workflow is driven by the user options.  Main workflow is 'Update'
@@ -141,7 +198,9 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
     if opts.filesave? == true and opts.source == :web,
       do: Legl.Utility.save_structs_as_json(records, @path)
 
-    update_lat_taxa(records, opts)
+    records
+    |> update_lat_taxa(opts)
+    |> save_to_lat(opts)
   end
 
   defp update_lat_taxa(records, opts) do
@@ -160,8 +219,22 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
         records
       end)
 
-    if opts.filesave? == true, do: Legl.Utility.save_structs_as_json(records, @results_path)
+    filesave(records, @results_path, opts)
 
+    records
+  end
+
+  def filesave(records, path, %{filesave?: true}),
+    do: Legl.Utility.save_structs_as_json(records, path)
+
+  def filesave(_, _, %{filesave?: false}), do: :ok
+
+  def filesave(records, path, opts) do
+    save? = ExPrompt.confirm("Save Record Taxa Result?")
+    filesave(records, path, Map.put(opts, :filesave?, save?))
+  end
+
+  def save_to_lat(records, opts) do
     records =
       Enum.sort_by(records, & &1."ID")
       |> Enum.map(fn record ->
@@ -269,7 +342,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
     records
     |> Enum.reduce([], fn
       %{Record_Type: rt} = record, acc when rt == ["section"] or rt == ["article"] ->
-        case Regex.run(~r/^([A-Z]+?_[A-Z]+?_[a-z]+?_\d{4}_.*?_.*?_.*?_.*?_.*?)(?:_)/, record."ID") do
+        case Regex.run(~r/^([A-Z]+?_[a-z]+?_\d{4}_.*?_.*?_.*?_.*?_.*?)(?:_)/, record."ID") do
           [_, id] ->
             [{id, record."Record_ID"} | acc]
 
@@ -287,13 +360,17 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
         [{id, record."Record_ID"} | acc]
 
       %{Record_Type: rt} = record, acc when rt == ["heading"] ->
-        [_, id] = Regex.run(~r/(.*?)(?:_{3}|_{3}[A-Z]+)$/, record."ID")
+        # [_, id] = Regex.run(~r/(.*?)(?:_{3}|_{3}[A-Z]+)$/, record."ID")
+        [_, id] = Regex.run(~r/^([A-Z]+?_[a-z]+?_\d{4}_.*?_.*?_.*?_.*?)(?:_)/, record."ID")
         [{id, record."Record_ID"} | acc]
 
       _record, acc ->
         acc
     end)
   end
+
+  num = Enum.random(1..999) |> Integer.to_string()
+  hashed_num = :crypto.hash(:sha256, num)
 
   @spec aggregates(list(), atom(), struct()) :: list()
   def aggregates(keys, source_field, records) do
