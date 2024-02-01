@@ -14,6 +14,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     path
     urls
     Enacting
+    Name
   ]a
 
   @drop_if_null ~w[

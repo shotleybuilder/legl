@@ -32,7 +32,7 @@ defmodule Legl.Countries.Uk.UkClean do
     binary
     |> post_process()
     |> rm_carriage_return()
-    |> UkBespoke.bespoker(opts.name)
+    |> UkBespoke.bespoker(opts."Name")
     |> Legl.Parser.rm_empty_lines()
     |> set_sub_clauses()
     |> collapse_amendment_text_between_quotes()
@@ -43,7 +43,7 @@ defmodule Legl.Countries.Uk.UkClean do
   defp clean_original(binary, %{type: :act} = opts) do
     binary
     |> rm_between_marks()
-    |> UkBespoke.bespoker(opts.name)
+    |> UkBespoke.bespoker(opts."Name")
     |> Legl.Parser.rm_empty_lines()
     |> collapse_amendment_text_between_quotes()
     |> collapse_amendment_text_between_quotes()

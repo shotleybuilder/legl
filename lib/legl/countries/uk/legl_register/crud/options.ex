@@ -302,7 +302,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   end
 
   @fields ~w[
-    record_id Title_EN type_code type_class Number Year Family
+    Name record_id Title_EN type_code type_class Number Year Family
   ]
 
   # Fields to compare against for Delta

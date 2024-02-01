@@ -169,22 +169,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Taxa do
         false -> :regulation
       end
 
-    {:ok, leg_gov_uk_articles} =
-      UK.lat(
-        Name: name,
-        # Parse: {Legl.Countries.Uk.LeglArticle.Article, :api_article}
-        lat_selection: 0,
-        # "Original -> Clean -> Parse -> Airtable"
-        article_workflow_selection: 4,
-        html?: true,
-        type: type,
-        pbs?: false,
-        country: :uk,
-        # Update: [...]
-        taxa_workflow_selection: 0,
-        filesave?: true,
-        print_opts?: true
-      )
+    article_opts = %{
+      Name: name,
+      # Parse: {Legl.Countries.Uk.LeglArticle.Article, :api_article}
+      lat_selection: 0,
+      # "Original -> Clean -> Parse -> Airtable"
+      article_workflow_selection: 4,
+      html?: true,
+      type: type,
+      pbs?: false,
+      country: :uk,
+      # Update: [...]
+      taxa_workflow_selection: 0,
+      filesave?: true,
+      print_opts?: true
+    }
+
+    {:ok, leg_gov_uk_articles} = Legl.Countries.Uk.LeglArticle.Article.api_article(article_opts)
 
     if opts.filesave? == true,
       do:

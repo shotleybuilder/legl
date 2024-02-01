@@ -34,7 +34,7 @@ defmodule Legl.Countries.Uk.LeglArticle.Article do
   end
 
   defp article(opts) do
-    {binary, opts} =
+    {binary, _opts} =
       Enum.reduce(opts.lat_workflow, {nil, opts}, fn f, acc ->
         result =
           case :erlang.fun_info(f)[:arity] do
