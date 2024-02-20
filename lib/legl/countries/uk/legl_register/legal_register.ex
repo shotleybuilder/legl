@@ -30,6 +30,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           type_class: String.t(),
           # Family fields
           Family: String.t(),
+          SICode: String.t(),
           si_code: String.t(),
 
           # Metadata fields
@@ -167,6 +168,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
 
     Family
 
+    SICode
     si_code
 
     md_total_paras

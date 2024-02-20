@@ -363,18 +363,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy do
     |> (&{:ok, &1}).()
   end
 
-  defp make_law_map({title, type, year, number}) do
-    id =
-      Legl.Airtable.AirtableTitleField.title_clean(title)
-      |> Legl.Countries.Uk.LeglRegister.IdField.id(type, year, number)
-
-    %{
-      Name: id,
-      Title_EN: title,
-      type_code: type,
-      Year: year,
-      Number: number
-    }
+  defp make_law_map({_title, type, year, number}) do
+    Legl.Countries.Uk.LeglRegister.IdField.id(type, year, number)
   end
 
   @doc """

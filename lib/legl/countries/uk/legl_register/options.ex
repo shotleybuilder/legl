@@ -234,7 +234,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
 
   @spec workflow(opts()) :: opts()
   def workflow(opts) do
-    case ExPrompt.choose("Workflow ", @workflow) do
+    case ExPrompt.choose("Workflow? #{__MODULE__}:", @workflow) do
       -1 ->
         nil
 

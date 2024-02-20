@@ -198,10 +198,15 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
           [amending_title | acc]
 
         {5, {"td", _, [{_, [{"href", path}], _}]}}, acc ->
-          {type_code, number, year} = Legl.Utility.type_number_year(path)
-          year = String.to_integer(year)
+          case Legl.Utility.type_number_year(path) do
+            {type_code, number, year} ->
+              year = String.to_integer(year)
 
-          [path, year, number, type_code | acc]
+              [path, year, number, type_code | acc]
+
+            _ ->
+              acc
+          end
 
         {6, _cell}, acc ->
           acc

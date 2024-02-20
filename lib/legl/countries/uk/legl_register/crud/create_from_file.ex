@@ -56,6 +56,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   """
   @spec api_create_newly_published_laws(opts()) :: :ok
   def api_create_newly_published_laws(opts \\ []) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.api_create_newly_published_laws/)
+
     opts =
       opts
       |> Options.from_file_set_up()
@@ -83,32 +85,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
     end
   end
 
-  def api_create_newly_published_laws(opts) do
-    opts = Options.from_file_set_up(opts)
-
-    {_, path} = opts.source
-
-    records = Legl.Utility.read_json_records(path)
-
-    Enum.map(records, fn record ->
-      with(
-        # Year field
-        {:ok, record} <- Year.set_year(record),
-        # Publication Date field
-        {:ok, record} <-
-          PublicationDate.set_publication_date_link(
-            record,
-            opts
-          ),
-        # All the other fields
-        {:ok, record} = New.update_empty_law_fields(record, opts)
-      ) do
-        record
-      end
-    end)
-    |> New.save(opts)
-  end
-
   defp save_exc(records, opts) do
     case ExPrompt.get("Enter ID number for any excluded laws to process and save: ") do
       "" ->
@@ -132,6 +108,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   populated
   """
   def api_create_from_file_bare(opts \\ [csv?: false, mute?: true]) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.api_create_from_file_bare/)
     opts = Options.from_file_set_up(opts)
 
     {_, path} = opts.source
@@ -153,6 +130,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   populated
   """
   def api_create_from_file_categorised(opts) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.api_create_from_file_categorised/)
     opts = Options.from_file_set_up(opts)
 
     {_, path} = opts.source
@@ -184,6 +162,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   Run as UK.create_from_file()
   """
   def create_from_file(opts \\ [csv?: false, mute?: true]) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.create_from_file/)
     opts = Options.from_file_set_up(opts)
 
     {_, path} = opts.source
@@ -209,6 +188,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   These records have metadata set
   """
   def api_create_from_file_w_metadata(opts \\ [csv?: false, mute?: true]) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.api_create_from_file_w_metadata/)
     opts = Options.from_file_set_up(opts)
 
     {_, path} = opts.source
@@ -222,7 +202,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
     Enum.each(
       [inc_w_si: inc_w_si, inc_wo_si: inc_wo_si],
       fn {k, v} ->
-        case ExPrompt.confirm("Process #{k}?") do
+        case ExPrompt.confirm("Process #{k}?\n#{__MODULE__}") do
           false ->
             :ok
 
@@ -281,7 +261,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   defp convert_exc_to_list(records) when is_list(records), do: records
 
   defp filter_w_metadata(records, _opts) when is_list(records) do
-    with {:ok, {inc, exc}} <- Filters.terms_filter(records),
+    with records <- Filters.title_filter(records),
+         {:ok, {inc, exc}} <- Filters.terms_filter(records),
          :ok = Legl.Utility.save_structs_as_json(inc, @inc_path),
          :ok =
            Legl.Utility.maps_from_structs(exc)

@@ -307,6 +307,10 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
       circular\u00a0economy
     ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
+  @gmos ~w[
+      genetically\u00a0modified\u00a0organisms
+    ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+
   @marine ~w[
       marine\u00a0pollution
       marine\u00a0conservation
@@ -325,6 +329,7 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
 
   @planning ~w[
       planning
+      harbour\u00a0revision\u00a0order
     ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @pollution ~w[
@@ -399,20 +404,21 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.Environment do
   def e_search_terms() do
     # putting the likely most popular matching terms first
     [
-      "💚 Agriculture": @agriculture,
+      "💚 AGRICULTURE": @agriculture,
       "💚 Air Quality": @air,
       "💚 Climate Change": @climate_change,
       "💚 Energy": @energy,
       "💚 Environmental Protection": @general,
       "💚 Finance": @finance,
       "💚 Marine & Riverine": @marine,
-      "💚 Planning": @planning,
+      "💚 Planning & Infrastructure": @planning,
       "💚 Pollution": @pollution,
-      "💚 Radiological": @radiological,
+      "💚 Nuclear & Radiological": @radiological,
       "💚 Trees, Forestry & Timber": @tft,
       "💚 Waste": @waste,
       "💚 Water & Wastewater": @water,
-      "💚 Wildlife & Countryside": @wildlife_countryside
+      "💚 Wildlife & Countryside": @wildlife_countryside,
+      "💚 GMOs": @gmos
     ]
   end
 end
@@ -534,7 +540,6 @@ defmodule Legl.Countries.Uk.UkSearch.Terms.HealthSafety do
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 
   @ship_safety ~w[
-    harbour
     merchant\u00a0shipping
   ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
 

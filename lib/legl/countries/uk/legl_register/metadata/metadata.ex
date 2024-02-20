@@ -341,7 +341,8 @@ defmodule Legl.Countries.Uk.Metadata do
         md_body_paras: convert_to_i(body),
         md_schedule_paras: convert_to_i(schedule),
         md_attachment_paras: convert_to_i(attachment),
-        md_images: convert_to_i(images)
+        md_images: convert_to_i(images),
+        SICode: [metadata.si_code]
       }
 
       {:ok, Map.merge(metadata, xMetadata)}

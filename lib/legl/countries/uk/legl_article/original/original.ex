@@ -39,9 +39,15 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
     else
       %HTTPoison.Error{reason: error} ->
         IO.puts("#{error}")
+        :error
+
+      %HTTPoison.Response{status_code: status_code, body: body} ->
+        IO.puts("HTTPS ERROR: #{status_code}\n#{body}\n[__MODULE__].original")
+        :error
 
       {:error, reason} ->
         IO.puts("ERROR #{reason}\n [#{__MODULE__}.run - web]")
+        :error
     end
   end
 

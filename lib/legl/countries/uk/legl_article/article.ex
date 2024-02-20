@@ -45,6 +45,7 @@ defmodule Legl.Countries.Uk.LeglArticle.Article do
         case result do
           {:ok, record, opts} -> {record, opts}
           {:ok, record} -> {record, opts}
+          :error -> {"", opts}
         end
       end)
 

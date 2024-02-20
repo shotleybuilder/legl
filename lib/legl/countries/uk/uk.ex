@@ -72,7 +72,6 @@ defmodule UK do
       {CreateFromFile, :api_create_newly_published_laws,
        [
          [
-           workflow: :update,
            csv?: false,
            mute?: true,
            post?: false,
@@ -86,7 +85,6 @@ defmodule UK do
       {CreateFromFile, :api_create_from_file_bare,
        [
          [
-           workflow: :update,
            csv?: false,
            mute?: true,
            post?: false,
@@ -97,7 +95,6 @@ defmodule UK do
       {CreateFromFile, :api_create_from_file_w_metadata,
        [
          [
-           workflow: :update,
            csv?: false,
            mute?: true,
            post?: false,
@@ -123,7 +120,8 @@ defmodule UK do
     "Print Dutyholder to Terminal":
       {Legl.Countries.Uk.Article.Taxa.Actor.ActorLib, :print_dutyholders_to_console},
     "Print Duty Type to the Terminal":
-      {Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType, :print_duty_types_to_console}
+      {Legl.Countries.Uk.Article.Taxa.DutyTypeTaxa.DutyType, :print_duty_types_to_console},
+    "Compare Lists": {Legl.Utility, &Legl.Utility.delta_lists/0}
   ]
   @spec lrt(list()) :: any()
   def lrt(opts \\ []) do
@@ -225,6 +223,9 @@ defmodule UK do
 
       {function} ->
         apply(__MODULE__, function, [opts])
+
+      {_, function} when is_function(function) ->
+        function.()
     end
   end
 

@@ -57,14 +57,14 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
   end
 
   @spec terms_filter(list()) :: {:ok, {list(), list()}}
-  def terms_filter(laws) do
+  def terms_filter({i, e}) do
     IO.puts("Terms inside Title Filter")
-    IO.puts("# PRE_FILTERED RECORDS: #{Enum.count(laws)}")
+    IO.puts("# PRE_FILTERED RECORDS: inc:#{Enum.count(i)} exc:#{Enum.count(e)}")
 
     search_terms = @hs_search_terms ++ @e_search_terms
 
     {inc, exc} =
-      Enum.reduce(laws, {[], []}, fn law, {inc, exc} ->
+      Enum.reduce(i, {[], e}, fn law, {inc, exc} ->
         title = String.downcase(law."Title_EN")
 
         match? =
@@ -95,40 +95,53 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
   @doc """
   Function to exclude certain common new law titles
   """
-  @spec title_filter(list()) :: list()
+  @spec title_filter(list()) :: tuple()
   def title_filter(records) do
     IO.puts(~s/PRE-TITLE FILTER RECORD COUNT: #{Enum.count(records)}/)
 
-    records =
-      Enum.reduce(records, [], fn record, acc ->
+    {inc, exc} =
+      Enum.reduce(records, {[], []}, fn record, {inc, exc} ->
         title = String.downcase(record."Title_EN")
 
         case exclude?(title) do
-          true -> acc
-          false -> [record | acc]
+          false ->
+            {[record | inc], exc}
+
+          true ->
+            {inc, [record | exc]}
         end
       end)
 
-    IO.puts(~s/POST-TITLE FILTER RECORD COUNT: #{Enum.count(records)}/)
-    records
+    IO.puts(~s/POST-TITLE FILTER/)
+    IO.puts("# INCLUDED RECORDS: #{Enum.count(inc)}")
+    IO.puts("# EXCLUDED RECORDS: #{Enum.count(exc)}")
+    {Enum.reverse(inc), Enum.reverse(exc)}
   end
 
-  defp exclude?(title) do
-    search_terms = ~w[
-    restriction\u00a0of\u00a0flying
-    correction\u00a0slip
-    trunk\u00a0road
-    harbour\u00a0empowerment\u00a0order
-    harbour\u00a0revision\u00a0order
-    parking\u00a0places
-    parking\u00a0prohibition
-    parking\u00a0and\u00a0waiting
-  ] |> Enum.map(&String.replace(&1, "\u00a0", " "))
+  @exclusions [
+    ~r/railways?.*station.*order/,
+    ~r/railways?.*junction.*order/,
+    ~r/(network rail|railways?).*(extensions?|improvements?|preparation|enhancement|reduction).*order/,
+    ~r/rail freight.*order/,
+    ~r/light railway order/,
+    ~r/drought.*order/,
+    ~r/restriction of flying/,
+    ~r/correction slip/,
+    ~r/trunk road/,
+    ~r/harbour empowerment order/,
+    ~r/harbour revision order/,
+    ~r/parking places/,
+    ~r/parking prohibition/,
+    ~r/parking and waiting/,
+    ~r/development consent order/,
+    ~r/electrical system order/
+  ]
 
-    Enum.reduce_while(search_terms, false, fn n, _acc ->
+  defp exclude?(title) do
+    Enum.reduce_while(@exclusions, false, fn n, _acc ->
       # n = :binary.compile_pattern(v)
 
-      case String.contains?(title, n) do
+      case Regex.match?(n, title) do
         true -> {:halt, true}
         false -> {:cont, false}
       end

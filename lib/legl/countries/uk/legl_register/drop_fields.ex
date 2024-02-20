@@ -46,6 +46,7 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     md_coming_into_force_date
     md_subjects
     md_schedule_paras
+    SICode
     si_code
     md_change_log
     md_checked

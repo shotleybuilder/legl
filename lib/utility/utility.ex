@@ -234,8 +234,12 @@ defmodule Legl.Utility do
 
   def type_number_year(path) do
     case Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d+)/, path) do
-      [_match, type, year, number] -> {type, number, year}
-      nil -> {:error, :no_match}
+      [_match, type, year, number] ->
+        {type, number, year}
+
+      nil ->
+        IO.puts(~s/ERROR: No match for type_code, year & number for this #{path}/)
+        {:error, :no_match}
     end
   end
 
@@ -389,22 +393,34 @@ defmodule Legl.Utility do
   @doc """
   Function to return the members
   """
+  def delta_lists() do
+    x = ExPrompt.get("First List")
+    y = ExPrompt.get("Second List")
+    delta_lists(String.split(x, ","), String.split(y, ",")) |> Enum.sort(:desc)
+  end
+
   @spec delta_lists(list(), list()) :: list()
   def delta_lists(old, new) do
-    MapSet.difference(convert_to_mapset(new), convert_to_mapset(old))
+    old = convert_to_mapset(old)
+    new = convert_to_mapset(new)
+
+    MapSet.difference(new, old)
     |> MapSet.to_list()
   end
 
   def convert_to_mapset(list) when list in [nil, ""], do: MapSet.new()
 
-  def convert_to_mapset(list) when is_binary(list) do
-    list
+  def convert_to_mapset(csv) when is_binary(csv) do
+    csv
     |> String.split(",")
     |> Enum.map(&String.trim(&1))
     |> MapSet.new()
   end
 
-  def convert_to_mapset(list), do: MapSet.new(list)
+  def convert_to_mapset(list) when is_list(list) do
+    Enum.map(list, &String.trim(&1))
+    |> MapSet.new()
+  end
 
   def year_as_integer(year) when is_integer(year), do: year
   def year_as_integer(year) when is_binary(year), do: String.to_integer(year)

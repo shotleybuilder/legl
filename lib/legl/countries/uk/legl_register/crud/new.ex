@@ -74,6 +74,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       records <-
         records
         |> Filters.title_filter()
+        |> elem(0)
         |> Enum.map(&Metadata.get_latest_metadata(&1))
     ) do
       records =
@@ -163,7 +164,12 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   @spec categoriser(list(), opts()) :: {:ok, tuple()}
   def categoriser(records, _opts) when is_list(records) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.categoriser/)
+
     with(
+      # Exclude the laws we don't want to process
+      records <- Filters.title_filter(records),
+
       # Filter each Law record based on terms in Title_EN
       {:ok, {inc, exc}} <- Filters.terms_filter(records),
 
@@ -236,7 +242,15 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   end
 
   defp create(record, opts) do
-    case ExPrompt.confirm(~s/Process #{record."Title_EN"}?/) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.create\2/)
+
+    process? =
+      case Map.has_key?(opts, :process?) do
+        true -> Map.get(opts, :process?)
+        false -> ExPrompt.confirm(~s/Process #{record."Title_EN"}?/)
+      end
+
+    case process? do
       true ->
         exists? = Legl.Countries.Uk.LeglRegister.Helpers.Create.exists?(record, opts)
         create(record, opts, exists?)
@@ -249,6 +263,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   defp create(_record, _opts, true), do: :ok
 
   defp create(record, opts, false) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.create\3/)
+
     record =
       Enum.reduce(opts.create_workflow, record, fn f, acc ->
         {:ok, record} =

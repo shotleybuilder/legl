@@ -10,6 +10,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
     "💙 FIRE",
     "💙 FIRE: Dangerous and Explosive Substances",
     "💙 FOOD",
+    "💙 HEALTH: Coronavirus",
     "💙 HEALTH: Drug & Medicine Safety",
     "💙 HEALTH: Patient Safety",
     "💙 HEALTH: Public",
@@ -77,7 +78,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
   def hs_bases, do: Enum.zip(@hs_family, @hs_bases)
 
   @e_family [
-    "💚 Agriculture",
+    "💚 AGRICULTURE",
     "💚 Air Quality",
     "💚 Animals & Animal Health",
     "💚 Antarctica",
@@ -93,7 +94,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
     "💚 Marine & Riverine",
     "💚 Merchant Shipping",
     "💚 Noise",
-    "💚 Planning",
+    "💚 Planning & Infrastructure",
     "💚 Plant Health",
     "💚 Pollution",
     "💚 Nuclear & Radiological",
@@ -107,7 +108,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
   ]
 
   @e_bases [
-    # "💚 Agriculture",
+    # "💚 AGRICULTURE",
     "",
     # "💚 Air Quality",
     "",
@@ -139,7 +140,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
     "",
     # "💚 Noise",
     "",
-    # "💚 Planning",
+    # "💚 Planning & Infrastructure",
     "appJ3UVvRHEGIpNi4",
     # "💚 Plant Health",
     "",

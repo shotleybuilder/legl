@@ -22,6 +22,8 @@ defmodule Legl.Countries.Uk.UkClean do
     {:ok, text}
   end
 
+  def api_clean("", _), do: {:ok, ""}
+
   def api_clean(binary, opts) do
     {:ok, clean_original(binary, opts)}
   end
