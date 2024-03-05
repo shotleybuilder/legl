@@ -232,6 +232,11 @@ defmodule Legl.Utility do
     type_number_year(path)
   end
 
+  # https://webarchive.nationalarchives.gov.uk/eu-exit/20201210174128/https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:12003TN02/16/C
+  def type_number_year("https://webarchive.nationalarchives.gov.uk" <> _path) do
+    {"eua"}
+  end
+
   def type_number_year(path) do
     case Regex.run(~r/\/([a-z]*?)\/(\d{4})\/(\d+)/, path) do
       [_match, type, year, number] ->

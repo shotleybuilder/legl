@@ -25,7 +25,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
   ]a
 
   @spec get_laws_amending_this_law(map()) :: {LegalRegister, LegalRegister}
-  def get_laws_amending_this_law(record) do
+  def get_laws_amending_this_law(%{type_code: type_code} = record) do
     records = get_affected(record)
     records = parse_laws_affecting(records)
 
@@ -38,8 +38,19 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
     # Process the revoked laws
     {:ok, stats, revoked_by} = Stats.amendment_stats(revocations)
 
+    # IO.inspect(revocations, label: "REVOCATIONS")
+
+    eu? =
+      case type_code do
+        x when x in ["eur", "eudr", "eudn"] -> true
+        _ -> false
+      end
+
     live_field =
       cond do
+        eu? and repealed_revoked_in_full?(revocations, type_code) ->
+          @code_full
+
         repealed_revoked_in_full?(revocations) ->
           @code_full
 
@@ -102,6 +113,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
         IO.puts("ERROR: #{msg}")
         []
     end
+  end
+
+  @spec repealed_revoked_in_full?(list(), atom()) :: boolean()
+  def repealed_revoked_in_full?(data, _type_code) do
+    Enum.reduce_while(data, false, fn
+      %{target: "", affect: affect}, _acc
+      when affect in ["repeal", "revoked"] ->
+        {:halt, true}
+
+      _, acc ->
+        {:cont, acc}
+    end)
   end
 
   @doc """
@@ -174,7 +197,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
           acc
 
         {2, {"td", _, target}}, acc ->
-          # IO.inspect(content, label: "CONTENT: ")
+          # IO.inspect(target, label: "TARGET")
 
           Enum.map(target, fn
             {"a", [{"href", _}, [v1]], [v2]} -> ~s/#{v1} #{v2}/
@@ -197,6 +220,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
         {4, {"td", _, [{_, _, [amending_title]}]}}, acc ->
           [amending_title | acc]
 
+        # no amending title
+        {4, {"td", _, [{_, _, []}]}}, acc ->
+          ["" | acc]
+
         {5, {"td", _, [{_, [{"href", path}], _}]}}, acc ->
           case Legl.Utility.type_number_year(path) do
             {type_code, number, year} ->
@@ -204,8 +231,11 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.AmendedBy do
 
               [path, year, number, type_code | acc]
 
+            {"eua"} ->
+              [path, nil, "", "eua" | acc]
+
             _ ->
-              acc
+              [path, nil, ""]
           end
 
         {6, _cell}, acc ->
