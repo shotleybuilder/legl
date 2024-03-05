@@ -5,7 +5,7 @@ defmodule Legl.Services.LegislationGovUk.Client do
   def run!(url) do
     case HTTPoison.get!(url, %{}, stream_to: self()) do
       %HTTPoison.AsyncResponse{id: id} ->
-        async_response({id, %{}})
+        async_response({id, %{code: nil, headers: nil}})
     end
   end
 

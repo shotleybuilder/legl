@@ -394,9 +394,13 @@ defmodule Legl.Utility do
   Function to return the members
   """
   def delta_lists() do
-    x = ExPrompt.get("First List")
-    y = ExPrompt.get("Second List")
-    delta_lists(String.split(x, ","), String.split(y, ",")) |> Enum.sort(:desc)
+    x = ExPrompt.get("Old List")
+    y = ExPrompt.get("New List")
+
+    delta_lists(String.split(x, ","), String.split(y, ","))
+    |> Enum.sort(:desc)
+    |> IO.inspect()
+    |> Enum.join(",")
   end
 
   @spec delta_lists(list(), list()) :: list()

@@ -280,7 +280,7 @@ defmodule Legl.Countries.Uk.Metadata do
         # md_made_date: made,
         # md_coming_into_force_date: force,
         # md_restrict_start_date,
-        si_code: si_code,
+        si_code: si_codes,
         Title_EN: title
       } = metadata
 
@@ -315,22 +315,14 @@ defmodule Legl.Countries.Uk.Metadata do
 
       # the field is called 'si_code' in Airtable
       metadata =
-        case si_code do
+        case si_codes do
           [] ->
             metadata
 
           _ ->
-            String.split(si_code, ";")
-            |> Enum.map(&String.upcase(&1))
-            |> Enum.map(&String.replace(&1, ", ENGLAND AND WALES", ""))
-            |> Enum.map(&String.replace(&1, ", ENGLAND & WALES", ""))
-            |> Enum.map(&String.replace(&1, ", WALES", ""))
-            |> Enum.map(&String.replace(&1, ", ENGLAND", ""))
-            |> Enum.map(&String.replace(&1, ", SCOTLAND", ""))
-            |> Enum.map(&String.replace(&1, ", NORTHERN IRELAND", ""))
-            |> Enum.map(&String.replace(&1, ", WALES", ""))
-            |> Enum.join(",")
-            |> (&Map.put(metadata, :si_code, &1)).()
+            si_codes = process_si_codes(si_codes) |> Enum.uniq() |> Enum.sort()
+
+            Map.merge(metadata, %{SICode: si_codes, si_code: Enum.join(si_codes, ",")})
         end
 
       [_, year, month, day] = Regex.run(~r/(\d{4})-(\d{2})-(\d{2})/, modified)
@@ -341,8 +333,7 @@ defmodule Legl.Countries.Uk.Metadata do
         md_body_paras: convert_to_i(body),
         md_schedule_paras: convert_to_i(schedule),
         md_attachment_paras: convert_to_i(attachment),
-        md_images: convert_to_i(images),
-        SICode: [metadata.si_code]
+        md_images: convert_to_i(images)
       }
 
       {:ok, Map.merge(metadata, xMetadata)}
@@ -360,6 +351,26 @@ defmodule Legl.Countries.Uk.Metadata do
 
   def convert_to_i(value) when is_binary(value) do
     String.to_integer(value)
+  end
+
+  def process_si_codes(si_codes) when is_list(si_codes) do
+    Enum.reduce(si_codes, [], fn si_code, acc ->
+      acc ++ process_si_codes(si_code)
+    end)
+  end
+
+  def process_si_codes(si_code) when is_binary(si_code) do
+    String.split(si_code, ";")
+    |> Enum.map(&String.upcase(&1))
+    |> Enum.map(&String.replace(&1, ", ENGLAND AND WALES", ""))
+    |> Enum.map(&String.replace(&1, ", ENGLAND & WALES", ""))
+    |> Enum.map(&String.replace(&1, ", WALES", ""))
+    |> Enum.map(&String.replace(&1, ", ENGLAND", ""))
+    |> Enum.map(&String.replace(&1, ", SCOTLAND", ""))
+    |> Enum.map(&String.replace(&1, ", NORTHERN IRELAND", ""))
+    |> Enum.map(&String.replace(&1, ", WALES", ""))
+
+    # |> Enum.join(",")
   end
 end
 

@@ -17,7 +17,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
                 md_restrict_start_date: nil,
                 md_restrict_extent: nil,
                 md_modified: nil,
-                si_code: "",
+                si_code: [],
                 Title_EN: "",
                 pdf_href: ""
               },
@@ -467,9 +467,11 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   def sax_event_handler({:endElement, _, 'subject', 'dc'}, %{main_section: :metadata} = state, _) do
     case state.si_code do
       true ->
+        si_code = [state.element_acc | state.metadata.si_code]
+
         %{
           state
-          | metadata: Map.put(state.metadata, :si_code, state.element_acc),
+          | metadata: Map.put(state.metadata, :si_code, si_code),
             element_acc: "",
             si_code: false
         }

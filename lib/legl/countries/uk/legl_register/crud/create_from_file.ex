@@ -260,9 +260,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
 
   defp convert_exc_to_list(records) when is_list(records), do: records
 
-  defp filter_w_metadata(records, _opts) when is_list(records) do
-    with records <- Filters.title_filter(records),
-         {:ok, {inc, exc}} <- Filters.terms_filter(records),
+  @doc """
+    Function to filter new law records - title then si_code
+  """
+  def filter_w_metadata(records, %{filter: :term_si}) when is_list(records) do
+    with {inc, exc} <- Filters.title_filter(records),
+         {:ok, {inc, exc}} <- Filters.terms_filter({inc, exc}),
          :ok = Legl.Utility.save_structs_as_json(inc, @inc_path),
          :ok =
            Legl.Utility.maps_from_structs(exc)
@@ -281,6 +284,35 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
       Legl.Utility.save_json(inc_w_si, @inc_w_si_path)
 
       {inc_w_si, inc_wo_si, exc}
+    end
+  end
+
+  @doc """
+    Function to filter new law records - si_code then term
+  """
+  def filter_w_metadata(records, %{filter: :si_term}) when is_list(records) do
+    with {inc, exc} <- Filters.title_filter(records),
+         # Filter on si_code
+         {inc_w_si, inc_wo_si} <- si_code_sorter(inc),
+         {:ok, {inc_w_si, inc_wo_si}} <-
+           Filters.si_code_filter({inc_w_si, inc_wo_si}),
+         # Filter on terms in title
+         {:ok, {inc, exc}} <- Filters.terms_filter({inc_wo_si, exc}),
+         :ok = Legl.Utility.save_structs_as_json(inc, @inc_path),
+         :ok =
+           Legl.Utility.maps_from_structs(exc)
+           |> New.index_exc()
+           |> Legl.Utility.save_json(@exc_path) do
+      #
+      IO.puts("# W/O SI CODE RECORDS: #{Enum.count(inc)}")
+
+      Legl.Utility.save_json(inc_wo_si, @inc_wo_si_path)
+
+      IO.puts("# W/ SI CODE RECORDS: #{Enum.count(inc_w_si)}")
+
+      Legl.Utility.save_json(inc_w_si, @inc_w_si_path)
+
+      {inc_w_si, inc, exc}
     end
   end
 

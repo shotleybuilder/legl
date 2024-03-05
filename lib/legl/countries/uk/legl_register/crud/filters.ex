@@ -8,15 +8,17 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
   @e_search_terms E.e_search_terms()
 
   def si_code_filter(records) when is_list(records) do
-    lib_si_codes = SICodes.si_codes()
-
     Enum.reduce(records, {[], []}, fn
-      %{si_code: si_code} = record, acc when si_code not in ["", nil] ->
+      %{si_code: si_code} = record, acc when si_code not in ["", nil, []] ->
         si_codes = String.split(si_code, ",")
 
-        case si_code_member?(si_codes, lib_si_codes) do
-          true -> {[record | elem(acc, 0)], elem(acc, 1)}
-          _ -> {elem(acc, 0), [record | elem(acc, 1)]}
+        case si_code_member?(si_codes) do
+          true ->
+            record = Map.put(record, :Family, si_code_family(si_codes))
+            {[record | elem(acc, 0)], elem(acc, 1)}
+
+          _ ->
+            {elem(acc, 0), [record | elem(acc, 1)]}
         end
 
       record, acc ->
@@ -26,15 +28,17 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
   end
 
   def si_code_filter({inc_w_si, inc_wo_si}) do
-    lib_si_codes = SICodes.si_codes()
-
     Enum.reduce(inc_w_si, {[], inc_wo_si}, fn
       %{si_code: si_codes} = law, {inc, exc} ->
         si_codes = if is_binary(si_codes), do: String.split(si_codes, ","), else: si_codes
 
-        case si_code_member?(si_codes, lib_si_codes) do
-          true -> {[law | inc], exc}
-          _ -> {inc, [law | exc]}
+        case si_code_member?(si_codes) do
+          true ->
+            Map.put(law, :Family, si_code_family(si_codes))
+            |> (&{[&1 | inc], exc}).()
+
+          _ ->
+            {inc, [law | exc]}
         end
 
       # Acts and some regs don't have SI Codes
@@ -44,19 +48,37 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
     |> (&{:ok, &1}).()
   end
 
-  def si_code_member?(si_code, lib_si_codes) when is_binary(si_code),
-    do: MapSet.member?(lib_si_codes, si_code)
+  def si_code_member?(si_code) when is_binary(si_code),
+    do: MapSet.member?(SICodes.si_codes(), si_code)
 
-  def si_code_member?(si_codes, lib_si_codes) when is_list(si_codes) do
+  def si_code_member?(si_codes) when is_list(si_codes) do
     Enum.reduce_while(si_codes, false, fn si_code, _acc ->
-      case MapSet.member?(lib_si_codes, si_code) do
+      case si_code_member?(si_code) do
         true -> {:halt, true}
         _ -> {:cont, false}
       end
     end)
   end
 
-  @spec terms_filter(list()) :: {:ok, {list(), list()}}
+  def si_code_family(si_codes) when is_list(si_codes) do
+    Enum.map(si_codes, &si_code_family(&1))
+    |> Enum.uniq()
+    |> Enum.filter(fn family -> family != nil end)
+    |> List.first()
+  end
+
+  @doc """
+  Function to lookup si_code and return Family
+  """
+  @spec si_code_family(binary()) :: binary() | nil
+  def si_code_family(si_code) do
+    case Map.get(Legl.Countries.Uk.LeglRegister.Models.ehs_si_code_family(), si_code) do
+      nil -> ""
+      family -> family
+    end
+  end
+
+  @spec terms_filter({list(), list()}) :: {:ok, {list(), list()}}
   def terms_filter({i, e}) do
     IO.puts("Terms inside Title Filter")
     IO.puts("# PRE_FILTERED RECORDS: inc:#{Enum.count(i)} exc:#{Enum.count(e)}")
@@ -95,7 +117,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.Filters do
   @doc """
   Function to exclude certain common new law titles
   """
-  @spec title_filter(list()) :: tuple()
+  @spec title_filter(list()) :: {list(), list()}
   def title_filter(records) do
     IO.puts(~s/PRE-TITLE FILTER RECORD COUNT: #{Enum.count(records)}/)
 
