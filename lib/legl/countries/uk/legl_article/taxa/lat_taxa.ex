@@ -174,6 +174,41 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
             | acc
           ]
 
+        %UK.Act{
+          id: id,
+          name: name,
+          flow: "main",
+          type: type,
+          part: part,
+          chapter: chapter,
+          heading: heading,
+          section: section,
+          # sub_section: sub_section,
+          text: text
+        } = _record,
+        acc ->
+          [_, type_code, year, number] = String.split(name, "_")
+
+          [
+            %__MODULE__{
+              ID: id,
+              Record_Type: [type],
+              Text: Regex.replace(~r/📌/m, text, "\n"),
+              "Section||Regulation": section,
+              Part: part,
+              Chapter: chapter,
+              Heading: heading,
+              type_code: type_code,
+              Year: year,
+              Number: number,
+              # We have to set a proxy for the LAT record_id.  Remember this is
+              # made up!
+              Record_ID:
+                ~s/rec#{:crypto.strong_rand_bytes(14) |> Base.url_encode64() |> binary_part(0, 14)}/
+            }
+            | acc
+          ]
+
         _, acc ->
           acc
       end)
