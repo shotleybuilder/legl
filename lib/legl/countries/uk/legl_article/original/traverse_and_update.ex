@@ -383,14 +383,14 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
         {"span", attr, [~s/#{x} #{txt}/]}
 
       # Sub-Section || Sub-Regulation || Sub-Paragraph
-
+      # 15/3/24 - regex has been uncommented, not sure why it was commented out
       {"p", [{"class", "LegP2ParaText"}] = attr, children} ->
         concat(children, " ")
-        # |> (&Regex.replace(
-        #      ~r/(.*?)\(([A-Z]?\d+[A-Z]*)\)(.*)/,
-        #      &1,
-        #      "[::sub::]\\g{2} \\g{1} (\\g{2}) \\g{3}"
-        #    )).()
+        |> (&Regex.replace(
+              ~r/(.*?)\(([A-Z]?\d+[A-Z]*)\)(.*)/,
+              &1,
+              "[::sub::]\\g{2} \\g{1} (\\g{2}) \\g{3}"
+            )).()
         |> (&{"p", attr, [&1]}).()
 
       {"span", [{"class", "LegDS LegLHS LegP2No"}, {"id", id}] = attr, children} ->

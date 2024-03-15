@@ -25,10 +25,29 @@ defmodule Legl.Countries.Uk.UkClean do
   def api_clean("", _), do: {:ok, ""}
 
   def api_clean(binary, opts) do
-    {:ok, clean_original(binary, opts)}
+    text = clean_original(binary, opts)
+    filesave(text, opts)
+    {:ok, text}
   end
 
   # PRIVATE FUNCTIONS
+
+  defp filesave(text, %{filesave?: true, path_clean_txt: path}),
+    do: File.write(path, text)
+
+  defp filesave(_, %{filesave?: false}), do: :ok
+
+  defp filesave(text, %{filesave?: true}),
+    do:
+      filesave(text, %{
+        filesave?: true,
+        path_clean_txt: ~s[lib/legl/data_files/txt/clean.txt] |> Path.absname()
+      })
+
+  defp filesave(text, opts) do
+    save? = ExPrompt.confirm("Save Cleaned Law?")
+    filesave(text, Map.put(opts, :filesave?, save?))
+  end
 
   defp clean_original(binary, %{type: :act, html?: true} = opts) do
     binary

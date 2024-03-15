@@ -53,7 +53,26 @@ defmodule UK.Parser do
   end
 
   def api_parse(binary, opts) when is_binary(binary) do
-    {:ok, parser(binary, opts)}
+    text = parser(binary, opts)
+    filesave(text, opts)
+    {:ok, text}
+  end
+
+  defp filesave(text, %{filesave?: true, path_parsed_txt: path}),
+    do: File.write(path, text)
+
+  defp filesave(_, %{filesave?: false}), do: :ok
+
+  defp filesave(text, %{filesave?: true}),
+    do:
+      filesave(text, %{
+        filesave?: true,
+        path_parsed_txt: ~s[lib/legl/data_files/txt/parsed.txt] |> Path.absname()
+      })
+
+  defp filesave(text, opts) do
+    save? = ExPrompt.confirm("Save Parsed Law?")
+    filesave(text, Map.put(opts, :filesave?, save?))
   end
 
   def parser(binary, %{type: :act, html?: true} = opts) do

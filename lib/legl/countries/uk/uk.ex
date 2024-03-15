@@ -143,7 +143,7 @@ defmodule UK do
   Function to select workflows for Legal Articles Tables
 
   """
-  @spec taxa(list()) :: any()
+  @spec lat(list()) :: any()
   def lat(opts \\ []) do
     IO.puts(~s/\nLAT Menu from [#{__MODULE__}].lat/)
     opts = Enum.into(opts, %{})

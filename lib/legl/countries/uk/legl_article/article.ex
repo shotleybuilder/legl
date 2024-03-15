@@ -2,7 +2,19 @@ defmodule Legl.Countries.Uk.LeglArticle.Article do
   @moduledoc """
   Functions to get and parse a law from legislation.gov.uk
 
+  Called like this:
+  > UK.lat(filesave?: true, type: :regulation, pbs?: false, country: :uk)
 
+  WORKFLOW
+  The workflow is set in Legl.Countries.Uk.Article.Options
+
+  Comprises the following functions:
+    Legl.Countries.Uk.AtArticle.Original.Original.run/2
+    Legl.Countries.Uk.UkClean.api_clean/2
+    UK.Parser.api_parse/2
+    Legl.Airtable.Schema.schema/2
+    Legl.airtable/3
+    Legl.Countries.Uk.Article.Taxa.LATTaxa.api_update_lat_taxa_from_text/2
 
   """
 

@@ -172,7 +172,9 @@ defmodule Legl.Countries.Uk.Article.Options do
       @original,
       @clean,
       @parse,
-      @airtable
+      @csv,
+      @airtable,
+      @taxa
     ]
   ]
 
