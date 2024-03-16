@@ -32,6 +32,15 @@ defmodule Legl.Services.Airtable.UkAirtable do
     |> make_records_into_legal_article_taxa_structs()
   end
 
+  @spec get_legal_interpretation_records(opts()) :: list()
+  def get_legal_interpretation_records(opts) do
+    get_records_from_at(opts)
+    |> elem(1)
+    |> Jason.encode!()
+    |> Jason.decode!(keys: :atoms)
+    |> strip_id_and_createdtime_fields()
+  end
+
   @doc """
 
   """

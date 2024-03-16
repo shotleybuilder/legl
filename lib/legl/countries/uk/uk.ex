@@ -179,6 +179,23 @@ defmodule UK do
 
   def test(opts), do: opts
 
+  # INTERPRETATION TABLE
+
+  @lit [
+    Parse: {Legl.Countries.Uk.LeglInterpretation.Interpretation, :api_interpretation}
+  ]
+
+  @spec lit(list()) :: any()
+  def lit(opts \\ []) do
+    IO.puts(~s/\LIT Menu from [#{__MODULE__}].lit/)
+    opts = Enum.into(opts, %{})
+
+    case opts do
+      %{lit_selection: n} -> api(@lit, n, opts)
+      _ -> api(@lit, opts)
+    end
+  end
+
   # PRIVATE FUNCTIONS
 
   defp api(menu, n, opts) when is_integer(n) do

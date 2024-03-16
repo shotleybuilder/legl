@@ -4,6 +4,10 @@ defmodule Legl.Countries.Uk.Article.Options do
   """
   alias Legl.Services.Airtable.AtBasesTables
 
+  @default_opts %{
+    filesave?: false
+  }
+
   @type formula :: list()
   @type opts :: map()
 
@@ -28,10 +32,16 @@ defmodule Legl.Countries.Uk.Article.Options do
 
   defp print_opts(opts), do: opts
 
-  def api_article_options(opts) do
+  def api_article_options(opts) when is_list(opts) do
+    Enum.into(opts, %{})
+    |> api_article_options()
+  end
+
+  def api_article_options(opts) when is_map(opts) do
     IO.puts(~s/_____\nSetting Options from [Uk.Article.Options.api_article_options]/)
 
     opts
+    |> (&Map.merge(@default_opts, &1)).()
     |> name()
     # alt :web or :file
     |> Map.put(:source, :web)

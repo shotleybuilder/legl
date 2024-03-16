@@ -420,7 +420,21 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
-  @spec formula_name(opts()) :: list(formula())
+  def formula_names(%{names: names} = opts) when is_list(names) do
+    Map.put(
+      opts,
+      :formula,
+      Enum.map(names, fn name -> ~s/{Name}="#{name}"/ end)
+      |> Enum.join(",")
+      |> or_formula()
+    )
+  end
+
+  defp or_formula(string) do
+    ~s/OR(#{string})/
+  end
+
+  @spec formula_empty_metadata(binary(), opts()) :: list(formula())
   def formula_empty_metadata(f, _opts) do
     [
       case ExPrompt.choose(
