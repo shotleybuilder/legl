@@ -22,7 +22,7 @@ defmodule Legl.Countries.Uk.LeglArticle.Article do
 
   @path_orig_html ~s[lib/legl/data_files/html/original.html] |> Path.absname()
   @path_orig_html_pretty ~s[lib/legl/data_files/html/original_pretty.html] |> Path.absname()
-  @path_orig_ex ~s[lib/legl/data_files/ex/original.ex] |> Path.absname()
+  # @path_orig_ex ~s[lib/legl/data_files/ex/original.ex] |> Path.absname()
   @path_orig_txt ~s[lib/legl/data_files/txt/original.txt] |> Path.absname()
   @path_clean_txt ~s[lib/legl/data_files/txt/clean.txt] |> Path.absname()
   @path_parsed_txt ~s[lib/legl/data_files/txt/parsed.txt] |> Path.absname()
@@ -36,7 +36,7 @@ defmodule Legl.Countries.Uk.LeglArticle.Article do
         path_orig_html: @path_orig_html,
         path_orig_html_pretty: @path_orig_html_pretty,
         path_orig_txt: @path_orig_txt,
-        path_orig_ex: @path_orig_ex,
+        # path_orig_ex: @path_orig_ex,
         path_clean_txt: @path_clean_txt,
         path_parsed_txt: @path_parsed_txt,
         path_at_schema_txt: @path_at_schema_txt

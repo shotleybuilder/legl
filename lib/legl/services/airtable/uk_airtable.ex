@@ -38,7 +38,7 @@ defmodule Legl.Services.Airtable.UkAirtable do
     |> elem(1)
     |> Jason.encode!()
     |> Jason.decode!(keys: :atoms)
-    |> strip_id_and_createdtime_fields()
+    |> move_id_and_drop_createdtime_field()
   end
 
   @doc """
@@ -94,6 +94,17 @@ defmodule Legl.Services.Airtable.UkAirtable do
   @spec strip_id_and_createdtime_fields(list()) :: list()
   def strip_id_and_createdtime_fields(records) do
     Enum.map(records, fn %{fields: fields} = _record -> fields end)
+  end
+
+  @doc """
+  Receives the records returned from an Airtable GET request
+  Returns a list of maps with :id in fields, :createdtime and :fields members removed
+  """
+  @spec move_id_and_drop_createdtime_field(list()) :: list()
+  def move_id_and_drop_createdtime_field(records) do
+    Enum.map(records, fn %{id: id, fields: fields} = _record ->
+      Map.put(fields, :record_id, id)
+    end)
   end
 
   @spec make_records_into_legal_register_structs(list()) :: list(LegalRegister.legal_register())

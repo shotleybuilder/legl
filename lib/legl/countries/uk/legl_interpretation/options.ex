@@ -10,8 +10,16 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Options do
     Map.merge(opts, %{base_id: base_id, table_id: table_id})
   end
 
+  @doc """
+  Functions to set a value for the Term in the opts map
+
+  3 Function heads:
+    1. term: is empty or nil, prompts user for the Term
+    2. :term is set, passes back the opts w/o change
+    3. :term not in opts.  Put :term in opts and call term/1
+  """
   @spec term(%{term: <<>> | nil}) :: %{term: <<>> | binary()}
-  def term(%{term: term} = opts) when term in ["", nil] do
+  def term(%{term: term} = opts) when term in [nil] do
     Map.put(opts, :term, ExPrompt.string(~s/Term/))
   end
 
@@ -19,7 +27,11 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Options do
   def term(%{term: term} = opts) when is_binary(term), do: opts
 
   @spec term(%{}) :: %{term: <<>>}
-  def term(opts), do: term(Map.put(opts, :term, ""))
+  def term(opts), do: term(Map.put(opts, :term, nil))
+
+  def formula_term(f, %{term: ""} = _opts) do
+    [~s/{term}=BLANK()/ | f]
+  end
 
   def formula_term(f, %{term: term} = _opts) when term not in ["", nil] do
     [~s/{term}="#{term}"/ | f]

@@ -6,7 +6,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
   alias Legl.Services.Airtable.UkAirtable, as: AT
 
   @default_opts %{
-    print_opts?: true
+    print_opts?: true,
+    formula: ""
   }
 
   @fields ~w[
@@ -22,6 +23,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
       |> Map.put(:fields, @fields)
       |> opts()
       |> Map.put_new(:view, "")
+
+    opts =
+      case Map.has_key?(opts, "QA_taxa") do
+        true -> Map.put(opts, :formula, ~s/#{opts.formula},{QA_taxa}=#{opts."QA_taxa"}/)
+        _ -> opts
+      end
 
     case opts.query_name do
       :cancel ->

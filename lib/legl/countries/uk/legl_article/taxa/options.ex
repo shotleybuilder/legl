@@ -214,6 +214,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
     end
   end
 
+  def taxa_workflow(opts), do: opts
+
   def taxa_workflow(opts, n) when is_integer(n),
     do:
       opts
@@ -224,8 +226,6 @@ defmodule Legl.Countries.Uk.Article.Taxa.Options do
         |> Enum.into(%{}, fn {k, v} -> {v, k} end)
         |> Map.get(n)
       )
-
-  def taxa_workflow(opts), do: opts
 
   defp formula(opts) do
     record_type =

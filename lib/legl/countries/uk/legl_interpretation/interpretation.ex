@@ -5,84 +5,133 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   Enumerates a list of %UK.Act{} or %UK.Regulation{} structs
 
   File input saved as at_schema.json
+
+  Running
+
+  UK.lit()
+
+  To mute printing of OPTIONS
+  UK.lit([LRT: [print_ops?: false]])
+
   """
 
   alias Legl.Countries.Uk.LeglRegister.Crud.Read, as: LRRead
   alias Legl.Countries.Uk.LeglArticle.Article
   alias Legl.Countries.Uk.LeglInterpretation.Read, as: LIRead
+  alias Legl.Countries.Uk.LeglInterpretation.Options, as: LIO
 
   @type legal_article_interpretation :: %__MODULE__{
           Term: String.t(),
+          Term_Welsh: String.t(),
           Definition: String.t(),
-          Linked_LRT_Records: list()
+          Defined_By: list(),
+          Definition_Referenced: boolean()
         }
 
   defstruct Term: "",
+            Term_Welsh: "",
             Definition: "",
-            Linked_LRT_Records: []
+            Defined_By: [],
+            Definition_Referenced: false
 
+  @default_lit_opts %{
+    base_name: "uk ehs",
+    table_name: "interpretation",
+    lit_query_name: :Term,
+    patch?: true
+  }
   @doc """
   Function is called for stand-alone processing of terms & definitions
 
   The function reads records from the LRT before processing
   """
-  def api_interpretation(opts) do
+  def api_interpretation(%{}) do
+    opts = [LRT: [], LAT: [], LIT: []]
+    api_interpretation(opts)
+  end
+
+  def api_interpretation(LRT: lrt_opts, LAT: lat_opts, LIT: lit_opts) do
+    lrt_opts = [{:QA_taxa, "FALSE()"} | lrt_opts]
+
+    lit_opts =
+      Enum.into(lit_opts, @default_lit_opts)
+      |> LIO.base_table_id()
+
     # Read records from LRT
-    LRRead.api_read(opts)
-    |> process(opts)
+    LRRead.api_read(lrt_opts)
+    |> process(lat_opts, lit_opts)
   end
 
   # INTERNAL but TESTED FUNCTIONS
 
-  def process([], _), do: IO.puts("No records returned")
+  def process([], _), do: IO.puts("No records returned from the Legal Register")
 
-  def process(records, opts) do
-    # todo get and parse the content of the law
-    opts =
-      opts
+  def process(lrt_records, lat_opts, lit_opts) do
+    # Get and parse the content of each record
+    lat_opts =
+      lat_opts
+      |> Enum.into(%{})
       |> Map.put(:article_workflow_name, :"Original -> Clean -> Parse -> Airtable")
       |> Map.put(:html?, true)
       |> Map.put(:pbs?, false)
       |> Map.put(:country, :uk)
 
-    records =
-      Enum.reduce(records, [], fn record, acc ->
-        opts =
-          opts
-          |> Map.put(:Name, Map.get(record, :Name))
-          |> Map.put(:type, set_type(Map.get(record, :type_class)))
+    Enum.each(lrt_records, fn
+      %{Name: name, record_id: record_id, Title_EN: title_en, type_class: type_class} ->
+        lat_opts =
+          lat_opts
+          |> Map.put(:Name, name)
+          |> Map.put(:type, set_type(type_class))
 
-        Article.api_article(opts)
+        lit_opts = lit_opts |> Map.put(:Title_EN, title_en)
+
+        # LAT interpretation records
+        Article.api_article(lat_opts)
         |> elem(1)
+        |> filter_interpretation_sections()
         |> parse_interpretation_section()
-        |> build_interpretation_struct()
-        |> Enum.map(&Map.put(&1, :Linked_LRT_Records, [Map.get(record, :record_id)]))
-        |> IO.inspect()
-        |> Enum.concat(acc)
-        |> tag_for_create_or_update()
-      end)
+        |> build_interpretation_struct(record_id)
+        |> tag_for_create_or_update(lit_opts)
 
-    Enum.each(records, &build(&1, opts))
+        # Enum.concat(results, acc)
+    end)
   end
 
   @doc """
   Function to parse definitions when they are contained within an
   'Interpretation' section
-
   """
-  def parse_interpretation_section(records) do
-    filter_interpretation_sections(records)
+  def parse_interpretation_section(lat_records) do
+    lat_records
     |> Enum.reduce([], fn %{text: text}, acc ->
+      # Remove footnote markers
+      text =
+        text
+        |> (&Regex.replace(~r/\(fn\d*\)/, &1, "")).()
+        # Remove EFs
+        |> (&Regex.replace(~r/\[F[0-9]*/, &1, "")).()
+        |> (&Regex.replace(~r/\]/, &1, "")).()
+        |> (&Regex.replace(~r/📌/, &1, "\n")).()
+        |> String.trim()
+
+      IO.puts(~s/\nTEXT: #{inspect(text)}\n/)
+
       interpretation_patterns()
-      |> Enum.reduce(acc, fn regex, acc2 ->
-        case Regex.scan(regex, String.trim(text)) do
+      |> Enum.reduce({acc, text}, fn regex, {acc2, txt} ->
+        case Regex.scan(regex, txt) do
           [] ->
-            acc2
+            {acc2, txt}
 
           result ->
-            acc2 ++ process_regex_scan_result(result)
+            termdefs = process_regex_scan_result(result)
+            txt = process_text(result, txt)
+
+            IO.puts(~s/\nREMAIN TEXT: #{inspect(txt)}/)
+
+            {Enum.concat(acc2, termdefs), txt}
         end
       end)
+      |> elem(0)
     end)
   end
 
@@ -113,40 +162,63 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   -n-> CREATE RECORD
   """
 
-  def tag_for_create_or_update(records, at_records \\ nil) do
-    Enum.reduce(records, [], fn
-      %__MODULE__{Term: term, Linked_LRT_Records: [record_id]} = record, acc ->
+  def tag_for_create_or_update(lat_records, lit_records \\ nil, lit_opts)
+      when is_map(lit_opts) do
+    Enum.reduce(lat_records, [], fn
+      %__MODULE__{Term: term, Defined_By: [record_id]} = record, acc ->
+        # We only GET LIT records using the Term as search value
+        lit_opts = Map.put(lit_opts, :term, term)
+
         # Allows the function to be tested w/o calling the Base
-        at_records =
-          case at_records do
-            nil -> LIRead.api_lit_read(term: term)
-            _ -> at_records
+        lit_records =
+          case lit_records do
+            nil -> LIRead.api_lit_read(lit_opts)
+            _ -> lit_records
           end
 
-        case at_records do
+        case lit_records do
           # Term not present
           [] ->
-            record
-            |> Map.from_struct()
-            |> Map.put(:action, :post)
-            |> (&[&1 | acc]).()
+            result =
+              record
+              |> Map.from_struct()
+              |> Map.put(:action, :post)
+
+            # POST
+            build(result, lit_opts)
+
+            [result | acc]
 
           # Term present
           _ ->
-            case term_defined_by_this_law?(at_records, record) do
+            case term_defined_by_this_law?(lit_records, record) do
               false ->
-                case definition_present?(at_records, record) do
+                case definition_present?(lit_records, record) do
                   false ->
-                    record
-                    |> Map.from_struct()
-                    |> Map.put(:action, :post)
-                    |> (&[&1 | acc]).()
+                    result =
+                      record
+                      |> Map.from_struct()
+                      |> Map.put(:action, :post)
+
+                    # POST
+                    build(result, lit_opts)
+
+                    [result | acc]
 
                   [result] ->
-                    linked_lrt_records = [record_id | result."Linked_LRT_Records"]
+                    defined_by =
+                      case Map.has_key?(result, :Defined_By) do
+                        true -> [record_id | result."Defined_By"] |> Enum.sort()
+                        # Handles orphan terms with no Defined_By field content
+                        false -> [record_id]
+                      end
 
                     result =
-                      Map.merge(result, %{Linked_LRT_Records: linked_lrt_records, action: :patch})
+                      Map.merge(result, %{Defined_By: defined_by, action: :patch})
+                      |> Map.drop([:Name, :Definition, :Term])
+
+                    # PATCH
+                    build(result, lit_opts)
 
                     [result | acc]
 
@@ -164,25 +236,35 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
                   true ->
                     case multiple_defining_laws?(at_record) do
                       true ->
-                        record = record |> Map.from_struct() |> Map.put(:action, :post)
+                        result = record |> Map.from_struct() |> Map.put(:action, :post)
 
-                        linked_lrt_records =
-                          at_record."Linked_LRT_Records" -- record."Linked_LRT_Records"
+                        # POST
+                        build(result, lit_opts)
 
-                        at_record =
+                        defined_by = at_record."Defined_By" -- record."Defined_By"
+
+                        at_result =
                           at_record
-                          |> Map.put(:Linked_LRT_Records, linked_lrt_records)
+                          |> Map.put(:Defined_By, defined_by)
+                          |> Map.drop([:Name, :Definition, :Term])
                           |> Map.put(:action, :patch)
 
-                        [record, at_record | acc]
+                        # PATCH
+                        build(at_result, lit_opts)
+
+                        [at_result | acc]
+                        |> (&[result | &1]).()
 
                       false ->
                         at_record =
                           at_record
-                          |> Map.drop([:Linked_LRT_Records])
+                          |> Map.drop([:Defined_By])
                           |> Map.put(:Definition, record."Definition")
                           |> Map.put(:action, :patch)
 
+                        # PATCH
+
+                        build(at_record, lit_opts)
                         [at_record | acc]
                     end
                 end
@@ -197,12 +279,16 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   end
 
   def build(%{action: :post} = record, opts) when is_map(record) do
-    record =
-      Map.drop(record, :action)
-      |> Legl.Utility.map_filter_out_empty_members()
-      |> (&Map.merge(%{}, %{fields: &1})).()
-      |> List.wrap()
-      |> post(opts)
+    Map.drop(record, [:action, :Name])
+    |> Legl.Utility.map_filter_out_empty_members()
+    |> (&Map.merge(%{}, %{fields: &1})).()
+    |> List.wrap()
+    |> post(opts)
+  end
+
+  def build(%{record_id: record_id, action: :patch} = record, opts) when is_map(record) do
+    %{id: record_id, fields: Map.drop(record, [:record_id, :Name, :action])}
+    |> patch(opts)
   end
 
   def post(record, opts) do
@@ -211,11 +297,6 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
     json = Map.merge(%{}, %{"records" => record, "typecast" => true}) |> Jason.encode!()
     # IO.inspect(json, label: "__MODULE__", limit: :infinity)
     Legl.Services.Airtable.AtPost.post_records([json], headers, params)
-  end
-
-  def build(%{record_id: record_id, action: :patch} = record, opts) when is_map(record) do
-    %{id: record_id, fields: Map.drop(record, [:record_id, :action])}
-    |> patch(opts)
   end
 
   defp patch(record, %{patch?: true} = opts) when is_map(record) do
@@ -241,17 +322,21 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   defp patch(_, %{patch?: false}), do: :ok
 
   defp patch(record, %{patch?: patch} = opts) when patch in [nil, ""] do
-    patch? = ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
+    patch? = ExPrompt.confirm("\nPatch #{opts."Title_EN"}?")
     patch(record, Map.put(opts, :patch?, patch?))
   end
 
-  defp patch(record, opts), do: patch(record, Map.put(opts, :patch?, ""))
-
   defp patch([], _), do: :ok
 
-  defp term_defined_by_this_law?(results, %{Linked_LRT_Records: [record_id]} = _record) do
-    Enum.filter(results, fn %{Linked_LRT_Records: record_ids} ->
-      Enum.member?(record_ids, record_id)
+  defp patch(record, opts), do: patch(record, Map.put(opts, :patch?, ""))
+
+  defp term_defined_by_this_law?(results, %{Defined_By: [record_id]} = _record) do
+    Enum.filter(results, fn
+      %{Defined_By: record_ids} ->
+        Enum.member?(record_ids, record_id)
+
+      result ->
+        Map.has_key?(result, :Defined_By)
     end)
     |> case do
       [] -> false
@@ -260,11 +345,19 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   end
 
   defp definition_present?(results, %{Definition: definition} = _record) do
-    Enum.filter(results, fn %{Definition: at_definition} ->
-      case String.bag_distance(at_definition, definition) do
-        x when x > 0.9 -> true
-        _ -> false
-      end
+    Enum.filter(results, fn
+      %{Definition: at_definition} ->
+        case String.bag_distance(at_definition, definition) do
+          x when x > 0.9 -> true
+          _ -> false
+        end
+
+      # AT doesn't return a value if the 'Definition' field is empty
+      _ ->
+        case String.bag_distance("", definition) do
+          x when x > 0.9 -> true
+          _ -> false
+        end
     end)
     |> case do
       [] -> false
@@ -282,7 +375,7 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
     end
   end
 
-  defp multiple_defining_laws?(%{Linked_LRT_Records: record_ids}) when is_list(record_ids) do
+  defp multiple_defining_laws?(%{Defined_By: record_ids}) when is_list(record_ids) do
     case Enum.count(record_ids) do
       1 -> false
       _ -> true
@@ -291,8 +384,34 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
 
   @spec process_regex_scan_result(list()) :: list()
   def process_regex_scan_result(result) do
-    Enum.map(result, fn [_, term, defn] ->
-      {term, String.trim(defn)}
+    # IO.inspect(result)
+
+    Enum.map(result, fn
+      [_, _, _, ""] ->
+        []
+
+      [_, term1, term2, defn] ->
+        defn = String.trim(defn)
+        [{term1, defn}, {term2, defn}]
+
+      [_, _, ""] ->
+        []
+
+      # deals with a specific error in leg.gov.uk -> "the 1974" Act means
+      [_, "the 1974", " Act" <> defn] ->
+        [{"the 1974 Act", String.trim(defn)}]
+
+      [_, term, defn] ->
+        IO.puts(~s/MATCH: term: #{term} defn: #{inspect(defn)}/)
+        [{term, String.trim(defn)}]
+    end)
+    |> List.flatten()
+  end
+
+  def process_text(results, text) do
+    Enum.reduce(results, text, fn
+      [match | _], txt ->
+        Regex.replace(~r/#{Regex.escape(match)}/, txt, "")
     end)
   end
 
@@ -305,8 +424,27 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
           false -> {acc, false}
         end
 
-      %{type: type, text: text} = record, {acc, true} when type in ["article", "sub-article"] ->
-        {[Map.put(record, :text, Regex.replace(~r/📌/m, text, "\n")) | acc], true}
+      %{type: "section", text: text}, {acc, _} ->
+        case Regex.match?(~r/[Ii]nterpretation|Application/, text) do
+          true -> {acc, true}
+          false -> {acc, false}
+        end
+
+      %{type: type, text: text} = record, {acc, true}
+      when type in ["article", "sub-article", "sub-section"] ->
+        # Discard amendment text blocks which contains these terms
+        case String.contains?(text, [
+               "substitute—",
+               "insert—",
+               "” substitute “",
+               "References to—",
+               "are to be read as if",
+               "For the purposes of these Regulations",
+               "The provisions referred to in"
+             ]) do
+          true -> {acc, true}
+          _ -> {[Map.put(record, :text, Regex.replace(~r/[ ]?📌/m, text, "\n")) | acc], true}
+        end
 
       _, acc ->
         acc
@@ -317,17 +455,137 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
 
   @spec interpretation_patterns() :: list()
   def interpretation_patterns() do
+    fwd_lh =
+      [
+        # end of text (we're not using 'm')
+        "\\.$",
+        # start of next line
+        "[,;][ ]?\n(?:[ ]?“|the[ ]“|\\([a-z]\\)[ ](?:the[ ]|any reference to a[ ])?“)",
+        # 'and' joiner
+        "[,;][ ]and[ ]?\n[ ]?“",
+        # a period where a semi-colon should be
+        "\\.[ ]\n“",
+        # no end of line punct, just a space
+        "[ ]\n“",
+        # no punc just a new line
+        "[ ]\n[ ]“",
+        # repeal before next term
+        ". . .\n“"
+      ]
+      |> Enum.join("|")
+
+    fwd_lh = ~s/(?=(?:#{fwd_lh}))/
+
     [
-      ~s/“([a-z -]*)”([\\s\\S]*?)(?=(?:\\.$|;\n“|\\]$))/
+      ~s/“([[:print:]]*)”[ ]and[ ]“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/,
+      ~s/“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/
     ]
     |> Enum.map(&(Regex.compile(&1, "m") |> elem(1)))
   end
 
-  # PRIVATE FUNCTIONS
-  @spec build_interpretation_struct(list({term :: binary(), defn :: binary()})) ::
+  @spec build_interpretation_struct(list({term :: binary(), defn :: binary()}), String.t()) ::
           list(%__MODULE__{})
-  defp build_interpretation_struct(records) do
-    Enum.map(records, fn {term, defn} -> %__MODULE__{Term: term, Definition: defn} end)
+  def build_interpretation_struct(records, record_id) do
+    Enum.map(records, fn {term, defn} ->
+      # Remove any leading 'the' from the term
+      term = Regex.replace(~r/^the[ ]/, term, "")
+      # Remove any leading 'a' from the term
+      term =
+        Regex.replace(~r/^a[ ]/, term, "")
+        |> String.downcase()
+
+      # Welsh translated terms appear as parenthetised phrases at the start of the defn
+      # match 1 - single terms - (“Rheoliadau’r Gymuned”)
+      # match 2 - list of terms - (“a gymeradwywyd”, “wedi'i gymeradwyo”, “wedi'u cymeradwyo”)
+      upcase? = &(&1 == String.upcase(&1))
+
+      {term, w_term, w_defn} =
+        case Regex.run(
+               ~r/^\(“([[:print:]'’]*)”\)[, ]([\s\S]*)|^\(([[:print:]’“”]*)\)[, ]([\s\S]*)/,
+               defn
+             ) do
+          nil ->
+            {term, "", defn}
+
+          [_match, w_term, w_defn] ->
+            IO.puts(~s/\nDEFN: #{inspect(defn)}\n-> #{inspect(w_defn)}/)
+            {term, w_term, w_defn}
+
+          [_match, w_term, w_defn, "", ""] ->
+            {term, w_term, w_defn}
+
+          [_match, "", "", w_term, w_defn] ->
+            IO.puts(~s/\nDEFN: #{inspect(defn)}\n-> #{inspect(w_defn)}/)
+            {term, ~s/#{w_term}/, w_defn}
+        end
+
+      # if the term is all caps then revert back
+      {w_term, defn} =
+        case upcase?.(w_term) do
+          true -> {"", defn}
+          false -> {w_term, w_defn}
+        end
+
+      # does the definition reference another law's definition?
+      refd? = definition_references_another_law?(defn)
+
+      %__MODULE__{
+        Term: term,
+        Definition: defn,
+        Defined_By: [record_id],
+        Term_Welsh: String.downcase(w_term),
+        Definition_Referenced: refd?
+      }
+    end)
+    |> print_results()
+  end
+
+  # PRIVATE FUNCTIONS
+
+  defp definition_references_another_law?(defn) do
+    cond do
+      Regex.match?(
+        ~r/has?v?e? the meanings? (?:they bear|that it bears|assigned|given|respectively assigned).*(?:in|in the|to the|of the|of).*(?:Act|Regulation|Order)/,
+        defn
+      ) ->
+        true
+
+      Regex.match?(
+        ~r/has?v?e? the same meanings? (?:as in|as in the|given|assigned).*(?:Act|Regulation|Order)/,
+        defn
+      ) ->
+        true
+
+      Regex.match?(
+        ~r/has?v?e? the respective meanings? (?:as in|as in the|given|assigned).*(?:Act|Regulation|Order)/,
+        defn
+      ) ->
+        true
+
+      Regex.match?(
+        ~r/(?:is to be|shall) be construed (?:as provided|in accordance).*(?:of the|of).*(?:Act|Regulation|Order)/,
+        defn
+      ) ->
+        true
+
+      Regex.match?(~r/as defined by.*(?:Act|Regulation|Order)/, defn) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  defp print_results(results) do
+    Enum.each(results, fn
+      %__MODULE__{Term: term, Term_Welsh: w_term, Definition: defn} ->
+        IO.puts(~s/RESULT TERM: #{term}\nWELSH TERM: #{w_term}\nDEFN: #{defn}\n/)
+
+      %__MODULE__{Term: term, Definition: defn} ->
+        IO.puts(~s/RESULT TERM: #{term}\nDEFN: #{defn}\n/)
+    end)
+
+    results
   end
 
   defp set_type("Act"), do: :act

@@ -54,11 +54,11 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
   @spec process(binary(), map()) :: {:ok, binary()} | :ok
   defp process(body, opts) do
     with {:ok, document} <- Floki.parse_document(body),
-         :ok <-
-           if(opts.filesave?,
-             do: File.write(opts.path_orig_ex, inspect(document, limit: :infinity)),
-             else: :ok
-           ),
+         # :ok <-
+         #  if(opts.filesave?,
+         #    do: File.write(opts.path_orig_ex, inspect(document, limit: :infinity)),
+         #    else: :ok
+         #  ),
          text <- Latest.process(document),
          :ok <- if(opts.filesave?, do: File.write(opts.path_orig_txt, text), else: :ok),
          :ok = if(opts.filesave?, do: IO.puts(".html, .ex and .txt files saved"), else: :ok) do

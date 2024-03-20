@@ -8,57 +8,70 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Read do
   @default_opts %{
     base_name: "uk ehs",
     table_name: "interpretation",
-    print_opts?: true
+    print_opts?: false
   }
 
   @fields ~w[
     Name Term Definition Defined_By Used_By
   ]
 
-  def api_lit_read(opts \\ []) do
-    opts =
-      opts
-      |> Enum.into(@default_opts)
-      |> LIO.base_table_id()
-      |> Map.put(:fields, @fields)
-      |> opts()
+  def api_lit_read(opts) when is_list(opts), do: api_lit_read(Enum.into(opts, %{}))
 
-    case opts.query_name do
-      :cancel ->
-        :ok
-
-      _ ->
-        print_options(opts)
-
-        AT.get_legal_interpretation_records(opts)
-    end
+  def api_lit_read(opts) when is_map(opts) do
+    opts
+    |> (&Map.merge(@default_opts, &1)).()
+    |> LIO.base_table_id()
+    |> Map.put(:fields, @fields)
+    |> opts()
+    |> get_lit_records_or_cancel()
   end
 
   # PRIVATE FUNCTIONS
+
+  defp get_lit_records_or_cancel(%{lit_query_name: :cancel}) do
+    :ok
+  end
+
+  defp get_lit_records_or_cancel(%{test: true} = opts) do
+    print_options(opts)
+  end
+
+  defp get_lit_records_or_cancel(%{lit_query_name: _query_name} = opts) do
+    print_options(opts)
+
+    AT.get_legal_interpretation_records(opts)
+  end
 
   @query_names [
     :Term
   ]
 
-  @spec opts(%{query_name: integer()}) :: %{query_name: binary()}
-  defp opts(%{query_name: n} = opts) when is_integer(n) do
+  @spec opts(%{lit_query_name: number()}) :: %{lit_query_name: binary()}
+  defp opts(%{lit_query_name: n} = opts) when is_number(n) do
+    n = ~s/#{n}/
+
     Map.put(
       opts,
-      :query_name,
+      :lit_query_name,
       @query_names
       |> Enum.with_index()
       |> Enum.into(%{}, fn {k, v} -> {v, k} end)
+      |> Map.put("-1", :cancel)
       |> Map.get(n)
     )
     |> opts()
   end
 
-  defp opts(%{query_name: query_name} = opts) do
-    case query_name do
+  defp opts(%{lit_query_name: lit_query_name} = opts) when is_atom(lit_query_name) do
+    case lit_query_name do
       :Term ->
-        opts
-        |> LIO.term()
-        |> LIO.formula_term()
+        opts =
+          opts
+          |> LIO.term()
+          |> Map.put(:view, "")
+
+        f = LIO.formula_term([], opts)
+        Map.put(opts, :formula, ~s/AND(#{Enum.join(f, ",")})/)
 
       :cancel ->
         opts
@@ -68,12 +81,12 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Read do
   defp opts(opts) do
     case ExPrompt.choose("LIT Read", @query_names) do
       -1 ->
-        Map.put(opts, :query_name, :cancel)
+        Map.put(opts, :lit_query_name, :cancel)
 
       n ->
         opts
         |> Map.put(
-          :query_name,
+          :lit_query_name,
           @query_names
           |> Enum.with_index()
           |> Enum.into(%{}, fn {k, v} -> {v, k} end)

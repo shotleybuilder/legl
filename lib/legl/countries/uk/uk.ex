@@ -157,7 +157,7 @@ defmodule UK do
   @taxa [
     Update_Single_Law: {Taxa, :api_update_lat_taxa},
     Update_Laws: {Taxa, :api_update_multi_lat_taxa},
-    Update_Law_from_Gov: {Taxa, :api_update_lat_taxa_from_gov},
+    Update_Law_from_Gov: {Taxa, :api_update_lat_taxa},
     Test: {:test}
   ]
 
@@ -304,6 +304,7 @@ defmodule UK do
     `iex(1)>UK.airtable(name: "airtable-id", type: :regulation)`
 
   """
+  @parsed ""
   def airtable(opts \\ []) do
     opts = Enum.into(opts, @airtable_default_opts)
 

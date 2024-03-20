@@ -3,8 +3,20 @@ defmodule Legl.Countries.Uk.LeglInterpretation.InterpretationTest do
   use ExUnit.Case
   alias Legl.Countries.Uk.LeglInterpretation.Interpretation
 
+  # Parse a law into at_schema.json by running:
+  # UK.lat(type: :regulation, filesave?: true, pbs?: true, country: :uk)
+
   @path ~s[lib/legl/data_files/json/at_schema.json] |> Path.absname()
   @records Legl.Utility.read_json_records(@path)
+
+  test "api_interpretation/1" do
+    lrt_opts = [query_name: :Name, name: "UK_uksi_1992_2793"]
+    lat_opts = []
+    lit_opts = [lit_query_name: :Term]
+    opts = [LRT: lrt_opts, LAT: lat_opts, LIT: lit_opts]
+    response = Interpretation.api_interpretation(opts)
+    assert response == :ok
+  end
 
   test "interpretation_patterns/0" do
     result = Interpretation.interpretation_patterns()
@@ -17,16 +29,34 @@ defmodule Legl.Countries.Uk.LeglInterpretation.InterpretationTest do
     assert Enum.count(result) > 1
   end
 
-  test "parse_interpretation_section/1" do
-    result = Interpretation.parse_interpretation_section(@records)
+  # parse the law into at_schema.json before running this test
 
-    Enum.each(result, fn {term, defn} ->
+  test "parse_interpretation_section/1" do
+    results =
+      Interpretation.filter_interpretation_sections(@records)
+      |> Interpretation.parse_interpretation_section()
+
+    Enum.each(results, fn {term, defn} = _result ->
       assert is_binary(term)
       assert is_binary(defn)
+      # IO.puts(~s/RESULT\n#{inspect(result)}\n/)
     end)
   end
 
-  test "api_interpretation/2" do
+  test "build_interpretation_struct/2" do
+    results =
+      Interpretation.filter_interpretation_sections(@records)
+      |> Interpretation.parse_interpretation_section()
+      |> Interpretation.build_interpretation_struct("xxxxxx")
+
+    Enum.each(results, fn %_{Term: term, Definition: defn} = _result ->
+      assert is_binary(term)
+      assert is_binary(defn)
+      # IO.puts(~s/RESULT\n#{inspect(result)}\n/)
+    end)
+  end
+
+  test "process/2" do
     result = Interpretation.process(@records, %{})
 
     Enum.each(result, fn map ->
@@ -125,6 +155,33 @@ defmodule Legl.Countries.Uk.LeglInterpretation.InterpretationTest do
                |> Map.from_struct()
                |> Map.put(:action, :post)
              ]
+    end
+  end
+
+  alias Legl.Countries.Uk.LeglInterpretation.Read
+
+  describe "api_lit_read/1" do
+    test "cancelled" do
+      opts = [lit_query_name: -1]
+      response = Read.api_lit_read(opts)
+      assert response == :ok
+    end
+
+    test "term" do
+      opts = [lit_query_name: :Term, term: "foo", test: true]
+      response = Read.api_lit_read(opts)
+      assert is_map(response)
+      assert response.base_id == "appq5OQW9bTHC1zO5"
+      assert response.formula == "AND({term}=\"foo\")"
+    end
+
+    test "lit @airtable" do
+      opts = [lit_query_name: :Term, term: ""]
+      response = Read.api_lit_read(opts)
+      assert is_list(response)
+      [h | _] = response
+      assert h."Name" == "_"
+      assert Map.has_key?(h, :record_id)
     end
   end
 end
