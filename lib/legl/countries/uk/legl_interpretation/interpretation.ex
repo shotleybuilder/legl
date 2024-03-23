@@ -25,14 +25,16 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
           Term_Welsh: String.t(),
           Definition: String.t(),
           Defined_By: list(),
-          Definition_Referenced: boolean()
+          Definition_Referenced: boolean(),
+          Scope: String.t()
         }
 
   defstruct Term: "",
             Term_Welsh: "",
             Definition: "",
             Defined_By: [],
-            Definition_Referenced: false
+            Definition_Referenced: false,
+            Scope: ""
 
   @default_lit_opts %{
     base_name: "uk ehs",
@@ -40,6 +42,54 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
     lit_query_name: :Term,
     patch?: true
   }
+
+  # scope definitions
+
+  @scope_law Enum.join(
+               [
+                 ~s/[Ff]or these purposes/,
+                 ~s/[Ii]n these [Rr]egulations/,
+                 ~s/[Ii]n this [Oo]rder/
+               ],
+               "|"
+             )
+
+  @scope_provision Enum.join(
+                     [
+                       ~s/[Ff]or the purposes? of this (?:[Rr]egulation|[Oo]rder|[Aa]rticle)/,
+                       ~s/[Ff]or the purposes? of paragraph \\(\\d+\\)/,
+                       ~s/for this purpose/,
+                       ~s/In (?:subsection|paragraph) \\(\\d+\\)/,
+                       ~s/[Ii]n (?:this|that) (?:[Rr]egulation|[Oo]rder|[Aa]rticle)|[Ss]ection|[Ss]ubsection/
+                     ],
+                     "|"
+                   )
+
+  @scope_part Enum.join([
+                ~s/In this [Pp]art/
+              ])
+
+  # Blocks of text containing these terms are excluded from processing
+
+  @excluded Enum.join(
+              [
+                "substitute" <> <<226, 128, 148>>,
+                "substitute" <> <<226, 128, 147>>,
+                # "(?<!means?|shall be construed|has the same meaning|is to be read).*substituted?s?",
+                "” substitute “",
+                "inserte?d?:?" <> <<226, 128, 148>>,
+                "inserte?d?:?" <> <<226, 128, 147>>,
+                "(?:inserte?d?|inserted (?:the words|at the end|following)) “",
+                "References to" <> <<226, 128, 148>>,
+                "References to" <> <<226, 128, 147>>,
+                "are to be read as if",
+                "For the purposes of these Regulations",
+                "The provisions referred to in",
+                "When interpreting the Directive for the purposes of these Regulations"
+              ],
+              "|"
+            )
+
   @doc """
   Function is called for stand-alone processing of terms & definitions
 
@@ -77,7 +127,15 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
       |> Map.put(:country, :uk)
 
     Enum.each(lrt_records, fn
-      %{Name: name, record_id: record_id, Title_EN: title_en, type_class: type_class} ->
+      %{
+        Name: name,
+        record_id: record_id,
+        Title_EN: title_en,
+        type_class: type_class,
+        type_code: type_code
+      } ->
+        IO.puts(~s/\n#{name} #{title_en}/)
+
         lat_opts =
           lat_opts
           |> Map.put(:Name, name)
@@ -86,10 +144,23 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
         lit_opts = lit_opts |> Map.put(:Title_EN, title_en)
 
         # LAT interpretation records
-        Article.api_article(lat_opts)
-        |> elem(1)
-        |> filter_interpretation_sections()
-        |> parse_interpretation_section()
+        {interpretation_section, rest} =
+          Article.api_article(lat_opts)
+          |> elem(1)
+          |> filter_interpretation_sections()
+
+        # IO.inspect(interpretation_section, label: "INTER")
+        # IO.inspect(rest, label: "REST")
+        interpretation_section =
+          interpretation_section
+          |> parse_interpretation_section(type_code, :inter)
+
+        rest =
+          rest
+          |> parse_interpretation_section(type_code, :rest)
+
+        (interpretation_section ++ rest)
+        |> Enum.uniq()
         |> build_interpretation_struct(record_id)
         |> tag_for_create_or_update(lit_opts)
 
@@ -98,10 +169,58 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   end
 
   @doc """
+  Function to split the records of the law
+
+  Interpretation section w/o substitutions & other
+
+  Remainder of law w/o substitutions
+
+  Returns as tuple - {interpretation section, other, boolean}
+  """
+  @spec filter_interpretation_sections(list()) :: {list(), list()}
+  def filter_interpretation_sections(records) do
+    {inter, rest} =
+      Enum.reduce(records, {{[], []}, false}, fn
+        %{type: "heading", text: text}, {acc, _} ->
+          case Regex.match?(~r/[Ii]nterpretation/, text) do
+            true -> {acc, true}
+            false -> {acc, false}
+          end
+
+        %{type: "section", text: text}, {acc, _} ->
+          case Regex.match?(~r/[Ii]nterpretation|Application/, text) do
+            true -> {acc, true}
+            false -> {acc, false}
+          end
+
+        %{type: type, text: text} = record, {{inter, rest} = acc, inter?}
+        when type in ["article", "sub-article", "sub-section"] ->
+          case excluded_text?(text) do
+            true ->
+              {acc, inter?}
+
+            _ ->
+              record = Map.put(record, :text, Regex.replace(~r/[ ]?📌/m, text, "\n"))
+
+              case inter? do
+                true -> {{[record | inter], rest}, inter?}
+                false -> {{inter, [record | rest]}, inter?}
+              end
+          end
+
+        _, acc ->
+          acc
+      end)
+      |> elem(0)
+
+    {Enum.reverse(inter), Enum.reverse(rest)}
+  end
+
+  @doc """
   Function to parse definitions when they are contained within an
   'Interpretation' section
   """
-  def parse_interpretation_section(lat_records) do
+  def parse_interpretation_section(lat_records, type_code, print) do
     lat_records
     |> Enum.reduce([], fn %{text: text}, acc ->
       # Remove footnote markers
@@ -114,25 +233,68 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
         |> (&Regex.replace(~r/📌/, &1, "\n")).()
         |> String.trim()
 
-      IO.puts(~s/\nTEXT: #{inspect(text)}\n/)
+      if print == :inter, do: IO.puts(~s/TEXT: #{text}\n/)
 
-      interpretation_patterns()
+      interpretation_patterns =
+        case type_code do
+          x when x in ["wsi"] -> interpretation_patterns(true)
+          _ -> interpretation_patterns(false)
+        end
+
+      interpretation_patterns
       |> Enum.reduce({acc, text}, fn regex, {acc2, txt} ->
         case Regex.scan(regex, txt) do
           [] ->
             {acc2, txt}
 
           result ->
-            termdefs = process_regex_scan_result(result)
+            termdefs = process_regex_scan_result(result, type_code, txt, print)
             txt = process_text(result, txt)
 
-            IO.puts(~s/\nREMAIN TEXT: #{inspect(txt)}/)
+            if print == :inter, do: IO.puts(~s/\nREMAIN TEXT: #{inspect(txt)}/)
 
             {Enum.concat(acc2, termdefs), txt}
         end
       end)
       |> elem(0)
     end)
+  end
+
+  @spec build_interpretation_struct(
+          list({term :: binary(), defn :: binary(), scope :: binary()}),
+          String.t()
+        ) ::
+          list(%__MODULE__{})
+  def build_interpretation_struct(records, record_id) do
+    Enum.map(records, fn
+      {term, w_term, defn, scope} ->
+        term = clean_term(term)
+        defn = clean_defn(defn)
+        refd? = definition_references_another_law?(defn)
+
+        %__MODULE__{
+          Term: String.trim(term),
+          Definition: defn,
+          Defined_By: [record_id],
+          Term_Welsh: String.downcase(w_term),
+          Definition_Referenced: refd?,
+          Scope: scope
+        }
+
+      {term, defn, scope} ->
+        term = clean_term(term)
+        defn = clean_defn(defn)
+        refd? = definition_references_another_law?(defn)
+
+        %__MODULE__{
+          Term: String.trim(term),
+          Definition: defn,
+          Defined_By: [record_id],
+          Definition_Referenced: refd?,
+          Scope: scope
+        }
+    end)
+    |> print_results()
   end
 
   @doc """
@@ -331,16 +493,26 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   defp patch(record, opts), do: patch(record, Map.put(opts, :patch?, ""))
 
   defp term_defined_by_this_law?(results, %{Defined_By: [record_id]} = _record) do
-    Enum.filter(results, fn
-      %{Defined_By: record_ids} ->
-        Enum.member?(record_ids, record_id)
+    matches =
+      Enum.filter(results, fn
+        %{Defined_By: record_ids} ->
+          Enum.member?(record_ids, record_id)
 
-      result ->
-        Map.has_key?(result, :Defined_By)
-    end)
-    |> case do
-      [] -> false
-      result -> result
+        result ->
+          Map.has_key?(result, :Defined_By)
+      end)
+
+    case Enum.count(matches) do
+      0 ->
+        false
+
+      1 ->
+        matches
+
+      _ ->
+        IO.puts(~s/ERROR: Law #{record_id} linked to multiple defns of the same term/)
+        Enum.each(matches, fn match -> IO.inspect(match) end)
+        matches
     end
   end
 
@@ -382,30 +554,115 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
     end
   end
 
-  @spec process_regex_scan_result(list()) :: list()
-  def process_regex_scan_result(result) do
+  @spec process_regex_scan_result(list(), String.t(), String.t(), atom()) :: list()
+  def process_regex_scan_result(result, type_code, txt, print) when type_code in ["wsi"] do
     # IO.inspect(result)
+    scope = definition_scope(txt)
 
-    Enum.map(result, fn
-      [_, _, _, ""] ->
-        []
+    results =
+      Enum.map(result, fn
+        [_, _, _, _, _, _, _, ""] ->
+          []
 
-      [_, term1, term2, defn] ->
-        defn = String.trim(defn)
-        [{term1, defn}, {term2, defn}]
+        [_, _, _, _, _, ""] ->
+          []
 
-      [_, _, ""] ->
-        []
+        [_, _, _, ""] ->
+          []
 
-      # deals with a specific error in leg.gov.uk -> "the 1974" Act means
-      [_, "the 1974", " Act" <> defn] ->
-        [{"the 1974 Act", String.trim(defn)}]
+        [_, term1, welsh1, term2, welsh2, term3, welsh3, defn] ->
+          defn = String.trim(defn)
 
-      [_, term, defn] ->
-        IO.puts(~s/MATCH: term: #{term} defn: #{inspect(defn)}/)
-        [{term, String.trim(defn)}]
-    end)
-    |> List.flatten()
+          [
+            {term1, welsh1, defn, scope},
+            {term2, welsh2, defn, scope},
+            {term3, welsh3, defn, scope}
+          ]
+
+        [_, term1, welsh1, term2, welsh2, defn] ->
+          defn = String.trim(defn)
+          [{term1, welsh1, defn, scope}, {term2, welsh2, defn, scope}]
+
+        [_, term1, welsh1, defn] ->
+          [{term1, welsh1, String.trim(defn), scope}]
+      end)
+      |> List.flatten()
+
+    print_regex_result(results, txt, print)
+    results
+  end
+
+  @spec process_regex_scan_result(list(), String.t(), String.t(), atom()) :: list()
+  def process_regex_scan_result(result, _type_code, txt, print) do
+    # IO.inspect(result)
+    scope = definition_scope(txt)
+
+    results =
+      Enum.map(result, fn
+        [_, _, _, ""] ->
+          []
+
+        [_, _, ""] ->
+          []
+
+        [_, term1, term2, term3, defn] ->
+          defn = String.trim(defn)
+          [{term1, defn, scope}, {term2, defn, scope}, {term3, defn, scope}]
+
+        [_, term1, term2, defn] ->
+          defn = String.trim(defn)
+          [{term1, defn, scope}, {term2, defn, scope}]
+
+        # deals with a specific error in leg.gov.uk -> "the 1974" Act means
+        [_, "the 1974", " Act" <> defn] ->
+          [{"the 1974 Act", String.trim(defn), scope}]
+
+        [_, term, defn] ->
+          [{term, String.trim(defn), scope}]
+      end)
+      |> List.flatten()
+
+    print_regex_result(results, txt, print)
+    results
+  end
+
+  def print_regex_result(results, txt, :rest),
+    do:
+      Enum.each(results, fn
+        {term, welsh, defn, scope} ->
+          IO.puts(
+            ~s/\nTEXT: #{txt}\nMATCH:🔹term: #{term} welsh: #{welsh}🔹defn: #{inspect(defn)}🔹scope: #{scope}/
+          )
+
+        {term, defn, scope} ->
+          IO.puts(
+            ~s/\nTEXT: #{txt}\nMATCH:🔹term: #{term} 🔹defn: #{inspect(defn)}🔹scope: #{scope}/
+          )
+      end)
+
+  def print_regex_result(results, _, _),
+    do:
+      Enum.each(results, fn
+        {term, welsh, defn, scope} ->
+          IO.puts(~s/MATCH:🔹term: #{term}🔹welsh: #{welsh}🔹defn: #{inspect(defn)}🔹scope: #{scope}/)
+
+        {term, defn, scope} ->
+          IO.puts(~s/MATCH:🔹term: #{term}🔹defn: #{inspect(defn)}🔹scope: #{scope}/)
+      end)
+
+  def definition_scope(text) do
+    law = @scope_law
+
+    provision = @scope_provision
+
+    part = @scope_part
+
+    cond do
+      Regex.match?(~r/#{law}/, text) -> "law"
+      Regex.match?(~r/#{provision}/, text) -> "provision"
+      Regex.match?(~r/#{part}/, text) -> "part"
+      true -> ""
+    end
   end
 
   def process_text(results, text) do
@@ -415,46 +672,24 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
     end)
   end
 
-  @spec filter_interpretation_sections(list()) :: list()
-  def filter_interpretation_sections(records) do
-    Enum.reduce(records, {[], false}, fn
-      %{type: "heading", text: text}, {acc, _} ->
-        case Regex.match?(~r/[Ii]nterpretation/, text) do
-          true -> {acc, true}
-          false -> {acc, false}
-        end
-
-      %{type: "section", text: text}, {acc, _} ->
-        case Regex.match?(~r/[Ii]nterpretation|Application/, text) do
-          true -> {acc, true}
-          false -> {acc, false}
-        end
-
-      %{type: type, text: text} = record, {acc, true}
-      when type in ["article", "sub-article", "sub-section"] ->
-        # Discard amendment text blocks which contains these terms
-        case String.contains?(text, [
-               "substitute—",
-               "insert—",
-               "” substitute “",
-               "References to—",
-               "are to be read as if",
-               "For the purposes of these Regulations",
-               "The provisions referred to in"
-             ]) do
-          true -> {acc, true}
-          _ -> {[Map.put(record, :text, Regex.replace(~r/[ ]?📌/m, text, "\n")) | acc], true}
-        end
-
-      _, acc ->
-        acc
-    end)
-    |> elem(0)
-    |> Enum.reverse()
+  def excluded_text?(text) do
+    # Discard amendment text blocks which contains these terms
+    Regex.match?(~r/#{@excluded}/, text)
   end
 
-  @spec interpretation_patterns() :: list()
-  def interpretation_patterns() do
+  @spec interpretation_patterns(boolean()) :: list()
+  def interpretation_patterns(welsh?) do
+    single = ~s/“([[:print:]]*)”/
+    welsh = ~s/\\(“([[:print:]’]*)”\\)/
+
+    single_welsh = ~s/#{single}[ ]#{welsh}/
+
+    double = ~s/#{single}[ ]and[ ]#{single}/
+    double_welsh = ~s/#{single_welsh}[ ]and[ ]#{single_welsh}/
+
+    triple = ~s/#{single},[ ]#{double}/
+    triple_welsh = ~s/#{single_welsh},[ ]#{double_welsh}/
+
     fwd_lh =
       [
         # end of text (we're not using 'm')
@@ -474,78 +709,56 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
       ]
       |> Enum.join("|")
 
-    fwd_lh = ~s/(?=(?:#{fwd_lh}))/
+    fwd_lh = ~s/([\\s\\S]*?)(?=(?:#{fwd_lh}))/
 
-    [
-      ~s/“([[:print:]]*)”[ ]and[ ]“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/,
-      ~s/“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/
-    ]
+    case welsh? do
+      true ->
+        [
+          ~s/#{triple_welsh}[ ]#{fwd_lh}/,
+          ~s/#{double_welsh}[ ]#{fwd_lh}/,
+          ~s/#{single_welsh}[ ]#{fwd_lh}/
+        ]
+
+      _ ->
+        [
+          ~s/#{triple}[ ]#{fwd_lh}/,
+          ~s/#{double}[ ]#{fwd_lh}/,
+          ~s/#{single}[ ]#{fwd_lh}/
+
+          # ~s/“([[:print:]]*)”[ ]and[ ]“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/,
+          # ~s/“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/
+        ]
+    end
     |> Enum.map(&(Regex.compile(&1, "m") |> elem(1)))
-  end
-
-  @spec build_interpretation_struct(list({term :: binary(), defn :: binary()}), String.t()) ::
-          list(%__MODULE__{})
-  def build_interpretation_struct(records, record_id) do
-    Enum.map(records, fn {term, defn} ->
-      # Remove any leading 'the' from the term
-      term = Regex.replace(~r/^the[ ]/, term, "")
-      # Remove any leading 'a' from the term
-      term =
-        Regex.replace(~r/^a[ ]/, term, "")
-        |> String.downcase()
-
-      # Welsh translated terms appear as parenthetised phrases at the start of the defn
-      # match 1 - single terms - (“Rheoliadau’r Gymuned”)
-      # match 2 - list of terms - (“a gymeradwywyd”, “wedi'i gymeradwyo”, “wedi'u cymeradwyo”)
-      upcase? = &(&1 == String.upcase(&1))
-
-      {term, w_term, w_defn} =
-        case Regex.run(
-               ~r/^\(“([[:print:]'’]*)”\)[, ]([\s\S]*)|^\(([[:print:]’“”]*)\)[, ]([\s\S]*)/,
-               defn
-             ) do
-          nil ->
-            {term, "", defn}
-
-          [_match, w_term, w_defn] ->
-            IO.puts(~s/\nDEFN: #{inspect(defn)}\n-> #{inspect(w_defn)}/)
-            {term, w_term, w_defn}
-
-          [_match, w_term, w_defn, "", ""] ->
-            {term, w_term, w_defn}
-
-          [_match, "", "", w_term, w_defn] ->
-            IO.puts(~s/\nDEFN: #{inspect(defn)}\n-> #{inspect(w_defn)}/)
-            {term, ~s/#{w_term}/, w_defn}
-        end
-
-      # if the term is all caps then revert back
-      {w_term, defn} =
-        case upcase?.(w_term) do
-          true -> {"", defn}
-          false -> {w_term, w_defn}
-        end
-
-      # does the definition reference another law's definition?
-      refd? = definition_references_another_law?(defn)
-
-      %__MODULE__{
-        Term: term,
-        Definition: defn,
-        Defined_By: [record_id],
-        Term_Welsh: String.downcase(w_term),
-        Definition_Referenced: refd?
-      }
-    end)
-    |> print_results()
   end
 
   # PRIVATE FUNCTIONS
 
+  defp clean_term(term) do
+    term
+    # Remove any leading 'the' from the term
+    |> (&Regex.replace(~r/^the[ ]/, &1, "")).()
+    # Remove any leading 'a' from the term
+    |> (&Regex.replace(~r/^a[ ]/, &1, "")).()
+    |> String.downcase()
+  end
+
+  defp clean_defn(defn) do
+    defn
+    |> String.trim()
+    # Remove trailing EMs and EFs
+    |> (&Regex.replace(~r/[ ]M\d+$/, &1, "")).()
+    |> (&Regex.replace(~r/[ ]F\d+$/, &1, "")).()
+    |> String.trim()
+    # Remove trailing punctuation
+    |> (&Regex.replace(~r/(?:[,;\.\(]|\([ ]?\)|(?:[ ]\.)*|\.*)$/, &1, "").())
+    |> String.trim()
+  end
+
   defp definition_references_another_law?(defn) do
     cond do
       Regex.match?(
-        ~r/has?v?e? the meanings? (?:they bear|that it bears|assigned|given|respectively assigned).*(?:in|in the|to the|of the|of).*(?:Act|Regulation|Order)/,
+        ~r/has?v?e? the meanings? (?:in|they bear|that it bears|assigned|given|respectively assigned).*(?:in the|to the|of the|of).*(?:Act|Regulation|Order)/,
         defn
       ) ->
         true
@@ -577,12 +790,22 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
   end
 
   defp print_results(results) do
-    Enum.each(results, fn
-      %__MODULE__{Term: term, Term_Welsh: w_term, Definition: defn} ->
-        IO.puts(~s/RESULT TERM: #{term}\nWELSH TERM: #{w_term}\nDEFN: #{defn}\n/)
+    IO.puts(~s/\nRESULTS:\n/)
 
-      %__MODULE__{Term: term, Definition: defn} ->
-        IO.puts(~s/RESULT TERM: #{term}\nDEFN: #{defn}\n/)
+    Enum.each(results, fn
+      %__MODULE__{
+        Term: term,
+        Term_Welsh: w_term,
+        Definition: defn,
+        Definition_Referenced: ref,
+        Scope: scope
+      } ->
+        IO.puts(
+          ~s/TERM: #{term}\nWELSH TERM: #{w_term}\nDEFN: #{defn}\nREF: #{ref}\nSCOPE: #{scope}\n/
+        )
+
+      %__MODULE__{Term: term, Definition: defn, Definition_Referenced: ref, Scope: scope} ->
+        IO.puts(~s/TERM: #{term}\nDEFN: #{defn}\nREF: #{ref}\n SCOPE: #{scope}\n/)
     end)
 
     results

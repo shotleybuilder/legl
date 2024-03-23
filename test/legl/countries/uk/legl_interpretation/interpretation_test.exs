@@ -19,34 +19,78 @@ defmodule Legl.Countries.Uk.LeglInterpretation.InterpretationTest do
   end
 
   test "interpretation_patterns/0" do
-    result = Interpretation.interpretation_patterns()
+    result = Interpretation.interpretation_patterns(false)
     assert result == [~r/“([a-z -]*)”([\s\S]*?)(?=(?:\.$|;\n“|\]$))/m]
   end
 
   test "filter_interpretation_sections/1" do
-    result = Interpretation.filter_interpretation_sections(@records)
-    assert is_list(result)
-    assert Enum.count(result) > 1
+    {interpretation_section, rest} = Interpretation.filter_interpretation_sections(@records)
+    assert is_list(interpretation_section)
+    assert is_list(rest)
+    assert Enum.count(interpretation_section) > 1
+    assert Enum.count(rest) > 1
   end
 
   # parse the law into at_schema.json before running this test
 
   test "parse_interpretation_section/1" do
-    results =
-      Interpretation.filter_interpretation_sections(@records)
-      |> Interpretation.parse_interpretation_section()
+    [h | _] = @records
+    %{name: name} = h
+    [_, type_code, _, _] = String.split(name, "_")
 
-    Enum.each(results, fn {term, defn} = _result ->
-      assert is_binary(term)
-      assert is_binary(defn)
-      # IO.puts(~s/RESULT\n#{inspect(result)}\n/)
+    {interpretation_section, rest} =
+      @records
+      |> Interpretation.filter_interpretation_sections()
+
+    results =
+      interpretation_section
+      |> Interpretation.parse_interpretation_section(type_code, :inter)
+
+    Enum.each(results, fn
+      {term, _welsh, defn, _scope} ->
+        assert is_binary(term)
+        assert is_binary(defn)
+
+      {term, defn, _scope} ->
+        assert is_binary(term)
+        assert is_binary(defn)
+        # IO.puts(~s/RESULT\n#{inspect(result)}\n/)
+    end)
+
+    results =
+      rest
+      |> Interpretation.parse_interpretation_section(type_code, :rest)
+
+    Enum.each(results, fn
+      {term, _welsh, defn, _scope} ->
+        assert is_binary(term)
+        assert is_binary(defn)
+
+      {term, defn, _scope} ->
+        assert is_binary(term)
+        assert is_binary(defn)
+        # IO.puts(~s/RESULT\n#{inspect(result)}\n/)
     end)
   end
 
   test "build_interpretation_struct/2" do
+    [h | _] = @records
+    %{name: name} = h
+    [_, type_code, _, _] = String.split(name, "_")
+
+    {interpretation_section, rest} =
+      @records
+      |> Interpretation.filter_interpretation_sections()
+
+    interpretation_section =
+      interpretation_section
+      |> Interpretation.parse_interpretation_section(type_code, :inter)
+
+    rest = rest |> Interpretation.parse_interpretation_section(type_code, :rest)
+
     results =
-      Interpretation.filter_interpretation_sections(@records)
-      |> Interpretation.parse_interpretation_section()
+      (interpretation_section ++ rest)
+      |> Enum.uniq()
       |> Interpretation.build_interpretation_struct("xxxxxx")
 
     Enum.each(results, fn %_{Term: term, Definition: defn} = _result ->
