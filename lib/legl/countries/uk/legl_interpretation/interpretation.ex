@@ -83,12 +83,14 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
                 "References to" <> <<226, 128, 148>>,
                 "References to" <> <<226, 128, 147>>,
                 "are to be read as if",
-                "For the purposes of these Regulations",
+                # "For the purposes of these Regulations",
                 "The provisions referred to in",
                 "When interpreting the Directive for the purposes of these Regulations"
               ],
               "|"
             )
+
+  def excluded(), do: @excluded
 
   @doc """
   Function is called for stand-alone processing of terms & definitions
@@ -177,6 +179,7 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
 
   Returns as tuple - {interpretation section, other, boolean}
   """
+
   @spec filter_interpretation_sections(list()) :: {list(), list()}
   def filter_interpretation_sections(records) do
     {inter, rest} =
@@ -716,14 +719,14 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
         [
           ~s/#{triple_welsh}[ ]#{fwd_lh}/,
           ~s/#{double_welsh}[ ]#{fwd_lh}/,
-          ~s/#{single_welsh}[ ]#{fwd_lh}/
+          ~s/#{single_welsh}[, ]#{fwd_lh}/
         ]
 
       _ ->
         [
           ~s/#{triple}[ ]#{fwd_lh}/,
           ~s/#{double}[ ]#{fwd_lh}/,
-          ~s/#{single}[ ]#{fwd_lh}/
+          ~s/#{single}[, ]#{fwd_lh}/
 
           # ~s/“([[:print:]]*)”[ ]and[ ]“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/,
           # ~s/“([[:print:]]*)”[ ]([\\s\\S]*?)#{fwd_lh}/
@@ -743,16 +746,22 @@ defmodule Legl.Countries.Uk.LeglInterpretation.Interpretation do
     |> String.downcase()
   end
 
+  # punct -> [ or , or ; . ( empty parentheses -> () ( ) repeating period [ ].
+  @defn_regex ~r/(?:[,;\.\(]|\([ ]?\)|(?:[ ]\.)*|\.*|[ ]M\d+|[ ]F\d+)$/
+
   defp clean_defn(defn) do
-    defn
-    |> String.trim()
-    # Remove trailing EMs and EFs
-    |> (&Regex.replace(~r/[ ]M\d+$/, &1, "")).()
-    |> (&Regex.replace(~r/[ ]F\d+$/, &1, "")).()
-    |> String.trim()
-    # Remove trailing punctuation
-    |> (&Regex.replace(~r/(?:[,;\.\(]|\([ ]?\)|(?:[ ]\.)*|\.*)$/, &1, "").())
-    |> String.trim()
+    defn = String.trim(defn)
+
+    case Regex.match?(~r/@defn_regex/, defn) do
+      true ->
+        defn
+        |> (&Regex.replace(@defn_regex, &1, "")).()
+        |> String.trim()
+        |> clean_defn()
+
+      _ ->
+        defn
+    end
   end
 
   defp definition_references_another_law?(defn) do

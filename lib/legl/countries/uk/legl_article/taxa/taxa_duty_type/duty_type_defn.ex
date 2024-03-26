@@ -56,7 +56,7 @@ defmodule Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn do
       "an?y? reference.*?in these Regulations?",
       "[Ww]here an expression is defined.*?and is not defined.*?it has the same meaning",
       "are to be read",
-      "[Ff]or the purposes of (?:this Act|the definition of|subsection)"
+      "[Ff]or the purposes of (?:this Act|these Regulations|the definition of|subsection)"
     ]
     |> Enum.map(fn x -> {x, ~s/#{duty_type}/} end)
   end

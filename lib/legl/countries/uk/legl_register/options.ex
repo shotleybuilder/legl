@@ -260,7 +260,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   @tags &Legl.Countries.Uk.LeglRegister.Tags.set_tags/1
   @type_law &Legl.Countries.Uk.LeglRegister.TypeClass.set_type/1
   @type_class &Legl.Countries.Uk.LeglRegister.TypeClass.set_type_class/1
-  @extent &Legl.Countries.Uk.LeglRegister.Extent.set_extent/1
+  @extent &Legl.Countries.Uk.LeglRegister.Extent.set_extent/2
   @enact &Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws/2
   @affect &Legl.Countries.Uk.LeglRegister.Amend.workflow/2
   @taxa_lat &Legl.Countries.Uk.LeglRegister.Taxa.set_taxa/2

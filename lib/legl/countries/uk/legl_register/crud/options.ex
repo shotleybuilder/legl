@@ -16,10 +16,10 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     days: nil,
     # Where's the data coming from?
     source: :web,
+    filter: :si_term,
     # Trigger .csv saving?
     csv?: false,
     # Global mute msg
-
     mute?: true,
     patch?: nil,
     post?: false,
@@ -295,10 +295,11 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
   def legal_register_base_id_table_id(opts) do
     {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
 
-    {:ok, {_base_id, pub_table_id}} =
-      AtBasesTables.get_base_table_id(opts.base_name, opts.table_name)
+    # {:ok, {_base_id, pub_table_id}} = AtBasesTables.get_base_table_id(opts.base_name, opts.table_name)
 
-    Map.merge(opts, %{base_id: base_id, table_id: table_id, pub_table_id: pub_table_id})
+    # Map.merge(opts, %{base_id: base_id, table_id: table_id, pub_table_id: pub_table_id})
+
+    Map.merge(opts, %{base_id: base_id, table_id: table_id})
   end
 
   @fields ~w[

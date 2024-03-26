@@ -5,6 +5,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   alias Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment
   alias Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn
 
+  alias Legl.Countries.Uk.LeglInterpretation.Interpretation
+
   @type duty_types :: list()
   @type dutyholders :: list()
   @type dutyholders_gvt :: list()
@@ -197,7 +199,8 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
     Enum.reduce(regexes, collector, fn {regex, duty_type}, {text, duty_types} = acc ->
       case Regex.match?(~r/#{regex}/, text) do
         true ->
-          # IO.puts(~s/#{text} #{duty_type}/)
+          # #{text} #{duty_type}/)
+          IO.puts(~s/#{regex}/)
           duty_type = if is_binary(duty_type), do: [duty_type], else: duty_type
 
           # A specific term (approved person) should be removed from the text to avoid matching on 'person'

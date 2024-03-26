@@ -232,7 +232,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
         "RADIOACTIVE SUBSTANCES"
       ]
     ],
-    "💚 OIL & GAS - OFFSHORE - PETROLEUM": [base: "", si_codes: "PETROLEUM"],
+    "💚 OIL & GAS - OFFSHORE - PETROLEUM": [base: "", si_codes: ["PETROLEUM"]],
     "💚 Railways & Rail Transport": [base: "", si_codes: []],
     "💚 Roads & Vehicles": [base: "", si_codes: []],
     "💚 TRANSPORT: Aviation": [base: "", si_codes: ["AIRPORTS"]],

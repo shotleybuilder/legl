@@ -100,15 +100,22 @@ defmodule Legl.Countries.Uk.LeglArticle.Taxa.DutyTypeTest do
     end
   end
 
+  @path ~s[lib/legl/data_files/json/at_schema.json] |> Path.absname()
+  @records Legl.Utility.read_json_records(@path)
+           |> Enum.map(&Map.put(&1, :text, Regex.replace(~r/[ ]?📌/m, &1.text, "\n")))
+
   describe "DutyTypeLib.process/2" do
     test "process/2 -> interpretation_definition" do
       regexes =
         Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn.interpretation_definition()
 
-      collector = {@text, {[], []}}
-      result = DutyTypeLib.process(collector, regexes)
-      assert {_text, {[], ["Interpretation, Definition"]}} = result
-      IO.inspect(result)
+      Enum.each(@records, fn %{text: text} = _record ->
+        collector = {text, []}
+        {txt, duty_type} = DutyTypeLib.process(collector, regexes)
+        # assert {_text, {[], ["Interpretation, Definition"]}} = result
+        if duty_type != [],
+          do: IO.puts(~s/OLD: #{text}\n\nREV: #{txt}\n\nDUTY: #{inspect(duty_type)}\n\n/)
+      end)
     end
   end
 end

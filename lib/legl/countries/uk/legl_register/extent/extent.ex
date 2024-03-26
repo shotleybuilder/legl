@@ -38,6 +38,117 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     fields: ["Name", "Title_EN", "leg.gov.uk contents text"]
   }
 
+  @doc """
+  Function to set the Extent fields: 'Geo_Pan_Region', 'Geo_Region' and 'Geo_Extent'
+  in the Legal Register Table
+
+  Contents xml path has this shape
+    .../type_code/year/number/contents/data.xml
+
+  Extent uses the RestrictExtent xml attribute
+    e.g. RestrictExtent="E+W"
+
+  """
+  @spec set_extent(LR.legal_register()) :: {:ok, LR.legal_register()}
+  def set_extent(%LR{Number: number, type_code: type_code, Year: year} = record, opts)
+      when is_binary(number) and is_binary(type_code) and is_integer(year) do
+    IO.write(" EXTENT")
+
+    with(
+      path = Url.contents_xml_path(record),
+      {:ok, data} <- get_extent_leg_gov_uk(path),
+      :ok = print_extent_get(record, data, opts),
+      {:ok,
+       %{
+         geo_extent: geo_extent,
+         geo_region: geo_region
+       }} <- extent_transformation(data),
+      geo_pan_region = geo_pan_region(geo_region)
+    ) do
+      {:ok,
+       Kernel.struct(
+         record,
+         %{
+           Geo_Parent: "United Kingdom",
+           Geo_Pan_Region: geo_pan_region,
+           Geo_Region: geo_region,
+           Geo_Extent: geo_extent
+         }
+       )}
+
+      # |> IO.inspect(label: "EXTENT: ")
+    else
+      {:no_data, _} ->
+        IO.puts(
+          "\nNO DATA: No Extent data returned from legislation.gov.uk\n #{__MODULE__}.set_extent/1"
+        )
+
+        {:ok, record}
+
+      {:error, msg} ->
+        IO.puts(
+          "\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record."Title_EN")}\n #{__MODULE__}.set_extent/1"
+        )
+
+        {:ok, record}
+    end
+  end
+
+  def print_extent_get(r, data, %{workflow: :Extent}) do
+    data = data |> clean_data() |> uniq_extent()
+    IO.puts(~s/\n#{r."Title_EN"} #{r."Year"} #{r."Number"} \n#{inspect(data)}/)
+  end
+
+  def print_extent_get(_, _, _), do: :ok
+
+  def set_extent(%LR{Year: year} = record)
+      when is_binary(year) do
+    Map.put(record, :Year, String.to_integer(year))
+    |> set_extent()
+  end
+
+  def set_extent(_), do: {:error, "ERROR: Number, type-code or Year is not set"}
+
+  @doc """
+
+  """
+  def get_extent_leg_gov_uk(%LR{Number: _, type_code: _, Year: _} = record) do
+    Url.contents_xml_path(record)
+    |> get_extent_leg_gov_uk()
+  end
+
+  def get_extent_leg_gov_uk(url) when is_binary(url) do
+    with({:ok, :xml, data} <- RecordGeneric.extent(url)) do
+      {:ok, data}
+    else
+      {:no_data, []} ->
+        {:no_data, []}
+
+      {:error, 307, _error} ->
+        adjust_url(url)
+
+      {:error, code, error} ->
+        {:error, "#{code}: #{error}"}
+
+      {:ok, :html} ->
+        IO.puts("#{url}")
+        {:error, :html}
+    end
+  end
+
+  def adjust_url(url) do
+    url =
+      case Regex.match?(~r/made/, url) do
+        true ->
+          Regex.replace(~r/made/, url, "enacted")
+
+        _ ->
+          Regex.replace(~r/contents/, url, "contents/made")
+      end
+
+    get_extent_leg_gov_uk(url)
+  end
+
   def run(opts \\ []) when is_list(opts) do
     opts = Enum.into(opts, @default_opts)
 
@@ -149,62 +260,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     end
   end
 
-  @doc """
-
-  """
-  def get_extent_leg_gov_uk(url) do
-    with({:ok, :xml, data} <- RecordGeneric.extent(url)) do
-      {:ok, data}
-    else
-      {:no_data, []} ->
-        {:no_data, []}
-
-      {:error, 307, _error} ->
-        adjust_url(url)
-
-      {:error, code, error} ->
-        {:error, "#{code}: #{error}"}
-
-      {:ok, :html} ->
-        IO.puts("#{url}")
-        {:error, :html}
-    end
-  end
-
-  def adjust_url(url) do
-    url =
-      case Regex.match?(~r/made/, url) do
-        true ->
-          Regex.replace(~r/made/, url, "enacted")
-
-        _ ->
-          Regex.replace(~r/contents/, url, "contents/made")
-      end
-
-    get_extent_leg_gov_uk(url)
-  end
-
   @spec extent_transformation(list()) :: :ok | {:ok, map()}
   def extent_transformation([{}]), do: :ok
 
   def extent_transformation(data) do
-    # IO.inspect(data, limit: :infinity)
-    # get the unique extent
-    data = clean_data(data)
-    # IO.inspect(data, limit: :infinity)
-
-    uniq_extent = uniq_extent(data)
+    clean_data = clean_data(data)
+    uniq_extent = uniq_extent(clean_data)
 
     {:ok,
      %{
        # geo_extent is a string of legal clauses sorted by extent
-       geo_extent: geo_extent(data, uniq_extent),
+       geo_extent: geo_extent(clean_data, uniq_extent),
        # geo_region is one of more of the nations of the UK
-       geo_region: geo_region(uniq_extent)
+       geo_region: uniq_extent |> geo_region() |> ordered_regions()
      }}
   end
 
-  defp clean_data(data) do
+  def clean_data(data) do
     Enum.reduce(data, [], fn
       {}, acc -> acc
       {_extents}, acc -> acc
@@ -215,6 +287,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     end)
   end
 
+  @doc """
+  Function to return all the unique extent codes
+
+  Examples,
+    "E+W+S+NI"
+  """
+  @spec uniq_extent(list()) :: list(binary())
   def uniq_extent(data) do
     Enum.reduce(data, [], fn
       {_, extent}, acc -> [extent | acc]
@@ -295,108 +374,60 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
 
   def geo_region(extents) do
     # change this to String.split on '+' and Enum the list
-    regions =
-      Enum.reduce(extents, [], fn x, acc ->
-        case x do
-          "E+W+S+NI" -> ["England", "Scotland", "Wales", "Northern Ireland" | acc]
-          "E+W+S" -> ["England", "Wales", "Scotland" | acc]
-          "E+W+NI" -> ["England", "Wales", "Northern Ireland" | acc]
-          "E+S+NI" -> ["England", "Scotland", "Northern Ireland" | acc]
-          "W+S+NI" -> ["Wales", "Scotland", "Northern Ireland" | acc]
-          "E+W" -> ["England", "Wales" | acc]
-          "E+S" -> ["England", "Scotland" | acc]
-          "E+NI" -> ["England", "Northern Ireland" | acc]
-          "W+S" -> ["Wales", "Scotland" | acc]
-          "W+NI" -> ["Wales", "Northern Ireland" | acc]
-          "S+NI" -> ["Scotland", "Northern Ireland" | acc]
-          "E" -> ["England" | acc]
-          "W" -> ["Wales" | acc]
-          "S" -> ["Scotland" | acc]
-          "NI" -> ["Northern Ireland" | acc]
-          _ -> acc
-        end
-      end)
-      |> Enum.uniq()
 
-    ordered_regions(regions)
-
-    # Enum.join(ordered_regions, ",")
-  end
-
-  def ordered_regions(regions) do
-    Enum.reduce(regions, {"", "", "", ""}, fn x, acc ->
+    Enum.reduce(extents, [], fn x, acc ->
       case x do
-        "England" -> Tuple.insert_at(acc, 0, x)
-        "Wales" -> Tuple.insert_at(acc, 1, x)
-        "Scotland" -> Tuple.insert_at(acc, 2, x)
-        "Northern Ireland" -> Tuple.insert_at(acc, 3, x)
+        "E+W+S+NI" -> ["England", "Wales", "Scotland", "Northern Ireland" | acc]
+        "E+W+S" -> ["England", "Wales", "Scotland" | acc]
+        "E+W+NI" -> ["England", "Wales", "Northern Ireland" | acc]
+        "E+S+NI" -> ["England", "Scotland", "Northern Ireland" | acc]
+        "W+S+NI" -> ["Wales", "Scotland", "Northern Ireland" | acc]
+        "E+W" -> ["England", "Wales" | acc]
+        "E+S" -> ["England", "Scotland" | acc]
+        "E+NI" -> ["England", "Northern Ireland" | acc]
+        "W+S" -> ["Wales", "Scotland" | acc]
+        "W+NI" -> ["Wales", "Northern Ireland" | acc]
+        "S+NI" -> ["Scotland", "Northern Ireland" | acc]
+        "E" -> ["England" | acc]
+        "W" -> ["Wales" | acc]
+        "S" -> ["Scotland" | acc]
+        "NI" -> ["Northern Ireland" | acc]
+        _ -> acc
       end
     end)
-    |> Tuple.to_list()
-    |> Enum.reduce([], fn x, acc ->
-      case x do
+    |> Enum.uniq()
+  end
+
+  def ordered_regions(["England", "Wales", "Scotland", "Northern Ireland"] = regions), do: regions
+  def ordered_regions(["England", "Wales"] = regions), do: regions
+  def ordered_regions(["England"] = regions), do: regions
+  def ordered_regions(["Wales"] = regions), do: regions
+  def ordered_regions(["Scotland"] = regions), do: regions
+  def ordered_regions(["Northern Ireland"] = regions), do: regions
+
+  def ordered_regions(regions) do
+    Enum.reduce(regions, [], fn
+      "England", acc ->
+        [{:a, "England"} | acc]
+
+      "Wales", acc ->
+        [{:c, "Wales"} | acc]
+
+      "Scotland", acc ->
+        [{:c, "Scotland"} | acc]
+
+      "Northern Ireland", acc ->
+        [{:d, "Northern Ireland"} | acc]
+    end)
+    |> List.keysort(0)
+    |> Enum.reduce([], fn {_k, v}, acc ->
+      case v do
         "" -> acc
-        _ -> [x | acc]
+        _ -> [v | acc]
       end
     end)
     |> Enum.reverse()
   end
-
-  @doc """
-  Function to set the Extent fields: 'Geo_Pan_Region', 'Geo_Region' and 'Geo_Extent'
-  in the Legal Register
-  """
-  @spec set_extent(LR.legal_register()) :: {:ok, LR.legal_register()}
-  def set_extent(%LR{Number: number, type_code: type_code, Year: year} = record)
-      when is_binary(number) and is_binary(type_code) and is_integer(year) do
-    IO.write(" EXTENT")
-    path = Url.contents_xml_path(record)
-
-    with(
-      {:ok, data} <- get_extent_leg_gov_uk(path),
-      {:ok,
-       %{
-         geo_extent: geo_extent,
-         geo_region: geo_region
-       }} <- extent_transformation(data),
-      geo_pan_region = geo_pan_region(geo_region)
-    ) do
-      {:ok,
-       Kernel.struct(
-         record,
-         %{
-           Geo_Parent: "United Kingdom",
-           Geo_Pan_Region: geo_pan_region,
-           Geo_Region: geo_region,
-           Geo_Extent: geo_extent
-         }
-       )}
-
-      # |> IO.inspect(label: "EXTENT: ")
-    else
-      {:no_data, _} ->
-        IO.puts(
-          "\nNO DATA: No Extent data returned from legislation.gov.uk\n #{__MODULE__}.set_extent/1"
-        )
-
-        {:ok, record}
-
-      {:error, msg} ->
-        IO.puts(
-          "\nERROR: #{msg}\nProcessing Extents for:\n#{inspect(record."Title_EN")}\n #{__MODULE__}.set_extent/1"
-        )
-
-        {:ok, record}
-    end
-  end
-
-  def set_extent(%LR{Year: year} = record)
-      when is_binary(year) do
-    Map.put(record, :Year, String.to_integer(year))
-    |> set_extent()
-  end
-
-  def set_extent(_), do: {:error, "ERROR: Number, type-code or Year is not set"}
 
   defp geo_pan_region(""), do: ""
 
