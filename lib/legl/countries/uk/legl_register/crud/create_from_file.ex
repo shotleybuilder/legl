@@ -171,13 +171,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
 
     case Helper.filter(:both, records, opts) do
       {[], update} ->
-        Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(update, opts)
+        Legl.Countries.Uk.LeglRegister.PatchRecord.run(update, opts)
 
       {new, []} ->
         Legl.Countries.Uk.LeglRegister.PostRecord.run(new, opts)
 
       {new, update} ->
-        Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(update, opts)
+        Legl.Countries.Uk.LeglRegister.PatchRecord.run(update, opts)
         Legl.Countries.Uk.LeglRegister.PostRecord.run(new, opts)
     end
   end

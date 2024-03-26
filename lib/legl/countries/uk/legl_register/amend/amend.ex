@@ -258,7 +258,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Patch do
     IO.write("Records saved to json - ")
 
     if opts.patch? == true,
-      do: Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.patch(records, opts)
+      do: Legl.Countries.Uk.LeglRegister.PatchRecord.patch(records, opts)
   end
 
   def clean(%{record_id: _} = record) when is_map(record) do

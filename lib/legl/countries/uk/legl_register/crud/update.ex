@@ -129,7 +129,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   end
 
   defp patch(record, %{patch?: true} = opts),
-    do: Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+    do: Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
 
   defp patch(_, %{patch?: false}), do: :ok
 
@@ -156,7 +156,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
         case patch? do
           true ->
-            Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+            Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
 
           false ->
             :ok
@@ -181,7 +181,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
         case ExPrompt.confirm("\nPatch #{record."Title_EN"}?") do
           true ->
-            Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+            Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
 
           false ->
             :ok
@@ -206,7 +206,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
         case patch? and value? do
           true ->
-            Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+            Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
 
           false ->
             :ok
@@ -230,7 +230,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
         case patch? do
           true ->
-            Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+            Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
 
           false ->
             :ok
@@ -254,7 +254,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
         case patch? do
           true ->
-            Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(record, opts)
+            Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
 
           false ->
             :ok

@@ -107,7 +107,7 @@ defmodule Legl.Countries.Uk.Metadata do
     |> Legl.Utility.maps_from_structs()
     |> Legl.Utility.map_filter_out_empty_members()
     |> Legl.Utility.save_structs_as_json_returning(@results_path, opts)
-    |> Enum.each(&Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(&1, opts))
+    |> Enum.each(&Legl.Countries.Uk.LeglRegister.PatchRecord.run(&1, opts))
   end
 
   defp workflow(%{workflow: :delta} = opts) do
@@ -377,7 +377,7 @@ end
 defmodule Legl.Countries.Uk.LeglRegister.Metadata.Patch do
   @moduledoc """
   """
-  alias Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord
+  alias Legl.Countries.Uk.LeglRegister.PatchRecord
 
   @api_results_path ~s[lib/legl/countries/uk/legl_register/metadata/api_metadata_results.json]
 

@@ -95,7 +95,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
           true ->
             New.update_empty_law_fields(record, opts)
             |> elem(1)
-            |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.run(opts)
+            |> Legl.Countries.Uk.LeglRegister.PatchRecord.run(opts)
 
           false ->
             :ok

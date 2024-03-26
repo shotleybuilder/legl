@@ -12,7 +12,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.Patch do
 
   def patch(record, opts) when is_map(record) do
     IO.write("PATCH single record - ")
-    Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.patch([record], opts)
+    Legl.Countries.Uk.LeglRegister.PatchRecord.patch([record], opts)
   end
 
   def patch(records, opts) do
@@ -22,7 +22,7 @@ defmodule Legl.Countries.Uk.LeglRegister.RepealRevoke.Patch do
     |> Enum.map(&clean(&1))
     |> Legl.Utility.save_json_returning(@api_patch_results_path)
     |> elem(1)
-    |> Legl.Countries.Uk.LeglRegister.Helpers.PatchRecord.patch(opts)
+    |> Legl.Countries.Uk.LeglRegister.PatchRecord.patch(opts)
   end
 
   def clean(%{record_id: _} = record) when is_map(record) do
