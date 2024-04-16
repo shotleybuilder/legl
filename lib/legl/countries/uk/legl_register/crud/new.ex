@@ -13,7 +13,6 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   alias Legl.Countries.Uk.LeglRegister.New.New.Airtable
   alias Legl.Countries.Uk.LeglRegister.New.New.LegGovUk
   alias Legl.Countries.Uk.LeglRegister.New.Filters
-  # alias Legl.Countries.Uk.LeglRegister.New.New.PublicationDateTable, as: PDT
   alias Legl.Countries.Uk.Metadata, as: MD
   alias Legl.Countries.Uk.Metadata
   alias Legl.Countries.Uk.LeglRegister.Extent
@@ -265,48 +264,126 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     )
   end
 
-  defp create(record, opts) do
-    IO.puts(~s/RUNNING: #{__MODULE__}.create\2/)
+  defp create(record, %{:at_exists? => true, :pg_exists? => true}),
+    do: IO.puts("RECORD EXISTS IN BOTH AIRTABLE AND POSTGRES\n#{record."Title_EN"}")
 
+  defp create(record, %{:at_exists? => _, :pg_exists? => _} = opts) do
+    IO.puts(~s/RUNNING: #{__MODULE__}.create\3/)
+
+    record = build_record(record, opts) |> clean_record(opts)
+    post_to_db(record, opts)
+  end
+
+  defp create(record, opts) do
     process? =
       case Map.has_key?(opts, :process?) do
         true -> Map.get(opts, :process?)
         false -> ExPrompt.confirm(~s/Process #{record."Title_EN"}?/)
       end
 
+    name =
+      Legl.Countries.Uk.LeglRegister.IdField.id(record.type_code, record."Year", record."Number")
+
+    opts = Map.put(opts, :name, name)
+
     case process? do
       true ->
-        exists? = Legl.Countries.Uk.LeglRegister.Helpers.Create.exists?(record, opts)
-        create(record, opts, exists?)
+        opts = sb_record_exists?(record, opts)
+        opts = at_record_exists?(record, opts)
+        create(record, opts)
 
       false ->
         :ok
     end
   end
 
-  defp create(_record, _opts, true), do: :ok
+  defp build_record(record, opts) do
+    Enum.reduce(opts.create_workflow, record, fn f, acc ->
+      {:ok, record} =
+        case :erlang.fun_info(f)[:arity] do
+          1 -> f.(acc)
+          2 -> f.(acc, opts)
+        end
 
-  defp create(record, opts, false) do
-    IO.puts(~s/RUNNING: #{__MODULE__}.create\3/)
+      record
+    end)
+  end
 
-    record =
-      Enum.reduce(opts.create_workflow, record, fn f, acc ->
-        {:ok, record} =
-          case :erlang.fun_info(f)[:arity] do
-            1 -> f.(acc)
-            2 -> f.(acc, opts)
-          end
+  def clean_record(record, opts) do
+    record
+    |> Map.from_struct()
+    |> Legl.Utility.map_filter_out_empty_members()
+    |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(opts)
+  end
 
-        record
-      end)
+  defp at_record_exists?(record, opts) do
+    opts =
+      case Legl.Countries.Uk.LeglRegister.Helpers.Create.exists?(record, opts) do
+        true ->
+          Map.put(opts, :at_exists?, true)
 
-    post? = if opts.post?, do: true, else: ExPrompt.confirm("\Post #{record."Title_EN"}?")
+        _ ->
+          Map.put(opts, :at_exists?, false)
+      end
+  end
+
+  defp sb_record_exists?(record, opts) do
+    case Legl.Services.Supabase.Client.get_legal_register_record(opts) do
+      {:ok, _body} ->
+        Map.put(opts, :pg_exists?, true)
+
+      {:error, :jwt_expired} ->
+        Legl.Services.Supabase.Client.refresh_token(opts)
+        sb_record_exists?(record, opts)
+
+      {:error, _} ->
+        Map.put(opts, :pg_exists?, false)
+    end
+  end
+
+  defp post_to_db(record, %{:at_exists? => true, :pg_exists? => false} = opts) do
+    IO.puts("RECORD EXISTS IN AIRTABLE BUT NOT IN POSTGRES\n#{record."Title_EN"}")
+
+    post_to_dbs(
+      Legl.Countries.Uk.LeglRegister.PostRecord.supabase_post_record(record, opts),
+      Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
+    )
+  end
+
+  defp post_to_db(record, %{:at_exists? => false, :pg_exists? => true} = opts) do
+    IO.puts("RECORD EXISTS IN POSTGRES BUT NOT IN AIRTABLE\n#{record."Title_EN"}")
+
+    post_to_dbs(
+      Legl.Countries.Uk.LeglRegister.PatchRecord.supabase_patch_record(record, opts),
+      Legl.Countries.Uk.LeglRegister.PostRecord.post_single_record(record, opts)
+    )
+  end
+
+  defp post_to_db(record, %{:at_exists? => false, :pg_exists? => false} = opts) do
+    IO.puts("RECORD DOES NOT EXIST IN EITHER AIRTABLE OR POSTGRES\n#{record."Title_EN"}")
+    post? = if opts.post?, do: true, else: ExPrompt.confirm("\Post?")
 
     case post? do
       true ->
-        Legl.Countries.Uk.LeglRegister.PostRecord.post_single_record(record, opts, false)
+        post_to_dbs(
+          Legl.Countries.Uk.LeglRegister.PostRecord.supabase_post_record(record, opts),
+          Legl.Countries.Uk.LeglRegister.PostRecord.post_single_record(record, opts)
+        )
 
       false ->
+        :ok
+    end
+  end
+
+  defp post_to_dbs(supabase, airtable) do
+    with(
+      {:ok, _} <- supabase.(),
+      :ok <- airtable.()
+    ) do
+      :ok
+    else
+      {:error, msg} ->
+        IO.puts("ERROR: #{msg}")
         :ok
     end
   end
@@ -384,7 +461,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       {:ok, record} <- TypeClass.set_type(record),
       {:ok, record} <- Tags.set_tags(record),
       {:ok, record} <- IdField.lrt_acronym(record),
-      {:ok, record} <- Extent.set_extent(record),
+      {:ok, record} <- Extent.set_extent(record, opts),
       {:ok, record} <- GetEnactedBy.get_enacting_laws(record, opts),
       {:ok, record} <- Amend.workflow(record, opts)
       # {:ok, record} <- RR.workflow(record, opts)

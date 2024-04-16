@@ -4,6 +4,36 @@ defmodule Legl.Countries.Uk.LeglRegister.PatchRecord do
   """
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
 
+  # SUPABASE=============================================
+
+  @doc """
+  Retrieves the HTTP configuration for the Supabase client.
+
+  Returns the HTTP configuration specified in the `:supabase_client` application environment.
+
+  ## Examples
+
+      iex> Supabase.Client.http()
+      %HTTPoison.Config{
+        ...  # HTTP configuration details
+      }
+
+  """
+  # def client, do: Application.get_env(:legl, :supabase_client)
+  def client, do: Application.get_env(:legl, SupabaseClient, SupabaseHttpClientBehaviourMock)
+
+  def supabase_patch_record(record, %{supabase_table: _table} = opts) do
+    case record do
+      %LegalRegister{} ->
+        client().update_legal_register_record(Legl.Utility.map_from_struct(record), opts)
+
+      _ ->
+        client().update_legal_register_record(record, opts)
+    end
+  end
+
+  # AIRTABLE=============================================
+
   @doc """
 
   """

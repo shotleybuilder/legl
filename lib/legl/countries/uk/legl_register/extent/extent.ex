@@ -49,7 +49,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     e.g. RestrictExtent="E+W"
 
   """
-  @spec set_extent(LR.legal_register()) :: {:ok, LR.legal_register()}
+  @spec set_extent(LR.legal_register(), map()) :: {:ok, LR.legal_register()}
   def set_extent(%LR{Number: number, type_code: type_code, Year: year} = record, opts)
       when is_binary(number) and is_binary(type_code) and is_integer(year) do
     IO.write(" EXTENT")
@@ -94,20 +94,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Extent do
     end
   end
 
+  def set_extent(%LR{Year: year} = record, opts)
+      when is_binary(year) do
+    Map.put(record, :Year, String.to_integer(year))
+    |> set_extent(opts)
+  end
+
+  def set_extent(_, _), do: {:error, "ERROR: Number, type-code or Year is not set"}
+
   def print_extent_get(r, data, %{workflow: :Extent}) do
     data = data |> clean_data() |> uniq_extent()
     IO.puts(~s/\n#{r."Title_EN"} #{r."Year"} #{r."Number"} \n#{inspect(data)}/)
   end
 
   def print_extent_get(_, _, _), do: :ok
-
-  def set_extent(%LR{Year: year} = record)
-      when is_binary(year) do
-    Map.put(record, :Year, String.to_integer(year))
-    |> set_extent()
-  end
-
-  def set_extent(_), do: {:error, "ERROR: Number, type-code or Year is not set"}
 
   @doc """
 

@@ -6,6 +6,7 @@ defmodule Legl.MixProject do
 
   def project() do
     [
+      # elixirc_paths: elixirc_paths(Mix.env()),
       app: :legl,
       version: @version,
       elixir: "~> 1.10",
@@ -42,7 +43,9 @@ defmodule Legl.MixProject do
       {:floki, "~> 0.34.0"},
       {:html5ever, "~> 0.14.0"},
       {:natural_order, "~> 0.2.0"},
-      {:csv, "~> 3.0"}
+      {:csv, "~> 3.0"},
+      {:req, "~> 0.4.0"},
+      {:mox, "~> 1.0", only: :test}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
@@ -73,4 +76,8 @@ defmodule Legl.MixProject do
       extras: ["README.md", "CHANGELOG.md", "LICENSE"]
     ]
   end
+
+  # Specifies which paths to compile per environment.
+  # defp elixirc_paths(:test), do: ["test/support", "lib"]
+  # defp elixirc_paths(_), do: ["lib"]
 end

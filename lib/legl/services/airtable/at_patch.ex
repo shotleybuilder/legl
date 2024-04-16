@@ -2,6 +2,12 @@ defmodule Legl.Services.Airtable.AtPatch do
   alias Legl.Services.Airtable.Client
   alias Legl.Services.Airtable.Url
 
+  @spec patch_records(
+          any(),
+          any(),
+          atom()
+          | %{:base => binary(), :options => any(), :table => binary(), optional(any()) => any()}
+        ) :: any()
   def patch_records(body, headers, params) do
     with(
       {:ok, url} <- Url.url(params.base, params.table, params.options),

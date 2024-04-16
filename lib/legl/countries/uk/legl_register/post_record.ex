@@ -4,32 +4,32 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
 
   """
 
-  alias Legl.Countries.Uk.LeglRegister.LegalRegister
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create
+  alias Legl.Services.Supabase.Client
 
   @headers [{:"Content-Type", "application/json"}]
 
-  @doc """
-  Function to Post a single Legal Register record struct
-  """
-  def post_single_record(%LegalRegister{} = record, opts) do
-    case Create.exists?(record, opts) do
-      true ->
-        :ok
+  # SUPABASE=============================================
 
-      _ ->
-        post_single_record(record, opts, false)
-    end
+  # Posts a record to the Supabase table for the UK Legal Register.
+  #
+  # The `record` parameter is the data to be posted.
+  # The `opts` parameter is a map of options.
+  #
+  # Returns the result of creating the legal register record.
+  def supabase_post_record(record, opts) do
+    opts = Map.put(opts, :supabase_table, "uk_lrt")
+    opts = Map.put(opts, :data, record)
+    Client.create_legal_register_record(opts)
   end
 
-  @spec post_single_record(%LegalRegister{}, map()) :: :ok
-  def post_single_record(%LegalRegister{} = record, opts, false) do
+  # AIRTABLE=============================================
+
+  def post_single_record(record, opts) do
     params = %{base: opts.base_id, table: opts.table_id, options: %{}}
 
     record =
-      Map.from_struct(record)
-      |> Legl.Utility.map_filter_out_empty_members()
-      |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(opts)
+      record
       |> (&Map.merge(%{}, %{fields: &1})).()
       |> List.wrap()
 
@@ -37,6 +37,8 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
     # IO.inspect(json, label: "__MODULE__", limit: :infinity)
     Legl.Services.Airtable.AtPost.post_records([json], @headers, params)
   end
+
+  # AT - Collection of Records
 
   @spec run(map() | list(), map()) :: :ok
   def run([], _), do: {:error, "RECORDS: EMPTY LIST: No data to Post"}

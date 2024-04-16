@@ -19,6 +19,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers do
 
   def clean_record(record, %{drop_fields: drop_fields, update_workflow: _uw} = _opts)
       when is_map(record) do
+    # The head that works for monthly updates
     drop_if_null = Legl.Countries.Uk.LeglRegister.DropFields.drop_if_null()
 
     #
@@ -26,16 +27,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers do
       Map.filter(record, fn {k, v} -> k in drop_if_null and v not in [nil, "", []] end),
       Map.drop(record, drop_fields ++ drop_if_null)
     )
+
+    # |> IO.inspect(label: "CLEANED RECORD")
   end
 
   def clean_record(record, %{drop_fields: drop_fields} = _opts) when is_map(record) do
+    # Head works for create
     Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
     |> Map.drop(drop_fields)
+
+    # |> IO.inspect(label: "CLEANED RECORD")
   end
 
   def clean_record(record, drop_fields) when is_map(record) do
     Map.filter(record, fn {_k, v} -> v not in [nil, "", []] end)
     |> Map.drop(drop_fields)
+
+    # |> IO.inspect(label: "CLEANED RECORD")
   end
 end
 

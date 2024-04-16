@@ -32,6 +32,7 @@ lib/*/at_formula/
 *.html
 *.csv
 *.json
+/.env
 
 lib/si_code_regions.csv
 lib/si_codes.csv
