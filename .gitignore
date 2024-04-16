@@ -33,6 +33,8 @@ lib/*/at_formula/
 *.csv
 *.json
 /.env
+/home/jason/Desktop/legl/legl/.envrc
+.bashrc
 
 lib/si_code_regions.csv
 lib/si_codes.csv

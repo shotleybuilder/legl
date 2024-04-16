@@ -10,8 +10,8 @@ defmodule Legl.Services.Supabase.ClientTest do
 
   describe "refesh_token/1" do
     test "token" do
-      data = %{email: "foo@example.com", password: "bar"}
-      opts = %{api: :auth, method: :post, data: data}
+      # data = %{email: "foo@example.com", password: "bar"}
+      opts = %{api: :auth, method: :post}
 
       Req.Test.stub(Supabase.Http, fn conn ->
         conn
