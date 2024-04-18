@@ -1,20 +1,20 @@
-defmodule Legl.Countries.Uk.LeglRegister.IdFieldTest do
+defmodule Legl.Countries.Uk.LeglRegister.Credentials.IdFieldTest do
   alias Legl.Countries.Uk.LeglRegister
-  # mix test test/legl/countries/uk/legl_register/id_field_test.exs
+  # mix test test/legl/countries/uk/legl_register/credentials/id_field_test.exs
 
   use ExUnit.Case
   import Legl.Countries.Uk.LeglRegister.IdField
 
   @titles [
-    {"Health and Safety at Work etc. Act", 1974, "uksi", "37", "UK_HSWA_uksi_1974_37"},
+    {"Health and Safety at Work etc. Act", 1974, "uksi", "37", "UK_uksi_1974_37"},
     {"Environmental Protection (Controls on Ozone–Depleting Substances) (Amendment) Regulations",
-     2008, "uksi", "91", "UK_EPCODSAR_uksi_2008_91"},
+     2008, "uksi", "91", "UK_uksi_2008_91"},
     {"Wildlife and Natural Environment (Scotland) Act 2011 (Commencement No. 2) Amendment (No. 2) Order",
-     2012, "ssi", "281", "UK_WNESACNANO_ssi_2012_281"},
+     2012, "ssi", "281", "UK_ssi_2012_281"},
     {"Fishing Vessels (Safety of 15–24 Metre Vessels) Regulations", 2002, "uksi", 2201,
-     "UK_FVSMVR_uksi_2002_2201"},
+     "UK_uksi_2002_2201"},
     {"Merchant Shipping (Passenger Ship Construction: Ships of Classes I, II and II(A)) Regulations",
-     1998, "uksi", "2514", "UK_MSPSCSCIIIIIAR_uksi_1998_2514"}
+     1998, "uksi", "2514", "UK_uksi_1998_2514"}
   ]
 
   test "id/4" do
@@ -33,6 +33,6 @@ defmodule Legl.Countries.Uk.LeglRegister.IdFieldTest do
 
     {:ok, result} = id(record)
 
-    assert result."Name" == "UK_FB_uksi_2023_100"
+    assert result."Name" == "UK_uksi_2023_100"
   end
 end

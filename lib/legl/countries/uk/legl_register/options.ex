@@ -254,12 +254,8 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   Function to assemble the update functions into a list
 
   """
-  @year &Legl.Countries.Uk.LeglRegister.Year.set_year/1
-  @name &Legl.Countries.Uk.LeglRegister.IdField.lrt_acronym/1
+  @creds &Legl.Countries.Uk.LeglRegister.Credentials.Creds.set_credentials/1
   @md &Legl.Countries.Uk.Metadata.get_latest_metadata/2
-  @tags &Legl.Countries.Uk.LeglRegister.Tags.set_tags/1
-  @type_law &Legl.Countries.Uk.LeglRegister.TypeClass.set_type/1
-  @type_class &Legl.Countries.Uk.LeglRegister.TypeClass.set_type_class/1
   @extent &Legl.Countries.Uk.LeglRegister.Extent.set_extent/2
   @enact &Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws/2
   @affect &Legl.Countries.Uk.LeglRegister.Amend.workflow/2
@@ -269,27 +265,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   # map of tuples {the workflow, dropped fields}
 
   @workflow_choices [
-    "New (w/Enact)":
-      {[@md, @year, @name, @tags, @type_law, @type_class, @extent, @enact, @affect], :new},
-    "New (w/Enact w/oMD)":
-      {[@year, @name, @tags, @type_law, @type_class, @extent, @enact, @affect], :new},
+    "New (w/Enact)": {[@md, @creds, @extent, @enact, @affect], :new},
+    "New (w/Enact w/oMD)": {[@creds, @extent, @enact, @affect], :new},
     "Update (w/Enact)":
       {[
          @md,
-         @year,
-         @name,
-         @tags,
-         @type_law,
-         @type_class,
+         @creds,
          @extent,
          @enact,
          @affect
        ], :update},
-    "Update (w/o Enact)":
-      {[@md, @year, @name, @tags, @type_law, @type_class, @extent, @affect], :update},
+    "Update (w/o Enact)": {[@md, @creds, @extent, @affect], :update},
     "Delta (w/o Extent & Enact)": {[@md, @affect], :delta},
-    Metadata: {[@md, @year, @name, @type_law, @type_class], :metadata},
-    Extent: {[@name, @extent], :extent},
+    Metadata: {[@md, @creds], :metadata},
+    Extent: {[@creds, @extent], :extent},
     "Metadata+Enact": {[@md, @enact], :"metadata+enact"},
     Enact: {[@enact], :enact},
     Affect: {[@affect], :affect},

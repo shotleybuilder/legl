@@ -1,17 +1,27 @@
 defmodule Legl.Services.Supabase.Client do
   require Logger
   alias Legl.Services.Supabase.Http
+  alias Legl.Services.Supabase.UserCache
 
-  def refresh_token(opts) do
+  def token?() do
+    UserCache.start_link()
+
+    case UserCache.get_token() do
+      nil -> false
+      _ -> true
+    end
+  end
+
+  def refresh_token() do
     # Refresh the JWT token
     data = %{
       email: System.get_env("SUPABASE_EMAIL"),
       password: System.get_env("SUPABASE_PASSWORD")
     }
 
-    opts
-    |> Map.merge(%{method: :post, api: :auth, data: data})
-    |> request()
+    %{method: :post, api: :auth, data: data}
+    |> Http.request()
+    |> handle_response()
   end
 
   def find_or_create_legal_register_record(opts) do
@@ -22,24 +32,32 @@ defmodule Legl.Services.Supabase.Client do
   end
 
   def get_legal_register_record(opts) do
-    request(opts)
+    if token?() == false, do: refresh_token()
+    opts = Map.put(opts, :api, :rest)
+    opts = Map.put_new(opts, :supabase_table, "uk_lrt")
+
+    case handle_response(Http.request(opts)) do
+      {:ok, %{user_id: _user_id, token: _token}} -> get_legal_register_record(opts)
+      resp -> resp
+    end
   end
 
   def create_legal_register_record(opts) do
-    opts
-    |> Map.put(:method, :post)
-    |> request()
+    opts = Map.merge(opts, %{method: :post, api: :rest})
+
+    case handle_response(Http.request(opts)) do
+      {:ok, %{user_id: _user_id, token: _token}} -> create_legal_register_record(opts)
+      resp -> resp
+    end
   end
 
   def update_legal_register_record(opts) do
-    opts
-    |> Map.put(:method, :patch)
-    |> request()
-  end
+    opts = Map.merge(opts, %{method: :patch, api: :rest})
 
-  defp request(opts) do
-    Http.request(opts)
-    |> handle_response()
+    case handle_response(Http.request(opts)) do
+      {:ok, %{user_id: _user_id, token: _token}} -> update_legal_register_record(opts)
+      resp -> resp
+    end
   end
 
   defp handle_response(resp) do
@@ -47,14 +65,21 @@ defmodule Legl.Services.Supabase.Client do
       {:ok,
        %{
          status: 200,
-         body: %{"access_token" => token, "expires_in" => ttl, "user" => %{"id" => user_id}}
+         body: %{
+           "access_token" => token,
+           "expires_in" => ttl,
+           "user" => %{"id" => user_id} = body
+         }
        }} ->
+        Logger.info("\nToken request successful: #{inspect(body)}")
         Legl.Services.Supabase.UserCache.start_link()
         Legl.Services.Supabase.UserCache.put_token(user_id, token, ttl: ttl)
 
+        {:ok, %{user_id: user_id, token: token}}
+
       {:ok, %{status: 200, body: body}} ->
         Logger.info("Request successful: #{inspect(body)}")
-        :ok
+        {:ok, body}
 
       {:ok, %{status: 201, body: body}} ->
         Logger.info("Request successful: #{inspect(body)}")
@@ -62,7 +87,7 @@ defmodule Legl.Services.Supabase.Client do
 
       {:ok, %{status: 401, body: %{"code" => "PGRST301", "message" => "JWT expired"} = body}} ->
         Logger.info("JWT Expired: #{inspect(body)}")
-        {:error, :jwt_expired}
+        refresh_token()
 
       {:ok, %{status: status_code, body: body}} ->
         Logger.error("Request failed with status code #{status_code}: #{inspect(body)}")

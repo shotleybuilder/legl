@@ -16,15 +16,15 @@ defmodule Legl.Services.Airtable.AtPatch do
     ) do
       case response do
         %HTTPoison.Response{status_code: 403, body: body} ->
-          IO.puts("Status: 403")
+          IO.puts("AT Status Code: 403")
           IO.inspect(body)
 
         %HTTPoison.Response{status_code: 422, body: body} ->
-          IO.puts("Status: 422")
+          IO.puts("AT Status Code: 422")
           IO.inspect(body)
 
         %HTTPoison.Response{status_code: code, body: _body} ->
-          IO.puts("Status Code: #{code}")
+          IO.puts("AT Status Code: #{code}")
       end
     else
       {:error, error} ->

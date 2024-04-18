@@ -6,7 +6,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   """
 
-  alias Legl.Countries.Uk.LeglRegister.LegalRegister
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
   # alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
@@ -126,7 +126,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         {:ok, records} <- LegGovUk.getNewLaws(opts.days, opts),
         :ok = Legl.Utility.save_json(records, @source)
       ) do
-        Enum.map(records, &Kernel.struct(%LegalRegister{}, &1))
+        Enum.map(records, &Kernel.struct(%LR{}, &1))
       else
         {:no_data, opts} -> {:no_data, opts}
         {:error, msg} -> {:error, msg}
@@ -265,13 +265,15 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   end
 
   defp create(record, %{:at_exists? => true, :pg_exists? => true}),
-    do: IO.puts("RECORD EXISTS IN BOTH AIRTABLE AND POSTGRES\n#{record."Title_EN"}")
+    do: IO.puts("\nRECORD EXISTS IN BOTH AIRTABLE AND POSTGRES\n#{record."Title_EN"}")
 
   defp create(record, %{:at_exists? => _, :pg_exists? => _} = opts) do
-    IO.puts(~s/RUNNING: #{__MODULE__}.create\3/)
+    IO.puts(~s/CREATE: #{__MODULE__}.create\3/)
 
-    record = build_record(record, opts) |> clean_record(opts)
-    post_to_db(record, opts)
+    record
+    |> build_record(opts)
+    |> clean_record(opts)
+    |> post_to_db(opts)
   end
 
   defp create(record, opts) do
@@ -288,8 +290,21 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
     case process? do
       true ->
-        opts = sb_record_exists?(record, opts)
-        opts = at_record_exists?(record, opts)
+        # Check for existence of the law in the LRT
+        opts =
+          Map.put(
+            opts,
+            :pg_exists?,
+            Legl.Countries.Uk.LeglRegister.Crud.Read.exists_pg?(opts)
+          )
+
+        opts =
+          Map.put(
+            opts,
+            :at_exists?,
+            Legl.Countries.Uk.LeglRegister.Crud.Read.exists_at?(record, opts)
+          )
+
         create(record, opts)
 
       false ->
@@ -298,6 +313,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   end
 
   defp build_record(record, opts) do
+    # IO.inspect(opts.create_workflow, label: "CREATE WORKFLOW")
+
     Enum.reduce(opts.create_workflow, record, fn f, acc ->
       {:ok, record} =
         case :erlang.fun_info(f)[:arity] do
@@ -305,6 +322,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
           2 -> f.(acc, opts)
         end
 
+      IO.puts("RECORD: #{record."Name"} #{inspect(f)}")
       record
     end)
   end
@@ -316,42 +334,30 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(opts)
   end
 
-  defp at_record_exists?(record, opts) do
-    opts =
-      case Legl.Countries.Uk.LeglRegister.Helpers.Create.exists?(record, opts) do
-        true ->
-          Map.put(opts, :at_exists?, true)
-
-        _ ->
-          Map.put(opts, :at_exists?, false)
-      end
-  end
-
-  defp sb_record_exists?(record, opts) do
-    case Legl.Services.Supabase.Client.get_legal_register_record(opts) do
-      {:ok, _body} ->
-        Map.put(opts, :pg_exists?, true)
-
-      {:error, :jwt_expired} ->
-        Legl.Services.Supabase.Client.refresh_token(opts)
-        sb_record_exists?(record, opts)
-
-      {:error, _} ->
-        Map.put(opts, :pg_exists?, false)
-    end
-  end
-
   defp post_to_db(record, %{:at_exists? => true, :pg_exists? => false} = opts) do
-    IO.puts("RECORD EXISTS IN AIRTABLE BUT NOT IN POSTGRES\n#{record."Title_EN"}")
+    IO.puts("\nRECORD EXISTS IN AIRTABLE BUT NOT IN POSTGRES #{record."Name"}")
+
+    [%LR{record_id: record_id}] =
+      Legl.Countries.Uk.LeglRegister.Crud.Read.api_read(
+        name: record."Name",
+        query_name: 0,
+        print_opts?: false
+      )
+
+    # We need to tell AT which record to update (record_id) and rm :Name which is computed
+    at_record =
+      record
+      |> Map.put(:record_id, record_id)
+      |> Map.drop([:Name])
 
     post_to_dbs(
       Legl.Countries.Uk.LeglRegister.PostRecord.supabase_post_record(record, opts),
-      Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
+      Legl.Countries.Uk.LeglRegister.PatchRecord.run(at_record, opts)
     )
   end
 
   defp post_to_db(record, %{:at_exists? => false, :pg_exists? => true} = opts) do
-    IO.puts("RECORD EXISTS IN POSTGRES BUT NOT IN AIRTABLE\n#{record."Title_EN"}")
+    IO.puts("\nRECORD EXISTS IN POSTGRES BUT NOT IN AIRTABLE #{record."Name"}")
 
     post_to_dbs(
       Legl.Countries.Uk.LeglRegister.PatchRecord.supabase_patch_record(record, opts),
@@ -360,7 +366,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   end
 
   defp post_to_db(record, %{:at_exists? => false, :pg_exists? => false} = opts) do
-    IO.puts("RECORD DOES NOT EXIST IN EITHER AIRTABLE OR POSTGRES\n#{record."Title_EN"}")
+    IO.puts("\nRECORD DOES NOT EXIST IN EITHER AIRTABLE OR POSTGRES #{record."Name"}")
     post? = if opts.post?, do: true, else: ExPrompt.confirm("\Post?")
 
     case post? do
@@ -375,10 +381,10 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     end
   end
 
-  defp post_to_dbs(supabase, airtable) do
+  defp post_to_dbs(pg, at) when is_function(pg) and is_function(at) do
     with(
-      {:ok, _} <- supabase.(),
-      :ok <- airtable.()
+      {:ok, _} <- pg.(),
+      :ok <- at.()
     ) do
       :ok
     else
@@ -386,6 +392,12 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         IO.puts("ERROR: #{msg}")
         :ok
     end
+  end
+
+  defp post_to_dbs(pg, at) do
+    msg = ~s/Expected functions, but got PG: #{inspect(pg)} and AT: #{inspect(at)}/
+    IO.puts(msg)
+    {:error, msg}
   end
 
   @spec populate_newly_published_law(tuple(), opts()) :: {:ok, tuple()}
@@ -422,8 +434,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   Enacted_by, Amended_by, Revoked_by are overwritten if they exist.
   """
-  @spec update_empty_law_fields_w_metadata(%LegalRegister{}, map()) ::
-          {:ok, %LegalRegister{}} | {:error}
+  @spec update_empty_law_fields_w_metadata(%LR{}, map()) ::
+          {:ok, %LR{}} | {:error}
   def update_empty_law_fields_w_metadata(record, opts)
       when is_map(record) do
     with(
@@ -451,8 +463,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
 
   Enacted_by, Amended_by, Revoked_by are overwritten if they exist.
   """
-  @spec update_empty_law_fields(%LegalRegister{}, map()) :: {:ok, %LegalRegister{}} | {:error}
-  def update_empty_law_fields(%LegalRegister{} = record, opts)
+  @spec update_empty_law_fields(%LR{}, map()) :: {:ok, %LR{}} | {:error}
+  def update_empty_law_fields(%LR{} = record, opts)
       when is_struct(record) do
     with(
       {:ok, %_{Title_EN: title_EN} = record} <- MD.get_latest_metadata(record),
@@ -522,7 +534,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
         # IO.inspect(records, label: "EXC RECORDS: ")
 
         Map.get(records, :"#{id}")
-        |> (&Kernel.struct(%LegalRegister{}, &1)).()
+        |> (&Kernel.struct(%LR{}, &1)).()
         |> update_empty_law_fields(opts)
         |> elem(1)
         |> save(opts)
@@ -594,7 +606,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New.LegGovUk do
 
       with(
         url = url(opts),
-        :ok = IO.puts("\n#{url}\n [#{__MODULE__}.getLaws]"),
+        :ok = IO.puts("\n#{url}\n [#{__MODULE__}.getNewLaws]"),
         {:ok, response} <- LegGovUk.leg_gov_uk_html(url, @client, @parser)
       ) do
         Enum.reduce(response, acc, fn law, acc2 ->

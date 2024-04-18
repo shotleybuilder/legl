@@ -71,7 +71,7 @@ defmodule Legl.Countries.Uk.Metadata do
     }
   ]
 
-  alias Legl.Countries.Uk.LeglRegister.LegalRegister
+  alias Legl.Countries.Uk.LeglRegister.LegalRegister, as: LR
   alias Legl.Services.LegislationGovUk.Url
   alias Legl.Services.Airtable.UkAirtable, as: AT
   alias Legl.Services.LegislationGovUk.RecordGeneric, as: Record
@@ -214,31 +214,21 @@ defmodule Legl.Countries.Uk.Metadata do
   @spec get_latest_metadata(binary()) :: {:ok, map()}
   def get_latest_metadata(record, opts \\ %{workflow: :update})
 
-  def get_latest_metadata(%LegalRegister{} = record, opts)
-      when is_struct(record) do
+  def get_latest_metadata(%LR{} = record, opts) when is_struct(record) do
     IO.write(" METADATA")
     url = Url.introduction_path(record)
     {:ok, metadata} = get_latest_metadata(url)
 
-    md_change_log =
+    metadata =
       case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
         true ->
-          Delta.compare_fields(record, metadata)
+          Map.put(:md_change_log, Delta.compare_fields(record, metadata))
 
         false ->
-          ""
+          metadata
       end
 
-    record =
-      if record."Title_EN" == "",
-        do: Map.put(record, :Title_EN, metadata."Title_EN"),
-        else: record
-
-    metadata =
-      metadata
-      |> Map.put(:md_change_log, md_change_log)
-      |> Map.drop([:pdf_href, :md_modified_csv, :md_subjects_csv, :title])
-      |> Map.put(:md_checked, ~s/#{Date.utc_today()}/)
+    metadata = Map.put(metadata, :md_checked, ~s/#{Date.utc_today()}/)
 
     {:ok, Kernel.struct(record, metadata)}
   rescue
@@ -251,23 +241,19 @@ defmodule Legl.Countries.Uk.Metadata do
   end
 
   def get_latest_metadata(record, _) when is_map(record) do
-    IO.write(" METADATA -> map")
+    IO.write(" METADATA (map)")
     url = Url.introduction_path(record)
     {:ok, metadata} = get_latest_metadata(url)
-    metadata = Map.drop(metadata, [:pdf_href, :md_modified_csv, :md_subjects_csv])
+
     {:ok, Map.merge(record, metadata)}
   rescue
     _ -> {:error}
   end
 
   def get_latest_metadata(path, _) when is_binary(path) do
+    IO.write(" METADATA (path)")
+
     with({:ok, :xml, metadata} <- Record.metadata(path)) do
-      # save the data returned from leg.gov.uk w/o transformation
-      # json = Map.put(%{}, "records", metadata) |> Jason.encode!()
-      # Legl.Utility.append_records_to_file(~s/#{json}/, @raw_results_path)
-
-      # IO.inspect(metadata)
-
       %{
         # subject shape ["foo", "bar", ...]
         md_subjects: subject,
@@ -276,9 +262,11 @@ defmodule Legl.Countries.Uk.Metadata do
         md_schedule_paras: schedule,
         md_attachment_paras: attachment,
         md_images: images,
-        md_modified: modified,
-        # md_made_date: made,
-        # md_coming_into_force_date: force,
+        # md_modified: modified,
+        md_enactment_date: md_enactment_date,
+        md_coming_into_force_date: md_coming_into_force_date,
+        md_made_date: md_made_date,
+        md_dct_valid_date: md_dct_valid_date,
         # md_restrict_start_date,
         si_code: si_codes,
         Title_EN: title
@@ -300,17 +288,34 @@ defmodule Legl.Countries.Uk.Metadata do
             |> (&Map.put(metadata, :md_subjects, &1)).()
         end
 
-      # :md_subjects_csv either [] or [\""foo,bar,baz"\"]
+      # md_date, md_date_month, md_date_year
       metadata =
-        case metadata.md_subjects do
-          [] ->
-            Map.put(metadata, :md_subjects_csv, [])
+        cond do
+          md_enactment_date not in [nil, ""] ->
+            Map.put(metadata, :md_date, md_enactment_date)
 
-          subject ->
-            subject
-            |> Enum.join(",")
-            |> Legl.Utility.csv_quote_enclosure()
-            |> (&Map.put(metadata, :md_subjects_csv, [&1])).()
+          md_coming_into_force_date not in [nil, ""] ->
+            Map.put(metadata, :md_date, md_coming_into_force_date)
+
+          md_made_date not in [nil, ""] ->
+            Map.put(metadata, :md_date, md_made_date)
+
+          md_dct_valid_date not in [nil, ""] ->
+            Map.put(metadata, :md_date, md_dct_valid_date)
+
+          true ->
+            Map.put(metadata, :md_date, "")
+        end
+
+      metadata =
+        case String.split(metadata.md_date, "-") do
+          [""] ->
+            metadata
+
+          [year, month, _day] ->
+            metadata
+            |> Map.put(:md_date_year, year)
+            |> Map.put(:md_date_month, month)
         end
 
       # the field is called 'si_code' in Airtable
@@ -325,10 +330,7 @@ defmodule Legl.Countries.Uk.Metadata do
             Map.merge(metadata, %{SICode: si_codes, si_code: Enum.join(si_codes, ",")})
         end
 
-      [_, year, month, day] = Regex.run(~r/(\d{4})-(\d{2})-(\d{2})/, modified)
-
       xMetadata = %{
-        md_modified_csv: "#{day}/#{month}/#{year}",
         md_total_paras: convert_to_i(total),
         md_body_paras: convert_to_i(body),
         md_schedule_paras: convert_to_i(schedule),
@@ -336,7 +338,9 @@ defmodule Legl.Countries.Uk.Metadata do
         md_images: convert_to_i(images)
       }
 
-      {:ok, Map.merge(metadata, xMetadata)}
+      Map.merge(metadata, xMetadata)
+      |> Map.drop([:pdf_href])
+      |> (&{:ok, &1}).()
     else
       {:error, code, error} -> {:error, %{md_error_code: "#{code}: #{error}"}}
       {:ok, :html} -> {:error, %{md_error_code: :html}}

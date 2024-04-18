@@ -1,4 +1,6 @@
 defmodule Legl.Services.Supabase.UserCache do
+  require Logger
+
   @table_name :user_cache
   @user_id System.get_env("SUPABASE_USER_ID")
 
@@ -32,16 +34,16 @@ defmodule Legl.Services.Supabase.UserCache do
   def put_token(user_id, token, opts \\ []) do
     ttl = Keyword.get(opts, :ttl, 3600)
     expiration = :os.system_time(:seconds) + ttl
-    :ets.insert(@table_name, {user_id, token, expiration})
-    token
+    record = :ets.insert(@table_name, {user_id, token, expiration})
+    Logger.info("\nPut token successful: #{inspect(record)}")
   end
 
   @doc """
   Lookup a cached result and check the freshness
   """
   def get_token() do
-    user_id = user_id() |> IO.inspect(label: "USER_ID")
-    value = :ets.lookup(@table_name, user_id) |> IO.inspect(label: "ETS")
+    # user_id = user_id() |> IO.inspect(label: "USER_ID")
+    value = :ets.lookup(@table_name, user_id)
 
     case value do
       [result | _] -> check_freshness(result)

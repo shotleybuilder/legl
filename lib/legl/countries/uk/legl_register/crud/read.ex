@@ -5,6 +5,59 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
   alias Legl.Services.Airtable.UkAirtable, as: AT
 
+  # SUPABASE=============================================
+  def exists_pg?(opts) do
+    case Legl.Services.Supabase.Client.get_legal_register_record(opts) do
+      {:ok, ""} ->
+        IO.puts(~s/#{opts.name} MISSING in Supabase/)
+        false
+
+      {:ok, []} ->
+        IO.puts(~s/#{opts.name} MISSING in Supabase/)
+        false
+
+      {:ok, body} ->
+        IO.puts(~s/#{opts.name} EXISTS in Supabase\n#{body}/)
+        true
+
+      {:error, _} ->
+        IO.puts(~s/#{opts.name} MISSING in Supabase/)
+        false
+    end
+  end
+
+  # AIRTABLE=============================================
+
+  @doc """
+  Receives a Record map of Number, type_code and Year and options with base_id
+  and table_id and returns a boolean true or false
+
+  Function to check presence of law in a Legal Register
+  """
+  @spec exists_at?(map(), map()) :: boolean()
+  def exists_at?(record, opts) when is_map(record) do
+    {:ok, url} = Legl.Countries.Uk.LeglRegister.Helpers.Create.setUrl(record, opts)
+
+    with {:ok, body} <- Legl.Services.Airtable.Client.request(:get, url, []),
+         %{records: records} = Jason.decode!(body, keys: :atoms) do
+      case records do
+        [] ->
+          IO.puts(~s/#{record."Name"} MISSING in Airtable/)
+          false
+
+        _ ->
+          IO.puts(~s/#{record."Name"} EXISTS in Airtable/)
+          true
+      end
+    else
+      {:ok, _, _} ->
+        true
+
+      {:error, reason} ->
+        IO.puts("ERROR: #{reason}")
+    end
+  end
+
   @default_opts %{
     print_opts?: true,
     formula: ""

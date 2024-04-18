@@ -10,19 +10,16 @@ defmodule Legl.Services.Supabase.ClientTest do
 
   describe "refesh_token/1" do
     test "token" do
-      # data = %{email: "foo@example.com", password: "bar"}
-      opts = %{api: :auth, method: :post}
-
       Req.Test.stub(Supabase.Http, fn conn ->
         conn
         |> Req.Test.json(%{access_token: "123", expires_in: 3600, user: %{id: "#{@user_id}"}})
       end)
 
-      assert "123" = Supabase.Client.refresh_token(opts)
+      assert "123" = Supabase.Client.refresh_token()
 
       assert is_reference(:ets.whereis(:user_cache))
       assert Supabase.UserCache.start_link() == :ok
-      assert "123" == Supabase.UserCache.get_token()
+      assert {:ok, %{user_id: user_id, token: token}} = Supabase.UserCache.get_token()
     end
   end
 

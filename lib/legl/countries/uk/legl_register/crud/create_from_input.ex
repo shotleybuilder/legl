@@ -8,6 +8,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
   alias Legl.Countries.Uk.LeglRegister.New.New
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
+  alias Legl.Countries.Uk.LeglRegister.Crud.Read
 
   @type opts() :: keyword()
 
@@ -66,7 +67,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
 
     # IO.inspect(record, limit: :infinity, pretty: true)
 
-    case Helper.exists?(record, opts) do
+    case Read.exists_at?(record, opts) do
       false ->
         {:ok, record} = New.update_empty_law_fields(record, opts)
 

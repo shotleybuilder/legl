@@ -14,7 +14,6 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     path
     urls
     Enacting
-    Name
   ]a
 
   @drop_if_null ~w[
@@ -22,11 +21,13 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     Title_EN
     type_code
     Number
+    old_style_number
     Year
     Tags
     Type
     type_class
     Family
+    family_ii
     Function
     publication_date
   ]a
@@ -35,7 +36,11 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     md_description
     md_total_paras
     md_body_paras
+    md_schedule_paras
     md_images
+    md_date
+    md_date_month
+    md_date_year
     md_dct_valid_date
     md_attachment_paras
     md_modified
@@ -45,7 +50,6 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
     md_enactment_date
     md_coming_into_force_date
     md_subjects
-    md_schedule_paras
     SICode
     si_code
     md_change_log
@@ -142,6 +146,16 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
 
   ]a
 
+  # These fields are not present in the supabase LRT table
+  @supabase ~w[
+    record_id
+    si_code
+    enact_error
+    md_checked
+    amendments_checked
+    publication_date
+  ]a
+
   def drop_fields(update_workflow) do
     case update_workflow do
       :new -> @models ++ @default
@@ -157,6 +171,8 @@ defmodule Legl.Countries.Uk.LeglRegister.DropFields do
   end
 
   def drop_fields, do: @models ++ @default
+
+  def drop_supabase_fields, do: @supabase
 
   def drop_if_null, do: @drop_if_null
 end

@@ -106,36 +106,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
 
   @doc """
   Receives a Record map of Number, type_code and Year and options with base_id
-  and table_id and returns a boolean true or false
-
-  Function to check presence of law in a Legal Register
-  """
-  @spec exists?(map(), map()) :: boolean()
-  def exists?(record, opts) when is_map(record) do
-    {:ok, url} = setUrl(record, opts)
-
-    with {:ok, body} <- Client.request(:get, url, []),
-         %{records: records} = Jason.decode!(body, keys: :atoms) do
-      case records do
-        [] ->
-          IO.puts(~s/#{record."Title_EN"} MISSING in the Base/)
-          false
-
-        _ ->
-          IO.puts(~s/#{record."Title_EN"} EXISTS in the Base/)
-          true
-      end
-    else
-      {:ok, _, _} ->
-        true
-
-      {:error, reason} ->
-        IO.puts("ERROR: #{reason}")
-    end
-  end
-
-  @doc """
-  Receives a Record map of Number, type_code and Year and options with base_id
   and table_id and returns either the returned record or :ok
 
   Function to provide the start for a create or update process
@@ -248,7 +218,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Helpers.Create do
   @spec filter(:both, list(), map()) :: {list(), list()}
   def filter(:both, records, opts) do
     Enum.reduce(records, {[], []}, fn record, {post, patch} ->
-      case exists?(record, opts) do
+      case Legl.Countries.Uk.LeglRegister.Crud.Read.exists_at?(record, opts) do
         true ->
           {post, [record | patch]}
 

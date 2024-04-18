@@ -9,11 +9,11 @@ defmodule Legl.Services.Airtable.AtPost do
     ) do
       case response do
         %HTTPoison.Response{status_code: 422, body: body} ->
-          IO.puts("Status: 422")
+          IO.puts("AT Status: 422")
           IO.inspect(body)
 
         %HTTPoison.Response{status_code: code, body: _body} ->
-          IO.puts("Status Code: #{code}")
+          IO.puts("AT Status Code: #{code}")
       end
     else
       {:error, error} ->

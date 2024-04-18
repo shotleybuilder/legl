@@ -4,8 +4,8 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
 
   """
 
-  alias Legl.Countries.Uk.LeglRegister.Helpers.Create
   alias Legl.Services.Supabase.Client
+  alias Legl.Countries.Uk.LeglRegister.Crud.Read
 
   @headers [{:"Content-Type", "application/json"}]
 
@@ -18,9 +18,57 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
   #
   # Returns the result of creating the legal register record.
   def supabase_post_record(record, opts) do
+    record =
+      record
+      |> Map.drop(Legl.Countries.Uk.LeglRegister.DropFields.drop_supabase_fields())
+      # Converts AT struct atoms to PG atoms
+      |> Legl.Countries.Uk.LeglRegister.LegalRegister.supabase_conversion()
+      |> conv_hearts_to_new_lines()
+      |> linked_array_fields()
+
+    # |> IO.inspect(label: "POSTGRES RECORD")
+
     opts = Map.put(opts, :supabase_table, "uk_lrt")
     opts = Map.put(opts, :data, record)
     Client.create_legal_register_record(opts)
+  end
+
+  defp conv_hearts_to_new_lines(record) do
+    Enum.reduce(record, %{}, fn
+      {:family, v}, acc ->
+        Map.put(acc, :family, v)
+
+      {k, v}, acc when is_binary(v) ->
+        case String.contains?(v, "💚️") do
+          true -> Map.put(acc, k, Regex.replace(~r/💚️/m, v, "\n"))
+          false -> Map.put(acc, k, v)
+        end
+
+      {k, v}, acc ->
+        Map.put(acc, k, v)
+    end)
+  end
+
+  defp linked_array_fields(record) do
+    Enum.reduce(record, %{}, fn
+      {k, v}, acc when k in [:enacted_by, :amending, :amended_by, :rescinding, :rescinded_by] ->
+        acc
+        |> Map.put(k, ~s/{#{v}}/)
+        |> Map.put(~s/linked_#{k}/ |> String.to_atom(), ~s/{#{find_records(v)}}/)
+
+      {k, v}, acc ->
+        Map.put(acc, k, v)
+    end)
+  end
+
+  defp find_records(names) do
+    names = names |> String.split(",") |> Enum.map(&String.trim/1)
+    opts = %{supabase_table: "uk_lrt", name: names, select: "name"}
+
+    case Client.get_legal_register_record(opts) do
+      {:ok, body} -> body |> Enum.map(&Map.get(&1, "name")) |> Enum.join(",")
+      {:error, _} -> ""
+    end
   end
 
   # AIRTABLE=============================================
@@ -30,6 +78,8 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
 
     record =
       record
+      # Name is a calculated field in AT
+      |> Map.drop([:Name])
       |> (&Map.merge(%{}, %{fields: &1})).()
       |> List.wrap()
 
@@ -44,7 +94,7 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
   def run([], _), do: {:error, "RECORDS: EMPTY LIST: No data to Post"}
 
   def run(record, opts) when is_map(record) do
-    with false <- Create.exists?(record, opts) do
+    with false <- Read.exists_at?(record, opts) do
       run([record], opts)
     else
       true -> :ok

@@ -31,7 +31,7 @@ defmodule Legl.Countries.Uk.LeglRegister.IdField do
   end
 
   def lrt_acronym(%LR{} = record) when is_struct(record) do
-    IO.write(" NAME")
+    IO.write(" ACRONYM")
 
     {:ok,
      Map.put(

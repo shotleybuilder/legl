@@ -10,6 +10,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           Title_EN: String.t(),
           type_code: String.t(),
           Number: String.t(),
+          old_style_number: String.t(),
           Year: String.t(),
 
           # search fields
@@ -30,13 +31,18 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           type_class: String.t(),
           # Family fields
           Family: String.t(),
+          family_ii: String.t(),
           SICode: String.t(),
           si_code: String.t(),
 
           # Metadata fields
           md_total_paras: integer(),
           md_body_paras: integer(),
+          md_schedule_paras: integer(),
           md_images: integer(),
+          md_date: String.t(),
+          md_date_year: integer(),
+          md_date_month: integer(),
           md_dct_valid_date: String.t(),
           md_restrict_start_date: String.t(),
           md_restrict_extent: String.t(),
@@ -46,7 +52,6 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
           md_attachment_paras: integer(),
           md_modified: String.t(),
           md_subjects: list(),
-          md_schedule_paras: integer(),
           md_checked: String.t(),
 
           # EcARM
@@ -150,6 +155,7 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     Title_EN
     type_code
     Number
+    old_style_number
     Year
 
 
@@ -167,13 +173,18 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     type_class
 
     Family
+    family_ii
 
     SICode
     si_code
 
     md_total_paras
     md_body_paras
+    md_schedule_paras
     md_images
+    md_date
+    md_date_month
+    md_date_year
     md_dct_valid_date
     md_restrict_start_date
     md_restrict_extent
@@ -183,16 +194,18 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     md_attachment_paras
     md_modified
     md_subjects
-    md_schedule_paras
+
     md_checked
 
     Function
-    Amended_by
-    Enacted_by
-    Revoked_by
-    Amending
     Enacting
+    Enacted_by
+
+    Amending
+    Amended_by
+
     Revoking
+    Revoked_by
 
     enact_error
     enacted_by_description
@@ -268,4 +281,125 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
   ]a
 
   defstruct @struct
+
+  @translator %{
+    Acronym: :acronym,
+    Name: :name,
+    Title_EN: :title_en,
+    Number: :number,
+    Year: :year,
+    type_code: :type_code,
+    Type: :type_desc,
+    type_class: :type_class,
+
+    # SEARCH
+    Tags: :tags,
+    md_description: :md_description,
+    md_subjects: :md_subjects,
+    Family: :family,
+    SICode: :si_code,
+    # EXTENT
+    Geo_Region: :geo_country,
+    Geo_Pan_Region: :geo_region,
+    Geo_Extent: :geo_extent,
+    # APPLICATION
+    "Live?_description": :live_description,
+    Live?: :live,
+    # METADATA
+    md_body_paras: :md_body_paras,
+    md_restrict_start_date: :md_restrict_start_date,
+    md_total_paras: :md_total_paras,
+    md_images: :md_images,
+    md_date: :md_date,
+    md_date_month: :md_date_month,
+    md_date_year: :md_date_year,
+    md_dct_valid_date: :md_dct_valid_date,
+    md_attachment_paras: :md_attachment_paras,
+    md_modified: :md_modified,
+    md_schedule_paras: :md_schedule_paras,
+    md_enactment_date: :md_enactment_date,
+    md_made_date: :md_made_date,
+    md_coming_into_force_date: :md_coming_into_force_date,
+    md_restrict_extent: :md_restrict_extent,
+    # ECARM
+    Function: :function,
+    Enacting: :enacting,
+    Enacted_by: :enacted_by,
+    enacted_by_description: :enacted_by_description,
+    Amending: :amending,
+    Amended_by: :amended_by,
+    Revoking: :rescinding,
+    Revoked_by: :rescinded_by,
+    # Affecting
+    "🔺_stats_affected_laws_count": :"△_#_laws_amd_by_law",
+    "🔺_stats_self_affects_count": :"△_#_self_amd_by_law",
+    "🔺_stats_affects_count": :"△_#_amd_by_law",
+    "🔺_stats_affects_count_per_law": :"△_amd_short_desc",
+    "🔺_stats_affects_count_per_law_detailed": :"△_amd_long_desc",
+    # Affected By
+    "🔻_stats_affected_by_laws_count": :"▽_#_laws_amd_law",
+    "🔻_stats_self_affected_by_count": :"▽_#_self_amd_of_law",
+    "🔻_stats_affected_by_count": :"▽_#_amd_of_law",
+    "🔻_stats_affected_by_count_per_law": :"▽_amd_short_desc",
+    "🔻_stats_affected_by_count_per_law_detailed": :"▽_amd_long_desc",
+    # Revoking
+    "🔺_stats_revoking_laws_count": :"△_#_laws_rsc_law",
+    "🔺_stats_revoking_count_per_law": :"△_rsc_short_desc",
+    "🔺_stats_revoking_count_per_law_detailed": :"△_rsc_long_desc",
+    # Revoked By
+    "🔻_stats_revoked_by_count_per_law": :"▽_rsc_short_desc",
+    "🔻_stats_revoked_by_laws_count": :"▽_#_laws_rsc_law",
+    "🔻_stats_revoked_by_count_per_law_detailed": :"▽_rsc_long_desc",
+    # CHANGE
+    "Live?_change_log": :rsc_change_log,
+    md_change_log: :md_change_log,
+    amended_by_change_log: :amd_by_change_log,
+    amending_change_log: :amd_change_log,
+    # ROLES
+    actor: :role,
+    actor_article: :role_article,
+    actor_gvt: :role_gvt,
+    actor_gvt_article: :role_gvt_article,
+    responsibility_holder: :responsibility_holder,
+    article_power_holder_clause: :article_power_holder_clause,
+    responsibility_holder_article_clause: :responsibility_holder_article_clause,
+    power_holder_article: :power_holder_article,
+    power_holder: :power_holder,
+    power_holder_article_clause: :power_holder_article_clause,
+    responsibility_holder_article: :responsibility_holder_article,
+    article_power_holder: :article_power_holder,
+    article_responsibility_holder_clause: :article_responsibility_holder_clause,
+    article_responsibility_holder: :article_responsibility_holder,
+    duty_holder: :duty_holder,
+    article_duty_holder_clause: :article_duty_holder_clause,
+    rights_holder_article_clause: :rights_holder_article_clause,
+    article_dutyholder: :article_dutyholder,
+    rights_holder_article: :rights_holder_article,
+    article_rights_holder: :article_rights_holder,
+    article_rights_holder_clause: :article_rights_holder_clause,
+    rights_holder: :rights_holder,
+    duty_holder_article_clause: :duty_holder_article_clause,
+    duty_holder_article: :duty_holder_article,
+    duty_type: :duty_type,
+    duty_type_article: :duty_type_article,
+    article_duty_type: :article_duty_type,
+    popimar: :popimar,
+    popimar_article: :popimar_article,
+    article_popimar: :article_popimar,
+    popimar_article_clause: :popimar_article_clause,
+    article_popimar_clause: :article_popimar_clause,
+    article_actor: :article_role,
+    article_actor_gvt: :article_role_gvt
+  }
+
+  def supabase_conversion(record) do
+    Enum.map(record, fn {k, v} -> {translate(k), v} end) |> Enum.into(%{})
+  end
+
+  defp translate(key) do
+    case Map.get(@translator, key) do
+      nil -> key
+      value -> value
+    end
+  end
 end

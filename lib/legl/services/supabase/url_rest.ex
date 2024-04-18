@@ -35,6 +35,10 @@ defmodule Legl.Services.Supabase.UrlRest do
 
   defp table_url(url, _), do: url
 
+  defp name_url(url, %{name: name}) when is_list(name) do
+    ["name=in.(#{Enum.join(name, ",")})" | url]
+  end
+
   defp name_url(url, %{name: name}) do
     ["name=eq.#{name}" | url]
   end
@@ -46,6 +50,12 @@ defmodule Legl.Services.Supabase.UrlRest do
   end
 
   defp sql_url(url, _), do: url
+
+  # VERTICAL FILTERS
+
+  defp select_url(url, %{select: select}) when is_list(select) do
+    ["select=" <> Enum.join(select, ",") | url]
+  end
 
   defp select_url(url, %{select: select}) do
     ["select=#{select}" | url]

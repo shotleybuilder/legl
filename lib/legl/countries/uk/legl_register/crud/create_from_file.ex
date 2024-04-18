@@ -12,8 +12,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
   alias Legl.Countries.Uk.LeglRegister.New.Filters
-  alias Legl.Countries.Uk.LeglRegister.PublicationDate
-  alias Legl.Countries.Uk.LeglRegister.Year
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
 
   @newlaws ~s[lib/legl/countries/uk/legl_register/crud/api_new_laws.json]
@@ -221,7 +219,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
                 %{Number: n, Title_EN: t, type_code: tc, Year: y} = record ->
                   IO.puts("Title_EN: #{t} Year: #{y} Number: #{n} Type Code: #{tc}")
 
-                  case Legl.Countries.Uk.LeglRegister.Helpers.Create.exists?(record, opts) do
+                  case Legl.Countries.Uk.LeglRegister.Crud.Read.exists_at?(record, opts) do
                     false ->
                       {:ok, record} =
                         New.update_empty_law_fields_w_metadata(
@@ -287,9 +285,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromFile do
     end
   end
 
-  @doc """
-    Function to filter new law records - si_code then term
-  """
   def filter_w_metadata(records, %{filter: :si_term}) when is_list(records) do
     with {inc, exc} <- Filters.title_filter(records),
          # Filter on si_code
