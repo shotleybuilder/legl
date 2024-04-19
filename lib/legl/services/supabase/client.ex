@@ -44,6 +44,7 @@ defmodule Legl.Services.Supabase.Client do
 
   def create_legal_register_record(opts) do
     opts = Map.merge(opts, %{method: :post, api: :rest})
+    opts = Map.put_new(opts, :supabase_table, "uk_lrt")
 
     case handle_response(Http.request(opts)) do
       {:ok, %{user_id: _user_id, token: _token}} -> create_legal_register_record(opts)
@@ -53,6 +54,7 @@ defmodule Legl.Services.Supabase.Client do
 
   def update_legal_register_record(opts) do
     opts = Map.merge(opts, %{method: :patch, api: :rest})
+    opts = Map.put_new(opts, :supabase_table, "uk_lrt")
 
     case handle_response(Http.request(opts)) do
       {:ok, %{user_id: _user_id, token: _token}} -> update_legal_register_record(opts)
@@ -84,6 +86,10 @@ defmodule Legl.Services.Supabase.Client do
       {:ok, %{status: 201, body: body}} ->
         Logger.info("Request successful: #{inspect(body)}")
         {:ok, body}
+
+      {:ok, %{status: 204, body: _}} ->
+        Logger.info("Request successful: No content")
+        {:ok, %{}}
 
       {:ok, %{status: 401, body: %{"code" => "PGRST301", "message" => "JWT expired"} = body}} ->
         Logger.info("JWT Expired: #{inspect(body)}")

@@ -51,7 +51,7 @@ defmodule Legl.Services.Supabase.UrlRest do
 
   defp sql_url(url, _), do: url
 
-  # VERTICAL FILTERS
+  # VERTICAL (COLUMN) FILTERS
 
   defp select_url(url, %{select: select}) when is_list(select) do
     ["select=" <> Enum.join(select, ",") | url]

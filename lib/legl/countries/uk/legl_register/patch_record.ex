@@ -2,6 +2,8 @@ defmodule Legl.Countries.Uk.LeglRegister.PatchRecord do
   @moduledoc """
   PATCH records in a Legal Register
   """
+  alias ElixirSense.Core.Struct
+  alias Legl.Services.Supabase.Client
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
 
   # SUPABASE=============================================
@@ -19,17 +21,19 @@ defmodule Legl.Countries.Uk.LeglRegister.PatchRecord do
       }
 
   """
-  # def client, do: Application.get_env(:legl, :supabase_client)
-  def client, do: Application.get_env(:legl, SupabaseClient, SupabaseHttpClientBehaviourMock)
 
-  def supabase_patch_record(record, %{supabase_table: _table} = opts) do
-    case record do
-      %LegalRegister{} ->
-        client().update_legal_register_record(Legl.Utility.map_from_struct(record), opts)
+  def supabase_patch_record(record, opts) do
+    record =
+      record
+      |> Map.from_struct()
+      |> Map.drop(Legl.Countries.Uk.LeglRegister.DropFields.drop_supabase_fields())
+      # Converts AT struct atoms to PG atoms
+      |> Legl.Countries.Uk.LeglRegister.LegalRegister.supabase_conversion()
+      |> Legl.Countries.Uk.LeglRegister.PostRecord.conv_hearts_to_new_lines()
+      |> Legl.Countries.Uk.LeglRegister.PostRecord.linked_array_fields()
 
-      _ ->
-        client().update_legal_register_record(record, opts)
-    end
+    opts = Map.put(opts, :data, record)
+    Client.update_legal_register_record(opts)
   end
 
   # AIRTABLE=============================================
@@ -68,8 +72,9 @@ defmodule Legl.Countries.Uk.LeglRegister.PatchRecord do
   end
 
   def build(%{record_id: record_id} = record, opts) when is_map(record) do
+    # Name is a calculated field in AT
     record =
-      Map.drop(record, [:record_id])
+      Map.drop(record, [:record_id, :Name])
       |> Legl.Countries.Uk.LeglRegister.Helpers.clean_record(opts)
 
     Map.merge(%{}, %{id: record_id, fields: record})

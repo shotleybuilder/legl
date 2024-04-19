@@ -380,9 +380,9 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     rights_holder: :rights_holder,
     duty_holder_article_clause: :duty_holder_article_clause,
     duty_holder_article: :duty_holder_article,
-    duty_type: :duty_type,
-    duty_type_article: :duty_type_article,
-    article_duty_type: :article_duty_type,
+    duty_type: :purpose,
+    duty_type_article: :purpose_article,
+    article_duty_type: :article_purpose,
     popimar: :popimar,
     popimar_article: :popimar_article,
     article_popimar: :article_popimar,
@@ -392,8 +392,16 @@ defmodule Legl.Countries.Uk.LeglRegister.LegalRegister do
     article_actor_gvt: :article_role_gvt
   }
 
-  def supabase_conversion(record) do
+  def supabase_conversion(record) when is_struct(record) do
+    supabase_conversion(Map.from_struct(record))
+  end
+
+  def supabase_conversion(record) when is_map(record) do
     Enum.map(record, fn {k, v} -> {translate(k), v} end) |> Enum.into(%{})
+  end
+
+  def supabase_conversion(record) do
+    raise ArgumentError, "Expected a map or struct, got: #{inspect(record)}"
   end
 
   defp translate(key) do

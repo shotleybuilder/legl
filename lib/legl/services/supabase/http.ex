@@ -19,7 +19,7 @@ defmodule Legl.Services.Supabase.Http do
     req_opts = req_opts(opts)
 
     Req.new(req_opts)
-    |> Req.Request.append_request_steps(debug_url: debug_url())
+    |> Req.Request.append_request_steps(debug_url: debug_url(), debug_method: debug_method())
     |> Req.request()
   end
 
@@ -60,6 +60,12 @@ defmodule Legl.Services.Supabase.Http do
   defp debug_url,
     do: fn request ->
       IO.inspect(URI.to_string(request.url), label: "URL")
+      request
+    end
+
+  defp debug_method,
+    do: fn request ->
+      IO.inspect(request.method, label: "METHOD")
       request
     end
 

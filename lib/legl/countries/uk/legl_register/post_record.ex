@@ -1,6 +1,10 @@
 defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
   @moduledoc """
-  Module to POST new records to the Legal Register
+  This module provides functions for handling post records in the Legl Register.
+
+  ## Usage
+
+  The `linked_array_fields/1` function is used to process a record and generate a map of linked array fields.
 
   """
 
@@ -28,12 +32,33 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
 
     # |> IO.inspect(label: "POSTGRES RECORD")
 
-    opts = Map.put(opts, :supabase_table, "uk_lrt")
     opts = Map.put(opts, :data, record)
     Client.create_legal_register_record(opts)
   end
 
-  defp conv_hearts_to_new_lines(record) do
+  @doc """
+  Converts hearts emoji to new lines in the given record.
+
+  This function takes a record as input and iterates over its key-value pairs using Enum.reduce.
+  If the key is :family, it simply adds the value to the accumulator.
+  If the value is a binary and contains the hearts emoji "💚️", it replaces all occurrences of the emoji with a new line character "\n".
+  For all other key-value pairs, it adds them to the accumulator as is.
+
+  ## Example
+
+    record = %{name: "John", description: "I 💚️ Elixir"}
+    conv_hearts_to_new_lines(record)
+    #=> %{name: "John", description: "I \n Elixir"}
+
+  ## Params
+
+  - `record`: The record to be processed.
+
+  ## Returns
+
+  The processed record with hearts emoji replaced by new lines.
+  """
+  def conv_hearts_to_new_lines(record) do
     Enum.reduce(record, %{}, fn
       {:family, v}, acc ->
         Map.put(acc, :family, v)
@@ -49,17 +74,40 @@ defmodule Legl.Countries.Uk.LeglRegister.PostRecord do
     end)
   end
 
-  defp linked_array_fields(record) do
+  @doc """
+  Processes a record and generates a map of linked array fields.
+
+  ## Examples
+
+      iex> record = %{enacted_by: "ABC", amending: "DEF", amended_by: "GHI", rescinding: "JKL", rescinded_by: "MNO"}
+      iex> LeglRegister.PostRecord.linked_array_fields(record)
+      %{
+        enacted_by: "{ABC}",
+        linked_enacted_by: "{find_records(ABC)}",
+        amending: "{DEF}",
+        linked_amending: "{find_records(DEF)}",
+        amended_by: "{GHI}",
+        linked_amended_by: "{find_records(GHI)}",
+        rescinding: "{JKL}",
+        linked_rescinding: "{find_records(JKL)}",
+        rescinded_by: "{MNO}",
+        linked_rescinded_by: "{find_records(MNO)}"
+      }
+
+  """
+  def linked_array_fields(record) do
     Enum.reduce(record, %{}, fn
       {k, v}, acc when k in [:enacted_by, :amending, :amended_by, :rescinding, :rescinded_by] ->
         acc
         |> Map.put(k, ~s/{#{v}}/)
-        |> Map.put(~s/linked_#{k}/ |> String.to_atom(), ~s/{#{find_records(v)}}/)
+        |> Map.put(String.to_atom(~s/linked_#{k}/), ~s/{#{find_records(v)}}/)
 
       {k, v}, acc ->
         Map.put(acc, k, v)
     end)
   end
+
+  defp find_records(nil), do: ""
 
   defp find_records(names) do
     names = names |> String.split(",") |> Enum.map(&String.trim/1)

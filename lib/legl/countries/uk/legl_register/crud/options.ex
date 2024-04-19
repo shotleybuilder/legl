@@ -335,8 +335,18 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     amended_by_change_log
     Live?_change_log
   ]
+  @doc """
+  Retrieves the fields based on the provided options.
 
-  defp fields(opts) do
+  ## Parameters
+
+    * `opts` - A map containing the options for retrieving the fields.
+
+  ## Returns
+
+  A map with the `:fields` key updated based on the provided options.
+  """
+  def fields(opts) do
     fields =
       case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
         true -> @fields ++ @md_fields ++ @amend_fields

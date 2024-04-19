@@ -17,7 +17,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
         false
 
       {:ok, body} ->
-        IO.puts(~s/#{opts.name} EXISTS in Supabase\n#{body}/)
+        IO.puts(~s/#{opts.name} EXISTS in Supabase\n#{inspect(body)}/)
         true
 
       {:error, _} ->

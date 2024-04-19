@@ -222,7 +222,7 @@ defmodule Legl.Countries.Uk.Metadata do
     metadata =
       case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
         true ->
-          Map.put(:md_change_log, Delta.compare_fields(record, metadata))
+          Map.put(metadata, :md_change_log, Delta.compare_fields(record, metadata))
 
         false ->
           metadata

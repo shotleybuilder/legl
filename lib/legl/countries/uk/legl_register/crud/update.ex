@@ -1,10 +1,20 @@
 defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   @moduledoc """
   Functions to update field sets in the Legal Register Table
+
+  The update process works from Airtable as the source of truth.
+
+  The update process is as follows:
+  1. Retrieve a 'skeleton' record from Airtable if 'delta' != true
+  2. Run the selected workflow to update the record
+  3. Optionally run the delta process to map what changed
+  4. Map the Airtable record and the Supabase record
+  5. Patch the record to the Postgres database
+  6. Patch the record in Airtable
+
   """
-
+  alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
   alias Legl.Services.Airtable.UkAirtable, as: AT
-
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
   alias Legl.Countries.Uk.Metadata, as: MD
   alias Legl.Countries.Uk.LeglRegister.Extent
@@ -18,66 +28,64 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
   Function to patch a record already in the Legal Register table
   Uses the 'Name' index field to retrieve the record from AT
   """
-  @spec api_update_single_name(opts()) :: :ok
-  def api_update_single_name(opts \\ [csv?: false, mute?: true]) do
+
+  def api_update_single_name(opts) do
+    IO.puts("Function Name: #{__MODULE__}.api_update_single_name")
+
     opts =
-      opts
+      Enum.into(opts, Options.default_opts())
+      # AT OPTIONS
       |> Enum.into(%{})
+      |> default_opts()
+      # Get the name of the record to be updated
       |> Legl.Countries.Uk.LeglRegister.Options.name()
-      |> Options.api_update_single_name_options()
+      # Set the AT formula to retrieve the record
+      |> LRO.formula_name()
+      # Set the AT fields to be retrieved
+      |> Options.fields()
 
-    with([record] <- AT.get_legal_register_records(opts)) do
-      opts = Map.put(opts, :family, record."Family")
-
-      update(record, opts)
+    with(
+      [record] <- get_records_from_airtable(opts),
+      opts = Map.put(opts, :family, record."Family"),
+      {:ok, record} = update(record, opts)
+    ) do
+      if opts.mute? == false, do: IO.puts("Record updated: #{inspect(record)}"), else: :ok
     else
       record ->
         IO.puts(
-          ~s/ERROR: Airtable returned more than one record\n#{Enum.each(record, &IO.puts(&1."Title_EN"))}/
+          ~s/ERROR: Airtable returned duplicate records\n#{Enum.each(record, &IO.puts(&1."Title_EN"))}/
         )
 
         :ok
     end
+
+    # with([record] <- get_records_from_supabase(opts)) do
   end
 
   @doc """
   Function UPDATES records from a list of 'Names'
   """
-  @spec api_update_list_of_names(opts()) :: :ok
-  def api_update_list_of_names(opts \\ [csv?: false, mute?: true]) do
+
+  def api_update_list_of_names(opts) do
+    IO.puts("Function Name: #{__MODULE__}.api_update_list_of_names")
+
     opts =
-      opts
+      Enum.into(opts, Options.default_opts())
+      # AT OPTIONS
       |> Enum.into(%{})
-      |> Options.api_update_list_of_names_options()
+      |> default_opts()
+      # Set the AT formula to retrieve the record
+      |> LRO.formula_name()
+      # Set the AT fields to be retrieved
+      |> Options.fields()
 
     names =
-      ExPrompt.string(~s/Names (as csv)/)
+      ExPrompt.string(~s/Name or List of Names (as csv)/)
       |> String.split(",")
 
-    for name <- names do
-      opts =
-        opts
-        |> (&Map.put(&1, :name, name)).()
-        |> Legl.Countries.Uk.LeglRegister.Options.formula_name()
-
-      # IO.puts("Formula: #{opts.formula}")
-
-      with([record] <- AT.get_legal_register_records(opts)) do
-        opts = Map.put(opts, :family, record."Family")
-
-        update(record, opts)
-      else
-        record ->
-          IO.puts(
-            ~s/ERROR: Airtable returned zero or more than one record\n#{Enum.each(record, &IO.puts(&1."Title_EN"))}/
-          )
-
-          :ok
-      end
-    end
+    enumerate_the_names(names, opts)
   end
 
-  @spec api_update_single_view(opts()) :: :ok
   def api_update_single_view(opts \\ [csv?: false, mute?: true]) do
     opts =
       opts
@@ -100,6 +108,60 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
     records = AT.get_legal_register_records(opts)
 
     update(records, opts)
+  end
+
+  # PRIVATE FUNCTIONS
+
+  defp default_opts(opts) do
+    opts
+    |> Map.put(:base_name, "UK EHS")
+    |> LRO.base_table_id()
+    # Populates :workflow with the name of the workflow
+    |> LRO.workflow()
+    # Populates :update_workflow with the functions to be run
+    |> LRO.update_workflow()
+    # Set the AT view to be retrieved
+    |> Map.put(:view, "")
+    |> Map.put_new(:csv?, false)
+    # Switches off print to console
+    |> Map.put_new(:mute?, true)
+    # Use these options to manually set the update process
+    |> Map.put_new(:update_supabase?, true)
+    |> Map.put_new(:update_airtable?, true)
+  end
+
+  defp enumerate_the_names(names, opts) when is_list(names) do
+    for name <- names do
+      opts =
+        opts
+        |> (&Map.put(&1, :name, name)).()
+        |> Legl.Countries.Uk.LeglRegister.Options.formula_name()
+
+      # IO.puts("Formula: #{opts.formula}")
+
+      with(
+        [record] <- get_records_from_airtable(opts),
+        opts = Map.put(opts, :family, record."Family"),
+        {:ok, record} = update(record, opts)
+      ) do
+        if opts.mute? == false, do: IO.puts("Record updated: #{inspect(record)}"), else: :ok
+      else
+        record ->
+          IO.puts(
+            ~s/ERROR: Airtable returned duplicate records\n#{Enum.each(record, &IO.puts(&1."Title_EN"))}/
+          )
+
+          :ok
+      end
+    end
+  end
+
+  defp get_records_from_airtable(opts) do
+    opts
+    |> LRO.base_name()
+    |> LRO.base_table_id()
+
+    AT.get_legal_register_records(opts)
   end
 
   defp update(records, opts) when is_list(records) do
@@ -128,8 +190,28 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
     {:ok, record}
   end
 
-  defp patch(record, %{patch?: true} = opts),
-    do: Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
+  defp patch(record, %{patch?: true} = opts) do
+    # We know the record exists in AT
+    # Does the record exists in Supabase / PG?
+    exists_pg? =
+      Map.put(opts, :select, ~w[id name])
+      |> Legl.Countries.Uk.LeglRegister.Crud.Read.exists_pg?()
+
+    case exists_pg? do
+      true ->
+        # Patch to PG handles mapping field -> column names
+        with(:ok <- patch_supabase(record, opts)) do
+          Legl.Countries.Uk.LeglRegister.PatchRecord.run(record, opts)
+        else
+          {:error, error} ->
+            IO.puts("ERROR: #{error}\nRECORD NOT UPDATED IN POSTGRES OR AIRTABLE")
+        end
+
+      false ->
+        IO.puts("\nRECORD #{record."Name"} EXISTS IN AIRTABLE BUT NOT IN POSTGRES")
+        Legl.Countries.Uk.LeglRegister.PostRecord.supabase_post_record(record, opts)
+    end
+  end
 
   defp patch(_, %{patch?: false}), do: :ok
 
@@ -137,6 +219,13 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
     patch? = ExPrompt.confirm("\nPatch #{record."Title_EN"}?")
     patch(record, Map.put(opts, :patch?, patch?))
   end
+
+  defp patch_supabase(record, %{update_supabase?: true} = opts) do
+    {:ok, _} = Legl.Countries.Uk.LeglRegister.PatchRecord.supabase_patch_record(record, opts)
+    :ok
+  end
+
+  defp patch_supabase(_, %{update_supabase?: false}), do: :ok
 
   @doc """
   Function to update Legal Register meatadata fields
