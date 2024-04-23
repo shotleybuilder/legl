@@ -78,46 +78,6 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)
   end
 
-  @doc """
-  Function to set options when GET single AT LRT record
-
-  :view or :name set in the calling function
-  """
-  def api_update_single_name_options(opts) do
-    IO.puts(~s/_____\nSetting Options from [CRUD.Options.api_update_single_name_options]
-      Name: #{opts.name}/)
-
-    opts =
-      Enum.into(opts, @default_opts)
-      |> LRO.workflow()
-      |> LRO.update_workflow()
-      |> LRO.base_name()
-      |> LRO.base_table_id()
-      |> LRO.formula_name()
-      |> fields()
-      |> Map.put(:view, "")
-
-    opts = Map.put(opts, :fields, Map.get(opts, :fields) ++ ["Name"])
-
-    print_options(opts)
-  end
-
-  def api_update_list_of_names_options(opts) do
-    IO.puts(
-      ~s/_____\nSetting Options from [CRUD.Options.api_update_list_of_names_options]\n:update_workflow, :view, :patch?, :fields/
-    )
-
-    Enum.into(opts, @default_opts)
-    |> LRO.workflow()
-    |> LRO.update_workflow()
-    |> LRO.base_name()
-    |> LRO.base_table_id()
-    |> LRO.patch?()
-    |> LRO.view()
-    |> fields()
-    |> IO.inspect(label: "LRT OPTIONS: ", limit: :infinity)
-  end
-
   def api_update_single_view_options(opts) do
     IO.puts(
       ~s/_____\nSetting Options from [CRUD.Options.api_update_single_view_options]\n:update_workflow, :name, :view, :patch?, :formula, :fields/

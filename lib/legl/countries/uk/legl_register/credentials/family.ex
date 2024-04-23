@@ -20,7 +20,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Credentials.Family do
   # ## Returns
   #
   #   The updated LR record with the `Family` and `family_ii` fields set.
-  def set_family(%LR{Family: family, family_ii: family_ii} = record) do
+  def set_family(record, %{update_workflow: _}), do: {:ok, record}
+
+  def set_family(%LR{Family: family, family_ii: family_ii} = record, _) do
     record =
       case ExPrompt.confirm(~s/\nFamily has been auto-set to #{family}.  Change?/) do
         true ->

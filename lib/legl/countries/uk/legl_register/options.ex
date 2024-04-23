@@ -254,7 +254,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
   Function to assemble the update functions into a list
 
   """
-  @creds &Legl.Countries.Uk.LeglRegister.Credentials.Creds.set_credentials/1
+  @creds &Legl.Countries.Uk.LeglRegister.Credentials.Creds.set_credentials/2
   @md &Legl.Countries.Uk.Metadata.get_latest_metadata/2
   @extent &Legl.Countries.Uk.LeglRegister.Extent.set_extent/2
   @enact &Legl.Countries.Uk.LeglRegister.Enact.GetEnactedBy.get_enacting_laws/2
