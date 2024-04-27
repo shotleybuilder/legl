@@ -267,6 +267,24 @@ defmodule Legl.Utility do
     end
   end
 
+  def iso_date(date) do
+    date = String.trim(date)
+
+    case String.split(date, "/") do
+      [day, month, year] ->
+        "#{year}-#{month}-#{day}"
+
+      [date] ->
+        case String.split(date, "-") do
+          [day, month, year] ->
+            "#{year}-#{month}-#{day}"
+
+          _ ->
+            date
+        end
+    end
+  end
+
   def yyyy_mm_dd(date) do
     [_, year, month, day] = Regex.run(~r/(\d{4})-(\d{2})-(\d{2})/, date)
     "#{day}/#{month}/#{year}"
@@ -341,6 +359,12 @@ defmodule Legl.Utility do
   end
 
   def upcaseFirst(<<first::utf8, rest::binary>>), do: String.upcase(<<first::utf8>>) <> rest
+
+  def upcase_first_from_upcase_phrase(string),
+    do: string |> String.split(" ") |> Enum.map(&upcase_first_from_upcase/1) |> Enum.join(" ")
+
+  def upcase_first_from_upcase(<<first::utf8, rest::binary>>),
+    do: <<first::utf8>> <> String.downcase(rest)
 
   def numericalise_ordinal(value) do
     ordinals = %{

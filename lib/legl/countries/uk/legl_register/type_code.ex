@@ -39,6 +39,14 @@ defmodule Legl.Countries.Uk.LeglRegister.TypeCode do
 
   def type_code(type_code),
     do: {:error, "Types for type_code must be Atom or List. You gave #{type_code}"}
+
+  def type_code_from_title(title) do
+    cond do
+      String.contains?(title, "Act") -> {:ok, "ukpga"}
+      String.contains?(title, "Regulation") -> {:ok, "uksi"}
+      String.contains?(title, "Order") -> {:ok, "uksi"}
+    end
+  end
 end
 
 defmodule Legl.Countries.Uk.LeglRegister.SClass do
