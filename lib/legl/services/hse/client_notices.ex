@@ -1,4 +1,4 @@
-defmodule Legl.Services.Hse.Client do
+defmodule Legl.Services.Hse.ClientNotices do
   @moduledoc """
   This module provides functions for interacting with the HSE (Health and Safety Executive) notices and breaches API.
 
