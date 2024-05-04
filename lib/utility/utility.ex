@@ -290,6 +290,9 @@ defmodule Legl.Utility do
     "#{day}/#{month}/#{year}"
   end
 
+  def get_date_from_at_date_field(date) when is_binary(date) do
+  end
+
   def duplicate_records(list) do
     list
     |> Enum.group_by(& &1)

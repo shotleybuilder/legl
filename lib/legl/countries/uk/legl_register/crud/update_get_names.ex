@@ -1,6 +1,6 @@
 defmodule Legl.Countries.Uk.LeglRegister.Crud.UpdateGetNames do
   @moduledoc """
-  This module provides functions for updating the ECARM (European Community Acts Register Management) data.
+  This module provides functions for updating the ECARM data.
 
   ## Functions
 
@@ -35,17 +35,23 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.UpdateGetNames do
   @api_get_law_names_path ~s[lib/legl/countries/uk/legl_register/crud/api_get_law_names.json]
 
   @doc """
-  This function retrieves records from Airtable LRT and saves the unique names 'name' of the records to a file.
+  This function retrieves records from Airtable LRT and saves the unique names
+  'name' of the records to a file.
 
   ## Parameters
 
-  - `opts`: A list of options that can be converted into a map. This is used to configure the retrieval of records.
+  - `opts`: A list of options that can be converted into a map. This is used to
+    configure the retrieval of records.
 
   ## Details
 
-  The function first converts the `opts` list into a map and merges it with the default options. It then retrieves the records from the table specified in the options.
+  The function first converts the `opts` list into a map and merges it with the
+  default options. It then retrieves the records from the table specified in the
+  options.
 
-  The records are processed to extract the names, which are then made unique and joined into a comma-separated string. This string is then written to a file specified by the `@newly_amended_laws_path` module attribute.
+  The records are processed to extract the names, which are then made unique and
+  joined into a comma-separated string. This string is then written to a file
+  specified by the `@newly_amended_laws_path` module attribute.
 
   Finally, the function prints the number of records saved to the console.
 
@@ -74,6 +80,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.UpdateGetNames do
       |> Enum.reduce([], fn record, acc ->
         acc ++ extract_names(record, opts.fields)
       end)
+      |> Enum.map(&String.trim/1)
       |> Enum.uniq()
 
     records

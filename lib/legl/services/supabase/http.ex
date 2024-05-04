@@ -54,7 +54,7 @@ defmodule Legl.Services.Supabase.Http do
   defp method(req_opts, _opts), do: [{:method, :get} | req_opts]
 
   defp base_url() do
-    "https://#{System.get_env("SUPABASE_USER")}.supabase.co/"
+    "https://#{System.get_env("SUPABASE_PROJECT_ID")}.supabase.co/"
   end
 
   defp debug_url,

@@ -67,13 +67,19 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
 
   ## Parameters
 
-  - `opts`: A list of options that can be converted into a map. This is used to configure the update operation.
+  - `opts`: A list of options that can be converted into a map. This is used to
+    configure the update operation.
 
   ## Details
 
-  The function first converts the `opts` list into a map and merges it with the default options. It then sets the formula to retrieve the record and the fields to be retrieved, and configures the view and other options for the update operation.
+  The function first converts the `opts` list into a map and merges it with the
+  default options. It then sets the formula to retrieve the record and the
+  fields to be retrieved, and configures the view and other options for the
+  update operation.
 
-  The function then retrieves the names of the laws from the view. These names are fields that contain the names, such as 'Name', 'Amending (from UK) - binary', and 'Revoking (from UK) - binary'.
+  The function then retrieves the names of the laws from the view. These names
+  are fields that contain the names, such as 'Name', 'Amending (from UK) -
+  binary', and 'Revoking (from UK) - binary'.
 
   Finally, the function enumerates the names and performs the update operation.
 
@@ -164,8 +170,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
         opts
         |> (&Map.put(&1, :name, name)).()
         |> Legl.Countries.Uk.LeglRegister.Options.formula_name()
+        |> Map.put(:fields, opts.fields ++ ["Last Modified"])
 
-      # IO.puts("Formula: #{opts.formula}")
+      IO.puts("Fields: #{inspect(opts.fields)}")
 
       with(
         [record] <- AT.get_legal_register_records(opts),
@@ -182,6 +189,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
           :ok
       end
     end
+  end
+
+  defp confirm_if_recently_modified(record) do
   end
 
   defp update(records, opts) when is_list(records) do

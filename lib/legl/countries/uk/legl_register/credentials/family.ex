@@ -33,9 +33,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Credentials.Family do
       end
 
     record =
-      case ExPrompt.confirm(~s/Family ii has been auto-set to #{family_ii}.  Change?/) do
+      case ExPrompt.confirm(~s/Family II has been auto-set to #{family_ii}.  Change?/) do
         true ->
-          Map.put(record, :Family_ii, family_chooser())
+          Map.put(record, :family_ii, family_chooser())
 
         false ->
           record

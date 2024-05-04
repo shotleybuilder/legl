@@ -20,9 +20,9 @@ defmodule Legl.Countries.Uk.LeglRegister.Models do
       base: "",
       si_codes: ["MENTAL HEALTH", "PUBLIC HEALTH", "LICENSING (LIQUOR)"]
     ],
-    "💙 HR: Employment": [base: "", si_codes: []],
-    "💙 HR: Insurance / Compensation / Wages / Benefits": [base: "", si_codes: []],
-    "💙 HR: Working Time": [base: "", si_codes: []],
+    "💜 HR: Employment": [base: "", si_codes: []],
+    "💜 HR: Insurance / Compensation / Wages / Benefits": [base: "", si_codes: []],
+    "💜 HR: Working Time": [base: "", si_codes: []],
     "💙 OH&S: Gas & Electrical Safety": [
       base: "appJu2qnECHmo9cln",
       si_codes: ["ELECTRICITY", "ELECTROMAGNETIC COMPATABILITY", "GAS"]
