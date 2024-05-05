@@ -3,9 +3,9 @@ defmodule Legl.Services.Airtable.Get do
   alias Legl.Services.Airtable, as: AT
 
   def get(base, table, params) do
-    base_url = Legl.Services.Airtable.Endpoint.base_url()
+    base_url = AT.Endpoint.base_url()
     {:ok, url} = AT.Url.url(base, table, params)
-    headers = Legl.Services.Airtable.Headers.headers()
+    headers = AT.Headers.headers()
 
     req_opts = [
       {:base_url, base_url},
@@ -14,7 +14,10 @@ defmodule Legl.Services.Airtable.Get do
       {:method, :get}
     ]
 
-    req = Req.new(req_opts)
+    req =
+      Req.new(req_opts)
+      |> Req.Request.append_request_steps(debug_url: debug_url())
+
     # |> Req.Request.append_request_steps(debug_body: debug_body())
 
     case Req.request(req) do
@@ -70,4 +73,10 @@ defmodule Legl.Services.Airtable.Get do
         :ok
     end
   end
+
+  defp debug_url,
+    do: fn request ->
+      IO.inspect(URI.to_string(request.url), label: "URL")
+      request
+    end
 end

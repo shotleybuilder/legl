@@ -58,30 +58,20 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
     end
   end
 
-  @default_opts %{
-    print_opts?: true,
-    formula: ""
-  }
-
   @fields ~w[
     Name record_id Title_EN type_code type_class Number Year Family
   ]
 
-  def api_read(opts \\ []) do
-    opts =
-      opts
-      |> Enum.into(@default_opts)
-      |> Map.put(:base_name, "UK EHS")
-      |> LRO.base_table_id()
-      |> Map.put(:fields, @fields)
-      |> opts()
-      |> Map.put_new(:view, "")
+  @default_opts %{
+    base_name: "UK_EHS",
+    formula: "",
+    fields: @fields,
+    view: "",
+    print_opts?: true
+  }
 
-    opts =
-      case Map.has_key?(opts, "QA_taxa") do
-        true -> Map.put(opts, :formula, ~s/#{opts.formula},{QA_taxa}=#{opts."QA_taxa"}/)
-        _ -> opts
-      end
+  def api_read(opts \\ []) do
+    opts = api_read_opts(opts)
 
     case opts.query_name do
       :cancel ->
@@ -92,6 +82,22 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
 
         AT.get_legal_register_records(opts)
     end
+  end
+
+  def api_read_opts(opts) do
+    opts =
+      opts
+      |> Enum.into(@default_opts)
+      |> LRO.base_table_id()
+      |> opts()
+
+    opts =
+      case Map.has_key?(opts, "QA_taxa") do
+        true -> Map.put(opts, :formula, ~s/#{opts.formula},{QA_taxa}=#{opts."QA_taxa"}/)
+        _ -> opts
+      end
+
+    params(opts)
   end
 
   # PRIVATE FUNCTIONS
@@ -167,7 +173,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
         :ok
 
       _ ->
-        :ok
+        opts
     end
   end
 
@@ -187,6 +193,18 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Read do
         )
     end
     |> opts()
+  end
+
+  defp params(opts) do
+    Map.put(opts, :params, %{
+      base: opts.base_id,
+      table: opts.table_id,
+      options: %{
+        view: opts.view,
+        fields: opts.fields,
+        formula: opts.formula
+      }
+    })
   end
 
   defp print_options(%{print_opts?: true} = opts) do
