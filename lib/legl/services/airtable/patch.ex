@@ -27,15 +27,15 @@ defmodule Legl.Services.Airtable.Patch do
 
     case Req.request(req) do
       {:ok, %{status: 422, body: body}} ->
-        Logger.info("Request failed: 422\n#{inspect(body)}")
+        Logger.info("PATCH failed: 422\n#{inspect(body)}")
         :ok
 
       {:ok, %{status: status, body: _body}} ->
-        Logger.info("Request successful: #{inspect(status)}")
+        Logger.info("PATCH successful: #{inspect(status)}")
         :ok
 
       {:error, error} ->
-        Logger.error("Request failed: #{inspect(error)}")
+        Logger.error("PATCH failed: #{inspect(error)}")
         :ok
     end
   end

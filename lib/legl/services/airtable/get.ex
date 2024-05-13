@@ -22,15 +22,15 @@ defmodule Legl.Services.Airtable.Get do
 
     case Req.request(req) do
       {:ok, %{status: 422, body: body}} ->
-        Logger.info("Request failed: 422\n#{inspect(body)}")
+        Logger.info("GET failed: 422\n#{inspect(body)}")
         :ok
 
       {:ok, %{status: _status, body: %{"records" => records}}} ->
-        Logger.info("Request successful: #{inspect(records)}")
+        Logger.info("GET successful: #{inspect(records)}")
         {:ok, records}
 
       {:error, error} ->
-        Logger.error("Request failed: #{inspect(error)}")
+        Logger.error("GET failed: #{inspect(error)}")
         :ok
     end
   end

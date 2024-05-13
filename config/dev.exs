@@ -7,4 +7,5 @@ config :legl,
 config :logger,
        :console,
        level: :info,
-       format: "[$level] $message\n"
+       format: "[$date $time $level] $message\n",
+       colors: [enabled: true]

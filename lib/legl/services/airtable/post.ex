@@ -10,7 +10,9 @@ defmodule Legl.Services.Airtable.Post do
     {:ok, url} = AT.Url.url(base, table, %{})
     headers = Legl.Services.Airtable.Headers.headers()
 
-    data = make_airtable_dataset(data)
+    data =
+      make_airtable_dataset(data)
+      |> IO.inspect(label: "POST DATA")
 
     # data = Map.drop(data, [:offence_breaches])
 
@@ -28,15 +30,15 @@ defmodule Legl.Services.Airtable.Post do
 
     case Req.request(req) do
       {:ok, %{status: 422, body: body}} ->
-        Logger.info("Request failed: 422\n#{inspect(body)}")
+        Logger.info("POST failed: 422\n#{inspect(body)}")
         :ok
 
       {:ok, %{status: status, body: _body}} ->
-        Logger.info("Request successful: #{inspect(status)}")
+        Logger.info("POST successful: #{inspect(status)}")
         :ok
 
       {:error, error} ->
-        Logger.error("Request failed: #{inspect(error)}")
+        Logger.error("POST failed: #{inspect(error)}")
         :ok
     end
   end
