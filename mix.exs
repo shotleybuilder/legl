@@ -6,7 +6,7 @@ defmodule Legl.MixProject do
 
   def project() do
     [
-      # elixirc_paths: elixirc_paths(Mix.env()),
+      elixirc_paths: elixirc_paths(Mix.env()),
       app: :legl,
       version: @version,
       elixir: "~> 1.10",
@@ -78,6 +78,6 @@ defmodule Legl.MixProject do
   end
 
   # Specifies which paths to compile per environment.
-  # defp elixirc_paths(:test), do: ["test/support", "lib"]
-  # defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:test), do: ["test/legl/countries/uk/support", "lib"]
+  defp elixirc_paths(_), do: ["lib"]
 end

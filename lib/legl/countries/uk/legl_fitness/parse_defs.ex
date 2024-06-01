@@ -1,4 +1,17 @@
 defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
+  @applies [
+    "(?:shall|doe?s?)? (?:also )?(?:apply|extend).*?(?:only )?(?:to|within|in|outside)"
+  ]
+
+  def applies, do: @applies
+
+  @disapplies [
+    "(?:shall|doe?s?) not (?:apply|extend|impose) (?:to|where|any)"
+  ]
+
+  def disapplies, do: @disapplies
+  def disapplies_regex, do: Enum.map(@disapplies, &Regex.compile!/1)
+
   @person [
             "individual",
             "(?:any other )?person at work",

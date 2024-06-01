@@ -728,15 +728,12 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     |> Map.update!(:rule, &(&1 <> "."))
   end
 
-  @disapplies [
-    Regex.compile!(~s/(?:shall|doe?s?) not (?:extend to|apply)/)
-  ]
-
   defp fitness_typer(%{category: "extends-to"} = f), do: f
 
   defp fitness_typer(%{rule: text} = fitness) do
     # Sets the fitness type based on the RULE text
-    Enum.reduce_while(@disapplies, [], fn regex, acc ->
+    Enum.reduce_while(Legl.Countries.Uk.LeglFitness.ParseDefs.disapplies_regex(), [], fn regex,
+                                                                                         acc ->
       case Regex.match?(regex, text) do
         true ->
           {:halt, [Map.put(fitness, :category, "disapplies-to") | acc]}

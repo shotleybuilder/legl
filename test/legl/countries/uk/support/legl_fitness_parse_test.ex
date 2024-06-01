@@ -1,4 +1,6 @@
-defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
+defmodule Legl.Countries.Uk.Support.LeglFitnessParseTest do
+  alias Legl.Countries.Uk.LeglFitness
+
   @data [
     # PERSON_II PROPERTY PERSON_II_VERB PROCESS PERSON_VERB PERSON
     %{
@@ -62,13 +64,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
           "Information and training does extend to those persons are present in the workplace where the work is being carried out."
       },
       result: %LeglFitness.Fitness{
-        pattern: [
-          "<process>",
-          "<person>",
-          "<person_process>",
-          "<place>",
-          "<property>"
-        ],
+        pattern: ["<person>", "<person_verb>", "<place>", "<property>"],
         provision: ["information", "training"],
         person: ["person"],
         person_verb: "present",
@@ -90,7 +86,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
           "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where the exposure to asbestos of employees is sporadic and of low intensity."
       },
       result: %LeglFitness.Fitness{
-        pattern: ["<process>", "<plant>", "<person>", "<property>"],
+        pattern: ["<person_verb>", "<plant>", "<person>", "<property>"],
         provision: [
           "notification-of-work-with-asbestos",
           "designated-areas",
@@ -131,7 +127,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
         property: nil
       }
     },
-    # PROCESS PERSON PLACE PROPERTY
+    # PERSON PLACE PROPERTY
     %{
       test: %LeglFitness.Fitness{
         category: "applies-to",
@@ -140,14 +136,14 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
           "Information, instruction and training does extend to those persons are on the premises where the work is being carried out."
       },
       result: %LeglFitness.Fitness{
-        pattern: ["<process>", "<person>", "<place>", "<property>"],
+        pattern: ["<person>", "<place>", "<property>"],
         provision: ["information", "instruction", "training"],
         person: ["person"],
         place: ["premises"],
         property: "where-the-work-is-being-carried-out"
       }
     },
-    # PROCESS PERSON
+    # PERSON ONLY
     %{
       test: %LeglFitness.Fitness{
         category: "disapplies-to",
@@ -155,7 +151,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
         rule: "Health surveillance do not extend to persons who are not its employees."
       },
       result: %LeglFitness.Fitness{
-        pattern: ["<process>", "<person>"],
+        pattern: ["<person>"],
         provision: ["health-surveillance"],
         person: ["x-employee"]
       }
@@ -168,7 +164,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
           "Health records and medical surveillance do not extend to persons who are not employees of that employer."
       },
       result: %LeglFitness.Fitness{
-        pattern: ["<process>", "<person>"],
+        pattern: ["<person>"],
         person: ["x-employee"],
         provision: ["health-records", "medical-surveillance"]
       }
@@ -180,7 +176,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
         rule: "Information and training do not extend to persons who are not its employees."
       },
       result: %LeglFitness.Fitness{
-        pattern: ["<process>", "<person>"],
+        pattern: ["<person>"],
         provision: ["information", "training"],
         person: ["x-employee"]
       }
@@ -272,7 +268,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
           "These Regulations shall not apply to or in relation to the master or crew of a sea-going ship or to the employer of such persons in respect of the normal ship-board activities carried out solely by a ship's crew under the direction of the master."
       },
       result: %LeglFitness.Fitness{
-        pattern: ["<person>", "<process>"],
+        pattern: ["<person>", "<process>", "<property>"],
         person: ["master-of-a-ship", "crew-of-a-ship", "employer-of-such-persons"],
         process: [
           "normal-ship-board-activities"
@@ -297,7 +293,27 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
     },
     %{
       test: %LeglFitness.Fitness{category: "disapplies-to", rule: ""},
-      result: %{unmatched_text: ""}
+      result: %{
+        unmatched_fitness: %Legl.Countries.Uk.LeglFitness.Fitness{
+          record_id: nil,
+          lrt: [],
+          rule: "",
+          category: "disapplies-to",
+          scope: nil,
+          pattern: [],
+          heading: [],
+          provision_number: [],
+          provision: [],
+          person: [],
+          process: [],
+          place: [],
+          person_verb: nil,
+          person_ii: nil,
+          person_ii_verb: nil,
+          property: nil,
+          plant: nil
+        }
+      }
     }
   ]
 

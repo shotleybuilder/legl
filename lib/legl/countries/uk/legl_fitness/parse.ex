@@ -8,13 +8,9 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
   alias Legl.Countries.Uk.LeglFitness.ParseDefs
   alias Legl.Countries.Uk.LeglFitness.ParseExtendsTo
 
-  @applies [
-    "(?:shall|doe?s?)? (?:also )?(?:apply|extend).*?(?:only )?(?:to|within|in|outside)"
-  ]
+  @applies ParseDefs.applies()
 
-  @disapplies [
-    "(?:shall|doe?s?) not (?:apply|extend|impose) (?:to|where|any)"
-  ]
+  @disapplies ParseDefs.disapplies()
 
   # Build the regex based on the combinations of the applies_to fields
   # person, person_verb, process, person_ii_verb, person_ii, place, plant, property

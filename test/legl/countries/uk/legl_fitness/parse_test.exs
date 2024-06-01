@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseTest do
   # mix test test/legl/countries/uk/legl_fitness/parse_test.exs:8
   use ExUnit.Case, async: true
   alias Legl.Countries.Uk.LeglFitness
-  alias Legl.Countries.Uk.LeglFitness.ParseFixturesTest
+  alias Legl.Countries.Uk.Support.LeglFitnessParseTest
 
   test "regex_printer/1" do
     index = 0
@@ -14,7 +14,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseTest do
   # @data ParseTestFixtures.data()
 
   test "api_parse/1" do
-    Enum.each(ParseFixturesTest.data(), fn %{test: test, result: result} ->
+    Enum.each(LeglFitnessParseTest.data(), fn %{test: test, result: result} ->
       full_result =
         cond do
           test.rule == "" ->
