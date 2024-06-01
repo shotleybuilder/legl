@@ -26,12 +26,12 @@ defmodule Legl.Countries.Uk.LeglRegister.Amend.Delta do
     🔻_stats_revoked_by_laws_count
   ]a
 
-  @field_paddings (@compare_amending_fields ++
-                     @compare_amended_by_fields ++
-                     @compare_revoked_by_fields ++
-                     [:amending_change_log, :amended_by_change_log, :" Live?_change_log"])
-                  |> Enum.zip([10, 10, 10, 8, 6, 10, 10, 10, 8, 6, 10, 10, 10])
-                  |> Enum.into(%{})
+  # @field_paddings (@compare_amending_fields ++
+  #                   @compare_amended_by_fields ++
+  #                   @compare_revoked_by_fields ++
+  #                   [:amending_change_log, :amended_by_change_log, :" Live?_change_log"])
+  #                |> Enum.zip([10, 10, 10, 8, 6, 10, 10, 10, 8, 6, 10, 10, 10])
+  #                |> Enum.into(%{})
   @doc """
   Receives original and latest list of legal register record structs
   """

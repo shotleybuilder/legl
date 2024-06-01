@@ -74,43 +74,4 @@ defmodule Legl.Countries.Uk.AtArticle.Original.Original do
     File.write(opts.path_orig_html_pretty, Floki.raw_html(document, pretty: true))
     File.write(opts.path_orig_html, Floki.raw_html(document))
   end
-
-  defp multibyte_character_replace(binary) do
-    binary
-    # "\u{B7}" == ·
-    # |> (&Regex.replace(~r/[#{"\u{B7}"}]/m, &1, ~s/./)).()
-    # "\u{B0}" == °
-    |> (&Regex.replace(~r/[#{"\u{B0}"}]C/m, &1, ~s/degrees Celsius/)).()
-    # "\u00B0" == °
-    |> (&Regex.replace(~r/[#{"\u{00B0}"}]C/m, &1, ~s/degrees/)).()
-    # "\u00E0" == à
-    # |> (&Regex.replace(~r/[#{"\u00E0"}][ ]?/m, &1, ~s/a/)).()
-    # "\u00E2" == â
-    # |> (&Regex.replace(~r/[#{"\u00E2"}][ ]?/m, &1, ~s/a/)).()
-    # "\u00E8" == è
-    |> (&Regex.replace(~r/[#{"\u00E8"}][ ]?/m, &1, ~s/e/)).()
-    # "\u00F4" == ô
-    |> (&Regex.replace(~r/[#{"\u00F4"}][ ]?/m, &1, ~s/o/)).()
-    # "\u00A3" == £
-    # |> (&Regex.replace(~r/[#{"\u00A3"}]/m, &1, ~s/GBP/)).()
-    # "\u00B1" == ±
-    # |> (&Regex.replace(~r/[#{"\u00B1"}]/m, &1, ~s/+-/)).()
-    # "\u00D7" == ×
-    |> (&Regex.replace(~r/[#{"\u00D7"}]/m, &1, ~s/*/)).()
-    # "\u2020" == †
-    # |> (&Regex.replace(~r/[†]/m, &1, ~s//)).()
-    # "\u00BD" == ½
-    # |> (&Regex.replace(~r/[#{"\u00BD"}]/m, &1, ~s/.5/)).()
-    # "\u00BF" == ¿
-    # |> (&Regex.replace(~r/[#{"\u00BF"}]/m, &1, ~s//)).()
-    # "\u00EF" == ï
-    # |> (&Regex.replace(~r/[#{"\u00EF"}]/m, &1, ~s//)).()
-    # "\u00B5" == µ
-    # |> (&Regex.replace(~r/[#{"\u00B5"}]/m, &1, ~s/micro/)).()
-    # "\u00BA" == <<194, 186>> == º
-    |> (&Regex.replace(~r/#{<<194, 186>>}/m, &1, ~s/degs/)).()
-
-    # "\u03B1" == α
-    # |> (&Regex.replace(~r/#{<<206, 177>>}/m, &1, ~s/a/)).()
-  end
 end

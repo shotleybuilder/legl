@@ -1,7 +1,7 @@
 defmodule NhsTrusts do
   @url "https://en.wikipedia.org/wiki/List_of_NHS_trusts_in_England"
   @text ~s[lib/legl/data_files/txt/org-name.txt] |> Path.absname()
-  @las_url ~s[lib/legl/data_files/txt/local-authorities-url.txt] |> Path.absname()
+  # @las_url ~s[lib/legl/data_files/txt/local-authorities-url.txt] |> Path.absname()
   @pretty ~s[lib/legl/data_files/html/original_pretty.html] |> Path.absname()
 
   def getNames do

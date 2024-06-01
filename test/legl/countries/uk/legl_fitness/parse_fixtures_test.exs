@@ -1,4 +1,4 @@
-defmodule Legl.Countries.Uk.LeglFitness.ParseTestFixtures do
+defmodule Legl.Countries.Uk.LeglFitness.ParseFixturesTest do
   @data [
     # PERSON_II PROPERTY PERSON_II_VERB PROCESS PERSON_VERB PERSON
     %{

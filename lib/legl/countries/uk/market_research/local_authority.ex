@@ -1,9 +1,9 @@
 defmodule LocalAuthority do
-  @url "https://www.local.gov.uk/our-support/guidance-and-resources/communications-support/digital-councils/social-media/go-further/a-z-councils-online"
+  # @url "https://www.local.gov.uk/our-support/guidance-and-resources/communications-support/digital-councils/social-media/go-further/a-z-councils-online"
   @text ~s[lib/legl/data_files/txt/org-name.txt] |> Path.absname()
-  @las_url ~s[lib/legl/data_files/txt/local-authorities-url.txt] |> Path.absname()
+  # @las_url ~s[lib/legl/data_files/txt/local-authorities-url.txt] |> Path.absname()
   @construction "https://www.theconstructionindex.co.uk/market-data/top-100-construction-companies/2020"
-  @pretty ~s[lib/legl/data_files/html/original_pretty.html] |> Path.absname()
+  # @pretty ~s[lib/legl/data_files/html/original_pretty.html] |> Path.absname()
 
   def getNames do
     with %HTTPoison.Response{

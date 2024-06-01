@@ -5,8 +5,6 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
   alias Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefnGovernment
   alias Legl.Countries.Uk.AtArticle.Taxa.TaxaDutyType.DutyTypeDefn
 
-  alias Legl.Countries.Uk.LeglInterpretation.Interpretation
-
   @type duty_types :: list()
   @type dutyholders :: list()
   @type dutyholders_gvt :: list()
@@ -217,9 +215,5 @@ defmodule Legl.Countries.Uk.AtArticle.AtTaxa.AtDutyTypeTaxa.DutyTypeLib do
       ) do
     IO.puts(~s/No specific duty-type match for this text\n#{article_text}/)
     collector
-  end
-
-  defp dedupe({dutyholders, duty_types}) do
-    {Enum.uniq(dutyholders), Enum.uniq(duty_types)}
   end
 end

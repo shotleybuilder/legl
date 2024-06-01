@@ -113,7 +113,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
     # IO.inspect(fitnesses, label: "fitnesses")
 
-    {lft_records, _fit?, _disfit?, ext?} =
+    {lft_records, _fit?, _disfit?, _ext?} =
       Enum.reduce(fitnesses, {[], false, false, false}, fn
         %{category: "applies-to"} = fitness, {acc, fit?, disfit?, ext?} ->
           case :fit not in fitness_type do

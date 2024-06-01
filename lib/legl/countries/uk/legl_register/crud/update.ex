@@ -191,9 +191,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
     end
   end
 
-  defp confirm_if_recently_modified(record) do
-  end
-
   defp update(records, opts) when is_list(records) do
     Enum.each(
       records,
@@ -296,7 +293,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
     Enum.each(
       records,
       fn record ->
-        record = Extent.set_extent(record) |> elem(1)
+        record = Extent.set_extent(record, []) |> elem(1)
 
         case ExPrompt.confirm("\nPatch #{record."Title_EN"}?") do
           true ->

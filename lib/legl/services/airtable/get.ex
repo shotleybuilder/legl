@@ -60,7 +60,7 @@ defmodule Legl.Services.Airtable.Get do
         Logger.info("Request returned RECORD_ID: #{inspect(record_id)}")
         {:ok, record_id}
 
-      {:ok, %{status: status, body: %{"records" => []}}} ->
+      {:ok, %{status: _status, body: %{"records" => []}}} ->
         Logger.info("Request returned 0 records")
         {:ok, nil}
 

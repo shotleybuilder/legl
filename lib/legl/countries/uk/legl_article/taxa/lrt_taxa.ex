@@ -94,7 +94,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.LRTTaxa do
          Record_Type: [record_type],
          Part: p,
          Chapter: c,
-         Heading: h,
+         Heading: _h,
          "Section||Regulation": s,
          Text: text
        }) do

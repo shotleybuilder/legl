@@ -388,9 +388,9 @@ defmodule Legl.Countries.Uk.LeglEnforcement.HseBreaches do
       request
     end
 
-  defp debug_body,
-    do: fn request ->
-      IO.puts(request.body)
-      request
-    end
+  # defp debug_body,
+  #  do: fn request ->
+  #    IO.puts(request.body)
+  #    request
+  #  end
 end

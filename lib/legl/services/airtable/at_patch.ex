@@ -32,9 +32,9 @@ defmodule Legl.Services.Airtable.AtPatch do
     end
   end
 
-  defp print(url, headers, body) do
-    IO.inspect(url)
-    IO.inspect(headers)
-    IO.inspect(body)
-  end
+  # defp print(url, headers, body) do
+  #  IO.inspect(url)
+  #  IO.inspect(headers)
+  #  IO.inspect(body)
+  # end
 end

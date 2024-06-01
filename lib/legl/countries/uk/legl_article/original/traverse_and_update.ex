@@ -72,7 +72,7 @@ defmodule Legl.Countries.Uk.AtArticle.Original.TraverseAndUpdate do
           nil ->
             {"a", attr, children}
 
-          {para, sub_para} ->
+          {_para, _sub_para} ->
             {"a", attr, children}
 
           x when is_binary(x) ->

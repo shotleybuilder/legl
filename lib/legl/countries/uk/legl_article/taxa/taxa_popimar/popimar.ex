@@ -56,7 +56,7 @@ defmodule Legl.Countries.Uk.Article.Taxa.TaxaPopimar.Popimar do
               ])
 
   # Paste the first line of the article of interest
-  @qa_text "2 A person involved in the carriage of dangerous goods—"
+  # @qa_text "2 A person involved in the carriage of dangerous goods—"
 
   def process() do
     json = @path |> Path.absname() |> File.read!()

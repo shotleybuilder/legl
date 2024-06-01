@@ -330,9 +330,9 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
     |> (&{:ok, &1}).()
   end
 
-  defp blacklist() do
-    []
-  end
+  # defp blacklist() do
+  #  []
+  # end
 
   def dutyholder_aggregate(records),
     do: aggregate(records, {:Dutyholder, :"Dutyholder Aggregate"})
@@ -404,8 +404,8 @@ defmodule Legl.Countries.Uk.Article.Taxa.LATTaxa do
     end)
   end
 
-  num = Enum.random(1..999) |> Integer.to_string()
-  hashed_num = :crypto.hash(:sha256, num)
+  # num = Enum.random(1..999) |> Integer.to_string()
+  # hashed_num = :crypto.hash(:sha256, num)
 
   @spec aggregates(list(), atom(), struct()) :: list()
   def aggregates(keys, source_field, records) do

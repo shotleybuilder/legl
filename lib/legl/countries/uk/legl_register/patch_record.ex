@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.LeglRegister.PatchRecord do
   @moduledoc """
   PATCH records in a Legal Register
   """
-  alias ElixirSense.Core.Struct
+
   alias Legl.Services.Supabase.Client
   alias Legl.Countries.Uk.LeglRegister.LegalRegister
 

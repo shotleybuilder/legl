@@ -133,7 +133,7 @@ defmodule Legl do
   def original, do: "lib/legl/data_files/txt/original.txt"
   def original_annex, do: "lib/legl/data_files/txt/original-annex.txt"
 
-  @annotated Path.absname("lib/legl/data_files/txt/annotated.txt")
+  # @annotated Path.absname("lib/legl/data_files/txt/annotated.txt")
   def annotated_annex, do: "lib/legl/data_files/txt/annotated-annex.txt"
 
   def airtable, do: "lib/legl/data_files/txt/airtable.txt"

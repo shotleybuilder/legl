@@ -24,7 +24,6 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.UpdateGetNames do
   """
   alias Legl.Countries.Uk.LeglRegister.Options, as: LRO
   alias Legl.Services.Airtable.UkAirtable, as: AT
-  alias Legl.Countries.Uk.Metadata
 
   @default_opts %{
     base_name: "UK EHS",

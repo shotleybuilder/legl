@@ -181,7 +181,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   # http://www.legislation.gov.uk/schema/legislation.xsd" SchemaVersion="1.0"
   # RestrictExtent="E+W+S+N.I." RestrictStartDate="2022-12-25">
   def sax_event_handler(
-        {:startElement, _, 'Legislation', _, attributes},
+        {:startElement, _, ~c"Legislation", _, attributes},
         state,
         _
       ) do
@@ -197,7 +197,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   end
 
   def sax_event_handler(
-        {:startElement, _, 'DateText', _, _},
+        {:startElement, _, ~c"DateText", _, _},
         state,
         _
       ),
@@ -209,7 +209,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   # </MadeDate>
 
   def sax_event_handler(
-        {:startElement, _, 'MadeDate', _, _},
+        {:startElement, _, ~c"MadeDate", _, _},
         state,
         _
       ),
@@ -219,7 +219,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
       }
 
   def sax_event_handler(
-        {:endElement, _, 'DateText', _},
+        {:endElement, _, ~c"DateText", _},
         %SaxState{metadata: %{md_made_date: true}} = state,
         _
       ),
@@ -234,7 +234,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   # </ComingIntoForce>
 
   def sax_event_handler(
-        {:startElement, _, 'ComingIntoForce', _, _},
+        {:startElement, _, ~c"ComingIntoForce", _, _},
         state,
         _
       ),
@@ -244,7 +244,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
       }
 
   def sax_event_handler(
-        {:endElement, _, 'DateText', _},
+        {:endElement, _, ~c"DateText", _},
         %SaxState{metadata: %{md_coming_into_force_date: true}} = state,
         _
       ),
@@ -255,7 +255,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
       }
 
   def sax_event_handler(
-        {:endElement, _, 'ComingIntoForce', _},
+        {:endElement, _, ~c"ComingIntoForce", _},
         %SaxState{metadata: %{md_coming_into_force_date: true}} = state,
         _
       ),
@@ -265,41 +265,44 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
       }
 
   # ukm:metadata
-  def sax_event_handler({:startElement, _, 'Metadata', 'ukm', _}, state, _),
+  def sax_event_handler({:startElement, _, ~c"Metadata", ~c"ukm", _}, state, _),
     do: %{state | main_section: :metadata}
 
-  def sax_event_handler({:endElement, _, 'Metadata', 'ukm'}, state, _), do: state
+  def sax_event_handler({:endElement, _, ~c"Metadata", ~c"ukm"}, state, _), do: state
 
   def sax_event_handler(
-        {:startElement, _, 'TotalParagraphs', 'ukm', [{:attribute, 'Value', [], [], value}]},
+        {:startElement, _, ~c"TotalParagraphs", ~c"ukm",
+         [{:attribute, ~c"Value", [], [], value}]},
         state,
         _
       ),
       do: %{state | metadata: Map.put(state.metadata, :md_total_paras, value)}
 
   def sax_event_handler(
-        {:startElement, _, 'BodyParagraphs', 'ukm', [{:attribute, 'Value', [], [], value}]},
+        {:startElement, _, ~c"BodyParagraphs", ~c"ukm", [{:attribute, ~c"Value", [], [], value}]},
         state,
         _
       ),
       do: %{state | metadata: Map.put(state.metadata, :md_body_paras, value)}
 
   def sax_event_handler(
-        {:startElement, _, 'ScheduleParagraphs', 'ukm', [{:attribute, 'Value', [], [], value}]},
+        {:startElement, _, ~c"ScheduleParagraphs", ~c"ukm",
+         [{:attribute, ~c"Value", [], [], value}]},
         state,
         _
       ),
       do: %{state | metadata: Map.put(state.metadata, :md_schedule_paras, value)}
 
   def sax_event_handler(
-        {:startElement, _, 'AttachmentParagraphs', 'ukm', [{:attribute, 'Value', [], [], value}]},
+        {:startElement, _, ~c"AttachmentParagraphs", ~c"ukm",
+         [{:attribute, ~c"Value", [], [], value}]},
         state,
         _
       ),
       do: %{state | metadata: Map.put(state.metadata, :md_attachment_paras, value)}
 
   def sax_event_handler(
-        {:startElement, _, 'TotalImages', 'ukm', [{:attribute, 'Value', [], [], value}]},
+        {:startElement, _, ~c"TotalImages", ~c"ukm", [{:attribute, ~c"Value", [], [], value}]},
         state,
         _
       ),
@@ -308,7 +311,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   # <ukm:EnactmentDate Date="2022-10-25"/>
   # <ukm:EnactmentDate Date="1971-05-27"/>
   def sax_event_handler(
-        {:startElement, _, 'EnactmentDate', 'ukm', [{:attribute, 'Date', [], [], value}]},
+        {:startElement, _, ~c"EnactmentDate", ~c"ukm", [{:attribute, ~c"Date", [], [], value}]},
         state,
         _
       ),
@@ -320,7 +323,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
 
   # <ukm:Made Date="2021-06-15" Time="09:00:00"/>
   def sax_event_handler(
-        {:startElement, _, 'Made', 'ukm', [{:attribute, 'Date', [], [], value}, _]},
+        {:startElement, _, ~c"Made", ~c"ukm", [{:attribute, ~c"Date", [], [], value}, _]},
         state,
         _
       ),
@@ -331,7 +334,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
 
   # <ukm:Made Date="2021-06-15"/>
   def sax_event_handler(
-        {:startElement, _, 'Made', 'ukm', [{:attribute, 'Date', [], [], value}]},
+        {:startElement, _, ~c"Made", ~c"ukm", [{:attribute, ~c"Date", [], [], value}]},
         state,
         _
       ),
@@ -344,61 +347,60 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   #   <ukm:DateTime Date="2022-04-01"  Time="00:00:00"/>
   # </ukm:ComingIntoForce>
 
-  def sax_event_handler(
-        {:startElement, _, 'ComingIntoForce', 'ukm', _},
-        state,
-        _
-      ),
-      do: %{state | metadata: Map.put(state.metadata, :md_coming_into_force_date, true)}
+  # def sax_event_handler(
+  #       {:startElement, _, ~c"ComingIntoForce", ~c"ukm", _},
+  #       state,
+  #       _
+  #     ),
+  #     do: %{state | metadata: Map.put(state.metadata, :md_coming_into_force_date, true)}
 
-  def sax_event_handler(
-        {:startElement, _, 'DateTime', 'ukm', attributes},
-        %SaxState{metadata: %{md_coming_into_force_date: true}} = state,
-        _
-      ) do
-    md = enum_attributes(attributes, state.metadata)
-    Map.put(state, :metadata, md)
-  end
+  # def sax_event_handler(
+  #       {:startElement, _, ~c"DateTime", ~c"ukm", attributes},
+  #       %SaxState{metadata: %{md_coming_into_force_date: true}} = state,
+  #       _
+  #     ) do
+  #   md = enum_attributes(attributes, state.metadata)
+  #   Map.put(state, :metadata, md)
+  # end
 
   # <ukm:InForceDates>
   # <ukm:InForce Date="2012-05-28" Qualification="wholly in force" Applied="false"/>
   # </ukm:InForceDates>
-  """
-  def sax_event_handler(
-        {:startElement, _, 'InForceDates', 'ukm', _},
-        %SaxState{metadata: %{md_coming_into_force_date: nil}} = state,
-        _
-      ),
-      do: %{state | metadata: Map.put(state.metadata, :md_coming_into_force_date, true)}
 
-  def sax_event_handler(
-        {:startElement, _, 'InForce', 'ukm', attributes},
-        %SaxState{metadata: %{md_coming_into_force_date: true}} = state,
-        _
-      ) do
-    md = enum_attributes(attributes, state.metadata)
+  # def sax_event_handler(
+  #       {:startElement, _, 'InForceDates', 'ukm', _},
+  #       %SaxState{metadata: %{md_coming_into_force_date: nil}} = state,
+  #       _
+  #     ),
+  #     do: %{state | metadata: Map.put(state.metadata, :md_coming_into_force_date, true)}
 
-    Map.put(state, :metadata, md)
-  end
-  """
+  # def sax_event_handler(
+  #       {:startElement, _, 'InForce', 'ukm', attributes},
+  #       %SaxState{metadata: %{md_coming_into_force_date: true}} = state,
+  #       _
+  #     ) do
+  #   md = enum_attributes(attributes, state.metadata)
 
-  def sax_event_handler({:startElement, _, metadata, 'ukm', _}, state, _)
+  #   Map.put(state, :metadata, md)
+  # end
+
+  def sax_event_handler({:startElement, _, metadata, ~c"ukm", _}, state, _)
       when metadata in @metadata,
       do: state
 
-  def sax_event_handler({:endElement, _, metadata, 'ukm'}, state, _)
+  def sax_event_handler({:endElement, _, metadata, ~c"ukm"}, state, _)
       when metadata in @metadata,
       do: state
 
   # atom:link
   def sax_event_handler(
-        {:startElement, _, 'link', 'atom', attr},
+        {:startElement, _, ~c"link", ~c"atom", attr},
         %{main_section: :metadata} = state,
         _
       ) do
-    case Enum.find(attr, &match?({_, 'type', _, _, _}, &1)) do
-      {_, _, _, _, 'application/pdf'} ->
-        case Enum.find(attr, &match?({_, 'href', _, _, _}, &1)) do
+    case Enum.find(attr, &match?({_, ~c"type", _, _, _}, &1)) do
+      {_, _, _, _, ~c"application/pdf"} ->
+        case Enum.find(attr, &match?({_, ~c"href", _, _, _}, &1)) do
           {_, _, _, _, pdf_href} ->
             pdf_href = pdf_href |> to_string()
             metadata = Map.put(state.metadata, :pdf_href, pdf_href)
@@ -413,7 +415,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
     end
   end
 
-  def sax_event_handler({:endElement, _, 'link', 'atom'}, state, _), do: state
+  def sax_event_handler({:endElement, _, ~c"link", ~c"atom"}, state, _), do: state
 
   # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   # DUBLIN CORE
@@ -424,18 +426,22 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   #  %{state | element_acc: ""}
   # end
 
-  def sax_event_handler({:startElement, _, 'title', 'dc', _}, state, _),
+  def sax_event_handler({:startElement, _, ~c"title", ~c"dc", _}, state, _),
     do: %{state | element_acc: ""}
 
-  def sax_event_handler({:endElement, _, 'title', 'dc'}, %{main_section: :metadata} = state, _) do
+  def sax_event_handler(
+        {:endElement, _, ~c"title", ~c"dc"},
+        %{main_section: :metadata} = state,
+        _
+      ) do
     %{state | metadata: Map.put(state.metadata, :Title_EN, state.element_acc), element_acc: ""}
   end
 
   # <dc:date>1984-06-26</dc:date>
-  def sax_event_handler({:startElement, _, 'date', 'dc', _}, state, _),
+  def sax_event_handler({:startElement, _, ~c"date", ~c"dc", _}, state, _),
     do: %{state | element_acc: ""}
 
-  def sax_event_handler({:endElement, _, 'date', 'dc'}, %{main_section: :metadata} = state, _) do
+  def sax_event_handler({:endElement, _, ~c"date", ~c"dc"}, %{main_section: :metadata} = state, _) do
     %{
       state
       | metadata: Map.put(state.metadata, :enactment_date, state.element_acc),
@@ -444,10 +450,14 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   end
 
   # <dct:valid>2013-10-01</dct:valid>
-  def sax_event_handler({:startElement, _, 'valid', 'dct', _}, state, _),
+  def sax_event_handler({:startElement, _, ~c"valid", ~c"dct", _}, state, _),
     do: %{state | element_acc: ""}
 
-  def sax_event_handler({:endElement, _, 'valid', 'dct'}, %{main_section: :metadata} = state, _) do
+  def sax_event_handler(
+        {:endElement, _, ~c"valid", ~c"dct"},
+        %{main_section: :metadata} = state,
+        _
+      ) do
     %{
       state
       | metadata: Map.put(state.metadata, :md_dct_valid_date, state.element_acc),
@@ -456,15 +466,20 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   end
 
   def sax_event_handler(
-        {:startElement, _, 'subject', 'dc', [{:attribute, 'scheme', [], [], 'SIheading'}]},
+        {:startElement, _, ~c"subject", ~c"dc",
+         [{:attribute, ~c"scheme", [], [], ~c"SIheading"}]},
         state,
         _
       ),
       do: %{state | element_acc: "", si_code: true}
 
-  def sax_event_handler({:startElement, _, 'subject', 'dc', _}, state, _), do: state
+  def sax_event_handler({:startElement, _, ~c"subject", ~c"dc", _}, state, _), do: state
 
-  def sax_event_handler({:endElement, _, 'subject', 'dc'}, %{main_section: :metadata} = state, _) do
+  def sax_event_handler(
+        {:endElement, _, ~c"subject", ~c"dc"},
+        %{main_section: :metadata} = state,
+        _
+      ) do
     case state.si_code do
       true ->
         si_code = [state.element_acc | state.metadata.si_code]
@@ -482,18 +497,22 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
     end
   end
 
-  def sax_event_handler({:startElement, _, 'modified', 'dc', _}, state, _),
-    do: %{state | element_acc: ""}
-
-  def sax_event_handler({:endElement, _, 'modified', 'dc'}, %{main_section: :metadata} = state, _) do
-    %{state | metadata: Map.put(state.metadata, :md_modified, state.element_acc), element_acc: ""}
-  end
-
-  def sax_event_handler({:startElement, _, 'description', 'dc', _}, state, _),
+  def sax_event_handler({:startElement, _, ~c"modified", ~c"dc", _}, state, _),
     do: %{state | element_acc: ""}
 
   def sax_event_handler(
-        {:endElement, _, 'description', 'dc'},
+        {:endElement, _, ~c"modified", ~c"dc"},
+        %{main_section: :metadata} = state,
+        _
+      ) do
+    %{state | metadata: Map.put(state.metadata, :md_modified, state.element_acc), element_acc: ""}
+  end
+
+  def sax_event_handler({:startElement, _, ~c"description", ~c"dc", _}, state, _),
+    do: %{state | element_acc: ""}
+
+  def sax_event_handler(
+        {:endElement, _, ~c"description", ~c"dc"},
         %{main_section: :metadata} = state,
         _
       ) do
@@ -505,11 +524,11 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   end
 
   # <dc:creator> <dc:subject> <dc:description> <dc:publisher> <dc:contributor> <dc:date>
-  def sax_event_handler({:startElement, _, dublin_core, 'dc', _}, state, _)
+  def sax_event_handler({:startElement, _, dublin_core, ~c"dc", _}, state, _)
       when dublin_core in @dublincore,
       do: state
 
-  def sax_event_handler({:endElement, _, dublin_core, 'dc'}, state, _)
+  def sax_event_handler({:endElement, _, dublin_core, ~c"dc"}, state, _)
       when dublin_core in @dublincore,
       do: state
 
@@ -522,22 +541,22 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
   def sax_event_handler({:endElement, _, _, _}, state, _),
     do: state
 
-  defp enum_attributes([], metadata), do: metadata
+  # defp enum_attributes([], metadata), do: metadata
 
-  defp enum_attributes(attributes, metadata) do
-    Enum.reduce(attributes, metadata, fn a, acc ->
-      case get_attribute(a) do
-        nil -> acc
-        {k, v} -> Map.put(acc, k, v)
-      end
-    end)
-  end
+  # defp enum_attributes(attributes, metadata) do
+  #   Enum.reduce(attributes, metadata, fn a, acc ->
+  #     case get_attribute(a) do
+  #       nil -> acc
+  #       {k, v} -> Map.put(acc, k, v)
+  #     end
+  #   end)
+  # end
 
   defp get_attribute({:attribute, att, [], [], value}) do
     cond do
-      att == 'RestrictStartDate' -> {:md_restrict_start_date, List.to_string(value)}
-      att == 'RestrictExtent' -> {:md_restrict_extent, List.to_string(value)}
-      att == 'Date' -> {:md_coming_into_force_date, string_date(List.to_string(value))}
+      att == ~c"RestrictStartDate" -> {:md_restrict_start_date, List.to_string(value)}
+      att == ~c"RestrictExtent" -> {:md_restrict_extent, List.to_string(value)}
+      att == ~c"Date" -> {:md_coming_into_force_date, string_date(List.to_string(value))}
       true -> nil
     end
   end

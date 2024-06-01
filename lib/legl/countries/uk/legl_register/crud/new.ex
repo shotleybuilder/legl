@@ -444,7 +444,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
       {:ok, record} <- TypeClass.set_type(record),
       {:ok, record} <- Tags.set_tags(record),
       {:ok, record} <- IdField.lrt_acronym(record),
-      {:ok, record} <- Extent.set_extent(record),
+      {:ok, record} <- Extent.set_extent(record, opts),
       {:ok, record} <- GetEnactedBy.get_enacting_laws(record, opts),
       {:ok, record} <- Amend.workflow(record, opts)
       # {:ok, record} <- RR.workflow(record, opts)

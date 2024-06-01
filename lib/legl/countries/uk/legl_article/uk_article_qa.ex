@@ -2,7 +2,7 @@ defmodule Legl.Countries.Uk.AirtableArticle.UkArticleQa do
   @moduledoc """
 
   """
-  @components %Types.Component{}
+
   @regex_components Types.Component.mapped_components_for_regex()
   def scan_and_print(binary, regex, name, all? \\ false)
 
