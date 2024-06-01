@@ -3,6 +3,42 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
   use ExUnit.Case, async: true
   alias Legl.Countries.Uk.LeglFitness.Fitness
 
+  test "transform_articles_and_process_fitnesses/1" do
+    records = Legl.Utility.read_json_records(Path.absname("lib/legl/data_files/json/parsed.json"))
+
+    result =
+      records
+      |> (&Fitness.transform_articles(&1)).()
+      |> (&Fitness.process_fitnesses(&1, [])).()
+
+    IO.inspect(result)
+    assert is_list(result)
+  end
+
+  test "transform_articles/1" do
+    records = Legl.Utility.read_json_records(Path.absname("lib/legl/data_files/json/parsed.json"))
+    result = Fitness.transform_articles(records)
+    IO.inspect(result)
+    assert is_list(result)
+  end
+
+  @dirty_rules [
+    %{
+      text:
+        "3.—(1) These Regulations apply to every workplace but shall not apply to— 📌(a) a workplace which is or is in or on a ship, save that regulations 8(1) and (3) and 12(1) and (3) apply to such a workplace where the work involves any of the relevant operations in— 📌(i) a shipyard, whether or not the shipyard forms part of a harbour or wet dock; or 📌(ii) dock premises, not being work done— 📌(aa) by the master or crew of a ship; 📌(bb) on board a ship during a trial run; 📌(cc) for the purpose of raising or removing a ship which is sunk or stranded; or 📌(dd) on a ship which is not under command, for the purpose of bringing it under command; 📌(b) a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F6 2015 ] , and in which the only activity being undertaken is construction work within the meaning of those Regulations, save that— 📌(i) regulations 18 and 25A apply to such a workplace; and 📌(ii) regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to such a workplace which is indoors; or 📌(c) a workplace located below ground at a mine, except that regulation 20 applies to such a workplace subject to the modification in paragraph (7). ",
+      result:
+        "These Regulations apply to every workplace but shall not apply to—\n(a) a workplace which is or is in or on a ship, save that regulations 8(1) and (3) and 12(1) and (3) apply to such a workplace where the work involves any of the relevant operations in—\n(i) a shipyard, whether or not the shipyard forms part of a harbour or wet dock; or\n(ii) dock premises, not being work done—\n(aa) by the master or crew of a ship;\n(bb) on board a ship during a trial run;\n(cc) for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd) on a ship which is not under command, for the purpose of bringing it under command;\n(b) a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations 2015, and in which the only activity being undertaken is construction work within the meaning of those Regulations, save that—\n(i) regulations 18 and 25A apply to such a workplace; and\n(ii) regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to such a workplace which is indoors; or\n(c) a workplace located below ground at a mine, except that regulation 20 applies to such a workplace subject to the modification in paragraph (7)."
+    }
+  ]
+
+  test "clean_rule_text/1" do
+    Enum.each(@dirty_rules, fn %{text: text, result: test_result} ->
+      result = Fitness.clean_rule_text(text)
+      IO.inspect(result)
+      assert(result == test_result)
+    end)
+  end
+
   @articles [
     %{
       rule:
@@ -37,9 +73,128 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
           provision: []
         },
         %{
-          rule: "Air monitoring shall not apply to a self-employed person.",
-          provision: ["air-monitoring"],
-          scope: "Part"
+          rule: "regulation 9 (air monitoring) shall not apply to a self-employed person.",
+          provision: []
+        }
+      ]
+    },
+    %{
+      rule:
+        "These Regulations apply to every workplace but shall not apply to a workplace located below ground at a mine",
+      result: [
+        %{
+          rule: "These Regulations apply to every workplace",
+          provision: []
+        },
+        %{
+          rule: "These Regulations shall not apply to a workplace located below ground at a mine",
+          provision: []
+        }
+      ]
+    },
+    %{
+      rule:
+        "These Regulations apply to every workplace but shall not apply to—\n(a) a workplace which is or is in or on a ship, save that regulations 8(1) and (3) and 12(1) and (3) apply to such a workplace where the work involves any of the relevant operations in—\n(i) a shipyard, whether or not the shipyard forms part of a harbour or wet dock; or\n(ii) dock premises, not being work done—\n(aa) by the master or crew of a ship;\n(bb) on board a ship during a trial run;\n(cc) for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd) on a ship which is not under command, for the purpose of bringing it under command;\n(b) a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations, save that—\n(i) regulations 18 and 25A apply to such a workplace; and\n(ii) regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to such a workplace which is indoors; or\n(c) a workplace located below ground at a mine, except that regulation 20 applies to such a workplace subject to the modification in paragraph (7).",
+      result: [
+        %{
+          rule: "These Regulations apply to every workplace",
+          provision: []
+        },
+        %{
+          rule: "These Regulations shall not apply to a workplace located below ground at a mine",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulation 20 applies to a workplace located below ground at a mine subject to the modification in paragraph (7).",
+          provision: []
+        },
+        %{
+          rule:
+            "These Regulations shall not apply to a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations which is indoors.",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 18 and 25A apply to a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations.",
+          provision: []
+        },
+        %{
+          rule: "These Regulations shall not apply to a workplace which is or is in or on a ship",
+          provision: []
+        },
+        %{
+          provision: [],
+          rule:
+            "Regulations 8(1) and (3) and 12(1) and (3) apply to a workplace which is or is in or on a ship where the work involves any of the relevant operations in dock premises, not being work done—\n(aa) by the master or crew of a ship;\n(bb) on board a ship during a trial run;\n(cc) for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd) on a ship which is not under command, for the purpose of bringing it under command."
+        },
+        %{
+          provision: [],
+          rule:
+            "Regulations 8(1) and (3) and 12(1) and (3) apply to a workplace which is or is in or on a ship where the work involves any of the relevant operations in a shipyard, whether or not the shipyard forms part of a harbour or wet dock."
+        }
+      ]
+    },
+    %{
+      rule:
+        "As respects any workplace which is or is in or on an aircraft, locomotive or rolling stock, trailer or semi-trailer used as a means of transport or a vehicle for which a licence is in force under the Vehicles (Excise) Act 1971 or a vehicle exempted from duty under that Act—\n(a) regulations 5 to 12 and 14 to 25 shall not apply to any such workplace; and\n(b) regulation 13 shall apply to any such workplace only when the aircraft, locomotive or rolling stock, trailer or semi-trailer or vehicle is stationary inside a workplace and, in the case of a vehicle for which a licence is in force under the Vehicles (Excise) Act 1971, is not on a public road.",
+      result: [
+        %{
+          provision: [],
+          rule:
+            "Regulation 13 shall apply to a workplace which is or is in or on an aircraft, locomotive or rolling stock, trailer or semi-trailer used as a means of transport or a vehicle for which a licence is in force under the Vehicles (Excise) Act 1971 or a vehicle exempted from duty under that Act only when the aircraft, locomotive or rolling stock, trailer or semi-trailer or vehicle is stationary inside a workplace and, in the case of a vehicle for which a licence is in force under the Vehicles (Excise) Act 1971, is not on a public road."
+        },
+        %{
+          provision: [],
+          rule:
+            "Regulations 5 to 12 and 14 to 25 shall not apply to a workplace which is or is in or on an aircraft, locomotive or rolling stock, trailer or semi-trailer used as a means of transport or a vehicle for which a licence is in force under the Vehicles (Excise) Act 1971 or a vehicle exempted from duty under that Act."
+        }
+      ]
+    },
+    %{
+      rule:
+        "As respects any workplace which is in fields, woods or other land forming part of an agricultural or forestry undertaking but which is not inside a building and is situated away from the undertaking's main buildings—\n(a) regulations 5 to 19 and 23 to 25 shall not apply to any such workplace; and\n(b) any requirement to ensure that any such workplace complies with any of regulations 20 to 22 shall have effect as a requirement to so ensure so far as is reasonably practicable.",
+      result: [
+        %{
+          rule:
+            "As respects any workplace which is in fields, woods or other land forming part of an agricultural or forestry undertaking but which is not inside a building and is situated away from the undertaking's main buildings any requirement to ensure that any such workplace complies with any of regulations 20 to 22 shall have effect as a requirement to so ensure so far as is reasonably practicable.",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 5 to 19 and 23 to 25 shall not apply to a workplace which is in fields, woods or other land forming part of an agricultural or forestry undertaking _but_ which is not inside a building and is situated away from the undertaking's main buildings.",
+          provision: []
+        }
+      ]
+    },
+    %{
+      rule:
+        "The requirements imposed by these Regulations on an employer shall also apply—\n(a) to a relevant self-employed person, in respect of work equipment he uses at work;\n(b) subject to paragraph (5), to a person who has control to any extent of—\n(i) work equipment;\n(ii) a person at work who uses or supervises or manages the use of work equipment; or\n(iii) the way in which work equipment is used at work,\nand to the extent of his control.",
+      result: [
+        %{
+          rule:
+            "The requirements imposed by these Regulations on an employer shall also apply subject to paragraph (5), to a person who has control to any extent of  the way in which work equipment is used at work, and to the extent of his control.",
+          provision: []
+        },
+        %{
+          rule:
+            "The requirements imposed by these Regulations on an employer shall also apply subject to paragraph (5), to a person who has control to any extent of a person at work who uses or supervises or manages the use of work equipment and to the extent of his control.",
+          provision: []
+        },
+        %{
+          rule:
+            "The requirements imposed by these Regulations on an employer shall also apply subject to paragraph (5), to a person who has control to any extent of work equipment and to the extent of his control.",
+          provision: []
+        },
+        %{
+          rule:
+            "The requirements imposed by these Regulations on an employer shall also apply to a relevant self-employed person, in respect of work equipment he uses at work.",
+          provision: []
         }
       ]
     }
@@ -56,7 +211,79 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
 
       assert is_list(result)
       if test != [], do: assert(result == test)
+      IO.inspect(result, label: "RESULT")
+    end)
+  end
+
+  @but [
+    %{
+      rule:
+        "These Regulations apply to every workplace but shall not apply to—\n(a)a workplace which is or is in or on a ship, save that regulations 8(1) and (3) and 12(1) and (3) apply to such a workplace where the work involves any of the relevant operations in—\n(i)a shipyard, whether or not the shipyard forms part of a harbour or wet dock; or\n(ii)dock premises, not being work done—\n(aa)by the master or crew of a ship;\n(bb)on board a ship during a trial run;\n(cc)for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd)on a ship which is not under command, for the purpose of bringing it under command;\n(b)a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations, save that—\n(i)regulations 18 and 25A apply to such a workplace; and\n(ii)regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to such a workplace which is indoors; or\n(c)a workplace located below ground at a mine, except that regulation 20 applies to such a workplace subject to the modification in paragraph (7).",
+      result: [
+        %{rule: "These Regulations apply to every workplace"},
+        %{
+          rule:
+            "These Regulations shall not apply to—\n(a)a workplace which is or is in or on a ship, save that regulations 8(1) and (3) and 12(1) and (3) apply to such a workplace where the work involves any of the relevant operations in—\n(i)a shipyard, whether or not the shipyard forms part of a harbour or wet dock; or\n(ii)dock premises, not being work done—\n(aa)by the master or crew of a ship;\n(bb)on board a ship during a trial run;\n(cc)for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd)on a ship which is not under command, for the purpose of bringing it under command;\n(b)a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations, save that—\n(i)regulations 18 and 25A apply to such a workplace; and\n(ii)regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to such a workplace which is indoors; or\n(c)a workplace located below ground at a mine, except that regulation 20 applies to such a workplace subject to the modification in paragraph (7)."
+        }
+      ]
+    }
+  ]
+
+  test "but/1" do
+    Enum.each(@but, fn %{rule: rule, result: test_result} ->
+      result = Fitness.but(%{rule: rule})
       IO.inspect(result)
+      assert(result == test_result)
+    end)
+  end
+
+  @split [
+    %{
+      rule:
+        "(3) The requirements imposed by these Regulations on an employer shall also apply—📌(a) to a [F1 relevant self-employed person ] , in respect of work equipment he uses at work; 📌(b) subject to paragraph (5), to a person who has control to any extent of— 📌(i) work equipment; 📌(ii) a person at work who uses or supervises or manages the use of work equipment; or 📌(iii) the way in which work equipment is used at work, 📌and to the extent of his control.",
+      result: [
+        %{rule: "The requirements imposed by these Regulations on an employer shall also apply"},
+        %{
+          rule:
+            "The requirements imposed by these Regulations on an employer shall also apply to a relevant self-employed person, in respect of work equipment he uses at work"
+        },
+        %{
+          rule:
+            "The requirements imposed by these Regulations on an employer shall also apply to a person who has control to any extent of work equipment, a person at work who uses or supervises or manages the use of work equipment or the way in which work equipment is used at work, and to the extent of his control"
+        }
+      ]
+    }
+  ]
+  test "split/1" do
+    Enum.each(@split, fn %{rule: rule, result: test_result} ->
+      result = Fitness.split(%{rule: Fitness.clean_rule_text(rule), provision: []})
+      IO.inspect(result, label: "RESULT")
+      assert(result == test_result)
+    end)
+  end
+
+  @save_that [
+    %{
+      rule:
+        "These Regulations shall not apply to a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations, save that regulations 18 and 25A apply to such a workplace.",
+      result: [
+        %{
+          rule:
+            "These Regulations shall not apply to a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations"
+        },
+        %{
+          rule:
+            "Regulations 18 and 25A apply a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations."
+        }
+      ]
+    }
+  ]
+
+  test "save_that/1" do
+    Enum.each(@save_that, fn %{rule: rule, result: test_result} ->
+      result = Fitness.save_that(%{rule: rule})
+      IO.inspect(result)
+      assert(result == test_result)
     end)
   end
 
@@ -80,23 +307,92 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
   end
 
   @rules [
-    "Where a duty is placed by these Regulations on an employer in respect of employees of that employer, the employer is, so far as is reasonably practicable, under a like duty in respect of any other person, whether at work or not, who may be affected by the work activity carried out by that employer except that the duties of the employer.",
+    %{
+      test:
+        "Where a duty is placed by these Regulations on an employer in respect of employees of that employer, the employer is, so far as is reasonably practicable, under a like duty in respect of any other person, whether at work or not, who may be affected by the work activity carried out by that employer except that the duties of the employer.",
+      result: %{
+        rule:
+          "Where a duty is placed by these Regulations on an employer in respect of employees of that employer, the employer is, so far as is reasonably practicable, under a like duty in respect of any other person, whether at work or not, who may be affected by the work activity carried out by that employer except that the duties of the employer.",
+        provision: []
+      }
+    },
     #
-    "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply",
+    %{
+      test:
+        "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply",
+      result: %{
+        scope: "Part",
+        rule:
+          "Notification of work with asbestos, designated areas, health records, medical surveillance do not apply",
+        provision: [
+          "notification-of-work-with-asbestos",
+          "designated-areas",
+          "health-records",
+          "medical-surveillance"
+        ]
+      }
+    },
     #
-    "Regulation 17 (cleanliness of premises and plant), to the extent that it requires an employer",
+    %{
+      test:
+        "Regulation 17 (cleanliness of premises and plant), to the extent that it requires an employer",
+      result: %{
+        scope: "Part",
+        rule:
+          "Cleanliness of premises, cleanliness of plant, to the extent that it requires an employer",
+        provision: ["cleanliness-of-premises", "cleanliness-of-plant"]
+      }
+    },
     #
-    "Notification of work with asbestos, designated areas, health records, medical surveillance do not apply where the work involves",
+    %{
+      test:
+        "Notification of work with asbestos, designated areas, health records, medical surveillance do not apply where the work involves",
+      result: %{
+        rule:
+          "Notification of work with asbestos, designated areas, health records, medical surveillance do not apply where the work involves",
+        provision: []
+      }
+    },
     #
-    "under regulations 9, 11(1) and (2) and 12 (which relate respectively to monitoring, information and training and dealing with accidents) shall not extend to persons who are not his employees, unless those persons are on the premises where the work is being carried out."
+    %{
+      test:
+        "under regulations 9, 11(1) and (2) and 12 (which relate respectively to monitoring, information and training and dealing with accidents) shall not extend to persons who are not his employees, unless those persons are on the premises where the work is being carried out.",
+      result: %{
+        scope: "Part",
+        rule:
+          "Monitoring, information, training, dealing with accidents shall not extend to persons who are not his employees, unless those persons are on the premises where the work is being carried out.",
+        provision: ["monitoring", "information", "training", "dealing-with-accidents"]
+      }
+    },
+    #
+    %{
+      test:
+        "Regulation 12 does not apply to a workplace located above ground at a mine that is a tip (within the meaning of regulation 2(1) of the Mines Regulations 2014).",
+      result: %{
+        scope: "Part",
+        rule:
+          "Does not apply to a workplace located above ground at a mine that is a tip (within the meaning of regulation 2(1) of the Mines Regulations 2014).",
+        provision: []
+      }
+    },
+    %{
+      test:
+        "These Regulations apply to every workplace but shall not apply to a workplace located below ground at a mine",
+      result: %{
+        rule: "Shall not apply to a workplace located below ground at a mine",
+        provision: []
+      }
+    }
   ]
 
   test "parse_regulation_references" do
-    Enum.each(@rules, fn rule ->
+    Enum.each(@rules, fn %{test: rule, result: test_result} ->
       param = %{provision: [], rule: rule}
       result = Fitness.parse_regulation_references(param)
+      IO.puts("RULE: #{rule}")
       IO.inspect(result)
       assert is_map(result)
+      assert result == test_result
     end)
   end
 

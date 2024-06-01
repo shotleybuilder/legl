@@ -42,7 +42,7 @@ defmodule Legl.Services.Supabase.UserCache do
   Lookup a cached result and check the freshness
   """
   def get_token() do
-    # user_id = user_id() |> IO.inspect(label: "USER_ID")
+    user_id = user_id() |> IO.inspect(label: "USER_ID")
     value = :ets.lookup(@table_name, user_id)
 
     case value do
