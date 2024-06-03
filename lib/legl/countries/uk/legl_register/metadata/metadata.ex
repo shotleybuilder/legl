@@ -229,15 +229,15 @@ defmodule Legl.Countries.Uk.Metadata do
       end
 
     metadata = Map.put(metadata, :md_checked, ~s/#{Date.utc_today()}/)
-
+    # IO.inspect(metadata, label: "metadata")
     {:ok, Kernel.struct(record, metadata)}
-  rescue
-    e ->
-      IO.puts(
-        ~s/\nERROR: #{record."Title_EN"} #{record.type_code} #{record."Number"} #{record."Year"}\n#{inspect(e)}\n#{__MODULE__}.get_latest_metadata\n/
-      )
+    # rescue
+    #  e ->
+    #    IO.puts(
+    #      ~s/\nERROR: #{title(record)} #{record.type_code} #{record."Number"} #{record."Year"}\n#{inspect(e)}\n#{__MODULE__}.#{elem(__ENV__.function, 0)}\n/
+    #    )
 
-      {:ok, record}
+    # {:ok, record}
   end
 
   def get_latest_metadata(record, _) when is_map(record) do
@@ -254,6 +254,16 @@ defmodule Legl.Countries.Uk.Metadata do
     IO.write(" METADATA (path)")
 
     with({:ok, :xml, metadata} <- Record.metadata(path)) do
+      # IO.inspect(metadata)
+
+      metadata =
+        metadata
+        |> title()
+        |> Legl.Airtable.AirtableTitleField.title_clean()
+        |> (&Map.put(metadata, :Title_EN, &1)).()
+
+      # |> dbg()
+
       %{
         # subject shape ["foo", "bar", ...]
         md_subjects: subject,
@@ -268,13 +278,13 @@ defmodule Legl.Countries.Uk.Metadata do
         md_made_date: md_made_date,
         md_dct_valid_date: md_dct_valid_date,
         # md_restrict_start_date,
-        si_code: si_codes,
-        Title_EN: title
+        si_code: si_codes
+        # Title_EN: title
       } = metadata
 
-      metadata =
-        Legl.Airtable.AirtableTitleField.title_clean(title)
-        |> (&Map.put(metadata, :Title_EN, &1)).()
+      # metadata =
+      #  Legl.Airtable.AirtableTitleField.title_clean(title)
+      #  |> (&Map.put(metadata, :Title_EN, &1)).()
 
       metadata =
         case subject do
@@ -345,6 +355,12 @@ defmodule Legl.Countries.Uk.Metadata do
       {:error, code, error} -> {:error, %{md_error_code: "#{code}: #{error}"}}
       {:ok, :html} -> {:error, %{md_error_code: :html}}
     end
+  end
+
+  defp title(record) do
+    if Map.has_key?(record, "Title_EN"),
+      do: Map.get(record, "Title_EN"),
+      else: Map.get(record, :Title_EN)
   end
 
   def convert_to_i(nil), do: nil

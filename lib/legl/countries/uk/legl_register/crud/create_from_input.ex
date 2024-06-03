@@ -9,6 +9,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
   alias Legl.Countries.Uk.LeglRegister.CRUD.Options
   alias Legl.Countries.Uk.LeglRegister.Helpers.Create, as: Helper
   alias Legl.Countries.Uk.LeglRegister.Crud.Read
+  alias Legl.Countries.Uk.Metadata
 
   @type opts() :: keyword()
 
@@ -50,6 +51,24 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
     end
   end
 
+  def api_create_from_list_of_records(opts \\ [csv?: false, mute?: true]) do
+    opts = Options.api_create_update_list_of_records_options(opts)
+
+    names = Enum.map(opts.names, &Legl.Utility.split_name(&1))
+
+    for {type_code, year, number} <- names do
+      {:ok, record} =
+        Kernel.struct(%LegalRegister{}, %{
+          Number: number,
+          type_code: type_code,
+          Year: String.to_integer(year)
+        })
+        |> Metadata.get_latest_metadata()
+
+      New.api_create(record, opts)
+    end
+  end
+
   @doc """
   Receives a bare Legal Register record as a map
   Builds the Legal Register Record and either PATCHes or POSTs to AT
@@ -72,7 +91,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
         {:ok, record} = New.update_empty_law_fields(record, opts)
 
         post? =
-          if opts.post? == true, do: true, else: ExPrompt.confirm("Post #{record."Title_EN"}?")
+          if opts.post? == true, do: true, else: ExPrompt.confirm("Post #{title(record)}?")
 
         case post? do
           true ->
@@ -90,7 +109,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
         patch? =
           if opts.patch? == true,
             do: true,
-            else: ExPrompt.confirm("Patch #{record."Title_EN"}?")
+            else: ExPrompt.confirm("Patch #{title(record)}?")
 
         case patch? do
           true ->
@@ -102,9 +121,16 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.CreateFromInput do
             :ok
         end
     end
-  rescue
-    e ->
-      IO.puts("ERROR: #{inspect(e)}")
-      :error
+
+    # rescue
+    #  e ->
+    #    IO.puts("ERROR: #{inspect(e)} #{__MODULE__}.#{elem(__ENV__.function, 0)}")
+    #    :error
+  end
+
+  defp title(record) do
+    if Map.has_key?(record, "Title_EN"),
+      do: Map.get(record, "Title_EN"),
+      else: Map.get(record, :Title_EN)
   end
 end

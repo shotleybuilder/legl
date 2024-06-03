@@ -73,6 +73,7 @@ defmodule Legl.Countries.Uk.LeglRegister.CRUD.Options do
     |> LRO.base_table_id()
     |> (&Map.put(&1, :names, ExPrompt.string(~s/Names (as csv)/) |> String.split(","))).()
     |> LRO.workflow()
+    |> LRO.create_workflow()
     |> LRO.patch?()
     |> drop_fields()
     |> IO.inspect(label: "OPTIONS: ", limit: :infinity)

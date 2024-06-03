@@ -251,6 +251,7 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     end
   end
 
+  @spec api_create(list(%LR{}), opts()) :: :ok
   def api_create(records, opts) do
     create(records, opts)
   end
@@ -279,8 +280,17 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   defp create(record, opts) do
     process? =
       case Map.has_key?(opts, :process?) do
-        true -> Map.get(opts, :process?)
-        false -> ExPrompt.confirm(~s/Process #{record."Title_EN"}?/)
+        true ->
+          Map.get(opts, :process?)
+
+        false ->
+          case Map.has_key?(record, :Title_EN) do
+            true ->
+              ExPrompt.confirm(~s/Process #{record."Title_EN"}?/)
+
+            false ->
+              ExPrompt.confirm(~s/Process #{record["Title_EN"]}?/)
+          end
       end
 
     name =
@@ -467,8 +477,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
   def update_empty_law_fields(%LR{} = record, opts)
       when is_struct(record) do
     with(
-      {:ok, %_{Title_EN: title_EN} = record} <- MD.get_latest_metadata(record),
-      true = if(title_EN != nil, do: true, else: "Title_EN not set"),
+      {:ok, %{Title_EN: title_EN} = record} <- MD.get_latest_metadata(record),
+      true = if(title_EN != nil, do: true, else: {:error, "Title_EN not set"}),
       {:ok, record} <- TypeClass.set_type_class(record),
       {:ok, record} <- TypeClass.set_type(record),
       {:ok, record} <- Tags.set_tags(record),
@@ -480,8 +490,8 @@ defmodule Legl.Countries.Uk.LeglRegister.New.New do
     ) do
       {:ok, record}
     else
-      error ->
-        IO.puts("ERROR: #{inspect(error)}\n [#{__MODULE__}.update_empty_law_fields/2]")
+      {:error, error} ->
+        IO.puts("ERROR: #{inspect(error)}\n [#{__MODULE__}.#{elem(__ENV__.function, 0)}]")
         {:error}
     end
   end

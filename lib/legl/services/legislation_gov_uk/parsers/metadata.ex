@@ -11,6 +11,7 @@ defmodule Legl.Services.LegislationGovUk.Parsers.Metadata do
                 md_schedule_paras: nil,
                 md_attachment_paras: nil,
                 md_images: nil,
+                md_made_date: nil,
                 md_enactment_date: nil,
                 md_coming_into_force_date: nil,
                 md_dct_valid_date: nil,

@@ -60,8 +60,8 @@ defmodule UK do
     "LRT: UPDATE": {Update, :api_update, [[csv?: false]]},
     "POST or PATCH Single Law using :type_code, :number, :year":
       {CreateFromInput, :api_create_update_single_record, [[patch?: true, csv?: false]]},
-    "POST or PATCH List of csv 'Name's":
-      {CreateFromInput, :api_create_update_list_of_records, [[csv?: false]]},
+    "LRT: CREATE laws' using a CSV of 'Name's":
+      {CreateFromInput, :api_create_from_list_of_records, [[csv?: false]]},
     "***NEW PUBLISHED LAWS WORKFLOW***": nil,
     "GET Newly Published Laws from gov.uk": {New, :api_get_newly_published_laws},
     "CATEGORISE New Laws from File": {CreateFromFile, :api_read_new_laws_and_categorise},
