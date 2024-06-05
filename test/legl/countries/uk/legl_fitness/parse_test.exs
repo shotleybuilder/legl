@@ -34,21 +34,41 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseTest do
   end
 
   test "api_parse/1 - extends-to" do
-    test = %LeglFitness.Fitness{
-      category: "applies-to",
-      rule:
-        "These Regulations shall apply outside Great Britain as sections 1 to 59 and 80 to 82 of the 1974 Act apply by virtue of the Health and Safety at Work etc. Act 1974 (Application outside Great Britain) Order 2001 M3."
-    }
+    fitnesses =
+      [
+        %{
+          test: %LeglFitness.Fitness{
+            category: "applies-to",
+            rule:
+              "These Regulations shall apply outside Great Britain as sections 1 to 59 and 80 to 82 of the 1974 Act apply by virtue of the Health and Safety at Work etc. Act 1974 (Application outside Great Britain) Order 2001 M3."
+          },
+          result: %LeglFitness.Fitness{
+            category: "extends-to",
+            pattern: ["<place>"],
+            place: ["outside-gb"],
+            scope: "Whole"
+          }
+        },
+        %{
+          test: %LeglFitness.Fitness{
+            category: "applies-to",
+            rule:
+              "Paragraph (6) does not apply to a ship's work equipment provided for use or used in an activity (whether carried on in or outside Great Britain) specified in the 1995 Order."
+          },
+          result: %LeglFitness.Fitness{
+            pattern: ["<place>"],
+            category: "applies-to",
+            place: ["outside-great-britain"]
+          }
+        }
+      ]
 
-    result = %LeglFitness.Fitness{
-      rule: test.rule,
-      category: "extends-to",
-      place: ["outside-gb"],
-      scope: "Whole"
-    }
+    Enum.each(fitnesses, fn %{test: test, result: result} ->
+      response = LeglFitness.Parse.api_parse(test) |> List.first()
 
-    response = LeglFitness.Parse.api_parse(test) |> List.first()
+      result = Map.put(result, :rule, test.rule)
 
-    assert result == response
+      assert result == response
+    end)
   end
 end

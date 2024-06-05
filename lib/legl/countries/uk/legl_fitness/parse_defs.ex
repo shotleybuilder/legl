@@ -4,6 +4,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
   ]
 
   def applies, do: @applies
+  def applies_regex, do: Enum.map(@applies, &Regex.compile!/1)
 
   @disapplies [
     "(?:shall|doe?s?) not (?:apply|extend|impose) (?:to|where|any)"
@@ -11,6 +12,12 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
 
   def disapplies, do: @disapplies
   def disapplies_regex, do: Enum.map(@disapplies, &Regex.compile!/1)
+
+  @qualified_rule [
+    "Any requirement or prohibition imposed"
+  ]
+
+  def qualified_rule, do: @qualified_rule
 
   @person [
             "individual",
@@ -47,7 +54,10 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
                  "exposure to",
                  "engaged in",
                  "control to any extent of",
-                 "supplied by him by way of sale, agreement for sale or hire-purchase agreement"
+                 "supplied by him by way of sale, agreement for sale or hire-purchase agreement",
+                 "provided for use or used",
+                 "used on or off the ship",
+                 "used"
                ]
                |> Enum.join("|")
 
@@ -79,17 +89,22 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
   @process [
              "work in compressed air which is construction work",
              "construction work",
-             # A noun phrase
              "work activity",
+             "activity",
              "work involves any of the relevant operations (?:in dock premises|in a shipyard)",
              "uses?d? at work",
              "work",
              "construction, reconstruction, alteration, repair, maintenance, cleaning, demolition and dismantling of any building or other structure not being a vessel",
+             "construction, reconstruction, finishing, refitting, repair, maintenance, cleaning or breaking up",
              "passage through territorial waters",
              "diving (?:project|operation)",
              "normal ship-?board activities(?: of a ship's crew)?",
              "risk assessment",
-             "fish loading"
+             "fish loading",
+             "loading, unloading, fuelling or provisioning",
+             "(?:specified )?operation",
+             "designs, manufactures, imports or supplies",
+             "designs or manufactures"
            ]
            |> Enum.join("|")
 
@@ -124,7 +139,10 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
            "asbestos",
            "installation",
            "ship's work equipment",
-           "work equipment"
+           "ship",
+           "work equipment",
+           "pressure system, or any article which is intended to be a component part of any pressure system",
+           "pressure system"
          ]
          |> Enum.join("|")
 
@@ -142,7 +160,10 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
               "indoors",
               # work on ships
               "carried out solely by (?:a ship's|the) crew under the direction of the master",
-              "not liable to expose persons at work other than the master and crew to a risk to their safety"
+              "not liable to expose persons at work other than the master and crew to a risk to their safety",
+              # Property of the process
+              "trade, business or other undertaking carried on by him \\(whether for profit or not\\)",
+              "matters within his control"
             ]
             |> Enum.join("|")
 

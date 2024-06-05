@@ -5,7 +5,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseExtendsTo do
   require Logger
   alias Legl.Countries.Uk.LeglFitness.Fitness
 
-  @extends_to ~r/^.*?apply(.*?)outside Great Britain.*$/
+  @extends_to ~r/^.*?apply(.*?) (whether carried on in or)?outside Great Britain.*$/
 
   # These Regulations shall, subject to regulation 2 above, apply to and in relation to the premises and activities outside Great Britain to which sections 1 to 59 and 80 of the 1974 Act apply by virtue of paragraphs (a), (b), (d) and (e) of article 8 of the Health and Safety at Work etc. Act 1974 (Application Outside Great Britain) Order 1995 (fn3) as they apply within Great Britain but they shall not apply in any case where at the relevant time article 4, 5, 6 or 7 of the said Order applies.
 

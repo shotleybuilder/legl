@@ -27,11 +27,13 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
     [:person, :person_verb, :person_ii, :person_ii_verb, :plant],
     # 4
     [:person, :person_verb, :place, :property],
+    [:person, :process, :plant, :property],
     [:person, :person_verb, :plant, :process],
     [:process, :plant, :person, :property],
     [:process, :person_verb, :person, :place],
     [:process, :person_verb, :plant, :person],
     [:person_verb, :plant, :person, :property],
+    [:plant, :person_verb, :person, :process],
     #
     # [:person, :plant, :person_verb, :place],
     # [:person, :plant, :process, :property],
@@ -48,6 +50,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
     [:person, :plant, :process],
     [:person, :place, :property],
     [:plant, :property, :process],
+    [:plant, :person_verb, :process],
     [:plant, :person, :property],
     [:place, :property, :process],
     [:process, :plant, :person],
@@ -64,7 +67,9 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
     # 2
     [:person, :plant],
     [:person, :process],
+    [:plant, :person_verb],
     [:process, :person],
+    [:process, :plant],
     [:place, :process],
     #
     # [:person, :place],
@@ -117,19 +122,62 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
                       end
                     )
 
+  @qualified_applies_regex Enum.map(
+                             @term_map,
+                             fn term ->
+                               term
+                               |> Enum.map(fn x -> ~s/(?<#{x}>#{apply(ParseDefs, x, [])})/ end)
+                               |> Enum.join(".*?")
+                               |> (&(~s/.*?/ <> &1)).()
+                               |> Regex.compile!()
+                             end
+                           )
+
+  @qualified_disapplies_regex Enum.map(
+                                @term_map,
+                                fn term ->
+                                  term
+                                  |> Enum.map(fn x -> ~s/(?<#{x}>#{apply(ParseDefs, x, [])})/ end)
+                                  |> Enum.join(".*?")
+                                  |> (&(~s/.*?/ <> &1)).()
+                                  |> Regex.compile!()
+                                end
+                              )
+
   def regex_printer_applies(index),
     do: List.pop_at(@applies_regex, index) |> elem(0)
 
   def regex_printer_disapplies(index),
     do: List.pop_at(@disapplies_regex, index) |> elem(0)
 
-  # IO.inspect(@applies_to, label: "Applies To REGEX")
+  @doc """
+    Parses the fitness struct based on the category
 
+    Normally only content after the (dis)applies clause is parsed.
+    However, if the rule contains a qualified rule, the entire rule is parsed.
+
+    ## Parameters
+    fitness - The fitness struct
+
+  """
   def api_parse(%{category: category} = fitness) do
-    case category do
-      "applies-to" -> parse(fitness, @applies_regex)
-      "disapplies-to" -> parse(fitness, @disapplies_regex)
+    case qualified_rule?(fitness.rule) do
+      true ->
+        case category do
+          "applies-to" -> parse(fitness, @qualified_applies_regex)
+          "disapplies-to" -> parse(fitness, @qualified_disapplies_regex)
+        end
+
+      false ->
+        case category do
+          "applies-to" -> parse(fitness, @applies_regex)
+          "disapplies-to" -> parse(fitness, @disapplies_regex)
+        end
     end
+  end
+
+  defp qualified_rule?(rule) do
+    Enum.any?(ParseDefs.qualified_rule(), &Regex.match?(~r/#{&1}/, rule))
   end
 
   defp parse(%{rule: rule} = fitness, regexes) do
@@ -147,11 +195,12 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
             |> IO.inspect(label: "Pattern")
 
           result =
-            Map.put(result, "pattern", pattern)
+            result
+            |> Map.put("pattern", pattern)
+            |> format(rule)
 
           acc =
             result
-            |> format(rule)
             |> Fitness.make_fitness_struct(fitness)
             |> (&[&1 | acc]).()
 
@@ -194,10 +243,12 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
           remap_place_match(rule, value)
 
         "process" ->
-          # Separate processes with "and" or ","
+          # Separate processes with ["and", ",", "or"]
           processes =
             String.split(value, " and ")
             |> Enum.map(&String.split(&1, ", "))
+            |> List.flatten()
+            |> Enum.map(&String.split(&1, " or "))
             |> List.flatten()
             |> Enum.map(&format_select_option/1)
             |> Enum.map(&standardise(ParseDefs.standard_processes(), &1))

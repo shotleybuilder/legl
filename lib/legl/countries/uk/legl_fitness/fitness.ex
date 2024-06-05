@@ -14,12 +14,14 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   alias Legl.Countries.Uk.LeglFitness.FitnessProvisions, as: FP
 
   @type legal_fitness :: %__MODULE__{
+          fit: String.t(),
           lrt: list(),
           rule: String.t(),
           pattern: list(),
           heading: list(),
           category: String.t(),
           scope: String.t(),
+          ppp: String.t(),
           provision_number: list(),
           provision: list(),
           person: list(),
@@ -34,11 +36,13 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
   # @derive [Enumerable]
   @derive Jason.Encoder
-  defstruct record_id: nil,
+  defstruct fit: "",
+            record_id: nil,
             lrt: [],
             rule: nil,
-            category: nil,
+            category: "",
             scope: nil,
+            ppp: "",
             # Multi Selects are array values
             pattern: [],
             heading: [],
@@ -119,9 +123,19 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
           case :fit not in fitness_type do
             true ->
               case F.Parse.api_parse(fitness) do
-                [] -> {acc, fit?, disfit?, ext?}
-                [%{unmatched_fitness: _text}] = fit -> {acc ++ fit, fit?, disfit?, ext?}
-                fit -> {acc ++ fit, true, disfit?, ext?}
+                [] ->
+                  {acc, fit?, disfit?, ext?}
+
+                [%{unmatched_fitness: _text}] = fit ->
+                  {acc ++ fit, fit?, disfit?, ext?}
+
+                fit ->
+                  fit =
+                    fit
+                    |> fit_field()
+                    |> ppp_field()
+
+                  {acc ++ fit, true, disfit?, ext?}
               end
 
             false ->
@@ -132,9 +146,19 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
           case :disfit not in fitness_type do
             true ->
               case F.Parse.api_parse(fitness) do
-                [] -> {acc, fit?, disfit?, ext?}
-                [%{unmatched_fitness: _text}] = disfit -> {acc ++ disfit, fit?, disfit?, ext?}
-                disfit -> {acc ++ disfit, fit?, true, ext?}
+                [] ->
+                  {acc, fit?, disfit?, ext?}
+
+                [%{unmatched_fitness: _text}] = disfit ->
+                  {acc ++ disfit, fit?, disfit?, ext?}
+
+                disfit ->
+                  disfit =
+                    disfit
+                    |> fit_field()
+                    |> ppp_field()
+
+                  {acc ++ disfit, fit?, true, ext?}
               end
 
             false ->
@@ -202,6 +226,9 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   """
   def make_fitness_struct(fitness, fitness_struct \\ %Fitness{}) do
     Enum.reduce(fitness, fitness_struct, fn
+      {"fit", fit}, acc ->
+        Map.put(acc, :fit, fit)
+
       {"record_id", record_id}, acc ->
         Map.put(acc, :record_id, record_id)
 
@@ -216,6 +243,9 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
       {"heading", heading}, acc ->
         Map.put(acc, :heading, heading)
+
+      {"ppp", ppp}, acc ->
+        Map.put(acc, :ppp, ppp)
 
       # Single Selects
       {"category", category}, acc ->
@@ -292,7 +322,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
               # |> IO.inspect(label: "clean_rule_text")
               |> (&Map.put(%{provision: []}, :rule, &1)).()
               |> separate_rules()
-              |> clean_rule_children()
+              |> clean_rules()
               # |> IO.inspect(label: "fitnesses_children")
               |> FP.api_get_list_of_article_numbers()
               # |> IO.inspect(label: "fitnesses_children_II")
@@ -304,7 +334,8 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
               Enum.map(fitnesses_children, fn fitness_child ->
                 fitness_template
                 |> Map.merge(fitness_child)
-                |> fitness_typer()
+                |> fitness_typer_disapplies_to()
+                |> fitness_typer_applies_to()
                 |> scope_typer()
               end)
 
@@ -325,24 +356,23 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     |> (&Regex.replace(~r/[ ]?📌/m, &1, "\n")).()
     |> (&Regex.replace(~r/F\d+[ ]/, &1, "")).()
     |> (&Regex.replace(~r/(?:\[| ?\] ?)/, &1, "")).()
+    # Footnote marks
+    |> (&Regex.replace(~r/\(fn\d+\) ?/, &1, "")).()
+    # Weird punc marks
+    |> (&Regex.replace(~r/–/, &1, "—")).()
     |> (&Regex.replace(~r/’/, &1, "'")).()
     |> String.trim()
   end
 
-  def clean_rule_children(fitnesses) do
-    Enum.map(fitnesses, fn
-      %Fitness{rule: rule} = fitness ->
-        Map.put(fitness, :rule, clean_rule(rule))
+  defp clean_rules(fitnesses) when is_list(fitnesses),
+    do: Enum.map(fitnesses, &clean_rules/1)
 
-      fitness ->
-        fitness
-    end)
-  end
-
-  defp clean_rule(text) do
-    text
+  defp clean_rules(%{rule: rule} = fitness) do
+    rule
     |> end_period()
     |> (&Regex.replace(~r/_but_/, &1, "but")).()
+    # |> such_clause()
+    |> (&Map.put(fitness, :rule, &1)).()
   end
 
   def separate_rules(fitnesses) when is_list(fitnesses) do
@@ -354,7 +384,8 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   def separate_rules(%{provision: _provision, rule: _rule} = fitness) do
     # IO.inspect(fitness, label: "fitness")
 
-    with [_] <- but(fitness),
+    with [fitness] <- such(fitness),
+         [_] <- but(fitness),
          [_] <- split(fitness),
          [_] <- save_that(fitness),
          [fitness] <- as_respects_any(fitness),
@@ -500,7 +531,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   def save_that(%{rule: rule} = fitness) do
     case String.match?(
            rule,
-           ~r/, (?:save|except) that .*? to (?:any )?such (?:a )?/
+           ~r/(?:save|except) that/
          ) do
       true ->
         save_that_clause(fitness)
@@ -511,26 +542,51 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   end
 
   defp save_that_clause(%{rule: rule} = fitness) do
-    subject =
-      Regex.run(~r/apply?i?e?s? to (?:any )?such (?:a )?(.*?)[ \.]/, rule,
-        capture: :all_but_first
-      )
+    case Regex.named_captures(
+           ~r/(?<provision>.*?) (?:shall|does) not apply to a (?<subject>.*?),? (?:save|except) that/,
+           rule,
+           capture: :all_names
+         ) do
+      %{"provision" => provision, "subject" => subject} ->
+        such_a_subject =
+          Regex.run(~r/apply?i?e?s? to (?:any )?such (?:a )?(.*?)[ \.]/, rule,
+            capture: :all_but_first
+          )
 
-    # IO.inspect(subject, label: "subject")
+        [defn] =
+          Regex.run(~r/#{such_a_subject} (.*)/, subject, capture: :all_but_first)
 
-    [defn] = Regex.run(~r/#{subject} (.*?), (?:save|except) that /, rule, capture: :all_but_first)
-    # IO.inspect(defn, label: "defn")
-    # Surround any 'but' in the definition with underscores to avoid it being processed as a 'but' clause
-    defn = Regex.replace(~r/but/, defn, "_but_")
+        # Surround any 'but' in the definition with underscores to avoid it being processed as a 'but' clause
+        defn = Regex.replace(~r/but/, defn, "_but_")
 
-    [h, t] = String.split(rule, ~r/,? (?:save|except) that /, parts: 2)
-    t = Regex.replace(~r/to such a #{subject}/, t, "to a #{subject} #{defn}")
+        IO.puts(
+          ~s/\nrule: #{rule}\nprovision: #{provision}\nsubject: #{subject}\nsuch_a_subject: #{such_a_subject}\ndefn: #{defn}/
+        )
 
-    [
-      Map.put(fitness, :rule, h) |> parse_regulation_references(),
-      Map.put(fitness, :rule, t) |> parse_regulation_references()
-    ]
-    |> Enum.map(&initial_capitalisation(&1))
+        # Split on the 'save that' term.  The head is the main rule, the tail is the exception
+        [h, t] = String.split(rule, ~r/,? (?:save|except) that /, parts: 2)
+
+        # Use of 'it' in the exception rule indicates a provision
+        t =
+          case Regex.match?(~r/apply to it/, t) do
+            true ->
+              Regex.replace(~r/it/, t, "#{provision}", global: false)
+
+            false ->
+              # Rebuild the exception rule
+              Regex.replace(~r/to such a #{such_a_subject}/, t, "to a #{such_a_subject} #{defn}")
+          end
+
+        [
+          Map.put(fitness, :rule, h),
+          Map.put(fitness, :rule, t)
+        ]
+        |> Enum.map(&initial_capitalisation(&1))
+
+      _ ->
+        # Logger.error("No 'save that' clause found in rule: #{rule}")
+        [fitness]
+    end
   end
 
   def as_respects_any(%{rule: rule} = fitness) do
@@ -717,52 +773,120 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     Map.put(fitness, :rule, rule <> " " <> tail_qualifier)
   end
 
+  # End rule with a period
   defp end_period(fitnesses) when is_list(fitnesses) do
     Enum.map(fitnesses, &end_period(&1))
   end
 
-  defp end_period(fitness) do
-    # End rule with a period
-    fitness
-    |> Map.update!(:rule, &String.trim_trailing(&1, "."))
-    |> Map.update!(:rule, &(&1 <> "."))
+  defp end_period(fitness) when is_map(fitness) do
+    Map.update!(fitness, :rule, &end_period/1)
   end
 
-  defp fitness_typer(%{category: "extends-to"} = f), do: f
+  defp end_period(rule) when is_binary(rule) do
+    rule
+    |> String.trim_trailing(".")
+    |> (&(&1 <> ".")).()
+  end
 
-  defp fitness_typer(%{rule: text} = fitness) do
+  def such(%{rule: rule} = fitness) do
+    case Regex.match?(~r/(?:apply|extend only) to such/, rule) do
+      true ->
+        such_clause(rule)
+        |> (&Map.put(fitness, :rule, &1)).()
+        |> List.wrap()
+
+      false ->
+        [fitness]
+    end
+  end
+
+  @doc """
+    Function to rewrites a rule to replace a 'such' clause
+
+    #Example
+    "in respect of work equipment shall apply to such equipment" ->
+    "in respect of work equipment shall apply to work equipment"
+  """
+  def such_clause(rule) do
+    # Find the abbreviated subjects
+
+    case Regex.named_captures(
+           ~r/(?:apply|extend only) to such (?:a )?(?<subject1>.*?) (or (?<subject2>.*?) )?/,
+           rule
+         ) do
+      %{"subject1" => s1, "subject2" => s2} ->
+        subject = if s2 != "", do: "#{s1} or #{s2}", else: s1
+        regex = ~r/(?:any|in respect of)(.*?#{s1}.*?),? shall (?:apply|extend only)/
+
+        clause =
+          Regex.run(regex, rule, capture: :all_but_first)
+          |> List.first()
+          |> String.trim()
+
+        # Logger.info(~s/\nSUCH CLAUSE\nrule: #{rule}\nsubject: #{subject}\nclause: #{clause}/)
+
+        Regex.replace(
+          ~r/such (a )?#{subject}/m,
+          rule,
+          "\\1#{clause}"
+        )
+
+      nil ->
+        Logger.error("No 'such' clause found in rule: #{rule}")
+        rule
+    end
+  end
+
+  defp fitness_typer_applies_to(%{rule: text, category: ""} = fitness) do
     # Sets the fitness type based on the RULE text
-    Enum.reduce_while(Legl.Countries.Uk.LeglFitness.ParseDefs.disapplies_regex(), [], fn regex,
-                                                                                         acc ->
+    Enum.reduce_while(Legl.Countries.Uk.LeglFitness.ParseDefs.applies_regex(), fitness, fn regex,
+                                                                                           acc ->
       case Regex.match?(regex, text) do
         true ->
-          {:halt, [Map.put(fitness, :category, "disapplies-to") | acc]}
+          {:halt, Map.put(acc, :category, "applies-to")}
 
         false ->
           {:cont, acc}
       end
     end)
-    |> case do
-      [] ->
-        fitness
-        |> Map.put(:category, "applies-to")
-
-      [h | _] ->
-        h
-    end
   end
+
+  defp fitness_typer_applies_to(f), do: f
+
+  defp fitness_typer_disapplies_to(%{rule: text, category: ""} = fitness) do
+    # Sets the fitness type based on the RULE text
+    Enum.reduce_while(
+      Legl.Countries.Uk.LeglFitness.ParseDefs.disapplies_regex(),
+      fitness,
+      fn regex, acc ->
+        case Regex.match?(regex, text) do
+          true ->
+            {:halt, Map.put(acc, :category, "disapplies-to")}
+
+          false ->
+            {:cont, acc}
+        end
+      end
+    )
+  end
+
+  defp fitness_typer_disapplies_to(f), do: f
+
+  defp fitness_typer(%{category: "extends-to"} = f), do: f
 
   defp fitness_typer(text) do
     # Sets the fitness type based on the HEADING text
+    # A course first filter that picks rules occuring in 3 different sections:
+    # Extension, Disapplication and Duties Under/Application
     cond do
       Regex.match?(~r/Extension/, text) ->
         %Fitness{category: "extends-to", heading: transform_heading(text)}
 
       Regex.match?(~r/[Dd]isapplication/, text) ->
-        %Fitness{category: "disapplies-to", heading: transform_heading(text)}
+        %Fitness{heading: transform_heading(text)}
 
       Regex.match?(~r/Duties [Uu]nder|[Aa]pplication/, text) ->
-        %Fitness{category: "applies-to", heading: transform_heading(text)}
+        %Fitness{heading: transform_heading(text)}
 
       true ->
         false
@@ -812,4 +936,45 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
   defp set_type("Act"), do: :act
   defp set_type(_), do: :regulation
+
+  defp fit_field(fit) when is_list(fit) do
+    Enum.map(fit, &fit_field/1)
+  end
+
+  defp fit_field(%{pattern: pattern} = fit) do
+    # Builder for the 'fit' field in AT
+    Enum.reduce(pattern, [], fn p, acc ->
+      Regex.run(~r/<(.+)>/, p, capture: :all_but_first)
+      |> List.first()
+      |> String.to_atom()
+      |> (&Map.get(fit, &1)).()
+      |> case do
+        x when is_list(x) -> Enum.join(x, ":") |> (&[&1 | acc]).()
+        x -> [x | acc]
+      end
+    end)
+    |> Enum.reverse()
+    |> Enum.join("|")
+    |> (&Kernel.<>(~s/#{fit.category}|/, &1)).()
+    |> (&Map.put(fit, :fit, &1)).()
+  end
+
+  defp ppp_field(fit) when is_list(fit) do
+    Enum.map(fit, &ppp_field/1)
+  end
+
+  defp ppp_field(%{pattern: pattern} = fit) do
+    # Builder for the 'ppp' field in AT
+    Enum.reduce(pattern, [], fn p, acc ->
+      Regex.run(~r/<(.+)>/, p, capture: :all_but_first)
+      |> List.first()
+      |> String.to_atom()
+      |> (&Map.get(fit, &1)).()
+      |> (&[~s/#{p}: #{inspect(&1)}/ | acc]).()
+    end)
+    |> Enum.reverse()
+    |> Enum.join("\n")
+    |> (&Kernel.<>(~s/category: #{fit.category}\n/, &1)).()
+    |> (&Map.put(fit, :ppp, &1)).()
+  end
 end
