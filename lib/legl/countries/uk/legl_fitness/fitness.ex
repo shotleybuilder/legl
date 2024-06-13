@@ -186,9 +186,9 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     # IO.inspect(lft_records, label: "lft_records")
 
     extends_to? =
-      Enum.reduce(lft_records, false, fn
-        %{category: "extends-to", place: ["outside-gb"]}, _acc -> true
-        _, acc -> acc
+      Enum.reduce_while(lft_records, false, fn
+        %Fitness{category: "extends-to", place: ["outside-gb"]}, _acc -> {:halt, true}
+        _, acc -> {:cont, acc}
       end)
 
     if extends_to? == false,
