@@ -64,6 +64,16 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     fitness_type: []
   }
 
+  def new(), do: %__MODULE__{}
+
+  @spec lft_fields() :: [String.t()]
+  def lft_fields(),
+    do:
+      Fitness.new()
+      |> Map.from_struct()
+      |> Map.drop([:record_id, :rule])
+      |> Enum.map(fn {k, _v} -> Atom.to_string(k) end)
+
   def api_fitness(opts \\ [])
 
   def api_fitness([from_file: true] = opts) do
@@ -139,14 +149,14 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
           [%{unmatched_fitness: _text}] = fit ->
             acc ++ fit
 
-          fit ->
+          [fit] ->
             fit =
               fit
               |> fit_field()
               |> ppp_field()
               |> rule_scope_field()
 
-            acc ++ fit
+            acc ++ [fit]
         end
 
       _, acc ->
@@ -168,7 +178,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   end
 
   @spec make_fitness_structs([Rule.t()]) :: [legal_fitness]
-  defp make_fitness_structs(rules) do
+  def make_fitness_structs(rules) do
     rules
     |> Enum.map(&fitness_typer_disapplies_to/1)
     |> Enum.map(&fitness_typer_applies_to/1)

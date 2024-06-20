@@ -16,8 +16,8 @@ defmodule Legl.Countries.Uk.LeglFitness.GetFitness do
     base_id: @base_id,
     table_id: @table_id,
     query_name: :formula,
-    fields:
-      ~w[lrt fit_id rule heading category scope person person_verb person_ii person_ii_verb process place plant property],
+    fields: Fitness.lft_fields(),
+    # ~w[lrt fit_id rule heading category scope person person_verb person_ii person_ii_verb process place plant property],
     view: ""
   }
   @doc """

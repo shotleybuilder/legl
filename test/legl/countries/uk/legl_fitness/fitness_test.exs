@@ -16,10 +16,12 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
     result =
       records
       |> (&RT.transform_rules(&1)).()
+      |> (&Fitness.make_fitness_structs(&1)).()
       |> (&Fitness.process_fitnesses(&1)).()
 
     Logger.info(~s/Response: #{inspect(result)}/)
     assert is_list(result)
+    assert Enum.count(result) > 0
   end
 
   test "transform_rules/1" do
