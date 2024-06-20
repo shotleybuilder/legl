@@ -56,7 +56,6 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
                  "control to any extent of",
                  "supplied by him by way of sale, agreement for sale or hire-purchase agreement",
                  "provided for use or used",
-                 "used on or off the ship",
                  "used"
                ]
                |> Enum.join("|")
@@ -92,6 +91,7 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
              "work activity",
              "activity",
              "work involves any of the relevant operations (?:in dock premises|in a shipyard)",
+             "used on or off the ship",
              "uses?d? at work",
              "work",
              "construction, reconstruction, alteration, repair, maintenance, cleaning, demolition and dismantling of any building or other structure not being a vessel",

@@ -3,54 +3,73 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseExtendsTo do
   Parses the extends_to field in the Legal Fitness Table (LFT)
   """
   require Logger
-  alias Legl.Countries.Uk.LeglFitness.Fitness
+  alias Legl.Countries.Uk.LeglFitness
 
-  @extends_to ~r/^.*?apply(.*?) (whether carried on in or)?outside Great Britain.*$/
+  @exclusions ~r/whether carried on in or outside Great Britain/
 
-  # These Regulations shall, subject to regulation 2 above, apply to and in relation to the premises and activities outside Great Britain to which sections 1 to 59 and 80 of the 1974 Act apply by virtue of paragraphs (a), (b), (d) and (e) of article 8 of the Health and Safety at Work etc. Act 1974 (Application Outside Great Britain) Order 1995 (fn3) as they apply within Great Britain but they shall not apply in any case where at the relevant time article 4, 5, 6 or 7 of the said Order applies.
+  @spec parse_extends_to(map()) :: map()
+  def parse_extends_to(%{place: place} = fitness) when place in ["Great Britain"] do
+    case Regex.match?(@exclusions, fitness.rule.rule) do
+      true ->
+        fitness
 
-  def parse_extends_to(text) do
-    case extends_to(text) do
-      {:error, error} -> {:error, error}
-      fitness -> Fitness.make_fitness_struct(fitness)
+      false ->
+        parse(fitness)
     end
   end
 
-  def extends_to(text) do
-    case Regex.run(@extends_to, text) do
-      [_, activity] ->
+  def parse_extends_to(fitness), do: fitness
+
+  defp parse(fitness) do
+    case Regex.named_captures(
+           ~r/^.*?apply(?<activity>.*?)? outside Great Britain.*$/,
+           fitness.rule.rule
+         ) do
+      %{"activity" => activity} ->
+        rule = Map.replace!(fitness.rule, :scope, "Whole")
+
         %{
-          "rule" => text,
-          "category" => "extends-to",
-          "scope" => "Whole",
-          "place" => ["outside-gb"]
+          category: "extends-to",
+          place: ["outside-great-britain"],
+          rule: rule
         }
-        |> make_lft_process(String.trim(activity))
+        |> Map.merge(make_lft_process(String.trim(activity)))
+        |> (&Map.merge(fitness, &1)).()
 
       nil ->
-        Logger.info("No match for extends_to in: #{text}")
-        {:error, "No match for extends_to in: #{text}"}
+        Logger.info("No match for extends_to in: #{fitness.rule}")
+        fitness
     end
   end
 
   def does_not_extend_to() do
-    %Fitness{
-      rule: "Does not extend outside GB",
+    %LeglFitness.Fitness{
+      fit_id: "does-not-extend-to|outside-gb",
+      lfrt: "Does not extend outside GB",
+      rule: %LeglFitness.Rule{
+        rule: "Does not extend outside Great Britain",
+        scope: "Whole"
+      },
       category: "does-not-extend-to",
-      scope: "Whole",
-      place: ["outside-gb"]
+      place: ["outside-great-britain"],
+      pattern: ["<place>"]
     }
   end
 
-  defp make_lft_process(fitness, "to and in relation to any activity"),
-    do: Map.put(fitness, "process", ["activity"])
+  defp make_lft_process(""), do: %{pattern: ["<place>"]}
 
-  defp make_lft_process(fitness, "to and in relation to the premises and activities"),
-    do: Map.put(fitness, "process", ["premises-activity"])
+  defp make_lft_process("to and in relation to any activity"),
+    do: %{process: ["activity"], pattern: ["<process>", "<place>"]}
 
-  defp make_lft_process(fitness, "to any work"), do: Map.put(fitness, "process", ["work"])
+  defp make_lft_process("to and in relation to the premises and activities"),
+    do: %{
+      process: ["premises-activity"],
+      pattern: ["<process>", "<place>"]
+    }
 
-  defp make_lft_process(fitness, ""), do: fitness
+  defp make_lft_process("to any work"),
+    do: %{process: ["work"], pattern: ["<process>", "<place>"]}
 
-  defp make_lft_process(fitness, _), do: Map.put(fitness, "process", ["other"])
+  defp make_lft_process(_),
+    do: %{process: ["other"], pattern: ["<process>", "<place>"]}
 end

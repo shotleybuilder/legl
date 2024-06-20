@@ -1,7 +1,12 @@
 defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
+  @moduledoc false
   # mix test test/legl/countries/uk/legl_fitness/fitness_test.exs:8
+  require Logger
   use ExUnit.Case, async: true
   alias Legl.Countries.Uk.LeglFitness.Fitness
+  alias Legl.Countries.Uk.LeglFitness.RuleTransform, as: RT
+  alias Legl.Countries.Uk.LeglFitness.RuleSeparate, as: RS
+  alias Legl.Countries.Uk.LeglFitness.RuleSplit
   alias Legl.Countries.Uk.Support.LeglFitnessSeparateRulesTest
   alias Legl.Countries.Uk.Support.LeglFitnessTransformTest
 
@@ -10,17 +15,17 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
 
     result =
       records
-      |> (&Fitness.transform_articles(&1)).()
-      |> (&Fitness.process_fitnesses(&1, [])).()
+      |> (&RT.transform_rules(&1)).()
+      |> (&Fitness.process_fitnesses(&1)).()
 
-    IO.inspect(result)
+    Logger.info(~s/Response: #{inspect(result)}/)
     assert is_list(result)
   end
 
-  test "transform_articles/1" do
+  test "transform_rules/1" do
     records = Legl.Utility.read_json_records(Path.absname("lib/legl/data_files/json/parsed.json"))
-    result = Fitness.transform_articles(records)
-    IO.inspect(result)
+    result = RT.transform_rules(records)
+    Logger.info(~s/Response: #{inspect(result)}/)
     assert is_list(result)
   end
 
@@ -35,8 +40,8 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
 
   test "clean_rule_text/1" do
     Enum.each(@dirty_rules, fn %{text: text, result: test_result} ->
-      result = Fitness.clean_rule_text(text)
-      IO.inspect(result)
+      result = RT.clean_rule_text(text)
+      Logger.info(~s/Response: #{result}/)
       assert(result == test_result)
     end)
   end
@@ -46,8 +51,8 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
       IO.puts("RULE: #{rule}")
 
       response =
-        Fitness.separate_rules(%{provision: [], rule: rule})
-        |> Enum.map(&Fitness.separate_rules(&1))
+        RS.separate_rules(%{provision: [], rule: rule})
+        |> Enum.map(&RS.separate_rules(&1))
         |> List.flatten()
 
       assert is_list(response)
@@ -72,7 +77,7 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
           end
       end
 
-      IO.inspect(response, label: "RESULT")
+      Logger.info(~s/Response: #{response}/)
     end)
   end
 
@@ -80,8 +85,8 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
     records = LeglFitnessTransformTest.such()
 
     Enum.each(records, fn %{rule: rule, result: test_result} ->
-      response = Fitness.such_clause(rule)
-      IO.inspect(response)
+      response = RS.such_clause(rule)
+      Logger.info(~s/Response: #{response}/)
       assert(response == test_result)
     end)
   end
@@ -102,8 +107,8 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
 
   test "but/1" do
     Enum.each(@but, fn %{rule: rule, result: test_result} ->
-      result = Fitness.but(%{rule: rule})
-      IO.inspect(result)
+      result = RS.but(%{rule: rule})
+      Logger.info(~s/Response: #{result}/)
       assert(result == test_result)
     end)
   end
@@ -127,8 +132,8 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
   ]
   test "split/1" do
     Enum.each(@split, fn %{rule: rule, result: test_result} ->
-      result = Fitness.split(%{rule: Fitness.clean_rule_text(rule), provision: []})
-      IO.inspect(result, label: "RESULT")
+      result = RuleSplit.split(%{rule: RT.clean_rule_text(rule), provision: []})
+      Logger.info(~s/Response: #{result}/)
       assert(result == test_result)
     end)
   end
@@ -166,8 +171,8 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
 
   test "save_that/1" do
     Enum.each(@save_that, fn %{rule: rule, result: test_result} ->
-      result = Fitness.save_that(%{rule: rule})
-      IO.inspect(result)
+      result = RS.save_that(%{rule: rule})
+      Logger.info(~s/Response: #{result}/)
       assert(result == test_result)
     end)
   end
@@ -185,99 +190,9 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
 
   test "unless/1" do
     Enum.each(@unless, fn %{test: rule, result: test} ->
-      result = Fitness.unless([rule])
-      IO.inspect(result)
+      result = RuleSplit.unless_([rule])
+      Logger.info(~s/Response: #{result}/)
       assert(result == test)
-    end)
-  end
-
-  @rules [
-    %{
-      test:
-        "Where a duty is placed by these Regulations on an employer in respect of employees of that employer, the employer is, so far as is reasonably practicable, under a like duty in respect of any other person, whether at work or not, who may be affected by the work activity carried out by that employer except that the duties of the employer.",
-      result: %{
-        rule:
-          "Where a duty is placed by these Regulations on an employer in respect of employees of that employer, the employer is, so far as is reasonably practicable, under a like duty in respect of any other person, whether at work or not, who may be affected by the work activity carried out by that employer except that the duties of the employer.",
-        provision: []
-      }
-    },
-    #
-    %{
-      test:
-        "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply",
-      result: %{
-        scope: "Part",
-        rule:
-          "Notification of work with asbestos, designated areas, health records, medical surveillance do not apply",
-        provision: [
-          "notification-of-work-with-asbestos",
-          "designated-areas",
-          "health-records",
-          "medical-surveillance"
-        ]
-      }
-    },
-    #
-    %{
-      test:
-        "Regulation 17 (cleanliness of premises and plant), to the extent that it requires an employer",
-      result: %{
-        scope: "Part",
-        rule:
-          "Cleanliness of premises, cleanliness of plant, to the extent that it requires an employer",
-        provision: ["cleanliness-of-premises", "cleanliness-of-plant"]
-      }
-    },
-    #
-    %{
-      test:
-        "Notification of work with asbestos, designated areas, health records, medical surveillance do not apply where the work involves",
-      result: %{
-        rule:
-          "Notification of work with asbestos, designated areas, health records, medical surveillance do not apply where the work involves",
-        provision: []
-      }
-    },
-    #
-    %{
-      test:
-        "under regulations 9, 11(1) and (2) and 12 (which relate respectively to monitoring, information and training and dealing with accidents) shall not extend to persons who are not his employees, unless those persons are on the premises where the work is being carried out.",
-      result: %{
-        scope: "Part",
-        rule:
-          "Monitoring, information, training, dealing with accidents shall not extend to persons who are not his employees, unless those persons are on the premises where the work is being carried out.",
-        provision: ["monitoring", "information", "training", "dealing-with-accidents"]
-      }
-    },
-    #
-    %{
-      test:
-        "Regulation 12 does not apply to a workplace located above ground at a mine that is a tip (within the meaning of regulation 2(1) of the Mines Regulations 2014).",
-      result: %{
-        scope: "Part",
-        rule:
-          "Does not apply to a workplace located above ground at a mine that is a tip (within the meaning of regulation 2(1) of the Mines Regulations 2014).",
-        provision: []
-      }
-    },
-    %{
-      test:
-        "These Regulations apply to every workplace but shall not apply to a workplace located below ground at a mine",
-      result: %{
-        rule: "Shall not apply to a workplace located below ground at a mine",
-        provision: []
-      }
-    }
-  ]
-
-  test "parse_regulation_references" do
-    Enum.each(@rules, fn %{test: rule, result: test_result} ->
-      param = %{provision: [], rule: rule}
-      result = Fitness.parse_regulation_references(param)
-      IO.puts("RULE: #{rule}")
-      IO.inspect(result)
-      assert is_map(result)
-      assert result == test_result
     end)
   end
 
@@ -291,7 +206,7 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
   test "split_and/1" do
     Enum.each(@ande, fn ande ->
       result = Fitness.split_and(ande)
-      IO.inspect(result)
+      Logger.info(~s/Response: #{result}/)
       assert is_list(result)
     end)
   end

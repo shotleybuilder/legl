@@ -1,11 +1,12 @@
-defmodule Legl.Countries.Uk.LeglFitness.FitnessProvisions do
+defmodule Legl.Countries.Uk.LeglFitness.RuleProvisions do
   @moduledoc """
 
   Functions related to transforming the provision_number and provision fields in
   the Legal Fitness Table
 
   """
-  alias Legl.Countries.Uk.LeglFitness.Fitness, as: F
+  alias Legl.Countries.Uk.LeglFitness.Rule
+  alias Legl.Countries.Uk.LeglFitness.RuleTransform, as: RT
 
   @doc """
   Get the list of article numbers from the rule
@@ -15,17 +16,23 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessProvisions do
 
   ## Examples
 
-      iex> FP.get_list_of_article_numbers("Regulation 20 applies")
+      iex> alias Legl.Countries.Uk.LeglFitness.RuleProvisions, as: RP
+      iex> RP.get_list_of_article_numbers("Regulation 20 applies")
       ["20"]
 
-      iex> FP.get_list_of_article_numbers("Regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to a")
+      iex> alias Legl.Countries.Uk.LeglFitness.RuleProvisions, as: RP
+      iex> RP.get_list_of_article_numbers("Regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to a")
       ["7(1A)", "12", "14", "15", "16", "18", "19", "26(1)"]
   """
-  def api_get_list_of_article_numbers(fitnesses) do
-    Enum.map(fitnesses, fn %{rule: rule} = fitness ->
-      case get_list_of_article_numbers(rule) do
-        [] -> fitness
-        list -> Map.put(fitness, :provision_number, list)
+  @spec get_list_of_article_numbers(list(Rule.t())) :: list(Rule.t())
+  def api_get_list_of_article_numbers(rules) when is_list(rules) do
+    Enum.map(rules, fn %{rule: text} = rule ->
+      case get_list_of_article_numbers(text) do
+        [] ->
+          rule
+
+        list ->
+          Map.replace!(rule, :provision_number, list)
       end
     end)
   end
@@ -95,38 +102,43 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessProvisions do
     end
   end
 
-  def api_get_provision(fitnesses, heading_index) do
-    # IO.inspect(fitnesses, label: "fitnesses")
+  def api_get_provision(rules, heading_index) do
+    # IO.inspect(rules, label: "rules")
 
-    Enum.map(fitnesses, fn
-      %{provision_number: []} = fitness ->
-        fitness
+    Enum.map(rules, fn
+      %{provision_number: []} = rule ->
+        rule
 
-      %{provision_number: provision_number} = fitness ->
-        Enum.reduce(provision_number, fitness, fn number, acc ->
-          number =
-            case String.split(number, "(") do
-              [number] ->
-                number
+      %{provision_number: _provision_number} = rule ->
+        find_provisions(rule, heading_index)
 
-              [number, _] ->
-                number
-            end
-
-          case Map.get(heading_index, number) do
-            nil ->
-              acc
-
-            text ->
-              [text | acc.provision]
-              |> (&Map.put(acc, :provision, &1)).()
-          end
-        end)
-        |> (&Map.put(&1, :provision, Enum.uniq(&1.provision) |> Enum.reverse())).()
-
-      fitness ->
-        fitness
+      rule ->
+        rule
     end)
+  end
+
+  defp find_provisions(%{provision_number: provision_number} = rule, heading_index) do
+    Enum.reduce(provision_number, rule, fn number, acc ->
+      case Map.get(heading_index, extract_number(number)) do
+        nil ->
+          acc
+
+        text ->
+          Map.replace!(acc, :provision, [text | acc.provision])
+      end
+    end)
+    |> (&Map.replace!(&1, :provision, Enum.uniq(&1.provision) |> Enum.reverse())).()
+  end
+
+  @spec extract_number(String.t()) :: String.t()
+  defp extract_number(number) do
+    case String.split(number, "(") do
+      [number] ->
+        number
+
+      [number, _] ->
+        number
+    end
   end
 
   def build_heading_map(records) do
@@ -143,7 +155,7 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessProvisions do
   end
 
   defp transform_heading_text(text) do
-    F.transform_heading(text)
+    RT.transform_heading(text)
     |> List.first()
     |> (&Regex.replace(~r/[[:punct:]]/, &1, "")).()
     |> String.replace(" ", "-")

@@ -45,7 +45,8 @@ defmodule Legl.MixProject do
       {:natural_order, "~> 0.2.0"},
       {:csv, "~> 3.0"},
       {:req, "~> 0.4.0"},
-      {:mox, "~> 1.0", only: :test}
+      {:mox, "~> 1.0", only: :test},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]

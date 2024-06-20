@@ -10,8 +10,8 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveFitness do
   alias Legl.Services.Airtable.Patch
   alias Legl.Services.Airtable.Post
 
-  @base_id "appq5OQW9bTHC1zO5"
-  @table_id "tblXSfC7uvQz5p4r4"
+  @base_id "app5uSrszIH9LcZKI"
+  @table_id "tbltS1YVqdHGecRvp"
 
   def save_fitness_record(lrt_record_id, %Fitness{} = fitness) do
     # code to find existing fitness_record
@@ -40,26 +40,20 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveFitness do
 
   defp match_fitness_record(_, []), do: {nil, 0}
 
-  defp match_fitness_record(%Fitness{} = fitness, fitness_records) do
-    Enum.reduce_while(fitness_records, {nil, 0}, fn
-      %Fitness{rule: rule} = fitness_record, {best_matching_lft_record, match_value} ->
-        match = String.jaro_distance(rule, Map.get(fitness, :rule))
+  defp match_fitness_record(%Fitness{} = fitness, lft_records) do
+    Enum.reduce_while(lft_records, {nil, 0}, fn
+      %Fitness{fit_id: fit_id} = lft_record, {best_matching_lft_record, match_value} ->
+        match = String.jaro_distance(fit_id, Map.get(fitness, :fit_id))
 
         cond do
-          match == 1.0 -> {:halt, {fitness_record, match}}
-          match > match_value -> {:cont, {fitness_record, match}}
+          match == 1.0 -> {:halt, {lft_record, match}}
+          match > match_value -> {:cont, {lft_record, match}}
           true -> {:cont, {best_matching_lft_record, match_value}}
         end
-    end)
-  end
 
-  defp patch_fitness_record(%Fitness{lrt: lrt} = lft_record, lrt_record_id) do
-    # code to patch fitness record
-    [lrt_record_id | lrt]
-    |> Enum.uniq()
-    |> (&Map.put(lft_record, :lrt, &1)).()
-    |> Map.from_struct()
-    |> (&Patch.patch(@base_id, @table_id, &1)).()
+      %Fitness{fit_id: nil}, acc ->
+        {:cont, acc}
+    end)
   end
 
   defp fill_empty_values(%Fitness{} = lft, %Fitness{} = fitness) do
@@ -81,6 +75,15 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveFitness do
           lft
       end
     end)
+  end
+
+  defp patch_fitness_record(%Fitness{lrt: lrt} = lft_record, lrt_record_id) do
+    # code to patch fitness record
+    [lrt_record_id | lrt]
+    |> Enum.uniq()
+    |> (&Map.put(lft_record, :lrt, &1)).()
+    |> Map.from_struct()
+    |> (&Patch.patch(@base_id, @table_id, &1)).()
   end
 
   defp post_fitness_record(lrt_record_id, %Fitness{} = fitness) do

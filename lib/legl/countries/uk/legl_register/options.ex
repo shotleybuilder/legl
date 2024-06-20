@@ -29,6 +29,10 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     )
   end
 
+  def base_table_id(%{base_id: base_id, table_id: table_id} = opts)
+      when base_id not in ["", nil] and table_id not in ["", nil],
+      do: opts
+
   @spec base_table_id(map()) :: map()
   def base_table_id(opts) do
     {:ok, {base_id, table_id}} = AtBasesTables.get_base_table_id(opts.base_name)
