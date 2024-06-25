@@ -14,8 +14,9 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   alias Legl.Countries.Uk.LeglFitness.Rule
   alias Legl.Countries.Uk.LeglFitness.RuleTransform, as: RT
 
-  @type legal_fitness :: %__MODULE__{
+  @type t :: %__MODULE__{
           fit_id: String.t(),
+          record_id: String.t(),
           lrt: list(),
           lfrt: list(),
           rule: struct(),
@@ -33,24 +34,24 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
         }
 
   @derive Jason.Encoder
-  defstruct fit_id: nil,
-            record_id: nil,
+  defstruct fit_id: "",
+            record_id: "",
             lrt: [],
             lfrt: [],
             rule: F.Rule.new(),
-            category: nil,
-            ppp: nil,
+            category: "",
+            ppp: "",
             # Multi Selects are array values
             pattern: [],
             person: [],
             process: [],
             place: [],
             # Single Selects are string values
-            person_verb: nil,
-            person_ii: nil,
-            person_ii_verb: nil,
-            property: nil,
-            plant: nil
+            person_verb: "",
+            person_ii: "",
+            person_ii_verb: "",
+            property: "",
+            plant: ""
 
   @base_id "app5uSrszIH9LcZKI"
   @table_id "tbl8MeIOVOS9nP8zc"
@@ -64,7 +65,30 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     fitness_type: []
   }
 
+  @spec new() :: Fitness.t()
   def new(), do: %__MODULE__{}
+
+  @spec new(map()) :: Fitness.t()
+  def new(%{"fit_id" => _fit_id} = attr) do
+    %__MODULE__{
+      fit_id: Map.get(attr, "fit_id", ""),
+      record_id: Map.get(attr, "record_id", ""),
+      lrt: Map.get(attr, "lrt", []),
+      lfrt: Map.get(attr, "lfrt", []),
+      rule: Map.get(attr, "rule", %{}),
+      pattern: Map.get(attr, "pattern", []),
+      category: Map.get(attr, "category", ""),
+      ppp: Map.get(attr, "ppp", ""),
+      person: Map.get(attr, "person", []),
+      person_verb: Map.get(attr, "person_verb", ""),
+      person_ii: Map.get(attr, "person_ii", ""),
+      person_ii_verb: Map.get(attr, "person_ii_verb", ""),
+      process: Map.get(attr, "process", []),
+      place: Map.get(attr, "place", []),
+      property: Map.get(attr, "property", ""),
+      plant: Map.get(attr, "plant", "")
+    }
+  end
 
   @spec lft_fields() :: [String.t()]
   def lft_fields(),
@@ -138,7 +162,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     )
   end
 
-  @spec process_fitnesses([legal_fitness]) :: [legal_fitness]
+  @spec process_fitnesses([t]) :: [t]
   def process_fitnesses(fitnesses) do
     Enum.reduce(fitnesses, [], fn
       %{category: category} = fitness, acc when category not in ["", nil] ->
@@ -164,7 +188,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     end)
   end
 
-  @spec explicit_does_not_extend_outside_gb([legal_fitness]) :: [legal_fitness]
+  @spec explicit_does_not_extend_outside_gb([t]) :: [t]
   defp explicit_does_not_extend_outside_gb(lft_records) do
     extends_to? =
       Enum.reduce_while(lft_records, false, fn
@@ -177,14 +201,14 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
       else: lft_records
   end
 
-  @spec make_fitness_structs([Rule.t()]) :: [legal_fitness]
+  @spec make_fitness_structs([Rule.t()]) :: [t]
   def make_fitness_structs(rules) do
     rules
     |> Enum.map(&fitness_typer_disapplies_to/1)
     |> Enum.map(&fitness_typer_applies_to/1)
   end
 
-  @spec fitness_typer_applies_to(Rule.t()) :: legal_fitness | Rule.t()
+  @spec fitness_typer_applies_to(Rule.t()) :: t | Rule.t()
   defp fitness_typer_applies_to(%Rule{rule: text} = rule) do
     # Sets the fitness type based on the RULE text
     Enum.reduce_while(F.ParseDefs.applies_regex(), rule, fn regex, acc ->
@@ -200,7 +224,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
   defp fitness_typer_applies_to(f), do: f
 
-  @spec fitness_typer_disapplies_to(Rule.t()) :: legal_fitness | Rule.t()
+  @spec fitness_typer_disapplies_to(Rule.t()) :: t | Rule.t()
   defp fitness_typer_disapplies_to(%Rule{rule: text} = rule) do
     # Sets the fitness type based on the RULE text
     Enum.reduce_while(F.ParseDefs.disapplies_regex(), rule, fn regex, acc ->
@@ -216,31 +240,33 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
   defp fitness_typer_disapplies_to(f), do: f
 
-  @spec save_fitnesses([legal_fitness], map) :: :ok | {:error, String.t(), legal_fitness}
-  def save_fitnesses(lft_records, %{
-        "Name" => name,
-        "record_id" => record_id
-      }) do
-    Enum.each(lft_records, fn
+  @doc """
+  Saves the fitnesses to Airtable FITNESS Base.
+
+  ## Examples
+
+      iex> save_fitnesses([%Fitness{}], %{name: "name", record_id: ""})
+      ...
+  """
+  @spec save_fitnesses([t()], map()) ::
+          {:ok, String.t(), String.t(), String.t()} | {:error, String.t(), String.t()}
+  def save_fitnesses(lft_records, lrt) do
+    Enum.map(lft_records, fn
       %{unmatched_fitness: fitness} ->
         Logger.warning("Unmatched fitness\n#{fitness.category} #{fitness.rule}")
 
         Path.absname("lib/legl/countries/uk/legl_fitness/unmatched_text.txt")
-        |> File.write!(name <> " : " <> fitness.rule <> "\n", [:append])
+        |> File.write!(lrt.name <> " : " <> fitness.rule <> "\n", [:append])
 
       %Fitness{} = lft_record ->
-        case F.SaveFitness.save_fitness_record(record_id, lft_record) do
-          :ok -> save_rule(lft_record)
-          :error -> {:error, record_id, lft_record}
+        case F.SaveFitness.save_fitness_record(lrt.record_id, lft_record) do
+          {:ok, lrt_record_id, lft_record_id, lfrt_record_id} ->
+            {:ok, lrt_record_id, lft_record_id, lfrt_record_id}
+
+          {:error, record_id, lft_record} ->
+            {:error, record_id, lft_record}
         end
     end)
-  end
-
-  defp save_rule(lft_record) do
-    case F.SaveRule.save_rule(lft_record) do
-      :ok -> :ok
-      :error -> {:error, lft_record}
-    end
   end
 
   @doc """
@@ -338,7 +364,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
   # defp fitness_typer(%{category: "extends-to"} = f), do: f
 
-  @spec rule_scope_field(legal_fitness) :: legal_fitness
+  @spec rule_scope_field(t) :: t
   defp rule_scope_field(%{rule: %{provision_number: provision_number} = rule} = fitness)
        when provision_number in [nil, ""] do
     rule

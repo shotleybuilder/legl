@@ -5,6 +5,7 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveFitness do
 
   require Logger
 
+  alias Legl.Countries.Uk.LeglFitness
   alias Legl.Countries.Uk.LeglFitness.Fitness
   alias Legl.Countries.Uk.LeglFitness.GetFitness
   alias Legl.Services.Airtable.Patch
@@ -13,47 +14,97 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveFitness do
   @base_id "app5uSrszIH9LcZKI"
   @table_id "tbltS1YVqdHGecRvp"
 
-  def save_fitness_record(lrt_record_id, %Fitness{} = fitness) do
-    # code to find existing fitness_record
-    lft_records = GetFitness.get_fitness(fitness)
+  @doc """
+  Save a fitness record to the Legal Fitness Table (LFT)
 
-    case match_fitness_record(fitness, lft_records) do
-      {nil, 0} ->
-        post_fitness_record(lrt_record_id, fitness)
+  The Fitness struct includes a field for the Rule struct.
 
-      {lft_record, best_match_value} when best_match_value > 0.9 ->
-        lft_record
-        |> fill_empty_values(fitness)
-        |> patch_fitness_record(lrt_record_id)
+  #Process
 
-      _ ->
-        post_fitness_record(lrt_record_id, fitness)
+  ##Create or Update the Rule Record
+
+  1. Find existing rule records
+  2. Match the rule record to the existing records
+  3. If a match is found, update the existing record
+  4. If no match is found, create a new record
+
+  ##Create or Update the Fitness Record
+  The process:
+
+  1. Find existing fitness records
+  2. Match the fitness record to the existing records
+  3. If a match is found, update the existing record
+  4. If no match is found, create a new record
+
+
+  ## Examples
+
+      iex> save_fitness_record("rec123", %Fitness{})
+      ...
+  """
+
+  def save_fitness_record(lrt_record_id, %Fitness{rule: %LeglFitness.Rule{} = rule} = fitness) do
+    # Save the Rule to the LFRT
+    with {:ok, lfrt_record_id} <- save_rule(lrt_record_id, rule),
+         {:ok, lft_record_id} <- save_fitness(lrt_record_id, lfrt_record_id, fitness) do
+      {:ok, lrt_record_id, lft_record_id, lfrt_record_id}
+    else
+      {:error, error} -> {:error, error}
     end
   end
 
-  def save_fitness_record(_, _) do
-    IO.puts("Invalid Fitness Record")
-    :error
-  end
+  def save_fitness_record(_, _), do: {:error, "Invalid Fitness Record"}
 
   # Private functions
 
-  defp match_fitness_record(_, []), do: {nil, 0}
+  defp save_rule(lrt_record_id, %LeglFitness.Rule{} = rule) do
+    LeglFitness.SaveRule.save_rule(lrt_record_id, rule)
+  end
 
-  defp match_fitness_record(%Fitness{} = fitness, lft_records) do
-    Enum.reduce_while(lft_records, {nil, 0}, fn
-      %Fitness{fit_id: fit_id} = lft_record, {best_matching_lft_record, match_value} ->
-        match = String.jaro_distance(fit_id, Map.get(fitness, :fit_id))
+  defp save_fitness(lrt_record_id, lfrt_record_id, %Fitness{} = fitness) do
+    case GetFitness.get_fitness(fitness) do
+      [] ->
+        # Update the Fitness with the Rule record_id (:lfrt) & the Law record_id (:lrt)
+        Map.merge(fitness, %{lrt: [lrt_record_id], lfrt: [lfrt_record_id]})
+        |> remove_empty_values()
+        |> Map.drop([:record_id, :rule])
+        |> (&Post.post(@base_id, @table_id, &1)).()
 
-        cond do
-          match == 1.0 -> {:halt, {lft_record, match}}
-          match > match_value -> {:cont, {lft_record, match}}
-          true -> {:cont, {best_matching_lft_record, match_value}}
+      %Fitness{} = lft_record ->
+        fitness =
+          fitness
+          # Update multiple links to the LRT
+          |> Map.replace!(:lrt, [lrt_record_id | lft_record.lrt] |> Enum.uniq())
+          # Update multiple links to the LFRT
+          |> (&Map.replace!(&1, :lfrt, [lfrt_record_id | lft_record.lfrt] |> Enum.uniq())).()
+          # Update the record_id
+          |> (&Map.replace!(&1, :record_id, lft_record.record_id)).()
+
+        lft_record_as_map = Map.from_struct(lft_record) |> Map.drop([:rule])
+
+        case lft_record_as_map == Map.from_struct(fitness) |> Map.drop([:rule]) do
+          true ->
+            Logger.notice("No changes to Fitness\n", ansi_color: :blue)
+            {:ok, lft_record.record_id}
+
+          false ->
+            fitness =
+              lft_record
+              |> fill_empty_values(fitness)
+              |> remove_empty_values()
+              |> Map.drop([:rule])
+
+            case Patch.patch(@base_id, @table_id, fitness) do
+              :ok -> {:ok, lft_record.record_id}
+              :error -> :error
+            end
         end
 
-      %Fitness{fit_id: nil}, acc ->
-        {:cont, acc}
-    end)
+      # Multiple Rules returned
+      fitnesses when is_list(fitnesses) ->
+        Logger.warning("Multiple Fitnesses Returned from LFT #{inspect(fitnesses)}")
+        {:error, "Multiple Rules Returned from LFT"}
+    end
   end
 
   defp fill_empty_values(%Fitness{} = lft, %Fitness{} = fitness) do
@@ -77,21 +128,13 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveFitness do
     end)
   end
 
-  defp patch_fitness_record(%Fitness{lrt: lrt} = lft_record, lrt_record_id) do
-    # code to patch fitness record
-    [lrt_record_id | lrt]
-    |> Enum.uniq()
-    |> (&Map.put(lft_record, :lrt, &1)).()
+  @spec remove_empty_values(Fitness.t()) :: map()
+  defp remove_empty_values(%Fitness{} = fitness) do
+    # Empty values are not returned from AT
+    # Function removes empty values from the rule record
+    fitness
     |> Map.from_struct()
-    |> (&Patch.patch(@base_id, @table_id, &1)).()
-  end
-
-  defp post_fitness_record(lrt_record_id, %Fitness{} = fitness) do
-    # code to post fitness record
-    [lrt_record_id | fitness.lrt]
-    |> (&Map.put(fitness, :lrt, &1)).()
-    |> Map.from_struct()
-    |> Map.drop([:record_id])
-    |> (&Post.post(@base_id, @table_id, &1)).()
+    |> Enum.filter(fn {_k, v} -> Enum.member?([nil, "", []], v) == false end)
+    |> Enum.into(%{})
   end
 end

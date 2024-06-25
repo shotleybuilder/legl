@@ -156,7 +156,6 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleProvisions do
 
   defp transform_heading_text(text) do
     RT.transform_heading(text)
-    |> List.first()
     |> (&Regex.replace(~r/[[:punct:]]/, &1, "")).()
     |> String.replace(" ", "-")
   end

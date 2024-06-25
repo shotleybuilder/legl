@@ -1,4 +1,5 @@
 defmodule Legl.Services.Airtable.Patch do
+  @moduledoc false
   require Logger
   alias Legl.Services.Airtable, as: AT
 
@@ -9,7 +10,8 @@ defmodule Legl.Services.Airtable.Patch do
 
     data =
       %{"records" => make_airtable_dataset(data), "typecast" => true}
-      |> IO.inspect(label: "PATCH DATA")
+
+    Logger.info("PATCH DATA: #{inspect(data)}")
 
     # data = Map.drop(data, [:offence_breaches])
 
@@ -28,7 +30,7 @@ defmodule Legl.Services.Airtable.Patch do
     case Req.request(req) do
       {:ok, %{status: 422, body: body}} ->
         Logger.info("PATCH failed: 422\n#{inspect(body)}")
-        :ok
+        :error
 
       {:ok, %{status: status, body: _body}} ->
         Logger.info("PATCH successful: #{inspect(status)}")
@@ -36,7 +38,7 @@ defmodule Legl.Services.Airtable.Patch do
 
       {:error, error} ->
         Logger.error("PATCH failed: #{inspect(error)}")
-        :ok
+        :error
     end
   end
 

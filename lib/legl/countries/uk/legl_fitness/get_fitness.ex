@@ -34,64 +34,44 @@ defmodule Legl.Countries.Uk.LeglFitness.GetFitness do
 
 
   """
-  def get_fitness(%Fitness{} = fitness, opts \\ []) do
+  @spec get_fitness(Fitness.t(), list) :: [Fitness.t()] | Fitness.t() | []
+  @spec get_fitness(String.t(), list) :: [Fitness.t()] | Fitness.t() | []
+  def get_fitness(fitness, opts \\ [])
+
+  def get_fitness(%Fitness{fit_id: fit_id} = fitness, opts) when is_struct(fitness, Fitness),
+    do: get_fitness(fit_id, opts)
+
+  def get_fitness(fit_id, opts) when is_binary(fit_id) do
     opts =
       opts
       |> Enum.into(@default_opts)
-      |> Map.put(:formula, formula(fitness))
+      |> Map.put(:formula, ~s/{fit_id}="#{fit_id}"/)
 
-    Get.get(opts.base_id, opts.table_id, opts)
-    |> elem(1)
-    |> Enum.map(&extract_fields/1)
-    |> Enum.map(&Fitness.make_fitness_struct/1)
+    case Get.get(opts.base_id, opts.table_id, opts) do
+      {:ok, [record]} when is_map(record) ->
+        record
+        |> extract_fields()
+        |> Fitness.new()
+
+      {:ok, []} ->
+        []
+
+      {:ok, records} when is_list(records) ->
+        Logger.warning(
+          "Multiple records found for Fitness: #{inspect(fit_id)}\n#{inspect(records)}\n"
+        )
+
+        records
+        |> Enum.map(&extract_fields/1)
+        |> Enum.map(&Fitness.new/1)
+
+      {:error, error} ->
+        Logger.error("Error getting rule: #{inspect(error)}")
+        []
+    end
   end
 
   defp extract_fields(%{"id" => id} = record) do
     Map.put(record["fields"], "record_id", id)
-  end
-
-  defp formula(%{fit_id: fit_id} = _fitness), do: ~s/{fit_id}="#{fit_id}"/
-
-  defp formula(fitness) do
-    formula =
-      Enum.reduce(Map.from_struct(fitness), [], fn
-        # Single select strings
-        {k, v}, acc
-        when k in [
-               :category,
-               :scope,
-               :person_verb,
-               :person_ii,
-               :person_ii_verb,
-               :property,
-               :plant
-             ] and
-               v not in ["", nil] ->
-          term = Atom.to_string(k)
-          [~s/{#{term}}="#{v}"/ | acc]
-
-        # Multi-select arrays
-        {k, v}, acc
-        when k in [
-               :person,
-               :process,
-               :place
-             ] and
-               is_list(v) and v != [] ->
-          term = Atom.to_string(k)
-
-          Enum.map(v, fn x -> ~s/FIND("#{x}", {#{term}})/ end) ++ acc
-
-        # <person>, <process>, <plant>, <property>
-        {:pattern, v}, acc
-        when is_list(v) and v != [] ->
-          [~s/{p}="#{Enum.join(v, ", ")}"/ | acc]
-
-        _, acc ->
-          acc
-      end)
-
-    ~s/AND(#{Enum.join(formula, ",")})/
-    |> tap(&Logger.info(~s/FORMULA: #{&1}/))
   end
 end

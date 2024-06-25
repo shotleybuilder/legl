@@ -5,14 +5,15 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
   """
   require Logger
   alias Legl.Countries.Uk.LeglFitness, as: F
+  alias Legl.Countries.Uk.LeglFitness.Rule
   alias Legl.Countries.Uk.LeglFitness.RuleProvisions, as: RP
   alias Legl.Countries.Uk.LeglFitness.RuleSeparate
 
   @doc """
-    Transform the records from the legislation.gov.uk API to the Legal Fitness Table
-    and Legal Fitness Rule Table
+    Transform the records from the legislation.gov.uk API into rules for the
+    Legal Fitness Rule Table (LFRT).
   """
-  @spec transform_rules(list(map())) :: list(map())
+  @spec transform_rules(list(map())) :: list(Rule.t())
   def transform_rules(records) do
     heading_map = RP.build_heading_map(records)
 
@@ -64,8 +65,6 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
         |> transform_heading()
         |> (&F.Rule.new(%{heading: &1})).()
 
-      # |> (&Map.put(%F.Fitness{}, :rule, &1)).()
-
       false ->
         false
     end
@@ -81,7 +80,7 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
     Public function because this is used in the RuleProvisions module
   """
   def transform_heading(heading),
-    do: heading |> rm_efs() |> String.trim() |> String.downcase() |> List.wrap()
+    do: heading |> rm_efs() |> String.trim() |> String.downcase()
 
   defp rm_efs(text) do
     text

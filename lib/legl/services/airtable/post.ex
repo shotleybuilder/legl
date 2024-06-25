@@ -5,6 +5,7 @@ defmodule Legl.Services.Airtable.Post do
   require Logger
   alias Legl.Services.Airtable, as: AT
 
+  @spec post(String.t(), String.t(), map) :: :ok | :error
   def post(base, table, data) do
     base_url = Legl.Services.Airtable.Endpoint.base_url()
     {:ok, url} = AT.Url.url(base, table, %{})
@@ -31,7 +32,7 @@ defmodule Legl.Services.Airtable.Post do
     case Req.request(req) do
       {:ok, %{status: 422, body: body}} ->
         Logger.info("POST failed: 422\n#{inspect(body)}")
-        :ok
+        :error
 
       {:ok, %{status: status, body: _body}} ->
         Logger.info("POST successful: #{inspect(status)}")
@@ -39,7 +40,7 @@ defmodule Legl.Services.Airtable.Post do
 
       {:error, error} ->
         Logger.error("POST failed: #{inspect(error)}")
-        :ok
+        :error
     end
   end
 
