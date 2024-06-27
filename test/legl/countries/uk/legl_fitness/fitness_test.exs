@@ -50,12 +50,14 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
 
   test "separate_rules/1" do
     Enum.each(LeglFitnessSeparateRulesTest.data(), fn %{rule: rule, result: test} ->
-      IO.puts("RULE: #{rule}")
+      Logger.info("TEST RULE: #{rule}")
 
       response =
         RS.separate_rules(%{provision: [], rule: rule})
         |> Enum.map(&RS.separate_rules(&1))
         |> List.flatten()
+
+      Enum.each(response, &Logger.info(~s/#{inspect(&1)}/, ansi_color: :blue))
 
       assert is_list(response)
 
@@ -78,8 +80,6 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
               :ok
           end
       end
-
-      Logger.info(~s/Response: #{response}/)
     end)
   end
 
@@ -87,8 +87,9 @@ defmodule Legl.Countries.Uk.LeglFitness.FitnessTest do
     records = LeglFitnessTransformTest.such()
 
     Enum.each(records, fn %{rule: rule, result: test_result} ->
+      Logger.info(~s/Rule: #{rule}/)
       response = RS.such_clause(rule)
-      Logger.info(~s/Response: #{response}/)
+      Logger.info(~s/Response: #{response}/, asni_color: :blue)
       assert(response == test_result)
     end)
   end

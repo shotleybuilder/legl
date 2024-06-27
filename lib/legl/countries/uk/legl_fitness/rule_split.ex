@@ -72,7 +72,7 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleSplit do
               rule_opp =
                 case String.contains?(rule, "shall not") do
                   true -> String.replace(rule, "shall not", "shall")
-                  false -> String.replace(rule, "do not", "does")
+                  false -> String.replace(rule, "do not", "do")
                 end
 
               # Split into LHS the 'rule' and RHS the 'unless' exception to the rule
@@ -107,14 +107,12 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleSplit do
       # When 'except' we treat all children as distinct rules
       true ->
         # Drop the 'except ... —' from the end of the parent rule
-        fitness =
-          fitness.rule
-          |> String.split(~r/,? except /)
-          |> List.first()
-          |> (&Map.put(fitness, :rule, &1)).()
+        [main_parent, exception_parent] = String.split(fitness.rule, ~r/,? except /, parts: 2)
+
+        fitness = Map.put(fitness, :rule, main_parent)
 
         fitness_children =
-          Enum.map(rules, &Map.merge(fitness, %{rule: &1}))
+          Enum.map(rules, &Map.merge(fitness, %{rule: exception_parent <> " " <> &1}))
 
         [fitness | fitness_children]
     end

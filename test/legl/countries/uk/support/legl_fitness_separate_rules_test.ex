@@ -3,24 +3,118 @@ defmodule Legl.Countries.Uk.Support.LeglFitnessSeparateRulesTest do
     %{
       rule:
         "Where a duty is placed by these Regulations on an employer in respect of his employees, he shall, so far as is reasonably practicable, be under a like duty in respect of any other person, whether at work or not, who may be affected by the work carried out by the employer except that the duties of the employer—\n(a) under regulation 10 (medical surveillance) shall not extend to persons who are not his employees other than employees of another employer who are working under the direction of the first-mentioned employer; and\n(b) under regulations 9, 11(1) and (2) and 12 (which relate respectively to monitoring, information and training and dealing with accidents) shall not extend to persons who are not his employees, unless those persons are on the premises where the work is being carried out.",
-      result: []
+      result: [
+        %{
+          rule:
+            "Where a duty is placed by these Regulations on an employer in respect of his employees, he shall, so far as is reasonably practicable, be under a like duty in respect of any other person, whether at work or not, who may be affected by the work carried out by the employer.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulations 9, 11(1) and (2) and 12 (which relate respectively to monitoring, information and training and dealing with accidents) shall not extend to persons who are not his employees.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulations 9, 11(1) and (2) and 12 (which relate respectively to monitoring, information and training and dealing with accidents) shall extend to those persons are on the premises where the work is being carried out.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulation 10 (medical surveillance) shall not extend to persons who are not his employees other than employees of another employer who are working under the direction of the first-mentioned employer.",
+          provision: []
+        }
+      ]
     },
     %{
       rule:
         "Where a duty is placed by these Regulations on an employer in respect of employees of that employer, the employer is, so far as is reasonably practicable, under a like duty in respect of any other person, whether at work or not, who may be affected by the work activity carried out by that employer except that the duties of the employer—\n(a) under regulation 10 (information, instruction and training) do not extend to persons who are not employees of that employer unless those persons are on the premises where the work is being carried out; and\n(b) under regulation 22 (health records and medical surveillance) do not extend to persons who are not employees of that employer.",
-      result: []
+      result: [
+        %{
+          rule:
+            "Where a duty is placed by these Regulations on an employer in respect of employees of that employer, the employer is, so far as is reasonably practicable, under a like duty in respect of any other person, whether at work or not, who may be affected by the work activity carried out by that employer.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulation 22 (health records and medical surveillance) do not extend to persons who are not employees of that employer.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulation 10 (information, instruction and training) do not extend to persons who are not employees of that employer.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulation 10 (information, instruction and training) do extend to those persons are on the premises where the work is being carried out.",
+          provision: []
+        }
+      ]
     },
     #
     %{
       rule:
         "Where a duty is placed by these Regulations on an employer in respect of its employees, the employer must, so far as is reasonably practicable, be under a like duty in respect of any other person at work who may be affected by the work carried out by the employer except that the duties of the employer—\n(a) under regulation 5 (information and training) do not extend to persons who are not its employees, unless those persons are present in the workplace where the work is being carried out; and\n(b) under regulation 6 (health surveillance) do not extend to persons who are not its employees.",
-      result: []
+      result: [
+        %{
+          rule:
+            "Where a duty is placed by these Regulations on an employer in respect of its employees, the employer must, so far as is reasonably practicable, be under a like duty in respect of any other person at work who may be affected by the work carried out by the employer.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulation 6 (health surveillance) do not extend to persons who are not its employees.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulation 5 (information and training) do not extend to persons who are not its employees.",
+          provision: []
+        },
+        %{
+          rule:
+            "that the duties of the employer under regulation 5 (information and training) do extend to those persons are present in the workplace where the work is being carried out.",
+          provision: []
+        }
+      ]
     },
     #
     %{
       rule:
         "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where—\n(a) the exposure to asbestos of employees is sporadic and of low intensity; and\n(b) it is clear from the risk assessment that the exposure to asbestos of any employee will not exceed the control limit; and\n(c) the work involves—\n(i) short, non-continuous maintenance activities in which only non-friable materials are handled, or\n(ii) removal without deterioration of non-degraded materials in which the asbestos fibres are firmly linked in a matrix, or\n(iii) encapsulation or sealing of asbestos-containing materials which are in good condition, or\n(iv) air monitoring and control, and the collection and analysis of samples to ascertain whether a specific material contains asbestos.",
-      result: []
+      result: [
+        %{
+          rule:
+            "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where the work involves air monitoring and control, and the collection and analysis of samples to ascertain whether a specific material contains asbestos.",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where the work involves encapsulation or sealing of asbestos-containing materials which are in good condition.",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where the work involves removal without deterioration of non-degraded materials in which the asbestos fibres are firmly linked in a matrix.",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where the work involves short, non-continuous maintenance activities in which only non-friable materials are handled.",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where it is clear from the risk assessment that the exposure to asbestos of any employee will not exceed the control limit.",
+          provision: []
+        },
+        %{
+          rule:
+            "Regulations 9 (notification of work with asbestos), 18(1)(a) (designated areas) and 22 (health records and medical surveillance) do not apply where the exposure to asbestos of employees is sporadic and of low intensity.",
+          provision: []
+        }
+      ]
     },
     #
     %{
@@ -56,17 +150,14 @@ defmodule Legl.Countries.Uk.Support.LeglFitnessSeparateRulesTest do
       rule:
         "These Regulations apply to every workplace but shall not apply to—\n(a) a workplace which is or is in or on a ship, save that regulations 8(1) and (3) and 12(1) and (3) apply to such a workplace where the work involves any of the relevant operations in—\n(i) a shipyard, whether or not the shipyard forms part of a harbour or wet dock; or\n(ii) dock premises, not being work done—\n(aa) by the master or crew of a ship;\n(bb) on board a ship during a trial run;\n(cc) for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd) on a ship which is not under command, for the purpose of bringing it under command;\n(b) a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations, save that—\n(i) regulations 18 and 25A apply to such a workplace; and\n(ii) regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to such a workplace which is indoors; or\n(c) a workplace located below ground at a mine, except that regulation 20 applies to such a workplace subject to the modification in paragraph (7).",
       result: [
-        %{
-          rule: "These Regulations apply to every workplace",
-          provision: []
-        },
+        %{rule: "These Regulations apply to every workplace", provision: []},
         %{
           rule: "These Regulations shall not apply to a workplace located below ground at a mine",
           provision: []
         },
         %{
           rule:
-            "Regulation 20 applies to a workplace located below ground at a mine subject to the modification in paragraph (7).",
+            "Regulation 20 applies to a workplace which is or is in or on a ship, subject to the modification in paragraph (7).",
           provision: []
         },
         %{
@@ -76,12 +167,11 @@ defmodule Legl.Countries.Uk.Support.LeglFitnessSeparateRulesTest do
         },
         %{
           rule:
-            "Regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations which is indoors.",
+            "Regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to a workplace which is or is in or on a ship, which is indoors.",
           provision: []
         },
         %{
-          rule:
-            "Regulations 18 and 25A apply to a workplace which is a construction site within the meaning of the Construction (Design and Management) Regulations [F22015], and in which the only activity being undertaken is construction work within the meaning of those Regulations.",
+          rule: "Regulations 18 and 25A apply to a workplace which is or is in or on a ship,.",
           provision: []
         },
         %{
@@ -89,14 +179,14 @@ defmodule Legl.Countries.Uk.Support.LeglFitnessSeparateRulesTest do
           provision: []
         },
         %{
-          provision: [],
           rule:
-            "Regulations 8(1) and (3) and 12(1) and (3) apply to a workplace which is or is in or on a ship where the work involves any of the relevant operations in dock premises, not being work done—\n(aa) by the master or crew of a ship;\n(bb) on board a ship during a trial run;\n(cc) for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd) on a ship which is not under command, for the purpose of bringing it under command."
+            "Regulations 8(1) and (3) and 12(1) and (3) apply to a workplace which is or is in or on a ship, where the work involves any of the relevant operations in dock premises, not being work done—\n(aa) by the master or crew of a ship;\n(bb) on board a ship during a trial run;\n(cc) for the purpose of raising or removing a ship which is sunk or stranded; or\n(dd) on a ship which is not under command, for the purpose of bringing it under command.",
+          provision: []
         },
         %{
-          provision: [],
           rule:
-            "Regulations 8(1) and (3) and 12(1) and (3) apply to a workplace which is or is in or on a ship where the work involves any of the relevant operations in a shipyard, whether or not the shipyard forms part of a harbour or wet dock."
+            "Regulations 8(1) and (3) and 12(1) and (3) apply to a workplace which is or is in or on a ship, where the work involves any of the relevant operations in a shipyard, whether or not the shipyard forms part of a harbour or wet dock.",
+          provision: []
         }
       ]
     },

@@ -1,6 +1,14 @@
 defmodule Legl.Countries.Uk.LeglFitness.RuleSeparate do
   @moduledoc """
-  Functions to separate the rule into its constituent parts
+  Functions to separate the rule into its constituent parts.
+
+  The following separation terms are processed:
+  - 'such' clauses
+  - 'but' clauses
+  - 'save that' clauses
+  - 'except' clauses
+  - 'as respects any' clauses
+
   """
 
   require Logger
@@ -48,33 +56,65 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleSeparate do
     "in respect of work equipment shall apply to such equipment" ->
     "in respect of work equipment shall apply to work equipment"
   """
-  def such_clause(rule) do
+  def such_clause(rule_text) do
     # Find the abbreviated subjects
+    with {:ok, subject} <- get_subject(rule_text),
+         {:ok, clause} <- get_clause(subject, rule_text) do
+      Regex.replace(
+        ~r/such (a )?#{subject}/m,
+        rule_text,
+        "\\1#{String.trim(clause)}"
+      )
+    else
+      :subject_error ->
+        Logger.error("No 'such' clause found in rule: #{rule_text}")
+        rule_text
 
+      :clause_error ->
+        Logger.error("No 'clause' found in rule: #{rule_text}")
+        rule_text
+    end
+
+    # Logger.info(~s/\nSUCH CLAUSE\nrule: #{rule}\nsubject: #{subject}\nclause: #{clause}/)
+  end
+
+  defp get_subject(rule_text) do
     case Regex.named_captures(
            ~r/(?:apply|extend only) to such (?:a )?(?<subject1>.*?) (or (?<subject2>.*?) )?/,
-           rule
+           rule_text
          ) do
       %{"subject1" => s1, "subject2" => s2} ->
-        subject = if s2 != "", do: "#{s1} or #{s2}", else: s1
-        regex = ~r/(?:any|in respect of)(.*?#{s1}.*?),? shall (?:apply|extend only)/
+        # Logger.info(~s/\nSUCH CLAUSE\ns1: #{s1}\ns2: #{s2}/)
+        s =
+          if s2 != "",
+            do: "#{s1},? or (?:any )?#{s2}",
+            else: s1
 
-        clause =
-          Regex.run(regex, rule, capture: :all_but_first)
-          |> List.first()
-          |> String.trim()
-
-        # Logger.info(~s/\nSUCH CLAUSE\nrule: #{rule}\nsubject: #{subject}\nclause: #{clause}/)
-
-        Regex.replace(
-          ~r/such (a )?#{subject}/m,
-          rule,
-          "\\1#{clause}"
-        )
+        {:ok, s}
 
       nil ->
-        Logger.error("No 'such' clause found in rule: #{rule}")
-        rule
+        :subject_error
+    end
+  end
+
+  defp get_clause(subject, rule_text) do
+    case Regex.run(
+           ~r/(?:any|in respect of)(.*?#{subject}.*?),? shall (?:apply|extend only)/,
+           rule_text,
+           capture: :all_but_first
+         ) do
+      nil ->
+        case Regex.run(~r/(#{subject} which is.*?,)/, rule_text, capture: :all_but_first) do
+          nil -> :clause_error
+          [head] -> {:ok, head}
+          [head, _] -> {:ok, head}
+        end
+
+      [head] ->
+        {:ok, head}
+
+      [head, _] ->
+        {:ok, head}
     end
   end
 

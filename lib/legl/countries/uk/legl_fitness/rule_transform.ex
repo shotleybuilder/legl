@@ -109,10 +109,29 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
 
   defp clean_rules(%{rule: rule} = fitness) do
     rule
+    |> that_the_to_the()
+    |> initial_capitalisation()
     |> end_period()
     |> (&Regex.replace(~r/_but_/, &1, "but")).()
     # |> such_clause()
     |> (&Map.put(fitness, :rule, &1)).()
+  end
+
+  defp that_the_to_the(text) do
+    text
+    |> String.trim()
+    |> (&Regex.replace(~r/^that the/, &1, "the")).()
+  end
+
+  # Start rule with a capital letter
+  defp initial_capitalisation(text) when is_binary(text) do
+    text
+    |> String.split_at(1)
+    |> Tuple.to_list()
+    |> then(fn
+      [h, t] -> String.upcase(h) <> t
+      _ -> text
+    end)
   end
 
   # End rule with a period

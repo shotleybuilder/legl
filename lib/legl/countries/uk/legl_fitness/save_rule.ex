@@ -108,11 +108,17 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveRule do
   end
 
   @spec remove_empty_values(Rule.t()) :: map()
-  defp remove_empty_values(%Rule{} = rule) do
+  @spec remove_empty_values(map()) :: map()
+  defp remove_empty_values(%Rule{} = rule) when is_struct(rule, Rule) do
+    rule
+    |> Map.from_struct()
+    |> remove_empty_values()
+  end
+
+  defp remove_empty_values(rule) when is_map(rule) do
     # Empty values are not returned from AT
     # Function removes empty values from the rule record
     rule
-    |> Map.from_struct()
     |> Enum.filter(fn {_k, v} -> Enum.member?([nil, "", []], v) == false end)
     |> Enum.into(%{})
   end
