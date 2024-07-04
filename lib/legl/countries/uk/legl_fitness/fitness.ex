@@ -133,11 +133,11 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
 
   defp process_records(records, lrt_record) do
     records
-    |> (&RT.transform_rules(&1)).()
-    |> (&make_fitness_structs(&1)).()
-    |> (&process_fitnesses(&1)).()
-    |> explicit_does_not_extend_outside_gb()
-    |> (&save_fitnesses(&1, lrt_record)).()
+    |> RT.transform_rules()
+    |> make_fitness_structs()
+    |> process_fitnesses()
+    # |> Legl.Countries.Uk.LeglFitness.ParseExtendsTo.extension_outside_gb()
+    |> save_fitnesses(lrt_record)
   end
 
   def get_articles(%{
@@ -162,7 +162,7 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     )
   end
 
-  @spec process_fitnesses([t]) :: [t]
+  @spec process_fitnesses(list(Fitness.t())) :: list(Fitness.t())
   def process_fitnesses(fitnesses) do
     Enum.reduce(fitnesses, [], fn
       %{category: category} = fitness, acc when category not in ["", nil] ->
@@ -176,6 +176,8 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
           [fit] ->
             fit =
               fit
+              |> Legl.Countries.Uk.LeglFitness.ParseExtendsTo.extension_outside_gb()
+              |> process_field()
               |> fit_field()
               |> ppp_field()
               |> rule_scope_field()
@@ -186,19 +188,6 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
       _, acc ->
         acc
     end)
-  end
-
-  @spec explicit_does_not_extend_outside_gb([t]) :: [t]
-  defp explicit_does_not_extend_outside_gb(lft_records) do
-    extends_to? =
-      Enum.reduce_while(lft_records, false, fn
-        %Fitness{category: "extends-to", place: ["outside-gb"]}, _acc -> {:halt, true}
-        _, acc -> {:cont, acc}
-      end)
-
-    if extends_to? == false,
-      do: [F.ParseExtendsTo.does_not_extend_to() | lft_records],
-      else: lft_records
   end
 
   @spec make_fitness_structs([Rule.t()]) :: [t]
@@ -253,10 +242,12 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
   def save_fitnesses(lft_records, lrt) do
     Enum.map(lft_records, fn
       %{unmatched_fitness: fitness} ->
-        Logger.warning("Unmatched fitness\n#{fitness.category} #{fitness.rule}")
+        Logger.warning(
+          "Unmatched fitness\nLRT: #{inspect(lrt)}\nFITNESS: #{inspect(fitness, pretty: true)}"
+        )
 
         Path.absname("lib/legl/countries/uk/legl_fitness/unmatched_text.txt")
-        |> File.write!(lrt.name <> " : " <> fitness.rule <> "\n", [:append])
+        |> File.write!(lrt["Name"] <> " : " <> fitness.rule.rule <> "\n", [:append])
 
       %Fitness{} = lft_record ->
         case F.SaveFitness.save_fitness_record(lrt.record_id, lft_record) do
@@ -385,13 +376,20 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     Enum.map(fit, &fit_field/1)
   end
 
+  @spec fit_field(t) :: t
   defp fit_field(%{pattern: pattern} = fit) do
     # Builder for the 'fit' field in AT
     Enum.reduce(pattern, [], fn p, acc ->
       Regex.run(~r/<(.+)>/, p, capture: :all_but_first)
       |> List.first()
       |> String.to_atom()
-      |> (&Map.get(fit, &1)).()
+      |> case do
+        :provision ->
+          fit.rule.provision
+
+        key ->
+          Map.get(fit, key)
+      end
       |> case do
         x when is_list(x) -> Enum.join(x, ":") |> (&[&1 | acc]).()
         x -> [x | acc]
@@ -420,5 +418,17 @@ defmodule Legl.Countries.Uk.LeglFitness.Fitness do
     |> Enum.join("\n")
     |> (&Kernel.<>(~s/category: #{fit.category}\n/, &1)).()
     |> (&Map.put(fit, :ppp, &1)).()
+  end
+
+  @spec process_field(t) :: t
+  def process_field(fit) do
+    # Extend 'process' model with provision names from Rule
+    case fit.rule.provision do
+      [] ->
+        fit
+
+      _provisions ->
+        Map.put(fit, :pattern, ["<provision>" | fit.pattern])
+    end
   end
 end

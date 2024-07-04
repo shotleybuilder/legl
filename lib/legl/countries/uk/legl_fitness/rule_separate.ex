@@ -190,7 +190,7 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleSeparate do
 
         # Use of 'it' in the exception rule indicates a provision
         t =
-          case Regex.match?(~r/apply to it/, t) do
+          case Regex.match?(~r/apply to it|^it/, t) do
             true ->
               Regex.replace(~r/it/, t, "#{provision}", global: false)
 

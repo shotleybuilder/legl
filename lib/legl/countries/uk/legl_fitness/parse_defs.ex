@@ -104,7 +104,12 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
              "loading, unloading, fuelling or provisioning",
              "(?:specified )?operation",
              "designs, manufactures, imports or supplies",
-             "designs or manufactures"
+             "designs or manufactures",
+             "air monitoring",
+             "health surveillance",
+             "information and training",
+             "information, instruction and training",
+             "dealing with accidents"
            ]
            |> Enum.join("|")
 

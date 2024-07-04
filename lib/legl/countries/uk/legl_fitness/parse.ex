@@ -6,7 +6,6 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
   require Logger
   alias Legl.Countries.Uk.LeglFitness.Fitness
   alias Legl.Countries.Uk.LeglFitness.ParseDefs
-  alias Legl.Countries.Uk.LeglFitness.ParseExtendsTo
 
   @applies ParseDefs.applies()
 
@@ -275,7 +274,6 @@ defmodule Legl.Countries.Uk.LeglFitness.Parse do
     end)
     |> List.flatten()
     |> Enum.into(%{})
-    |> ParseExtendsTo.parse_extends_to()
   end
 
   defp on_or_off(text) do

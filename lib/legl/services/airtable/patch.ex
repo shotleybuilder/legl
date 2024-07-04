@@ -11,7 +11,7 @@ defmodule Legl.Services.Airtable.Patch do
     data =
       %{"records" => make_airtable_dataset(data), "typecast" => true}
 
-    Logger.info("PATCH DATA: #{inspect(data)}")
+    Logger.info("PATCH DATA: #{inspect(data)}", ansi_color: :orange)
 
     # data = Map.drop(data, [:offence_breaches])
 

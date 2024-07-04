@@ -5,7 +5,7 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleSplit do
   require Logger
   alias Legl.Countries.Uk.LeglFitness.RuleTransform, as: RT
 
-  def split(%{provision: _provision, rule: rule} = fitness) do
+  def split(%{rule: rule} = fitness) do
     case String.split(rule, "—\n", parts: 2) do
       # Single rule not broken by a new line
       [_h] ->
@@ -57,6 +57,7 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleSplit do
 
             # Break apart rules with 'unless' clause
             |> unless_()
+            |> other_than()
             |> combine_rules(Map.merge(fitness, %{rule: h}))
             |> RT.end_period()
         end
@@ -83,6 +84,35 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleSplit do
 
             nil ->
               Logger.error("No 'unless' rule clause found in rule: #{text}")
+              [text | acc]
+          end
+
+        _ ->
+          [text | acc]
+      end
+    end)
+  end
+
+  def other_than(rules) when is_list(rules) do
+    Enum.reduce(rules, [], fn text, acc ->
+      case String.contains?(text, "other than") do
+        true ->
+          case Regex.run(~r/(.*?(?:shall|do) not extend to)/, text) do
+            [_, rule] ->
+              rule_opp =
+                case String.contains?(rule, "shall not") do
+                  true -> String.replace(rule, "shall not", "shall")
+                  false -> String.replace(rule, "do not", "do")
+                end
+
+              # Split into LHS the 'rule' and RHS the 'other than' exception to the rule
+              [h | [t]] = String.split(text, ~r/,? other than/, parts: 2)
+
+              # Add the rule and the opposite exception to the rule to the accumulator
+              [h, rule_opp <> t] ++ acc
+
+            nil ->
+              Logger.info("No 'other than' rule clause found in rule: #{text}")
               [text | acc]
           end
 

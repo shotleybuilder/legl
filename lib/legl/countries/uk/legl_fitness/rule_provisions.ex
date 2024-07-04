@@ -24,7 +24,7 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleProvisions do
       iex> RP.get_list_of_article_numbers("Regulations 7(1A), 12, 14, 15, 16, 18, 19 and 26(1) apply to a")
       ["7(1A)", "12", "14", "15", "16", "18", "19", "26(1)"]
   """
-  @spec get_list_of_article_numbers(list(Rule.t())) :: list(Rule.t())
+  @spec api_get_list_of_article_numbers(list(Rule.t())) :: list(Rule.t())
   def api_get_list_of_article_numbers(rules) when is_list(rules) do
     Enum.map(rules, fn %{rule: text} = rule ->
       case get_list_of_article_numbers(text) do
@@ -37,8 +37,9 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleProvisions do
     end)
   end
 
+  @spec get_list_of_article_numbers(String.t()) :: list(String.t())
   defp get_list_of_article_numbers(rule) do
-    case Regex.run(~r/(.*?)(?: do not | shall not | shall | )?appl/, rule,
+    case Regex.run(~r/(.*?)(?: do not | shall not | shall | )?(appl|extend to|have effect)/, rule,
            capture: :all_but_first
          ) do
       nil ->
@@ -132,13 +133,8 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleProvisions do
 
   @spec extract_number(String.t()) :: String.t()
   defp extract_number(number) do
-    case String.split(number, "(") do
-      [number] ->
-        number
-
-      [number, _] ->
-        number
-    end
+    [hd | _] = String.split(number, "(")
+    hd
   end
 
   def build_heading_map(records) do

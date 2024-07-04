@@ -65,10 +65,15 @@ defmodule Legl.Countries.Uk.LeglFitness.SaveFitness do
     case GetFitness.get_fitness(fitness) do
       [] ->
         # Update the Fitness with the Rule record_id (:lfrt) & the Law record_id (:lrt)
-        Map.merge(fitness, %{lrt: [lrt_record_id], lfrt: [lfrt_record_id]})
-        |> remove_empty_values()
-        |> Map.drop([:record_id, :rule])
-        |> (&Post.post(@base_id, @table_id, &1)).()
+        fitness_as_map =
+          Map.merge(fitness, %{lrt: [lrt_record_id], lfrt: [lfrt_record_id]})
+          |> remove_empty_values()
+          |> Map.drop([:record_id, :rule])
+
+        case Post.post(@base_id, @table_id, fitness_as_map) do
+          :ok -> save_fitness(lrt_record_id, lfrt_record_id, fitness)
+          :error -> {:error, "FITNESS post failed"}
+        end
 
       %Fitness{} = lft_record ->
         fitness =

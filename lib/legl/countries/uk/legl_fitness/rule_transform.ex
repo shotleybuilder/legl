@@ -84,6 +84,10 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
 
   defp rm_efs(text) do
     text
+    |> (&Regex.replace(~r/\[F\d+ (.*)\]$/, &1, "\\1")).()
+    # ' [F6 2015 ] ,' -> ' 2015,'
+    |> (&Regex.replace(~r/ \[F\d+ (.*) \] ,/, &1, " \\1,")).()
+    |> (&Regex.replace(~r/\[F\d+ (.*)\]$/, &1, "\\1")).()
     |> (&Regex.replace(~r/\[/, &1, "")).()
     |> (&Regex.replace(~r/\]/, &1, "")).()
     |> (&Regex.replace(~r/F\d+/, &1, "")).()
@@ -91,6 +95,9 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
 
   def clean_rule_text(text) do
     text
+    |> String.trim()
+    # rm efs
+    |> rm_efs()
     # rm section / article number
     |> (&Regex.replace(~r/.*?([A-Z].*)/, &1, "\\1")).()
     |> (&Regex.replace(~r/[ ]?📌/m, &1, "\n")).()

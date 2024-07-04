@@ -262,8 +262,6 @@ defmodule Legl.Countries.Uk.Metadata do
         |> Legl.Airtable.AirtableTitleField.title_clean()
         |> (&Map.put(metadata, :Title_EN, &1)).()
 
-      # |> dbg()
-
       %{
         # subject shape ["foo", "bar", ...]
         md_subjects: subject,
