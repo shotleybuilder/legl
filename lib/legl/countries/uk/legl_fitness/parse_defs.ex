@@ -1,6 +1,7 @@
 defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
+  @moduledoc false
   @applies [
-    "(?:shall|doe?s?)? (?:also )?(?:apply|extend).*?(?:only )?(?:to|within|in|outside)"
+    "(?<!Nothing).*?(?:shall|doe?s?)? (?:also )?(?:apply|extend).*?(?:only )?(?:to|within|in|outside)"
   ]
 
   def applies, do: @applies
@@ -109,7 +110,10 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
              "health surveillance",
              "information and training",
              "information, instruction and training",
-             "dealing with accidents"
+             "dealing with accidents",
+             "supply of any dangerous substance, preparation, product or equipment",
+             "transport by road, rail, inland waterway, sea or air",
+             "regulating road, rail, inland waterway, sea or air traffic"
            ]
            |> Enum.join("|")
 
@@ -126,12 +130,16 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
            "outside-gb",
            "territorial waters",
            "workplace on a construction site",
+           # Mines
            "(?:work)?place (?:located )?below ground (?:at|in) a mine",
            "workplace located above ground at a mine that is a tip",
+           "mines",
+           # Ships
            "workplace which is or is in or on a ship",
+           "ship in dock premises",
            "workplace which is in fields, woods or other land forming part of an agricultural or forestry undertaking",
            "workplace which is or is in or on an aircraft, locomotive or rolling stock, trailer or semi-trailer used as a means of transport",
-           "ship in dock premises",
+           "drivers' cabs or control cabs for vehicles or machinery",
            "(?:premises|workplace)"
          ]
          |> Enum.join("|")
@@ -147,7 +155,13 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
            "ship",
            "work equipment",
            "pressure system, or any article which is intended to be a component part of any pressure system",
-           "pressure system"
+           "pressure system",
+           "window typewriters",
+           "calculators, cash registers or any equipment having a small data or measurement display required for direct use of the equipment",
+           "portable systems",
+           "display screen equipment",
+           "signs",
+           "dangerous goods"
          ]
          |> Enum.join("|")
 
@@ -168,7 +182,9 @@ defmodule Legl.Countries.Uk.LeglFitness.ParseDefs do
               "not liable to expose persons at work other than the master and crew to a risk to their safety",
               # Property of the process
               "trade, business or other undertaking carried on by him \\(whether for profit or not\\)",
-              "matters within his control"
+              "matters within his control",
+              "not in prolonged use",
+              "on board a means of transport"
             ]
             |> Enum.join("|")
 

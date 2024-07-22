@@ -120,6 +120,7 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
     |> initial_capitalisation()
     |> end_period()
     |> (&Regex.replace(~r/_but_/, &1, "but")).()
+    |> nothing()
     # |> such_clause()
     |> (&Map.put(fitness, :rule, &1)).()
   end
@@ -154,5 +155,15 @@ defmodule Legl.Countries.Uk.LeglFitness.RuleTransform do
     rule
     |> String.trim_trailing(".")
     |> (&(&1 <> ".")).()
+  end
+
+  defp nothing(rule) do
+    # 'Nothing in these Regulations shall apply to or in relation to' -> 'These
+    # Regulations shall not apply to or in relation to'
+    Regex.replace(
+      ~r/Nothing in these Regulations shall apply to or in relation to/,
+      rule,
+      "These Regulations shall not apply to or in relation to"
+    )
   end
 end
