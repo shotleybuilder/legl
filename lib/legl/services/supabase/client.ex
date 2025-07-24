@@ -57,8 +57,12 @@ defmodule Legl.Services.Supabase.Client do
     opts = Map.put_new(opts, :supabase_table, "uk_lrt")
 
     case handle_response(Http.request(opts)) do
-      {:ok, %{user_id: _user_id, token: _token}} -> update_legal_register_record(opts)
-      resp -> resp
+      {:ok, %{user_id: _user_id, token: _token}} ->
+        update_legal_register_record(opts)
+
+      resp ->
+        IO.inspect(resp)
+        resp
     end
   end
 

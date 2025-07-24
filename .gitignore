@@ -1,3 +1,10 @@
+# Environment Variables and Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+priv/cert/
 # The directory Mix will write compiled artifacts to.
 /_build/
 

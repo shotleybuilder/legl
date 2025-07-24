@@ -210,6 +210,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Crud.Update do
         case result do
           {:ok, record, opts} -> {record, opts}
           {:ok, record} -> {record, opts}
+          {:error, _error} -> acc
         end
       end)
 

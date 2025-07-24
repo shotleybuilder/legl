@@ -217,20 +217,23 @@ defmodule Legl.Countries.Uk.Metadata do
   def get_latest_metadata(%LR{} = record, opts) when is_struct(record) do
     IO.write(" METADATA")
     url = Url.introduction_path(record)
-    {:ok, metadata} = get_latest_metadata(url)
+    case get_latest_metadata(url) do
+      {:ok, metadata} ->
+          metadata =
+            case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
+              true ->
+                Map.put(metadata, :md_change_log, Delta.compare_fields(record, metadata))
 
-    metadata =
-      case opts.workflow |> Atom.to_string() |> String.contains?("Delta") do
-        true ->
-          Map.put(metadata, :md_change_log, Delta.compare_fields(record, metadata))
+              false ->
+                metadata
+            end
 
-        false ->
-          metadata
-      end
-
-    metadata = Map.put(metadata, :md_checked, ~s/#{Date.utc_today()}/)
-    # IO.inspect(metadata, label: "metadata")
-    {:ok, Kernel.struct(record, metadata)}
+          metadata = Map.put(metadata, :md_checked, ~s/#{Date.utc_today()}/)
+          # IO.inspect(metadata, label: "metadata")
+          {:ok, Kernel.struct(record, metadata)}
+      {:error, error} ->
+        {:error, error}
+    end
     # rescue
     #  e ->
     #    IO.puts(

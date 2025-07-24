@@ -75,7 +75,7 @@ defmodule Legl.Countries.Uk.LeglRegister.Options do
     Map.put(
       opts,
       :year,
-      ExPrompt.string("year?", 2024)
+      ExPrompt.string("year?", 2025)
     )
   end
 
